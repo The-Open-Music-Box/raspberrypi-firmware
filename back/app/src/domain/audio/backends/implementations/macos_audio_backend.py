@@ -114,7 +114,7 @@ class MacOSAudioBackend(BaseAudioBackend):
             return True
 
     @handle_errors("stop")
-    def stop(self) -> bool:
+    def _stop_impl(self) -> bool:
         """Stop playback.
 
         Returns:
@@ -138,7 +138,7 @@ class MacOSAudioBackend(BaseAudioBackend):
         return True
 
     @handle_errors("pause")
-    def pause(self) -> bool:
+    def _pause_impl(self) -> bool:
         """Pause playbook.
 
         Returns:
@@ -156,7 +156,7 @@ class MacOSAudioBackend(BaseAudioBackend):
         return True
 
     @handle_errors("resume")
-    def resume(self) -> bool:
+    def _resume_impl(self) -> bool:
         """Resume paused playback.
 
         Returns:
@@ -202,8 +202,8 @@ class MacOSAudioBackend(BaseAudioBackend):
 
             return max(0.0, position)
 
-    @handle_errors("set_volume")
-    def set_volume(self, volume: int) -> bool:
+    @handle_errors("set_volume_sync")
+    def _set_volume_sync(self, volume: int) -> bool:
         """Set playback volume.
 
         Args:
@@ -278,10 +278,26 @@ class MacOSAudioBackend(BaseAudioBackend):
         """Async wrapper for play_file."""
         return await asyncio.get_running_loop().run_in_executor(None, self.play_file, file_path)
 
+    async def pause(self) -> bool:
+        """Async wrapper for pause."""
+        return self._pause_impl()
+
+    async def resume(self) -> bool:
+        """Async wrapper for resume."""
+        return self._resume_impl()
+
+    async def stop(self) -> bool:
+        """Async wrapper for stop."""
+        return self._stop_impl()
+
     async def get_volume(self) -> int:
         """Get current volume level."""
         with self._state_lock:
             return self._volume
+
+    async def set_volume(self, volume: int) -> bool:
+        """Async wrapper for set_volume (protocol requirement)."""
+        return self._set_volume_sync(volume)
 
     async def seek(self, position_ms: int) -> bool:
         """Seek to a specific position (not implemented for pygame)."""
