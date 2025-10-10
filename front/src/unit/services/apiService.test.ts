@@ -107,7 +107,7 @@ describe('apiService', () => {
   })
 
   it('reorderTracks posts correct payload', async () => {
-    ;(apiClient.post as any).mockResolvedValue({ status: 200, data: { status: 'success', data: { ok: true } } })
+    (apiClient.post as any).mockResolvedValue({ status: 200, data: { status: 'success', data: { ok: true } } })
     const out = await apiService.reorderTracks('pid', [1, 2, 3])
     expect(out).toEqual({ ok: true })
     expect(apiClient.post).toHaveBeenCalled()

@@ -303,7 +303,7 @@ export const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0)
 /**
  * Helper to trigger events and wait for updates
  */
-export const triggerAndWait = async (wrapper: VueWrapper<any>, selector: string, event: string = 'click') => {
+export const triggerAndWait = async (wrapper: VueWrapper<any>, selector: string, event = 'click') => {
   await wrapper.find(selector).trigger(event)
   await flushPromises()
   return wrapper

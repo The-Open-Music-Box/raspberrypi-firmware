@@ -125,6 +125,10 @@ export const apiService = {
     return playerApi.next(clientOpId)
   },
 
+  async setVolume(volume: number, clientOpId?: string) {
+    return playerApi.setVolume(volume, clientOpId)
+  },
+
   async createPlaylist(title: string, description?: string) {
     return playlistApi.createPlaylist(title, description || '')
   },
