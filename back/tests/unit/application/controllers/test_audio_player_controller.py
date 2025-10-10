@@ -156,9 +156,9 @@ class TestVolumeControl:
 
     @pytest.fixture
     def backend(self):
-        """Create mock backend with volume support."""
+        """Create mock backend with async volume support."""
         backend = Mock()
-        backend.set_volume = Mock(return_value=True)
+        backend.set_volume = AsyncMock(return_value=True)
         backend.play_file = Mock(return_value=True)
         return backend
 
@@ -167,45 +167,51 @@ class TestVolumeControl:
         """Create audio player."""
         return AudioPlayer(backend)
 
-    def test_set_volume_valid(self, player, backend):
+    @pytest.mark.asyncio
+    async def test_set_volume_valid(self, player, backend):
         """Test setting valid volume."""
-        success = player.set_volume(75)
+        success = await player.set_volume(75)
 
         assert success is True
         assert player._volume == 75
         backend.set_volume.assert_called_with(75)
 
-    def test_set_volume_minimum(self, player, backend):
+    @pytest.mark.asyncio
+    async def test_set_volume_minimum(self, player, backend):
         """Test setting volume to 0."""
-        success = player.set_volume(0)
+        success = await player.set_volume(0)
 
         assert success is True
         assert player._volume == 0
 
-    def test_set_volume_maximum(self, player, backend):
+    @pytest.mark.asyncio
+    async def test_set_volume_maximum(self, player, backend):
         """Test setting volume to 100."""
-        success = player.set_volume(100)
+        success = await player.set_volume(100)
 
         assert success is True
         assert player._volume == 100
 
-    def test_set_volume_below_minimum(self, player, backend):
+    @pytest.mark.asyncio
+    async def test_set_volume_below_minimum(self, player, backend):
         """Test setting volume below 0 fails."""
-        success = player.set_volume(-10)
+        success = await player.set_volume(-10)
 
         assert success is False
         backend.set_volume.assert_not_called()
 
-    def test_set_volume_above_maximum(self, player, backend):
+    @pytest.mark.asyncio
+    async def test_set_volume_above_maximum(self, player, backend):
         """Test setting volume above 100 fails."""
-        success = player.set_volume(150)
+        success = await player.set_volume(150)
 
         assert success is False
         backend.set_volume.assert_not_called()
 
-    def test_get_volume(self, player):
+    @pytest.mark.asyncio
+    async def test_get_volume(self, player):
         """Test getting current volume."""
-        player.set_volume(80)
+        await player.set_volume(80)
         volume = player.get_volume()
 
         assert volume == 80
@@ -311,6 +317,7 @@ class TestStateQueries:
         """Create mock backend."""
         backend = Mock()
         backend.play_file = Mock(return_value=True)
+        backend.set_volume = AsyncMock(return_value=True)
         backend.get_position_sync = Mock(return_value=30.0)
         backend.get_duration = Mock(return_value=180.0)
         return backend
@@ -330,10 +337,11 @@ class TestStateQueries:
         assert state["current_file"] is None
         assert state["volume"] == 50
 
-    def test_get_state_when_playing(self, player, backend):
+    @pytest.mark.asyncio
+    async def test_get_state_when_playing(self, player, backend):
         """Test state when playing."""
         player.play_file("/music/song.mp3")
-        player.set_volume(75)
+        await player.set_volume(75)
         state = player.get_state()
 
         assert state["state"] == "playing"
@@ -430,13 +438,14 @@ class TestErrorHandling:
 
         assert success is False
 
-    def test_volume_backend_error(self):
+    @pytest.mark.asyncio
+    async def test_volume_backend_error(self):
         """Test volume handles backend errors."""
         backend = Mock()
-        backend.set_volume = Mock(side_effect=Exception("Volume error"))
+        backend.set_volume = AsyncMock(side_effect=Exception("Volume error"))
 
         player = AudioPlayer(backend)
-        success = player.set_volume(50)
+        success = await player.set_volume(50)
 
         assert success is False
 
@@ -474,22 +483,15 @@ class TestAsyncBackendSupport:
 
             assert success is True
 
-    def test_volume_with_async_backend(self):
-        """Test volume with async backend."""
+    @pytest.mark.asyncio
+    async def test_volume_with_async_backend(self):
+        """Test volume with async backend (proper async/await pattern)."""
         backend = Mock()
-
-        async def async_set_volume(vol):
-            return True
-
-        backend.set_volume = async_set_volume
+        backend.set_volume = AsyncMock(return_value=True)
 
         player = AudioPlayer(backend)
+        success = await player.set_volume(75)
 
-        with patch("asyncio.new_event_loop") as mock_loop:
-            loop_instance = Mock()
-            mock_loop.return_value = loop_instance
-            loop_instance.run_until_complete = Mock(return_value=True)
-
-            success = player.set_volume(75)
-
-            assert success is True
+        assert success is True
+        assert player._volume == 75
+        backend.set_volume.assert_called_with(75)
