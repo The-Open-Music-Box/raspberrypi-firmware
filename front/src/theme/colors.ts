@@ -16,34 +16,46 @@ export type ThemeMode = 'light' | 'dark';
 
 export const colors = {
   light: {
-    primary: '#F27B70', // Action principale
-    secondary: '#A3C9A8', // Accent secondaire
-    tertiary: '#FFD882', // Mise en valeur douce
-    background: '#FDF8EF', // Fond principal
-    surface: '#FFFFFF', // Fond des composants
-    onPrimary: '#FFFFFF', // Texte sur boutons primaires
-    onBackground: '#3A3A3A', // Texte principal
-    onSurface: '#444444', // Texte secondaire
-    border: '#DADADA', // Séparateurs
-    error: '#D9605E', // Alertes critiques
-    success: '#77C29B', // Messages positifs
-    disabled: '#CCCCCC', // Inactifs
-    focus: '#82A6D2', // Focus clavier/hover
+    primary: '#3b82f6', // Modern blue primary
+    'primary-hover': '#2563eb', // Darker blue for hover
+    'primary-light': '#dbeafe', // Light blue background
+    secondary: '#A3C9A8', // Keep existing accent
+    tertiary: '#8b5cf6', // Purple accent
+    background: '#fafafa', // Light gray background
+    surface: '#ffffff', // White surface
+    'surface-secondary': '#f8fafc', // Very light gray
+    onPrimary: '#FFFFFF', // White text on primary
+    onBackground: '#1e293b', // Dark slate text
+    onSurface: '#64748b', // Medium slate text
+    border: '#e2e8f0', // Light border
+    'border-light': '#f1f5f9', // Lighter border
+    error: '#ef4444', // Red error
+    success: '#10b981', // Green success
+    'success-light': '#d1fae5', // Light green
+    warning: '#f59e0b', // Orange warning
+    disabled: '#94a3b8', // Muted gray
+    focus: '#3b82f6', // Primary for focus
   },
   dark: {
-    primary: '#F58C82',
+    primary: '#3b82f6',
+    'primary-hover': '#2563eb',
+    'primary-light': '#1e3a8a',
     secondary: '#ADCBB3',
-    tertiary: '#FFEBA6',
+    tertiary: '#8b5cf6',
     background: '#1F1F1F',
     surface: '#2A2A2A',
-    onPrimary: '#1F1F1F',
+    'surface-secondary': '#333333',
+    onPrimary: '#FFFFFF',
     onBackground: '#F1F1F1',
     onSurface: '#DDDDDD',
     border: '#444444',
-    error: '#F58C8A',
-    success: '#93D1B1',
+    'border-light': '#3a3a3a',
+    error: '#ef4444',
+    success: '#10b981',
+    'success-light': '#064e3b',
+    warning: '#f59e0b',
     disabled: '#666666',
-    focus: '#A1C0F2',
+    focus: '#3b82f6',
   },
 } as const;
 

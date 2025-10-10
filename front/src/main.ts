@@ -5,6 +5,7 @@ import { i18n } from './i18n'
 import './registerServiceWorker'
 import router from './router'
 import './assets/tailwind.css'
+import './assets/modern-theme.css'
 import socketService from './services/socketService'
 import { useServerStateStore } from './stores/serverStateStore'
 

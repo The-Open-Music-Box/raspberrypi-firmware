@@ -1,21 +1,21 @@
 <template>
-  <div class="mt-8 space-y-6">
+  <div class="playlists-section">
     <!-- Edit mode toggle and controls -->
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold text-onBackground">{{ t('file.playlists') }}</h2>
-      <div class="flex gap-2">
+    <div class="playlists-header">
+      <h2 class="playlists-title">{{ t('file.playlists') }}</h2>
+      <div class="header-actions" style="display: flex; gap: 12px;">
         <button
           v-if="false"
           @click="showYoutubeModal = true"
-          class="px-3 py-1.5 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+          class="btn-modern danger"
         >
           Add from YouTube
         </button>
         <button
           @click="toggleEditMode"
           :class="[
-            'px-3 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-focus',
-            isEditMode ? 'bg-success text-onSuccess' : 'bg-primary text-onPrimary hover:bg-primary-light'
+            'btn-modern',
+            isEditMode ? 'active' : 'secondary'
           ]"
         >
           {{ isEditMode ? t('common.doneEditing') : t('common.edit') }}
@@ -44,132 +44,155 @@
     </div>
 
     <!-- Playlists list -->
-    <div v-for="playlist in localPlaylists" :key="playlist.id" :class="['bg-surface', 'border border-border', 'rounded-lg overflow-hidden shadow-sm']">
+    <div v-for="playlist in localPlaylists" :key="playlist.id" class="playlist-item">
       <!-- Playlist header (always visible) -->
       <div
+        class="playlist-header"
         @click="!isEditMode && togglePlaylist(playlist.id)"
-        :class="[`px-4 py-3 transition-colors flex justify-between items-center`, isEditMode ? '' : 'cursor-pointer', 'hover:bg-background']"
+        :style="{ cursor: isEditMode ? 'default' : 'pointer' }"
       >
-        <div>
-          <!-- Editable title in edit mode, regular title otherwise -->
-          <div v-if="isEditMode" class="flex items-center">
-            <input
-              v-model="editableTitles[playlist.id]"
-              @blur="updatePlaylistTitle(playlist.id)"
-              @keyup.enter="updatePlaylistTitle(playlist.id)"
-              class="text-sm font-semibold leading-6 bg-transparent border-b border-primary focus:border-success focus:outline-none px-1 py-0.5 w-full max-w-xs"
-              :placeholder="t('file.playlistTitle')"
-            />
+        <div class="playlist-main">
+          <div class="playlist-info">
+            <h3>
+              <span style="font-size: 18px; margin-right: 8px;">🎵</span>
+
+              <!-- Editable title in edit mode -->
+              <input
+                v-if="isEditMode"
+                v-model="editableTitles[playlist.id]"
+                @blur="updatePlaylistTitle(playlist.id)"
+                @keyup.enter="updatePlaylistTitle(playlist.id)"
+                class="playlist-title-input"
+                :placeholder="t('file.playlistTitle')"
+                @click.stop
+              />
+
+              <!-- Regular title otherwise -->
+              <span v-else class="playlist-title-display">{{ playlist.title }}</span>
+
+              <!-- NFC status badge -->
+              <span v-if="playlist.nfc_tag_id" class="nfc-status linked">
+                NFC: {{ playlist.nfc_tag_id.substring(0, 6) }}
+              </span>
+              <span v-else class="nfc-status none">{{ t('common.noNfc') || 'No NFC' }}</span>
+            </h3>
+
+            <!-- Playlist metadata -->
+            <div class="playlist-meta">
+              <span>{{ playlist.track_count || playlist.tracks?.length || 0 }} {{ t('file.tracks') || 'tracks' }}</span>
+              <span>{{ formatTotalDuration(playlist.tracks) }}</span>
+              <span v-if="playlist.last_played">
+                {{ t('file.lastPlayed') || 'Last' }}: {{ new Date(playlist.last_played).toLocaleDateString() }}
+              </span>
+              <span v-else>{{ t('file.neverPlayed') || 'Never played' }}</span>
+            </div>
           </div>
-          <h3 v-else :class="['text-onBackground', 'text-sm font-semibold leading-6']">{{ playlist.title }}</h3>
-          <p class="text-sm text-disabled">
-            {{ playlist.track_count || playlist.tracks?.length || 0 }} tracks • Total Duration: {{ formatTotalDuration(playlist.tracks) }} • Last Played: {{ playlist.last_played ? new Date(playlist.last_played).toLocaleDateString() : 'Never' }}
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <!-- Edit/Delete playlist buttons (only in edit mode) -->
-          <div v-if="isEditMode" class="flex gap-2">
+
+          <!-- Playlist actions -->
+          <div class="playlist-actions" :class="{ 'edit-mode': isEditMode }">
+            <!-- Play button (not in edit mode) -->
             <button
+              v-if="!isEditMode"
+              @click.stop="$emit('play-playlist', playlist)"
+              class="action-btn play"
+              :title="playingPlaylistId === playlist.id ? (t('common.playing') || 'Playing') : (t('common.play') || 'Play')"
+            >
+              ▶
+            </button>
+
+            <!-- NFC button (not in edit mode) -->
+            <button
+              v-if="!isEditMode"
+              @click.stop="openNfcDialog(playlist.id)"
+              :class="['action-btn', 'nfc', playlist.nfc_tag_id ? 'override' : '']"
+              :title="playlist.nfc_tag_id ? t('common.nfcLinkedTooltip') : t('common.linkNfc')"
+            >
+              📡
+            </button>
+
+            <!-- Delete button (only in edit mode) -->
+            <button
+              v-if="isEditMode"
               @click.stop="confirmDeletePlaylist(playlist.id)"
-              class="p-1.5 rounded-full bg-error hover:bg-error-light text-onError transition-colors focus:outline-none focus:ring-2 focus:ring-focus"
+              class="action-btn delete-playlist-btn"
               :title="t('common.delete')"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              🗑️
             </button>
+
+            <!-- Expand/collapse chevron (not in edit mode) -->
+            <span v-if="!isEditMode" style="margin-left: 8px; color: var(--text-muted);">
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                class="transform transition-transform"
+                :class="{ 'rotate-180': openPlaylists.includes(playlist.id) }"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
           </div>
-
-          <!-- Play button without animation (hidden in edit mode) -->
-          <button
-            v-if="!isEditMode"
-            @click.stop="$emit('play-playlist', playlist)"
-            class="ml-1 h-10 w-10 flex items-center justify-center rounded-full transition-colors duration-150 focus:outline-none focus:ring-2"
-            :class="playingPlaylistId === playlist.id ? 'bg-success' : 'bg-primary hover:bg-primary-light focus:ring-focus'"
-            :title="playingPlaylistId === playlist.id ? (t('common.playing') || 'Playing') : (t('common.play') || 'Play this playlist')"
-            type="button"
-            aria-label="Play playlist"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-onPrimary" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="8,5 8,19 19,12" />
-            </svg>
-          </button>
-
-          <button
-            v-if="!isEditMode"
-            @click.stop="openNfcDialog(playlist.id)"
-            :class="[
-              'ml-1 p-2 rounded-full focus:outline-none focus:ring-2',
-              playlist.nfc_tag_id ? 'bg-success hover:bg-success focus:ring-focus' : 'bg-primary hover:bg-primary-light focus:ring-focus'
-            ]"
-            :title="playlist.nfc_tag_id ? t('common.nfcLinkedTooltip') || 'Tag NFC associé à cette playlist' : t('common.linkNfc') || 'Associer un tag NFC'"
-            type="button"
-          >
-            <svg v-if="playlist.nfc_tag_id" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-onPrimary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-onPrimary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17V7a5 5 0 00-10 0v10a5 5 0 0010 0zM7 17V7a5 5 0 0110 0v10a5 5 0 01-10 0z" />
-            </svg>
-          </button>
-          <span v-if="!isEditMode" class="text-disabled">
-            <svg
-              class="w-6 h-6 transform transition-transform"
-              :class="{ 'rotate-180': openPlaylists.includes(playlist.id) }"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </span>
-
         </div>
       </div>
 
 
-      <!-- Upload Button (in edit mode only) -->
-      <div v-if="isEditMode" class="upload-section">
-        <button @click="openUploadModal(playlist.id)" class="btn-upload">
-          <i class="fas fa-upload"></i>
-          {{ t('file.uploadFiles') }}
-        </button>
+      <!-- Upload Zone (in edit mode only) -->
+      <div
+        v-if="isEditMode"
+        class="upload-zone show"
+        @click="openUploadModal(playlist.id)"
+      >
+        <div class="upload-icon">📁</div>
+        <div class="upload-text">{{ t('file.uploadFiles') || 'Upload Files' }}</div>
+        <div class="upload-subtext">{{ t('file.uploadHint') || 'MP3, WAV, FLAC, M4A accepted' }}</div>
       </div>
 
       <!-- Tracks list (visible only if playlist is open) -->
-      <div v-if="openPlaylists.includes(playlist.id)">
+      <div
+        v-if="openPlaylists.includes(playlist.id)"
+        class="playlist-content show"
+      >
         <!-- Loading state for tracks -->
         <div v-if="trackLoadingStates[playlist.id]" class="px-4 py-3 text-disabled text-sm">
           {{ t('common.loading') }} tracks...
         </div>
-        
-        <draggable
-          v-model="playlist.tracks"
-          :disabled="!isEditMode"
-          group="tracks"
-          item-key="number"
-          :animation="200"
-          ghost-class="bg-primary/10"
-          chosen-class="bg-primary/5"
-          drag-class="cursor-grabbing"
-          :data-playlist-id="playlist.id"
-          @start="dragStart"
-          @end="dragEnd"
-          @change="handleDragChange($event, playlist.id)"
-        >
-          <template #item="{element: track}">
-            <div
-              @click="isEditMode ? null : $emit('select-track', { track, playlist })"
-              :class="[
-                'px-4 py-3 flex items-center justify-between group',
-                'hover:bg-background',
-                isEditMode ? 'cursor-grab' : 'cursor-pointer'
-              ]">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 flex items-center justify-center">
-                <!-- Track number or wavy icon if playing -->
-                <span v-if="!(playingPlaylistId === playlist.id && playingTrackNumber === getTrackNumber(track))" :class="['text-success']">{{ getTrackDisplayPosition(track, playlist.id) }}</span>
-                <span v-else class="wavy-anim" title="Playing">
+
+        <div class="track-list">
+          <draggable
+            v-model="playlist.tracks"
+            :disabled="!isEditMode"
+            group="tracks"
+            item-key="number"
+            :animation="200"
+            ghost-class="track-item-ghost"
+            chosen-class="track-item-chosen"
+            drag-class="track-item-dragging"
+            :data-playlist-id="playlist.id"
+            @start="dragStart"
+            @end="dragEnd"
+            @change="handleDragChange($event, playlist.id)"
+          >
+            <template #item="{element: track}">
+              <div
+                @click="isEditMode ? null : $emit('select-track', { track, playlist })"
+                :class="[
+                  'track-item',
+                  isEditMode ? 'edit-mode' : '',
+                  (playingPlaylistId === playlist.id && playingTrackNumber === getTrackNumber(track)) ? 'current' : ''
+                ]"
+                :style="{ cursor: isEditMode ? 'grab' : 'pointer' }"
+              >
+                <!-- Drag handle (edit mode only) -->
+                <span v-if="isEditMode" class="track-drag-handle">⋮⋮</span>
+
+                <!-- Track number (or playing indicator) -->
+                <span v-if="!(playingPlaylistId === playlist.id && playingTrackNumber === getTrackNumber(track))" class="track-number">
+                  {{ String(getTrackDisplayPosition(track, playlist.id)).padStart(2, '0') }}
+                </span>
+                <span v-else class="track-number wavy-anim" title="Playing">
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
                     <rect x="2" y="6" width="2" height="8" rx="1" class="wavy-bar bar1"/>
                     <rect x="6" y="4" width="2" height="12" rx="1" class="wavy-bar bar2"/>
@@ -177,29 +200,26 @@
                     <rect x="14" y="5" width="2" height="10" rx="1" class="wavy-bar bar4"/>
                   </svg>
                 </span>
-                <svg v-if="selectedTrack && getTrackNumber(selectedTrack) === getTrackNumber(track) && !(playingPlaylistId === playlist.id && playingTrackNumber === getTrackNumber(track))" :class="['text-disabled', 'h-5 w-5']" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" />
-                </svg>
-              </div>
-              <div>
-                <p :class="['text-onBackground', 'font-medium']">{{ track.title }}</p>
-              </div>
-            </div>
 
-            <div class="flex items-center space-x-4">
-              <span :class="['text-success']">{{ formatDuration(track) }}</span>
-              <button v-if="isEditMode" @click.stop="handleDeleteTrackClick(playlist.id, getTrackNumber(track))"
-                      class="text-disabled hover:text-error transition-colors opacity-0 group-hover:opacity-100 delete-dialog-buttons">
-                <span class="sr-only">{{ t('common.delete') }}</span>
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          </template>
-        </draggable>
+                <!-- Track name -->
+                <span class="track-name">{{ track.title }}</span>
+
+                <!-- Track duration -->
+                <span class="track-duration">{{ formatDuration(track) }}</span>
+
+                <!-- Delete button (edit mode only) -->
+                <button
+                  v-if="isEditMode"
+                  @click.stop="handleDeleteTrackClick(playlist.id, getTrackNumber(track))"
+                  class="track-delete-btn"
+                  :title="t('common.delete')"
+                >
+                  🗑️
+                </button>
+              </div>
+            </template>
+          </draggable>
+        </div>
         
         <!-- Empty state for playlists with no tracks -->
         <div v-if="!trackLoadingStates[playlist.id] && (!playlist.tracks || playlist.tracks.length === 0)" 
