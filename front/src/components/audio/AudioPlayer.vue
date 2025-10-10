@@ -1,30 +1,141 @@
 <template>
-  <div v-if="!serverStateStore" class="w-full max-w-xl mx-auto p-4 text-center text-gray-500">
+  <div v-if="!serverStateStore" class="w-full max-w-4xl mx-auto p-4 text-center" style="color: var(--text-secondary);">
     Loading player...
   </div>
-  <div v-else class="w-full max-w-xl mx-auto">
-    <div class="bg-surface border-border border-b rounded-t-xl p-4 pb-6 sm:p-10 sm:pb-8 lg:p-6 xl:p-10 xl:pb-8 space-y-6 sm:space-y-8 lg:space-y-6 xl:space-y-8 items-center">
-      <TrackInfo 
-        :track="currentTrack || undefined" 
-        :playlistTitle="playerState?.active_playlist_title"
-        :duration="duration"
-      />
-      <ProgressBar
-        :currentTime="currentTime"
-        :duration="duration"
-        @seek="seekTo"
-      />
-    </div>
-    <div class="bg-background text-disabled rounded-b-xl flex items-center justify-center w-full">
-      <div class="w-full max-w-[380px] mx-auto flex justify-center">
-        <PlaybackControls
-          :isPlaying="isPlaying"
-          :canPrevious="playerState?.can_prev || false"
-          :canNext="playerState?.can_next || false"
-          @toggle-play-pause="togglePlayPause"
-          @previous="previous"
-          @next="next"
-        />
+  <div v-else class="card-modern w-full max-w-4xl mx-auto">
+    <!-- Compact Player -->
+    <div class="compact-player">
+      <!-- Player Info Row -->
+      <div class="player-info">
+        <!-- Album Cover -->
+        <div class="player-cover">
+          🎵
+        </div>
+
+        <!-- Track Details -->
+        <div class="track-details">
+          <div class="track-title-modern">
+            {{ currentTrack?.title || t('audio.noTrackSelected') }}
+          </div>
+          <div class="track-artist-modern">
+            {{ playerState?.active_playlist_title || t('audio.noPlaylist') }}
+          </div>
+        </div>
+
+        <!-- Playback Controls (horizontal) -->
+        <div class="player-controls">
+          <button
+            class="control-btn"
+            :disabled="!playerState?.can_prev"
+            :aria-label="t('player.previous')"
+            @click="previous"
+          >
+            <svg width="16" height="16" fill="none">
+              <path
+                d="m10 8 4-3.5v7L10 8Z"
+                fill="currentColor"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M6 4.5v7"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+
+          <button
+            class="control-btn play-btn"
+            :aria-label="t('player.playPause')"
+            @click="togglePlayPause"
+          >
+            <svg v-if="isPlaying" width="18" height="18" fill="currentColor">
+              <rect x="5" y="3" width="2.5" height="12" rx="1.25" />
+              <rect x="10.5" y="3" width="2.5" height="12" rx="1.25" />
+            </svg>
+            <svg v-else width="18" height="18" fill="currentColor">
+              <polygon points="5,2 14,9 5,16" />
+            </svg>
+          </button>
+
+          <button
+            class="control-btn"
+            :disabled="!playerState?.can_next"
+            :aria-label="t('player.next')"
+            @click="next"
+          >
+            <svg width="16" height="16" fill="none">
+              <path
+                d="m6 8 4-3.5v7L6 8Z"
+                fill="currentColor"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M10 4.5v7"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+
+          <!-- Volume Control -->
+          <div class="volume-control">
+            <svg width="16" height="16" fill="none" style="color: var(--text-secondary);">
+              <path
+                d="M8 3L5 6H2v4h3l3 3V3Z"
+                fill="currentColor"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M11 6.5c.5.5 1 1.2 1 2.5s-.5 2-1 2.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div class="volume-slider-container">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                :value="volume"
+                @input="handleVolumeChange"
+                class="volume-slider"
+                aria-label="Volume"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-section">
+        <div
+          class="progress-bar-modern"
+          @click="handleProgressClick"
+          ref="progressBarRef"
+        >
+          <div
+            class="progress-fill"
+            :style="{ width: `${progressPercentage}%` }"
+          ></div>
+        </div>
+        <div class="time-indicators">
+          <span>{{ formatTime(currentTime) }}</span>
+          <span>{{ formatTime(duration) }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -38,11 +149,9 @@
  * - Position updates from server state:track_position events (200ms)
  * - No frontend timers - all position comes from backend
  * - Optimistic UI updates for seek operations only
+ * - Compact modern design with inline controls
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import TrackInfo from './TrackInfo.vue'
-import ProgressBar from './ProgressBar.vue'
-import PlaybackControls from './PlaybackControls.vue'
 import type { Track, PlayList } from '../files/types'
 import { useServerStateStore } from '@/stores/serverStateStore'
 import { useUnifiedPlaylistStore } from '@/stores/unifiedPlaylistStore'
@@ -50,6 +159,9 @@ import { storeToRefs } from 'pinia'
 import apiService from '@/services/apiService'
 import { logger } from '@/utils/logger'
 import { getTrackNumber, getTrackDurationMs } from '@/utils/trackFieldAccessor'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // Props
 interface Props {
@@ -105,6 +217,88 @@ const duration = computed(() => {
 const isPlaying = computed(() => {
   return Boolean(playerState.value?.is_playing)
 })
+
+// Progress bar handling
+const progressBarRef = ref<HTMLElement | null>(null)
+const progressPercentage = computed(() => {
+  return duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0
+})
+
+// Volume control
+const volume = ref(75) // Default volume 75%
+const isUserAdjustingVolume = ref(false) // Flag to prevent server updates during user interaction
+
+// Initialize volume from player state
+if (playerState.value?.volume != null) {
+  volume.value = playerState.value.volume
+}
+
+// Watch for volume changes from server (Socket.IO events or other sources)
+// BUT don't update if user is currently adjusting the volume slider
+const unwatchVolume = serverStateStore.$subscribe((mutation, state) => {
+  if (!isUserAdjustingVolume.value && state.playerState.volume != null && state.playerState.volume !== volume.value) {
+    volume.value = state.playerState.volume
+    logger.debug('[AudioPlayer] Volume updated from server', { volume: volume.value })
+  }
+})
+
+// Format time in milliseconds to MM:SS
+function formatTime(timeMs: number): string {
+  const totalSeconds = Math.floor(timeMs / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+}
+
+// Handle progress bar click
+function handleProgressClick(event: MouseEvent) {
+  if (!progressBarRef.value) return
+  const rect = progressBarRef.value.getBoundingClientRect()
+  const offsetX = event.clientX - rect.left
+  const percentage = offsetX / rect.width
+  const seekTime = duration.value * percentage
+  seekTo(seekTime)
+}
+
+// Debounce timer for volume changes
+let volumeDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+// Handle volume change with debouncing to avoid too many API calls
+function handleVolumeChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  const newVolume = parseInt(target.value)
+
+  // Mark that user is adjusting volume to prevent server updates from interfering
+  isUserAdjustingVolume.value = true
+
+  // Update UI immediately for smooth slider movement
+  volume.value = newVolume
+
+  // Clear existing timer
+  if (volumeDebounceTimer) {
+    clearTimeout(volumeDebounceTimer)
+  }
+
+  // Debounce API call by 300ms
+  volumeDebounceTimer = setTimeout(async () => {
+    try {
+      logger.debug('[AudioPlayer] Setting volume via API', { volume: newVolume })
+      await apiService.setVolume(newVolume)
+      logger.debug('[AudioPlayer] Volume set successfully', { volume: newVolume })
+    } catch (error) {
+      logger.error('[AudioPlayer] Failed to set volume', { volume: newVolume, error })
+      // Revert to previous volume on error
+      if (playerState.value?.volume != null) {
+        volume.value = playerState.value.volume
+      }
+    } finally {
+      // Allow server updates again after a short delay (500ms after API call completes)
+      setTimeout(() => {
+        isUserAdjustingVolume.value = false
+      }, 500)
+    }
+  }, 300)
+}
 
 // Smooth position interpolation
 function startSmoothAnimation() {
@@ -358,6 +552,11 @@ onMounted(async () => {
       clearInterval(syncInterval)
       stopSmoothAnimation()
       unwatchPosition()
+      unwatchVolume()
+      if (volumeDebounceTimer) {
+        clearTimeout(volumeDebounceTimer)
+        volumeDebounceTimer = null
+      }
       logger.debug('[AudioPlayer] Component unmounted with cleanup')
     })
     
