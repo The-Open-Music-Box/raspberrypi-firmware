@@ -221,9 +221,9 @@ class PlaybackCoordinator:
 
     # --- Volume Control ---
 
-    def set_volume(self, volume: int) -> bool:
+    async def set_volume(self, volume: int) -> bool:
         """Set playback volume."""
-        return self._audio_player.set_volume(volume)
+        return await self._audio_player.set_volume(volume)
 
     def get_volume(self) -> int:
         """Get current volume."""
