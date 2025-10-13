@@ -8,10 +8,11 @@
 
 import { io, Socket } from 'socket.io-client'
 import { logger } from '../utils/logger'
-import { socketConfig } from '../config/environment'
-import { 
-  StateEventEnvelope, 
-  OperationAck, 
+import { socketConfig, appConfig } from '../config/environment'
+import { NativeWebSocketClient } from './nativeWebSocket'
+import {
+  StateEventEnvelope,
+  OperationAck,
   PlayerState,
   Playlist,
   TrackProgress,
@@ -111,9 +112,11 @@ interface ConnectionStatus {
 
 /**
  * Refactored Socket Service with standardized event handling
+ * Supports dual-mode: Socket.IO for RPI Backend, native WebSocket for ESP32
  */
 class SocketService {
-  private socket!: Socket
+  private socket!: Socket | NativeWebSocketClient
+  private isESP32Mode = false
   private eventHandlers = new Map<string, Set<(...args: any[]) => void>>()
   private pendingOperations = new Map<string, { resolve: (...args: any[]) => void; reject: (...args: any[]) => void; timeout: ReturnType<typeof setTimeout> }>()
   private connectionStatus: ConnectionStatus = {
@@ -121,83 +124,221 @@ class SocketService {
     ready: false,
     lastSeq: 0
   }
-  
+
   // Event ordering and buffering for reliability
   private eventBuffer = new Map<number, StateEventEnvelope>()
   private expectedSeq = 1
   private maxBufferSize = 100
   private bufferProcessingTimer?: ReturnType<typeof setTimeout>
-  
+
   // Room subscriptions tracking
   private subscribedRooms = new Set<string>()
   private roomJoinPromises = new Map<string, Promise<void>>()
-  
+
   // Connection health monitoring
   private healthCheckInterval?: ReturnType<typeof setTimeout>
   private reconnectionAttempts = 0
   private maxReconnectionAttempts = 10
-  
+
   // Debug flags for logging
   private _firstTrackPositionLogged = false
   private _envelopeLogged = false
   private _domDispatchLogged = false
   private _trackPositionDispatched = false
-  
+
   constructor() {
-    logger.info('Initializing refactored Socket Service with standardized event handling')
+    logger.info('Initializing refactored Socket Service with dual-mode support (Socket.IO / Native WebSocket)')
     this.initializeSocket()
   }
   
   /**
    * Initialize socket connection with enhanced configuration
+   * Auto-detects ESP32 vs RPI Backend and uses appropriate client
    */
   private initializeSocket(): void {
-    logger.info(`🔊🎵 Initializing WebSocket connection to: ${socketConfig.url}`)
-    
-    this.socket = io(socketConfig.url, {
-      ...socketConfig.options,
-      transports: ['websocket', 'polling']
-    })
-    
-    // Force connection if autoConnect was disabled
-    if (!this.socket.connected) {
-      logger.info('🔊🎵 Manually connecting socket...')
+    // Detect backend type from config
+    this.isESP32Mode = socketConfig.options.path === '/ws'
+
+    logger.info(`🔊🎵 Initializing ${this.isESP32Mode ? 'ESP32 (Native WebSocket)' : 'RPI Backend (Socket.IO)'} connection to: ${socketConfig.url}`)
+
+    if (this.isESP32Mode) {
+      // Use native WebSocket for ESP32
+      this.socket = new NativeWebSocketClient({
+        url: socketConfig.url,
+        path: '/ws',
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 10000
+      })
+
+      this.setupNativeWebSocketHandlers()
       this.socket.connect()
+    } else {
+      // Use Socket.IO for RPI Backend
+      this.socket = io(socketConfig.url, {
+        ...socketConfig.options,
+        transports: ['websocket', 'polling']
+      }) as Socket
+
+      // Force connection if autoConnect was disabled
+      if (!(this.socket as Socket).connected) {
+        logger.info('🔊🎵 Manually connecting Socket.IO...')
+        ;(this.socket as Socket).connect()
+      }
+
+      this.setupConnectionHandlers()
+      this.setupStandardizedEventHandlers()
     }
-    
-    this.setupConnectionHandlers()
-    this.setupStandardizedEventHandlers()
+
     this.startHealthCheck()
   }
   
   /**
-   * Setup connection lifecycle handlers
+   * Setup handlers for native WebSocket (ESP32 mode)
+   */
+  private setupNativeWebSocketHandlers(): void {
+    const ws = this.socket as NativeWebSocketClient
+
+    // Connection status
+    ws.on('internal:connection_changed', (data: any) => {
+      this.connectionStatus.connected = data.connected
+      if (data.connected) {
+        logger.info('🔊🎵 ✅ NATIVE WEBSOCKET CONNECTED TO ESP32!', {
+          url: socketConfig.url
+        })
+        this.reconnectionAttempts = 0
+        this.emitLocal('internal:connection_changed', { connected: true })
+      } else {
+        logger.warn(`Native WebSocket disconnected: ${data.reason}`)
+        this.connectionStatus.ready = false
+        this.subscribedRooms.clear()
+        this.emitLocal('internal:connection_changed', { connected: false, reason: data.reason })
+      }
+    })
+
+    ws.on('internal:connection_error', (data: any) => {
+      logger.error('🔊🎵 ❌ NATIVE WEBSOCKET CONNECTION ERROR:', data.error)
+      this.reconnectionAttempts++
+
+      if (this.reconnectionAttempts >= this.maxReconnectionAttempts) {
+        logger.error('Max reconnection attempts reached')
+        this.emitLocal('internal:connection_failed', { error: data.error })
+      }
+    })
+
+    ws.on('internal:connection_failed', (data: any) => {
+      logger.error('Native WebSocket connection failed:', data)
+      this.emitLocal('internal:connection_failed', data)
+    })
+
+    // Forward all other events to local handlers
+    ws.on('connection_status', (data: any) => {
+      this.connectionStatus.ready = true
+      this.connectionStatus.serverId = data.sid
+      this.connectionStatus.lastSeq = data.server_seq
+      this.connectionStatus.serverTime = data.server_time
+      this.emitLocal('connection_status', data)
+    })
+
+    ws.on('ack:join', (data: any) => {
+      if (data.success) {
+        this.subscribedRooms.add(data.room)
+      }
+      this.emitLocal('ack:join', data)
+      this.resolveRoomOperation('join', data.room, data)
+    })
+
+    ws.on('ack:leave', (data: any) => {
+      if (data.success) {
+        this.subscribedRooms.delete(data.room)
+      }
+      this.emitLocal('ack:leave', data)
+      this.resolveRoomOperation('leave', data.room, data)
+    })
+
+    ws.on('ack:op', (data: any) => {
+      this.resolveOperation(data.client_op_id, data)
+      this.emitLocal('ack:op', data)
+    })
+
+    ws.on('err:op', (data: any) => {
+      this.rejectOperation(data.client_op_id, new Error(data.message || 'Operation failed'))
+      this.emitLocal('err:op', data)
+    })
+
+    // State events - forward all to local handlers
+    const stateEvents = [
+      'state:playlists',
+      'state:playlists_index_update',
+      'state:playlist',
+      'state:player',
+      'state:track_progress',
+      'state:track_position',
+      'state:track',
+      'state:playlist_deleted',
+      'state:playlist_created',
+      'state:playlist_updated',
+      'state:track_deleted',
+      'state:track_added',
+      'state:volume_changed',
+      'state:nfc_state',
+      'upload:progress',
+      'upload:complete',
+      'upload:error',
+      'nfc_status',
+      'nfc_association_state',
+      'youtube:progress',
+      'youtube:complete',
+      'youtube:error'
+    ]
+
+    stateEvents.forEach(eventType => {
+      ws.on(eventType, (data: any) => {
+        // Update sequence counter
+        if (data.server_seq) {
+          this.connectionStatus.lastSeq = Math.max(
+            this.connectionStatus.lastSeq,
+            data.server_seq
+          )
+        }
+
+        // Forward to local handlers
+        this.emitLocal(eventType, data)
+      })
+    })
+  }
+
+  /**
+   * Setup connection lifecycle handlers (Socket.IO mode)
    */
   private setupConnectionHandlers(): void {
-    this.socket.on('connect', () => {
-      logger.info('🔊🎵 ✅ SOCKET CONNECTED SUCCESSFULLY!', { 
+    const socketIO = this.socket as Socket
+
+    socketIO.on('connect', () => {
+      logger.info('🔊🎵 ✅ SOCKET.IO CONNECTED TO RPI BACKEND!', {
         url: socketConfig.url,
-        id: this.socket.id 
+        id: socketIO.id
       })
       this.connectionStatus.connected = true
       this.reconnectionAttempts = 0
       this.emitLocal('internal:connection_changed', { connected: true })
-      
+
       // Post-connection synchronization with delay to ensure server is ready
       setTimeout(() => {
         this.performPostConnectionSync()
       }, 1000)
     })
-    
-    this.socket.on('disconnect', (reason) => {
+
+    socketIO.on('disconnect', (reason) => {
       logger.warn(`Socket disconnected: ${reason}`)
       this.connectionStatus.connected = false
       this.connectionStatus.ready = false
       this.subscribedRooms.clear()
       this.emitLocal('internal:connection_changed', { connected: false, reason })
     })
-    
-    this.socket.on('connect_error', (error) => {
+
+    socketIO.on('connect_error', (error) => {
       logger.error('🔊🎵 ❌ SOCKET CONNECTION ERROR:', {
         message: error.message,
         type: (error as any).type || 'unknown',
@@ -211,8 +352,8 @@ class SocketService {
         this.emitLocal('internal:connection_failed', { error })
       }
     })
-    
-    this.socket.on('reconnect', (attemptNumber) => {
+
+    socketIO.on('reconnect', (attemptNumber) => {
       logger.info(`Socket reconnected after ${attemptNumber} attempts`)
       this.reconnectionAttempts = 0
       
@@ -227,13 +368,14 @@ class SocketService {
   }
   
   /**
-   * Setup standardized event handlers using the new envelope format
+   * Setup standardized event handlers using the new envelope format (Socket.IO mode)
    */
   private setupStandardizedEventHandlers(): void {
+    const socketIO = this.socket as Socket
     logger.info('🔧 Setting up standardized Socket.IO event handlers...', { url: socketConfig.url })
-    
+
     // Connection status handling
-    this.socket.on('connection_status', (data) => {
+    socketIO.on('connection_status', (data) => {
       logger.debug('Received connection status:', data)
       this.connectionStatus.ready = true
       this.connectionStatus.serverId = data.sid
@@ -241,9 +383,9 @@ class SocketService {
       this.connectionStatus.serverTime = data.server_time
       this.emitLocal('connection_status', data)
     })
-    
+
     // Room acknowledgments
-    this.socket.on('ack:join', (data) => {
+    socketIO.on('ack:join', (data) => {
       logger.debug(`Room join ack: ${data.room} - ${data.success}`)
       if ((data as { success?: boolean; message?: string }).success) {
         this.subscribedRooms.add(data.room)
@@ -251,8 +393,8 @@ class SocketService {
       this.emitLocal('ack:join', data)
       this.resolveRoomOperation('join', data.room, data)
     })
-    
-    this.socket.on('ack:leave', (data) => {
+
+    socketIO.on('ack:leave', (data) => {
       logger.debug(`Room leave ack: ${data.room} - ${data.success}`)
       if ((data as { success?: boolean; message?: string }).success) {
         this.subscribedRooms.delete(data.room)
@@ -282,74 +424,75 @@ class SocketService {
     this.setupStateEventHandler('state:nfc_state')
     
     // Operation acknowledgments
-    this.socket.on('ack:op', (data: OperationAck) => {
+    socketIO.on('ack:op', (data: OperationAck) => {
       logger.debug(`Operation ack: ${data.client_op_id} - ${data.success}`)
       this.resolveOperation(data.client_op_id, data)
       this.emitLocal('ack:op', data)
     })
-    
-    this.socket.on('err:op', (data: OperationAck) => {
+
+    socketIO.on('err:op', (data: OperationAck) => {
       logger.debug(`Operation error: ${data.client_op_id} - ${data.message}`)
       this.rejectOperation(data.client_op_id, new Error((data as { message?: string }).message || 'Operation failed'))
       this.emitLocal('err:op', data)
     })
     
     // Upload events
-    this.socket.on('upload:progress', (data) => {
+    socketIO.on('upload:progress', (data) => {
       this.emitLocal('upload:progress', data)
     })
-    
-    this.socket.on('upload:complete', (data) => {
+
+    socketIO.on('upload:complete', (data) => {
       this.emitLocal('upload:complete', data)
     })
-    
-    this.socket.on('upload:error', (data) => {
+
+    socketIO.on('upload:error', (data) => {
       this.emitLocal('upload:error', data)
     })
-    
+
     // YouTube events
-    this.socket.on('youtube:progress', (data) => {
+    socketIO.on('youtube:progress', (data) => {
       this.emitLocal('youtube:progress', data)
     })
-    
-    this.socket.on('youtube:complete', (data) => {
+
+    socketIO.on('youtube:complete', (data) => {
       this.emitLocal('youtube:complete', data)
     })
-    
-    this.socket.on('youtube:error', (data) => {
+
+    socketIO.on('youtube:error', (data) => {
       this.emitLocal('youtube:error', data)
     })
-    
+
     // NFC events
-    this.socket.on('nfc_status', (data) => {
+    socketIO.on('nfc_status', (data) => {
       this.emitLocal('nfc_status', data)
     })
-    
+
     // Legacy playback_status events removed - only use modern state:* events
-    
-    this.socket.on('nfc_association_state', (data) => {
+
+    socketIO.on('nfc_association_state', (data) => {
       this.emitLocal('nfc_association_state', data)
     })
-    
+
     // Sync events
-    this.socket.on('sync:complete', (data) => {
+    socketIO.on('sync:complete', (data) => {
       logger.debug('Sync complete received')
       this.emitLocal('sync:complete', data)
     })
-    
-    this.socket.on('sync:error', (data) => {
+
+    socketIO.on('sync:error', (data) => {
       logger.error('Sync error received:', data)
       this.emitLocal('sync:error', data)
     })
   }
   
   /**
-   * Setup handler for state events with envelope processing
+   * Setup handler for state events with envelope processing (Socket.IO mode)
    */
   private setupStateEventHandler(eventType: string): void {
+    const socketIO = this.socket as Socket
     logger.debug(`🔧 Setting up handler for: ${eventType}`)
-    
-    this.socket.on(eventType, (rawData) => {
+
+    socketIO.on(eventType, (rawData) => {
       try {
         // Enhanced logging for debugging
         if (eventType.includes('player') || eventType.includes('playlist_created') || eventType === 'state:track_position') {
@@ -498,24 +641,36 @@ class SocketService {
     if (this.roomJoinPromises.has(room)) {
       return this.roomJoinPromises.get(room)
     }
-    
+
+    // Delegate to native WebSocket client if in ESP32 mode
+    if (this.isESP32Mode) {
+      const ws = this.socket as NativeWebSocketClient
+      const promise = ws.joinRoom(room)
+      this.roomJoinPromises.set(room, promise)
+      promise.finally(() => this.roomJoinPromises.delete(room))
+      return promise
+    }
+
+    // Socket.IO mode
+    const socketIO = this.socket as Socket
+
     const promise = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.roomJoinPromises.delete(room)
         reject(new Error(`Join room timeout: ${room}`))
       }, 10000)
-      
+
       const cleanup = () => {
         clearTimeout(timeout)
         this.roomJoinPromises.delete(room)
       }
-      
+
       const successHandler = (data: unknown) => {
         if ((data as { room?: string; success?: boolean; message?: string }).room === room) {
           this.off('ack:join', successHandler)
           this.off('ack:leave', errorHandler)
           cleanup()
-          
+
           if ((data as { success?: boolean; message?: string }).success) {
             resolve()
           } else {
@@ -523,31 +678,31 @@ class SocketService {
           }
         }
       }
-      
+
       const errorHandler = (error: unknown) => {
         this.off('ack:join', successHandler)
         this.off('ack:leave', errorHandler)
         cleanup()
         reject(error)
       }
-      
+
       this.on('ack:join', successHandler)
       this.once('error', errorHandler)
-      
+
       // Emit specific room join events instead of generic pattern
       if (room === 'playlists') {
-        this.socket.emit('join:playlists', {})
+        socketIO.emit('join:playlists', {})
       } else if (room.startsWith('playlist:')) {
         const playlistId = room.replace('playlist:', '')
-        this.socket.emit('join:playlist', { playlist_id: playlistId })
+        socketIO.emit('join:playlist', { playlist_id: playlistId })
       } else if (room === 'nfc') {
-        this.socket.emit('join:nfc', {})
+        socketIO.emit('join:nfc', {})
       } else {
         // Fallback for unknown rooms
-        this.socket.emit(`join:${room}`, {})
+        socketIO.emit(`join:${room}`, {})
       }
     })
-    
+
     this.roomJoinPromises.set(room, promise)
     return promise
   }
@@ -556,11 +711,20 @@ class SocketService {
    * Leave a room
    */
   async leaveRoom(room: string): Promise<void> {
+    // Delegate to native WebSocket client if in ESP32 mode
+    if (this.isESP32Mode) {
+      const ws = this.socket as NativeWebSocketClient
+      return ws.leaveRoom(room)
+    }
+
+    // Socket.IO mode
+    const socketIO = this.socket as Socket
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error(`Leave room timeout: ${room}`))
       }, 10000)
-      
+
       const successHandler = (data: unknown) => {
         if ((data as { room?: string; success?: boolean; message?: string }).room === room) {
           clearTimeout(timeout)
@@ -568,20 +732,20 @@ class SocketService {
           resolve()
         }
       }
-      
+
       this.once('ack:leave', successHandler)
-      
+
       // Emit specific room leave events instead of generic pattern
       if (room === 'playlists') {
-        this.socket.emit('leave:playlists', {})
+        socketIO.emit('leave:playlists', {})
       } else if (room.startsWith('playlist:')) {
         const playlistId = room.replace('playlist:', '')
-        this.socket.emit('leave:playlist', { playlist_id: playlistId })
+        socketIO.emit('leave:playlist', { playlist_id: playlistId })
       } else if (room === 'nfc') {
-        this.socket.emit('leave:nfc', {})
+        socketIO.emit('leave:nfc', {})
       } else {
         // Fallback for unknown rooms
-        this.socket.emit(`leave:${room}`, {})
+        socketIO.emit(`leave:${room}`, {})
       }
     })
   }
@@ -590,14 +754,23 @@ class SocketService {
    * Send operation with acknowledgment tracking
    */
   async sendOperation(event: string, data: any, clientOpId: string): Promise<any> {
+    // Delegate to native WebSocket client if in ESP32 mode
+    if (this.isESP32Mode) {
+      const ws = this.socket as NativeWebSocketClient
+      return ws.sendOperation(event, data, clientOpId)
+    }
+
+    // Socket.IO mode
+    const socketIO = this.socket as Socket
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingOperations.delete(clientOpId)
         reject(new Error(`Operation timeout: ${event}`))
       }, 30000)
-      
+
       this.pendingOperations.set(clientOpId, { resolve, reject, timeout })
-      this.socket.emit(event, data)
+      socketIO.emit(event, data)
     })
   }
   
@@ -605,11 +778,17 @@ class SocketService {
    * Request sync for missed events
    */
   requestSync(lastGlobalSeq?: number, playlistSeqs?: Record<string, number>): void {
-    this.socket.emit('sync:request', {
-      last_global_seq: lastGlobalSeq || this.connectionStatus.lastSeq,
-      last_playlist_seqs: playlistSeqs,
-      requested_rooms: Array.from(this.subscribedRooms)
-    })
+    if (this.isESP32Mode) {
+      const ws = this.socket as NativeWebSocketClient
+      ws.requestSync(lastGlobalSeq, playlistSeqs)
+    } else {
+      const socketIO = this.socket as Socket
+      socketIO.emit('sync:request', {
+        last_global_seq: lastGlobalSeq || this.connectionStatus.lastSeq,
+        last_playlist_seqs: playlistSeqs,
+        requested_rooms: Array.from(this.subscribedRooms)
+      })
+    }
   }
   
   /**
@@ -647,9 +826,15 @@ class SocketService {
   }
   
   emit(event: string, ...args: any[]): void {
-    // Forward to socket.io client for outgoing events
+    // Forward to appropriate client for outgoing events
     if (this.socket && this.isConnected()) {
-      this.socket.emit(event, ...args)
+      if (this.isESP32Mode) {
+        const ws = this.socket as NativeWebSocketClient
+        ws.emit(event, args[0] || {})
+      } else {
+        const socketIO = this.socket as Socket
+        socketIO.emit(event, ...args)
+      }
     } else {
       logger.warn(`Cannot emit ${event}: socket not connected`)
     }
@@ -747,15 +932,23 @@ class SocketService {
     }
 
     logger.info('🔄 Performing post-connection synchronization...')
-    
+
     try {
-      // Emit a custom event to trigger server-side player state broadcast
-      this.socket.emit('client:request_current_state', {
-        timestamp: Date.now(),
-        client_id: this.socket.id,
-        requested_states: ['player', 'track_position']
-      })
-      
+      if (this.isESP32Mode) {
+        const ws = this.socket as NativeWebSocketClient
+        ws.emit('client:request_current_state', {
+          timestamp: Date.now(),
+          requested_states: ['player', 'track_position']
+        })
+      } else {
+        const socketIO = this.socket as Socket
+        socketIO.emit('client:request_current_state', {
+          timestamp: Date.now(),
+          client_id: socketIO.id,
+          requested_states: ['player', 'track_position']
+        })
+      }
+
       logger.info('✅ Post-connection sync request sent')
     } catch (error) {
       logger.error('❌ Error in post-connection sync:', error)
@@ -772,15 +965,22 @@ class SocketService {
     if (this.bufferProcessingTimer) {
       clearTimeout(this.bufferProcessingTimer)
     }
-    
+
     // Clear all pending operations
     this.pendingOperations.forEach(({ timeout, reject }) => {
       clearTimeout(timeout)
       reject(new Error('Socket service destroyed'))
     })
     this.pendingOperations.clear()
-    
-    this.socket.disconnect()
+
+    // Disconnect appropriate client
+    if (this.isESP32Mode) {
+      const ws = this.socket as NativeWebSocketClient
+      ws.destroy()
+    } else {
+      const socketIO = this.socket as Socket
+      socketIO.disconnect()
+    }
   }
 }
 
