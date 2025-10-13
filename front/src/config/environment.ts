@@ -56,8 +56,59 @@ const getApiConfig = (): ApiConfig => {
   }
 }
 
+/**
+ * Detects if the target is an ESP32 device based on URL patterns.
+ * ESP32 typically uses port 80 or direct IP addresses like 10.0.0.x
+ * RPI Backend uses port 5004 or standard web ports (3000, 8080, etc.)
+ */
+const isESP32Target = (baseUrl: string): boolean => {
+  // Check for explicit ESP32 indicator via environment variable
+  if (process.env.VUE_APP_TARGET === 'esp32') {
+    return true
+  }
+  if (process.env.VUE_APP_TARGET === 'rpi') {
+    return false
+  }
+
+  // Auto-detect based on URL patterns
+  const url = baseUrl.toLowerCase()
+
+  // ESP32 indicators:
+  // - Port 80 (default ESP32 web server port)
+  // - Direct IP addresses in 10.0.0.x range (common local network)
+  // - Direct IP addresses in 192.168.x.x range
+  const isPort80 = url.includes(':80/') || url.endsWith(':80')
+  const isLocalIP = /https?:\/\/(10\.0\.0\.|192\.168\.)/.test(url)
+
+  // RPI Backend indicators:
+  // - Port 5004 (RPI Backend default)
+  // - localhost or theopenmusicbox.local hostname
+  const isRPIPort = url.includes(':5004') || url.includes(':3000') || url.includes(':8080')
+  const isRPIHostname = url.includes('localhost') || url.includes('theopenmusicbox.local')
+
+  // If explicitly RPI indicators, return false
+  if (isRPIPort || isRPIHostname) {
+    return false
+  }
+
+  // If ESP32 indicators, return true
+  if (isPort80 || isLocalIP) {
+    return true
+  }
+
+  // Default: assume RPI Backend (safer default for backward compatibility)
+  return false
+}
+
 const createAppConfig = (): AppConfig => {
   const apiConfig = getApiConfig()
+  const targetIsESP32 = isESP32Target(apiConfig.baseUrl)
+
+  // Log detected target for debugging
+  console.log(`[Config] Detected target: ${targetIsESP32 ? 'ESP32' : 'RPI Backend'}`, {
+    baseUrl: apiConfig.baseUrl,
+    socketPath: targetIsESP32 ? '/ws' : '/socket.io/ (default)'
+  })
 
   return {
     api: apiConfig,
@@ -66,7 +117,8 @@ const createAppConfig = (): AppConfig => {
       options: {
         autoConnect: true,
         transports: ['websocket', 'polling'],
-        path: '/ws'  // ESP32 WebSocket path (plain WebSocket with Socket.IO-style events)
+        // Only add custom path for ESP32 (RPI uses default /socket.io/)
+        ...(targetIsESP32 ? { path: '/ws' } : {})
       }
     },
     features: {
