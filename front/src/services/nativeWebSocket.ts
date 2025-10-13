@@ -191,9 +191,9 @@ export class NativeWebSocketClient {
       const eventType = data.success ? 'ack:op' : 'err:op'
       logger.debug(`[NativeWS] Operation ${eventType}: ${data.client_op_id}`)
       this.emitLocal(eventType, data)
-    } else if (data.event === 'pong') {
-      // Ping/pong response
-      logger.debug('[NativeWS] Pong received')
+    } else if (data.event === 'pong' || data.event === 'client_pong') {
+      // Ping/pong response (both formats supported)
+      logger.debug('[NativeWS] Pong received:', data)
     } else {
       // Unknown message type - log for debugging
       logger.warn('[NativeWS] Unknown message type:', data)
