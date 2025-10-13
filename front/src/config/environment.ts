@@ -16,6 +16,7 @@ interface AppConfig {
     options: {
       autoConnect: boolean
       transports: string[]
+      path?: string
     }
   }
   features: {
@@ -57,14 +58,15 @@ const getApiConfig = (): ApiConfig => {
 
 const createAppConfig = (): AppConfig => {
   const apiConfig = getApiConfig()
-  
+
   return {
     api: apiConfig,
     socket: {
       url: apiConfig.baseUrl,
       options: {
         autoConnect: true,
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        path: '/ws'  // ESP32 WebSocket path (plain WebSocket with Socket.IO-style events)
       }
     },
     features: {
