@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Portal - Configuration WiFi</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #e2e8f0;
+}
+
+.container {
+  width: 100%;
+  max-width: 520px;
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #4c5f7a 0%, #3d4d66 100%);
+  padding: 32px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.router-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.header-title h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #fff;
+}
+
+.header-title p {
+  font-size: 15px;
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
+.wifi-status {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+/* Content */
+.content {
+  padding: 28px;
+  background: #2d3748;
+  min-height: 400px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.networks-count {
+  font-size: 15px;
+  color: #94a3b8;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Network List */
+.networks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.networks-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.networks-list::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+.network-item {
+  background: #374151;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.network-item:hover {
+  background: #3f4a5c;
+  transform: translateX(2px);
+}
+
+.network-item.selected {
+  background: #4c5f7a;
+  border-color: #6366f1;
+}
+
+.network-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.signal-icon {
+  font-size: 24px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.network-info h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lock-icon {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.network-details {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.chevron {
+  font-size: 20px;
+  color: #64748b;
+}
+
+/* Connection Form */
+.connection-form {
+  background: #374151;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 20px;
+  display: none;
+}
+
+.connection-form.show {
+  display: block;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.connection-form h3 {
+  font-size: 19px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 14px 48px 14px 16px;
+  background: #2d3748;
+  border: 2px solid #475569;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  border-color: #6366f1;
+}
+
+.form-group input::placeholder {
+  color: #64748b;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Footer */
+.footer {
+  background: #1e293b;
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.security-badge {
+  text-align: center;
+  padding: 12px;
+  background: #1e293b;
+  font-size: 12px;
+  color: #64748b;
+  border-top: 1px solid #334155;
+}
+
+/* Error/Success Messages */
+.message {
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: none;
+}
+
+.message.show {
+  display: block;
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.message.success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="router-icon">📡</div>
+      <div class="header-title">
+        <h1>IoT Portal</h1>
+        <p>Configuration WiFi</p>
+      </div>
+    </div>
+    <div class="wifi-status">📶</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="section-header">
+      <h2>Réseaux disponibles</h2>
+      <span class="networks-count" id="networksCount">Chargement...</span>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Scan des réseaux WiFi...</p>
+    </div>
+
+    <div class="networks-list" id="networksList"></div>
+
+    <!-- Connection Form -->
+    <div class="connection-form" id="connectionForm">
+      <h3>Connexion à <span id="selectedSSID"></span></h3>
+
+      <div class="message" id="message"></div>
+
+      <form id="wifiForm" action="/save_wifi.sh" method="POST">
+        <input type="hidden" name="ssid" id="ssidInput">
+
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <div class="password-input-wrapper">
+            <input type="password" name="password" id="passwordInput" placeholder="Entrez le mot de passe" required>
+            <button type="button" class="toggle-password" onclick="togglePassword()">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Se connecter</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Appareil: IOT-DEVICE-001</span>
+    <span>v2.4.1</span>
+  </div>
+
+  <div class="security-badge">
+    Portail de configuration sécurisé • SSL/TLS activé
+  </div>
+</div>
+
+<script>
+let networks = [];
+let selectedNetwork = null;
+
+// Load networks on page load
+window.addEventListener('DOMContentLoaded', () => {
+  loadNetworks();
+});
+
+async function loadNetworks() {
+  const loading = document.getElementById('loading');
+  const networksList = document.getElementById('networksList');
+  const networksCount = document.getElementById('networksCount');
+
+  loading.style.display = 'block';
+  networksList.innerHTML = '';
+
+  try {
+    const response = await fetch('/scan_networks.sh');
+    networks = await response.json();
+
+    loading.style.display = 'none';
+
+    if (networks.length === 0) {
+      networksList.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b">Aucun réseau trouvé</div>';
+      networksCount.textContent = '0 trouvé';
+      return;
+    }
+
+    networksCount.textContent = networks.length + ' trouvé' + (networks.length > 1 ? 's' : '');
+
+    networks.forEach((network, index) => {
+      const item = createNetworkItem(network, index);
+      networksList.appendChild(item);
+    });
+
+  } catch (error) {
+    loading.style.display = 'none';
+    networksList.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444">Erreur lors du scan</div>';
+    console.error('Scan error:', error);
+  }
+}
+
+function createNetworkItem(network, index) {
+  const div = document.createElement('div');
+  div.className = 'network-item';
+  div.onclick = () => selectNetwork(network, div);
+
+  const signalIcon = getSignalIcon(network.signal);
+  const lockIcon = network.secured ? '<span class="lock-icon">🔒</span>' : '';
+
+  div.innerHTML = `
+    <div class="network-left">
+      <div class="signal-icon">${signalIcon}</div>
+      <div class="network-info">
+        <h3>${escapeHtml(network.ssid)} ${lockIcon}</h3>
+        <div class="network-details">${network.band} • Ch ${network.channel} • ${network.signal}%</div>
+      </div>
+    </div>
+    <div class="chevron">›</div>
+  `;
+
+  return div;
+}
+
+function getSignalIcon(signal) {
+  const colors = {
+    excellent: '#22c55e',  // green
+    good: '#84cc16',       // lime
+    fair: '#eab308',       // yellow
+    poor: '#f97316'        // orange
+  };
+
+  let color, bars;
+  if (signal >= 75) { color = colors.excellent; bars = '📶'; }
+  else if (signal >= 50) { color = colors.good; bars = '📶'; }
+  else if (signal >= 25) { color = colors.fair; bars = '📶'; }
+  else { color = colors.poor; bars = '📶'; }
+
+  return `<span style="color:${color}">${bars}</span>`;
+}
+
+function selectNetwork(network, element) {
+  // Deselect all
+  document.querySelectorAll('.network-item').forEach(item => {
+    item.classList.remove('selected');
+  });
+
+  // Select clicked item
+  element.classList.add('selected');
+  selectedNetwork = network;
+
+  // Show connection form
+  const form = document.getElementById('connectionForm');
+  const selectedSSID = document.getElementById('selectedSSID');
+  const ssidInput = document.getElementById('ssidInput');
+  const passwordInput = document.getElementById('passwordInput');
+
+  selectedSSID.textContent = network.ssid;
+  ssidInput.value = network.ssid;
+  passwordInput.value = '';
+
+  form.classList.add('show');
+
+  // Scroll to form
+  setTimeout(() => {
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+}
+
+function togglePassword() {
+  const input = document.getElementById('passwordInput');
+  const btn = event.target;
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Form submission
+document.getElementById('wifiForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const message = document.getElementById('message');
+  const submitBtn = document.querySelector('.submit-btn');
+  const ssid = document.getElementById('ssidInput').value;
+  const password = document.getElementById('passwordInput').value;
+
+  if (!password) {
+    showMessage('Veuillez entrer le mot de passe', 'error');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Connexion en cours...';
+
+  try {
+    const formData = new URLSearchParams();
+    formData.append('ssid', ssid);
+    formData.append('password', password);
+
+    const response = await fetch('/save_wifi.sh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString()
+    });
+
+    const result = await response.text();
+
+    if (result.includes('Erreur')) {
+      showMessage('Erreur lors de la configuration', 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Se connecter';
+    } else {
+      showMessage('Configuration réussie! Le portail va se fermer...', 'success');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+    }
+
+  } catch (error) {
+    showMessage('Erreur de communication', 'error');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Se connecter';
+    console.error('Submit error:', error);
+  }
+});
+
+function showMessage(text, type) {
+  const message = document.getElementById('message');
+  message.textContent = text;
+  message.className = 'message ' + type + ' show';
+
+  setTimeout(() => {
+    message.classList.remove('show');
+  }, 5000);
+}
+</script>
+
+</body>
+</html>
