@@ -1,17 +1,17 @@
 # Test Coverage Baseline Report
 
-**Date:** 2025-10-23
+**Date:** 2025-10-23 (Updated)
 **Version:** rpi-firmware backend
-**Total Tests:** 1565 passed, 2 skipped
-**Execution Time:** 48.30s
+**Total Tests:** 1589 passed, 2 skipped
+**Execution Time:** 44.30s
 
 ---
 
 ## 📊 Overall Coverage Summary
 
-| Metric | Coverage | Lines |
-|--------|----------|-------|
-| **TOTAL** | **62.61%** | 8690/13879 |
+| Metric | Coverage | Lines | Change |
+|--------|----------|-------|--------|
+| **TOTAL** | **63.45%** | 8806/13879 | +0.84% / +116 lines |
 
 ### ✅ Significant Improvement
 - **Previous baseline (2025-10-20):** ~35% (partial report)
