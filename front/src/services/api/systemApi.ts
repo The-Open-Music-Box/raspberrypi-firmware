@@ -5,7 +5,7 @@
 
 import { apiClient, ApiResponseHandler } from './apiClient'
 import { API_ROUTES } from '../../constants/apiRoutes'
-import { ApiResponse } from '../../types/contracts'
+import { ApiResponse, HealthStatus, SystemInfo } from '../../types/contracts'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
@@ -15,8 +15,8 @@ export const systemApi = {
   /**
    * Get system information
    */
-  async getSystemInfo(): Promise<{ platform: string; python_version?: string; uptime?: number; memory?: any }> {
-    const response = await apiClient.get<ApiResponse<{ platform: string; python_version?: string; uptime?: number; memory?: any }>>(
+  async getSystemInfo(): Promise<SystemInfo> {
+    const response = await apiClient.get<ApiResponse<SystemInfo>>(
       API_ROUTES.SYSTEM_INFO
     )
     return ApiResponseHandler.extractData(response)
@@ -52,8 +52,8 @@ export const systemApi = {
   /**
    * Get system health
    */
-  async getHealth(): Promise<{ status: string; uptime: number }> {
-    const response = await apiClient.get<ApiResponse<{ status: string; uptime: number }>>(
+  async getHealth(): Promise<HealthStatus> {
+    const response = await apiClient.get<ApiResponse<HealthStatus>>(
       API_ROUTES.HEALTH
     )
     return ApiResponseHandler.extractData(response)

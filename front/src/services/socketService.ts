@@ -268,6 +268,8 @@ class SocketService {
     })
 
     // State events - forward all to local handlers
+    // ESP32 sends events with envelope format: {event_type, data, server_seq, timestamp}
+    // Extract data from envelope before emitting to match Socket.IO mode behavior
     const stateEvents = [
       'state:playlists',
       'state:playlists_index_update',
@@ -294,17 +296,18 @@ class SocketService {
     ]
 
     stateEvents.forEach(eventType => {
-      ws.on(eventType, (data: any) => {
+      ws.on(eventType, (envelope: any) => {
         // Update sequence counter
-        if (data.server_seq) {
+        if (envelope.server_seq) {
           this.connectionStatus.lastSeq = Math.max(
             this.connectionStatus.lastSeq,
-            data.server_seq
+            envelope.server_seq
           )
         }
 
-        // Forward to local handlers
-        this.emitLocal(eventType, data)
+        // Forward envelope to local handlers (same as Socket.IO mode)
+        // Handlers expect the full envelope and extract data themselves
+        this.emitLocal(eventType, envelope)
       })
     })
   }

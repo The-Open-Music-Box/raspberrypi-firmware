@@ -508,7 +508,7 @@ async function deletePlaylist() {
     
   } catch (err) {
     logger.error('Failed to delete playlist', { playlistId: playlistToDelete.value, error: err }, 'FilesList')
-    showFeedback('error', t('file.errorDeleting'))
+    showFeedback('error', t('file.errorDeletingPlaylist'))
   } finally {
     showDeleteDialog.value = false
     playlistToDelete.value = null
