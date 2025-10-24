@@ -43,6 +43,12 @@ class DomainBootstrap:
         self._led_manager = led_manager
         self._led_event_handler = led_event_handler
 
+        # Log LED component injection status
+        if led_manager and led_event_handler:
+            logger.info(f"✅ DomainBootstrap created WITH LED components: manager={type(led_manager).__name__}, handler={type(led_event_handler).__name__}")
+        else:
+            logger.warning(f"⚠️ DomainBootstrap created WITHOUT LED components: manager={led_manager}, handler={led_event_handler}")
+
     @handle_errors(operation_name="initialize", component="domain.bootstrap")
     def initialize(self, existing_backend: Any = None) -> None:
         """Initialize the domain-driven architecture.
@@ -87,12 +93,17 @@ class DomainBootstrap:
         # Initialize LED system and show STARTING state
         if self._led_manager and self._led_event_handler:
             try:
+                logger.info("💡 Initializing LED system...")
                 await self._led_manager.initialize()
+                logger.info("💡 LED manager initialized")
                 await self._led_event_handler.initialize()
+                logger.info("💡 LED event handler initialized")
                 await self._led_event_handler.on_system_starting()
-                logger.info("💡 LED system started (STARTING state)")
+                logger.info("💡 LED system started - showing STARTING state (white blinking)")
             except Exception as e:
-                logger.warning(f"⚠️ LED system start failed: {e}")
+                logger.error(f"❌ LED system start failed: {e}", exc_info=True)
+        else:
+            logger.warning("⚠️ LED system NOT available - skipping LED initialization")
 
         if audio_domain_container.is_initialized:
             await audio_domain_container.start()
@@ -102,10 +113,11 @@ class DomainBootstrap:
         # Clear STARTING state and set to IDLE when ready
         if self._led_event_handler:
             try:
+                logger.info("💡 System ready - transitioning LED to IDLE state...")
                 await self._led_event_handler.on_system_ready()
-                logger.info("💡 LED system ready (IDLE state)")
+                logger.info("💡 LED system ready - showing IDLE state (solid white)")
             except Exception as e:
-                logger.warning(f"⚠️ LED ready state failed: {e}")
+                logger.error(f"❌ LED ready state failed: {e}", exc_info=True)
 
         # Note: unified_controller has been moved to application layer
         logger.info("🚀 Domain services started")

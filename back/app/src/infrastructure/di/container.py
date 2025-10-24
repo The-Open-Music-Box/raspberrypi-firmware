@@ -232,13 +232,22 @@ def register_core_infrastructure_services():
     # Register domain bootstrap (singleton instance - create new instance instead of using global)
     def domain_bootstrap_factory():
         from app.src.application.bootstrap import DomainBootstrap
+        import logging
+        logger = logging.getLogger(__name__)
+
         # Inject LED components (with error handling in case they're not available)
         try:
+            logger.info("🔌 Creating LED components for domain bootstrap...")
             led_manager = container.get("led_state_manager")
+            logger.info(f"✅ LED state manager created: {type(led_manager).__name__}")
             led_event_handler = container.get("led_event_handler")
+            logger.info(f"✅ LED event handler created: {type(led_event_handler).__name__}")
+            logger.info("✅ Creating DomainBootstrap with LED components injected")
             return DomainBootstrap(led_manager=led_manager, led_event_handler=led_event_handler)
-        except Exception:
+        except Exception as e:
             # LED system optional - continue without it
+            logger.warning(f"⚠️ LED system initialization failed: {e}", exc_info=True)
+            logger.warning("⚠️ Creating DomainBootstrap WITHOUT LED components")
             return DomainBootstrap()
     container.register_factory("domain_bootstrap", domain_bootstrap_factory, ServiceLifetime.SINGLETON)
 

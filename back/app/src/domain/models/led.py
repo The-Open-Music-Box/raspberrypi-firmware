@@ -249,10 +249,10 @@ DEFAULT_LED_STATE_CONFIGS = {
     LEDState.STARTING: LEDStateConfig(
         state=LEDState.STARTING,
         color=LEDColors.WHITE,
-        animation=LEDAnimation.PULSE,
+        animation=LEDAnimation.BLINK_SLOW,  # White blinking during startup
         priority=LEDPriority.SYSTEM_STARTING.value,
         timeout_seconds=None,  # Cleared by application when ready
-        animation_speed=0.8
+        animation_speed=1.0
     ),
     LEDState.SHUTTING_DOWN: LEDStateConfig(
         state=LEDState.SHUTTING_DOWN,
@@ -264,7 +264,7 @@ DEFAULT_LED_STATE_CONFIGS = {
     ),
     LEDState.IDLE: LEDStateConfig(
         state=LEDState.IDLE,
-        color=LEDColors.DIM_GREEN,
+        color=LEDColors.WHITE,  # Solid white when app is ready
         animation=LEDAnimation.SOLID,
         priority=LEDPriority.IDLE.value,
         timeout_seconds=None  # Permanent

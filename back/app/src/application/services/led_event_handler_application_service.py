@@ -13,7 +13,7 @@ from typing import Optional
 
 from app.src.application.services.led_state_manager_application_service import LEDStateManager
 from app.src.domain.models.led import LEDState
-from app.src.domain.models.playback_state_models import PlaybackState
+from app.src.common.data_models import PlaybackState
 
 logger = logging.getLogger(__name__)
 
@@ -132,20 +132,22 @@ class LEDEventHandler:
     async def on_system_starting(self) -> None:
         """Handle system startup event."""
         try:
+            logger.info("💡 Setting LED state: STARTING (white blinking)")
             await self._led_manager.set_state(LEDState.STARTING)
-            logger.debug("LED updated: System starting")
+            logger.info("✅ LED state set to STARTING")
         except Exception as e:
-            logger.error(f"❌ Error handling system start: {e}")
+            logger.error(f"❌ Error handling system start: {e}", exc_info=True)
 
     async def on_system_ready(self) -> None:
         """Handle system ready event."""
         try:
+            logger.info("💡 Clearing STARTING state and setting IDLE (solid white)")
             # Clear STARTING state and transition to IDLE
             await self._led_manager.clear_state(LEDState.STARTING)
             await self._led_manager.set_state(LEDState.IDLE)
-            logger.debug("LED updated: System ready")
+            logger.info("✅ LED state set to IDLE")
         except Exception as e:
-            logger.error(f"❌ Error handling system ready: {e}")
+            logger.error(f"❌ Error handling system ready: {e}", exc_info=True)
 
     async def on_system_shutting_down(self) -> None:
         """Handle system shutdown event."""
