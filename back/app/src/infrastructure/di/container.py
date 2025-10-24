@@ -206,14 +206,40 @@ def register_core_infrastructure_services():
         ServiceErrorHandlerProtocol,
     )
     from app.src.config.app_config import AppConfig
-    from app.src.domain.bootstrap import DomainBootstrap
 
     # Register configuration
     container.register_factory("config", lambda: AppConfig(), ServiceLifetime.SINGLETON)
 
+    # Register LED infrastructure components
+    def led_controller_factory():
+        from app.src.infrastructure.hardware.leds.led_controller_factory import LEDControllerFactory
+        from app.src.config import config
+        return LEDControllerFactory.create_controller(config.hardware)
+    container.register_factory("led_controller", led_controller_factory, ServiceLifetime.SINGLETON)
+
+    def led_state_manager_factory():
+        from app.src.application.services.led_state_manager_application_service import LEDStateManager
+        led_controller = container.get("led_controller")
+        return LEDStateManager(led_controller)
+    container.register_factory("led_state_manager", led_state_manager_factory, ServiceLifetime.SINGLETON)
+
+    def led_event_handler_factory():
+        from app.src.application.services.led_event_handler_application_service import LEDEventHandler
+        led_manager = container.get("led_state_manager")
+        return LEDEventHandler(led_manager)
+    container.register_factory("led_event_handler", led_event_handler_factory, ServiceLifetime.SINGLETON)
+
     # Register domain bootstrap (singleton instance - create new instance instead of using global)
     def domain_bootstrap_factory():
-        return DomainBootstrap()
+        from app.src.application.bootstrap import DomainBootstrap
+        # Inject LED components (with error handling in case they're not available)
+        try:
+            led_manager = container.get("led_state_manager")
+            led_event_handler = container.get("led_event_handler")
+            return DomainBootstrap(led_manager=led_manager, led_event_handler=led_event_handler)
+        except Exception:
+            # LED system optional - continue without it
+            return DomainBootstrap()
     container.register_factory("domain_bootstrap", domain_bootstrap_factory, ServiceLifetime.SINGLETON)
 
     # Register audio domain container (use existing domain-internal instance)
