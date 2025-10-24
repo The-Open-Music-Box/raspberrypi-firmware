@@ -20,11 +20,17 @@ class LEDState(Enum):
     Each state has an associated default color, animation, and priority.
     """
     # Critical states
+    ERROR_CRASH = "error_crash"                # Solid red - Priority 99 (app crash)
     ERROR_CRITICAL = "error_critical"          # Red blinking - Priority 100
+    ERROR_BOOT_HARDWARE = "error_boot_hardware"  # Slow blink red - Priority 98 (boot error)
     ERROR_PLAYBACK = "error_playback"          # Orange blinking - Priority 90
 
-    # Temporary interactive states
+    # Temporary interactive states - NFC Association
+    NFC_ASSOCIATION_MODE = "nfc_association_mode"  # Slow blink blue - Priority 85
+    NFC_TAG_DETECTED = "nfc_tag_detected"      # 2x rapid blink blue - Priority 82
     NFC_SCANNING = "nfc_scanning"              # Blue pulsing - Priority 80
+    NFC_TAG_UNASSOCIATED = "nfc_tag_unassociated"  # Double blink orange - Priority 78
+    NFC_ASSOCIATION_SUCCESS = "nfc_association_success"  # 2x rapid blink green - Priority 77
     NFC_SUCCESS = "nfc_success"                # Green flash - Priority 75
     NFC_ERROR = "nfc_error"                    # Red flash - Priority 75
 
@@ -49,6 +55,7 @@ class LEDAnimation(Enum):
     BLINK_SLOW = "blink_slow"       # 1Hz blinking
     BLINK_FAST = "blink_fast"       # 3Hz blinking
     FLASH = "flash"                 # Single quick flash then off
+    DOUBLE_BLINK = "double_blink"   # Two quick blinks, 100ms each, 100ms gap, 600ms pause
 
 
 class LEDPriority(Enum):
@@ -57,17 +64,23 @@ class LEDPriority(Enum):
 
     Higher priority states override lower priority states.
     """
-    CRITICAL = 100          # System critical errors
-    SHUTDOWN = 95           # System shutdown
-    ERROR = 90              # Playback errors
-    NFC_INTERACTION = 80    # NFC scanning/interaction
-    NFC_RESULT = 75         # NFC scan results
-    PLAYBACK_ACTIVE = 50    # Playing state
-    PLAYBACK_INACTIVE = 40  # Paused state
-    PLAYBACK_STOPPED = 35   # Stopped state
-    SYSTEM_STARTING = 30    # Startup
-    IDLE = 10               # Idle/ready
-    OFF = 0                 # Disabled
+    CRITICAL = 100                  # System critical errors
+    ERROR_CRASH = 99                # Application crash
+    ERROR_BOOT = 98                 # Boot errors (missing hardware)
+    SHUTDOWN = 95                   # System shutdown
+    ERROR = 90                      # Playback errors
+    NFC_ASSOCIATION_MODE = 85       # NFC association mode active
+    NFC_TAG_DETECTED = 82           # NFC tag detected during association
+    NFC_INTERACTION = 80            # NFC scanning/interaction
+    NFC_TAG_UNASSOCIATED = 78       # Unassociated NFC tag warning
+    NFC_ASSOCIATION_SUCCESS = 77    # NFC association success
+    NFC_RESULT = 75                 # NFC scan results
+    PLAYBACK_ACTIVE = 50            # Playing state
+    PLAYBACK_INACTIVE = 40          # Paused state
+    PLAYBACK_STOPPED = 35           # Stopped state
+    SYSTEM_STARTING = 30            # Startup
+    IDLE = 10                       # Idle/ready
+    OFF = 0                         # Disabled
 
 
 @dataclass(frozen=True)
@@ -189,12 +202,27 @@ class LEDStateConfig:
 
 # Default state configurations
 DEFAULT_LED_STATE_CONFIGS = {
+    # Critical error states
     LEDState.ERROR_CRITICAL: LEDStateConfig(
         state=LEDState.ERROR_CRITICAL,
         color=LEDColors.RED,
         animation=LEDAnimation.BLINK_FAST,
         priority=LEDPriority.CRITICAL.value,
         timeout_seconds=None  # Permanent until cleared
+    ),
+    LEDState.ERROR_CRASH: LEDStateConfig(
+        state=LEDState.ERROR_CRASH,
+        color=LEDColors.RED,
+        animation=LEDAnimation.SOLID,
+        priority=LEDPriority.ERROR_CRASH.value,
+        timeout_seconds=None  # Permanent - requires manual intervention
+    ),
+    LEDState.ERROR_BOOT_HARDWARE: LEDStateConfig(
+        state=LEDState.ERROR_BOOT_HARDWARE,
+        color=LEDColors.RED,
+        animation=LEDAnimation.BLINK_SLOW,
+        priority=LEDPriority.ERROR_BOOT.value,
+        timeout_seconds=None  # Permanent until hardware issue resolved
     ),
     LEDState.ERROR_PLAYBACK: LEDStateConfig(
         state=LEDState.ERROR_PLAYBACK,
@@ -203,12 +231,45 @@ DEFAULT_LED_STATE_CONFIGS = {
         priority=LEDPriority.ERROR.value,
         timeout_seconds=5.0  # Clear after 5 seconds
     ),
+    # NFC association states
+    LEDState.NFC_ASSOCIATION_MODE: LEDStateConfig(
+        state=LEDState.NFC_ASSOCIATION_MODE,
+        color=LEDColors.BLUE,
+        animation=LEDAnimation.BLINK_SLOW,
+        priority=LEDPriority.NFC_ASSOCIATION_MODE.value,
+        timeout_seconds=None,  # Permanent until association mode exits
+        animation_speed=1.0
+    ),
+    LEDState.NFC_TAG_DETECTED: LEDStateConfig(
+        state=LEDState.NFC_TAG_DETECTED,
+        color=LEDColors.BLUE,
+        animation=LEDAnimation.DOUBLE_BLINK,
+        priority=LEDPriority.NFC_TAG_DETECTED.value,
+        timeout_seconds=1.0,  # Clear after double blink sequence
+        animation_speed=1.5
+    ),
     LEDState.NFC_SCANNING: LEDStateConfig(
         state=LEDState.NFC_SCANNING,
         color=LEDColors.BLUE,
         animation=LEDAnimation.PULSE,
         priority=LEDPriority.NFC_INTERACTION.value,
         timeout_seconds=3.0,  # Clear after 3 seconds
+        animation_speed=1.5
+    ),
+    LEDState.NFC_TAG_UNASSOCIATED: LEDStateConfig(
+        state=LEDState.NFC_TAG_UNASSOCIATED,
+        color=LEDColors.ORANGE,
+        animation=LEDAnimation.DOUBLE_BLINK,
+        priority=LEDPriority.NFC_TAG_UNASSOCIATED.value,
+        timeout_seconds=1.5,  # Clear after warning shown
+        animation_speed=1.5
+    ),
+    LEDState.NFC_ASSOCIATION_SUCCESS: LEDStateConfig(
+        state=LEDState.NFC_ASSOCIATION_SUCCESS,
+        color=LEDColors.GREEN,
+        animation=LEDAnimation.DOUBLE_BLINK,
+        priority=LEDPriority.NFC_ASSOCIATION_SUCCESS.value,
+        timeout_seconds=1.0,  # Clear after success indication
         animation_speed=1.5
     ),
     LEDState.NFC_SUCCESS: LEDStateConfig(

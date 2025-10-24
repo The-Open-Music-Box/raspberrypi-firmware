@@ -127,6 +127,38 @@ class LEDEventHandler:
         except Exception as e:
             logger.error(f"❌ Error handling NFC scan error: {e}")
 
+    async def on_nfc_tag_unassociated(self) -> None:
+        """Handle unassociated NFC tag event (warning)."""
+        try:
+            await self._led_manager.set_state(LEDState.NFC_TAG_UNASSOCIATED)
+            logger.debug("LED updated: NFC tag unassociated (double blink orange)")
+        except Exception as e:
+            logger.error(f"❌ Error handling NFC tag unassociated: {e}")
+
+    async def on_nfc_association_mode_started(self) -> None:
+        """Handle NFC association mode started event."""
+        try:
+            await self._led_manager.set_state(LEDState.NFC_ASSOCIATION_MODE)
+            logger.debug("LED updated: NFC association mode started (slow blink blue)")
+        except Exception as e:
+            logger.error(f"❌ Error handling NFC association mode start: {e}")
+
+    async def on_nfc_tag_detected(self) -> None:
+        """Handle NFC tag detected during association event."""
+        try:
+            await self._led_manager.set_state(LEDState.NFC_TAG_DETECTED)
+            logger.debug("LED updated: NFC tag detected (2x rapid blink blue)")
+        except Exception as e:
+            logger.error(f"❌ Error handling NFC tag detected: {e}")
+
+    async def on_nfc_association_success(self) -> None:
+        """Handle NFC association success event."""
+        try:
+            await self._led_manager.set_state(LEDState.NFC_ASSOCIATION_SUCCESS)
+            logger.debug("LED updated: NFC association success (2x rapid blink green)")
+        except Exception as e:
+            logger.error(f"❌ Error handling NFC association success: {e}")
+
     # System event handlers
 
     async def on_system_starting(self) -> None:
@@ -184,6 +216,32 @@ class LEDEventHandler:
             logger.error(f"LED updated: Critical error - {error_message}")
         except Exception as e:
             logger.error(f"❌ Error handling critical error: {e}")
+
+    async def on_boot_error(self, error_message: str) -> None:
+        """
+        Handle boot hardware error event (audio card or NFC reader missing).
+
+        Args:
+            error_message: Error description
+        """
+        try:
+            await self._led_manager.set_state(LEDState.ERROR_BOOT_HARDWARE)
+            logger.error(f"LED updated: Boot hardware error - {error_message}")
+        except Exception as e:
+            logger.error(f"❌ Error handling boot error: {e}")
+
+    async def on_crash_error(self, error_message: str) -> None:
+        """
+        Handle application crash error event.
+
+        Args:
+            error_message: Error description
+        """
+        try:
+            await self._led_manager.set_state(LEDState.ERROR_CRASH)
+            logger.error(f"LED updated: Application crash - {error_message}")
+        except Exception as e:
+            logger.error(f"❌ Error handling crash error: {e}")
 
     async def on_error_cleared(self) -> None:
         """Handle error cleared event."""
