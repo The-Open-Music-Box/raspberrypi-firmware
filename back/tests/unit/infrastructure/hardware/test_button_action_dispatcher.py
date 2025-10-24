@@ -6,7 +6,7 @@
 
 import pytest
 from unittest.mock import Mock, AsyncMock
-from app.src.infrastructure.hardware.controls.button_action_dispatcher import ButtonActionDispatcher
+from app.src.application.services.button_action_application_service import ButtonActionDispatcher
 from app.src.config.button_actions_config import ButtonActionConfig
 
 

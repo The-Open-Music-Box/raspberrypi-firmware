@@ -18,7 +18,7 @@ from app.src.domain.protocols.physical_controls_protocol import (
     PhysicalControlEvent,
 )
 from app.src.infrastructure.hardware.controls.controls_factory import PhysicalControlsFactory
-from app.src.infrastructure.hardware.controls.button_action_dispatcher import ButtonActionDispatcher
+from app.src.application.services.button_action_application_service import ButtonActionDispatcher
 from app.src.config.hardware_config import HardwareConfig
 from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
 from app.src.monitoring import get_logger

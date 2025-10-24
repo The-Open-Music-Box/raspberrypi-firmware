@@ -16,11 +16,10 @@ This follows the Command Pattern:
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 import logging
 
-if TYPE_CHECKING:
-    from app.src.application.controllers.playback_coordinator_controller import PlaybackCoordinator
+from app.src.domain.protocols.playback_coordinator_protocol import PlaybackCoordinatorProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ class ButtonAction(ABC):
         pass
 
     @abstractmethod
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         """
         Execute the action.
 
@@ -63,7 +62,7 @@ class PlayAction(ButtonAction):
     def name(self) -> str:
         return "play"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         return coordinator.play()
 
@@ -75,7 +74,7 @@ class PauseAction(ButtonAction):
     def name(self) -> str:
         return "pause"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         return coordinator.pause()
 
@@ -87,7 +86,7 @@ class PlayPauseAction(ButtonAction):
     def name(self) -> str:
         return "play_pause"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         return coordinator.toggle_pause()
 
@@ -99,7 +98,7 @@ class StopAction(ButtonAction):
     def name(self) -> str:
         return "stop"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         return coordinator.stop()
 
@@ -111,7 +110,7 @@ class NextTrackAction(ButtonAction):
     def name(self) -> str:
         return "next_track"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         return coordinator.next_track()
 
@@ -123,7 +122,7 @@ class PreviousTrackAction(ButtonAction):
     def name(self) -> str:
         return "previous_track"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         return coordinator.previous_track()
 
@@ -137,7 +136,7 @@ class VolumeUpAction(ButtonAction):
     def name(self) -> str:
         return "volume_up"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         current_volume = coordinator.get_volume()
         new_volume = min(100, current_volume + self.VOLUME_STEP)
@@ -161,7 +160,7 @@ class VolumeDownAction(ButtonAction):
     def name(self) -> str:
         return "volume_down"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
         current_volume = coordinator.get_volume()
         new_volume = max(0, current_volume - self.VOLUME_STEP)
@@ -183,7 +182,7 @@ class PrintDebugAction(ButtonAction):
     def name(self) -> str:
         return "print_debug"
 
-    async def execute(self, coordinator: 'PlaybackCoordinator') -> bool:
+    async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
         logger.info(f"🎮 Executing action: {self.name}")
 
         try:

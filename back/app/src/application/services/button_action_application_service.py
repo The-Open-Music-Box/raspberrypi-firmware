@@ -3,14 +3,14 @@
 # See the LICENSE file for details.
 
 """
-Button Action Dispatcher (Infrastructure Layer).
+Button Action Dispatcher (Application Layer).
 
 Dispatches button press events to configured actions.
 This is the Invoker in the Command Pattern.
 """
 
 import asyncio
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional
 import logging
 
 from app.src.domain.actions.button_actions import (
@@ -25,10 +25,8 @@ from app.src.domain.actions.button_actions import (
     StopAction,
     PrintDebugAction,
 )
+from app.src.domain.protocols.playback_coordinator_protocol import PlaybackCoordinatorProtocol
 from app.src.config.button_actions_config import ButtonActionConfig
-
-if TYPE_CHECKING:
-    from app.src.application.controllers.playback_coordinator_controller import PlaybackCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +41,7 @@ class ButtonActionDispatcher:
     3. Executes actions when buttons are pressed
     """
 
-    def __init__(self, configs: List[ButtonActionConfig], coordinator: 'PlaybackCoordinator'):
+    def __init__(self, configs: List[ButtonActionConfig], coordinator: PlaybackCoordinatorProtocol):
         """
         Initialize the button action dispatcher.
 
