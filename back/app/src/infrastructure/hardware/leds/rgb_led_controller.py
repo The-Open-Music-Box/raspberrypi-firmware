@@ -156,8 +156,11 @@ class RGBLEDController(IndicatorLightsProtocol):
                 # Stop any running animation
                 self.stop_animation()
 
-                # Turn off LED
-                await self.turn_off()
+                # Turn off LED directly (don't use await inside lock)
+                if self._red_led:
+                    self._red_led.value = 0
+                    self._green_led.value = 0
+                    self._blue_led.value = 0
 
                 # Close GPIO devices
                 if GPIO_AVAILABLE and self._red_led:
