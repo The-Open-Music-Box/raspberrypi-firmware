@@ -8,7 +8,7 @@ Mock Physical Controls Implementation.
 Mock implementation for testing and development without real hardware.
 """
 
-from typing import Callable, Dict, Any
+from typing import Callable, Dict, Any, List, Optional
 import asyncio
 import logging
 
@@ -16,19 +16,22 @@ from app.src.domain.protocols.physical_controls_protocol import (
     PhysicalControlsProtocol,
     PhysicalControlEvent,
 )
+from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
 logger = logging.getLogger(__name__)
 
 
 class MockPhysicalControls(PhysicalControlsProtocol):
     """Mock implementation of physical controls for testing."""
 
-    def __init__(self, hardware_config: Any):
+    def __init__(self, hardware_config: Any, button_configs: Optional[List[ButtonActionConfig]] = None):
         """Initialize mock physical controls.
 
         Args:
             hardware_config: Hardware configuration (for compatibility)
+            button_configs: Optional button configurations (uses DEFAULT_BUTTON_CONFIGS if None)
         """
         self.config = hardware_config
+        self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
         self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
 

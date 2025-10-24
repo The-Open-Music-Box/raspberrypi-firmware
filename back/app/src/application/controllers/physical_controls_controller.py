@@ -10,7 +10,7 @@ hardware controls and the audio controller.
 """
 
 
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from app.src.application.controllers.audio_controller import AudioController
 from app.src.domain.protocols.physical_controls_protocol import (
@@ -18,7 +18,9 @@ from app.src.domain.protocols.physical_controls_protocol import (
     PhysicalControlEvent,
 )
 from app.src.infrastructure.hardware.controls.controls_factory import PhysicalControlsFactory
+from app.src.infrastructure.hardware.controls.button_action_dispatcher import ButtonActionDispatcher
 from app.src.config.hardware_config import HardwareConfig
+from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
 
@@ -32,12 +34,18 @@ class PhysicalControlsManager:
     control devices. Coordinates between hardware events and audio control.
     """
 
-    def __init__(self, audio_controller: Optional[Union[AudioController, 'PlaybackCoordinator']] = None, hardware_config: Optional[HardwareConfig] = None):
-        """Initialize PhysicalControlsManager with real GPIO integration.
+    def __init__(
+        self,
+        audio_controller: Optional[Union[AudioController, 'PlaybackCoordinator']] = None,
+        hardware_config: Optional[HardwareConfig] = None,
+        button_configs: Optional[List[ButtonActionConfig]] = None
+    ):
+        """Initialize PhysicalControlsManager with real GPIO integration and configurable buttons.
 
         Args:
             audio_controller: AudioController or PlaybackCoordinator instance for handling audio operations
             hardware_config: Hardware configuration for GPIO pins
+            button_configs: Optional button configurations (uses DEFAULT_BUTTON_CONFIGS if None)
         """
         # Use domain architecture directly if not provided
         if audio_controller is None:
@@ -78,13 +86,26 @@ class PhysicalControlsManager:
             hardware_config = config.hardware_config
 
         self.hardware_config = hardware_config
+        self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
         self._physical_controls: Optional[PhysicalControlsProtocol] = None
+        self._button_dispatcher: Optional[ButtonActionDispatcher] = None
 
-        # Create physical controls implementation
-        self._physical_controls = PhysicalControlsFactory.create_controls(self.hardware_config)
+        # Create physical controls implementation with button configs
+        self._physical_controls = PhysicalControlsFactory.create_controls(
+            self.hardware_config,
+            self._button_configs
+        )
 
-        logger.info("PhysicalControlsManager initialized with GPIO integration")
+        # Create button action dispatcher (only for PlaybackCoordinator)
+        if self._controller_type == "PlaybackCoordinator":
+            self._button_dispatcher = ButtonActionDispatcher(
+                self._button_configs,
+                self.audio_controller
+            )
+            logger.info("✅ ButtonActionDispatcher created with configurable button support")
+
+        logger.info("PhysicalControlsManager initialized with GPIO integration and configurable buttons")
 
     @handle_errors("initialize")
     async def initialize(self) -> bool:
@@ -124,23 +145,17 @@ class PhysicalControlsManager:
         if not self._physical_controls:
             return
 
-        # Setup button event handlers
-        self._physical_controls.set_event_handler(
-            PhysicalControlEvent.BUTTON_NEXT_TRACK,
-            self.handle_next_track
-        )
+        # Setup configurable button event handlers (BUTTON_0 through BUTTON_4)
+        if self._button_dispatcher:
+            for button_id in range(5):  # Buttons 0-4
+                event = getattr(PhysicalControlEvent, f"BUTTON_{button_id}")
+                self._physical_controls.set_event_handler(
+                    event,
+                    lambda bid=button_id: self._handle_configurable_button(bid)
+                )
+            logger.info("✅ Configurable button handlers registered (BUTTON_0 through BUTTON_4)")
 
-        self._physical_controls.set_event_handler(
-            PhysicalControlEvent.BUTTON_PREVIOUS_TRACK,
-            self.handle_previous_track
-        )
-
-        self._physical_controls.set_event_handler(
-            PhysicalControlEvent.BUTTON_PLAY_PAUSE,
-            self.handle_play_pause
-        )
-
-        # Setup encoder event handlers
+        # Setup encoder event handlers (still use direct handlers)
         self._physical_controls.set_event_handler(
             PhysicalControlEvent.ENCODER_VOLUME_UP,
             lambda: self.handle_volume_change("up")
@@ -173,6 +188,19 @@ class PhysicalControlsManager:
             True if controls are initialized and ready, False otherwise
         """
         return self._is_initialized
+
+    def _handle_configurable_button(self, button_id: int) -> None:
+        """Handle configurable button press by dispatching to the configured action.
+
+        Args:
+            button_id: ID of the button that was pressed (0-4)
+        """
+        if not self._button_dispatcher:
+            logger.warning(f"⚠️ Button {button_id} pressed but no dispatcher available")
+            return
+
+        # Dispatch button press to configured action (sync wrapper)
+        self._button_dispatcher.dispatch_sync(button_id)
 
     @handle_errors("handle_play_pause")
     def handle_play_pause(self) -> None:
@@ -305,11 +333,16 @@ class PhysicalControlsManager:
             "controller_type": self._controller_type,
             "domain_architecture": True,
             "gpio_integration": True,
+            "configurable_buttons_enabled": self._button_dispatcher is not None,
         }
 
         # Add physical controls status if available
         if self._physical_controls:
             base_status.update(self._physical_controls.get_status())
+
+        # Add dispatcher status if available
+        if self._button_dispatcher:
+            base_status["button_dispatcher"] = self._button_dispatcher.get_status()
 
         return base_status
 

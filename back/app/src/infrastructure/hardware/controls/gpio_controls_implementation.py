@@ -9,7 +9,7 @@ Real hardware implementation using gpiozero for buttons and rotary encoder.
 """
 
 import os
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, List
 from datetime import datetime
 import asyncio
 from threading import Lock
@@ -23,6 +23,7 @@ from app.src.domain.events.physical_control_events import (
     EncoderRotatedEvent,
     PhysicalControlErrorEvent,
 )
+from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
 from typing import Any
 import logging
 
@@ -87,15 +88,17 @@ else:
 
 
 class GPIOPhysicalControls(PhysicalControlsProtocol):
-    """GPIO-based implementation of physical controls."""
+    """GPIO-based implementation of physical controls with configurable buttons."""
 
-    def __init__(self, hardware_config: Any):
+    def __init__(self, hardware_config: Any, button_configs: Optional[List[ButtonActionConfig]] = None):
         """Initialize GPIO physical controls.
 
         Args:
             hardware_config: Hardware configuration with pin assignments
+            button_configs: Optional list of button configurations (uses DEFAULT_BUTTON_CONFIGS if None)
         """
         self.config = hardware_config
+        self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
         self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
         self._devices = {}
@@ -125,9 +128,9 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 # Count successful initializations
                 initial_device_count = len(self._devices)
 
-                # Initialize buttons (don't fail if some buttons fail)
+                # Initialize configurable buttons (don't fail if some buttons fail)
                 try:
-                    self._init_buttons()
+                    self._init_configurable_buttons()
                 except Exception as e:
                     logger.warning(f"⚠️ Button initialization had errors: {e}")
 
@@ -155,8 +158,8 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
             await self._emit_error_event(f"Initialization failed: {e}", "initialization", "gpio_controls")
             return False
 
-    def _init_buttons(self) -> None:
-        """Initialize button controls."""
+    def _init_configurable_buttons(self) -> None:
+        """Initialize configurable buttons based on button_configs."""
         if not GPIO_AVAILABLE:
             return
 
@@ -166,30 +169,35 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
             GPIO_Direct.setmode(GPIO_Direct.BCM)
             GPIO_Direct.setwarnings(False)
 
-            # Clean up the specific pins we'll use
-            pins_to_use = [
-                self.config.gpio_next_track_button,
-                self.config.gpio_previous_track_button,
-                self.config.gpio_volume_encoder_sw
-            ]
+            # Clean up the specific pins we'll use from button configs
+            pins_to_use = [config.gpio_pin for config in self._button_configs if config.enabled]
             for pin in pins_to_use:
                 try:
                     GPIO_Direct.cleanup(pin)
                 except:
                     pass  # Pin might not have been initialized
 
-            logger.debug("GPIO pins cleaned before initialization")
+            logger.debug(f"GPIO pins cleaned before initialization: {pins_to_use}")
         except Exception as e:
             logger.debug(f"GPIO cleanup attempt: {e}")
 
-        # Try to initialize buttons with error recovery
-        buttons_config = [
-            ('next_button', self.config.gpio_next_track_button, self._on_next_button_pressed, "Next"),
-            ('previous_button', self.config.gpio_previous_track_button, self._on_previous_button_pressed, "Previous"),
-            ('play_pause_button', self.config.gpio_volume_encoder_sw, self._on_play_pause_button_pressed, "Play/Pause")
-        ]
+        # Initialize each configured button
+        for config in self._button_configs:
+            if not config.enabled:
+                logger.debug(f"Skipping disabled button {config.button_id}")
+                continue
 
-        for device_name, pin, handler, description in buttons_config:
+            device_name = f"button_{config.button_id}"
+            pin = config.gpio_pin
+            description = config.description or f"Button {config.button_id}"
+
+            # Create handler that will trigger the appropriate event
+            def make_handler(button_id):
+                """Factory function to create button handler with proper closure."""
+                def handler():
+                    self._on_button_pressed(button_id)
+                return handler
+
             try:
                 # Try with pull_up=True (most common for buttons)
                 self._devices[device_name] = Button(
@@ -198,8 +206,11 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                     bounce_time=self.config.button_debounce_time,
                     hold_time=self.config.button_hold_time
                 )
-                self._devices[device_name].when_pressed = handler
-                logger.info(f"✅ {description} button initialized on GPIO {pin}")
+                self._devices[device_name].when_pressed = make_handler(config.button_id)
+                logger.info(
+                    f"✅ {description} initialized on GPIO {pin} "
+                    f"(button_id={config.button_id}, action={config.action_name})"
+                )
 
             except Exception as e:
                 logger.warning(f"⚠️ Failed to init {description} on GPIO {pin} with pull_up: {e}")
@@ -211,11 +222,11 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                         pull_up=False,
                         bounce_time=self.config.button_debounce_time
                     )
-                    self._devices[device_name].when_pressed = handler
-                    logger.info(f"✅ {description} button initialized on GPIO {pin} (no pull_up)")
+                    self._devices[device_name].when_pressed = make_handler(config.button_id)
+                    logger.info(f"✅ {description} initialized on GPIO {pin} (no pull_up)")
 
                 except Exception as e2:
-                    logger.error(f"❌ Failed to init {description} button on GPIO {pin}: {e2}")
+                    logger.error(f"❌ Failed to init {description} on GPIO {pin}: {e2}")
                     # Continue with other buttons even if one fails
 
     def _init_encoder(self) -> None:
@@ -256,23 +267,33 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
             logger.info("Volume control via encoder will not be available")
             # Don't raise - allow system to work without encoder
 
-    def _on_next_button_pressed(self) -> None:
-        """Handle next track button press."""
-        logger.info("🔘 Next track button pressed")
-        self._emit_button_event("next", self.config.gpio_next_track_button)
-        self._trigger_event(PhysicalControlEvent.BUTTON_NEXT_TRACK)
+    def _on_button_pressed(self, button_id: int) -> None:
+        """Handle generic button press for configurable buttons.
 
-    def _on_previous_button_pressed(self) -> None:
-        """Handle previous track button press."""
-        logger.info("🔘 Previous track button pressed")
-        self._emit_button_event("previous", self.config.gpio_previous_track_button)
-        self._trigger_event(PhysicalControlEvent.BUTTON_PREVIOUS_TRACK)
+        Args:
+            button_id: ID of the button that was pressed (0-4)
+        """
+        logger.info(f"🔘 Button {button_id} pressed")
 
-    def _on_play_pause_button_pressed(self) -> None:
-        """Handle play/pause button press."""
-        logger.info("🔘 Play/pause button pressed")
-        self._emit_button_event("play_pause", self.config.gpio_volume_encoder_sw)
-        self._trigger_event(PhysicalControlEvent.BUTTON_PLAY_PAUSE)
+        # Find the button config to get GPIO pin
+        config = next((c for c in self._button_configs if c.button_id == button_id), None)
+        if config:
+            self._emit_button_event(f"button_{button_id}", config.gpio_pin)
+
+        # Trigger the corresponding generic button event
+        event_map = {
+            0: PhysicalControlEvent.BUTTON_0,
+            1: PhysicalControlEvent.BUTTON_1,
+            2: PhysicalControlEvent.BUTTON_2,
+            3: PhysicalControlEvent.BUTTON_3,
+            4: PhysicalControlEvent.BUTTON_4,
+        }
+
+        event = event_map.get(button_id)
+        if event:
+            self._trigger_event(event)
+        else:
+            logger.warning(f"⚠️ No event mapping for button {button_id}")
 
     def _on_volume_up(self) -> None:
         """Handle volume encoder rotation clockwise (volume up)."""
@@ -365,16 +386,24 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
 
     def get_status(self) -> dict:
         """Get current status of GPIO controls."""
+        # Build button configuration info
+        button_info = {}
+        for config in self._button_configs:
+            if config.enabled:
+                button_info[f"button_{config.button_id}"] = {
+                    "gpio_pin": config.gpio_pin,
+                    "action": config.action_name,
+                    "description": config.description,
+                }
+
         return {
             "initialized": self._is_initialized,
             "mock_mode": not GPIO_AVAILABLE,
             "devices_count": len(self._devices),
             "event_handlers_count": len(self._event_handlers),
             "gpio_available": GPIO_AVAILABLE,
-            "pin_assignments": {
-                "next_button": self.config.gpio_next_track_button,
-                "previous_button": self.config.gpio_previous_track_button,
-                "play_pause_button": self.config.gpio_volume_encoder_sw,
+            "configurable_buttons": button_info,
+            "encoder": {
                 "volume_encoder_clk": self.config.gpio_volume_encoder_clk,
                 "volume_encoder_dt": self.config.gpio_volume_encoder_dt,
             } if self._is_initialized else {}
