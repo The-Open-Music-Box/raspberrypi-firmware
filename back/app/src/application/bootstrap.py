@@ -164,7 +164,7 @@ class DomainBootstrap:
         return self._is_initialized
 
     @property
-    def led_event_handler(self) -> Optional[LEDEventHandler]:
+    def led_event_handler(self) -> Optional[Any]:
         """Get LED event handler for application use."""
         return self._led_event_handler
 
