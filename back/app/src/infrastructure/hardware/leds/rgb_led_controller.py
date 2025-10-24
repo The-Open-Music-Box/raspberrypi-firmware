@@ -259,6 +259,8 @@ class RGBLEDController(IndicatorLightsProtocol):
                 self._animate_blink(color, 3.0, speed)  # 3Hz
             elif animation == LEDAnimation.FLASH:
                 self._animate_flash(color, speed)
+            elif animation == LEDAnimation.DOUBLE_BLINK:
+                self._animate_double_blink(color, speed)
 
         except Exception as e:
             logger.error(f"❌ Error in animation thread: {e}")
@@ -329,6 +331,59 @@ class RGBLEDController(IndicatorLightsProtocol):
             self._red_led.value = 0
             self._green_led.value = 0
             self._blue_led.value = 0
+
+    def _animate_double_blink(self, color: LEDColor, speed: float):
+        """
+        Double blink effect: two quick blinks then pause.
+
+        Pattern: ON (100ms) → OFF (100ms) → ON (100ms) → OFF (100ms) → PAUSE (600ms)
+        Total cycle: 1000ms = 1 second
+        """
+        # Adjust timings by speed multiplier
+        blink_duration = 0.1 / speed  # 100ms blink
+        pause_duration = 0.6 / speed  # 600ms pause
+
+        while not self._animation_stop_event.is_set():
+            # First blink
+            # Turn on
+            if GPIO_AVAILABLE:
+                scaled = color.scaled(self._brightness)
+                self._red_led.value = scaled.red / 255.0
+                self._green_led.value = scaled.green / 255.0
+                self._blue_led.value = scaled.blue / 255.0
+
+            if self._animation_stop_event.wait(blink_duration):
+                return
+
+            # Turn off
+            if GPIO_AVAILABLE:
+                self._red_led.value = 0
+                self._green_led.value = 0
+                self._blue_led.value = 0
+
+            if self._animation_stop_event.wait(blink_duration):
+                return
+
+            # Second blink
+            # Turn on
+            if GPIO_AVAILABLE:
+                scaled = color.scaled(self._brightness)
+                self._red_led.value = scaled.red / 255.0
+                self._green_led.value = scaled.green / 255.0
+                self._blue_led.value = scaled.blue / 255.0
+
+            if self._animation_stop_event.wait(blink_duration):
+                return
+
+            # Turn off
+            if GPIO_AVAILABLE:
+                self._red_led.value = 0
+                self._green_led.value = 0
+                self._blue_led.value = 0
+
+            # Pause before repeating
+            if self._animation_stop_event.wait(pause_duration):
+                return
 
     def stop_animation(self) -> None:
         """Stop any running animation."""
