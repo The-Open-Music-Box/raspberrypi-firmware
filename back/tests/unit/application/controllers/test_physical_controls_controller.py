@@ -55,8 +55,11 @@ class TestPhysicalControlsInitialization:
                     PhysicalControlsManager(None, hardware_config)
 
     def test_physical_controls_factory_called(self):
-        """Test physical controls factory is called during init."""
+        """Test physical controls factory is called during init with correct parameters."""
+        from app.src.config.button_actions_config import DEFAULT_BUTTON_CONFIGS
+
         audio_controller = Mock()
+        audio_controller.toggle_pause = Mock()  # Make it look like PlaybackCoordinator
         hardware_config = Mock()
 
         with patch("app.src.application.controllers.physical_controls_controller.PhysicalControlsFactory") as mock_factory:
@@ -64,7 +67,11 @@ class TestPhysicalControlsInitialization:
 
             manager = PhysicalControlsManager(audio_controller, hardware_config)
 
-            mock_factory.create_controls.assert_called_once_with(hardware_config)
+            # Should be called with hardware_config and button_configs
+            mock_factory.create_controls.assert_called_once_with(
+                hardware_config,
+                DEFAULT_BUTTON_CONFIGS
+            )
 
 
 class TestInitializationAndCleanup:
@@ -171,22 +178,18 @@ class TestEventHandlerSetup:
             return mgr
 
     def test_setup_all_button_handlers(self, manager):
-        """Test all button handlers are set up."""
+        """Test all configurable button handlers are set up."""
         manager._setup_event_handlers()
 
-        # Verify all expected event handlers were registered
-        manager._physical_controls.set_event_handler.assert_any_call(
-            PhysicalControlEvent.BUTTON_NEXT_TRACK,
-            manager.handle_next_track
-        )
-        manager._physical_controls.set_event_handler.assert_any_call(
-            PhysicalControlEvent.BUTTON_PREVIOUS_TRACK,
-            manager.handle_previous_track
-        )
-        manager._physical_controls.set_event_handler.assert_any_call(
-            PhysicalControlEvent.BUTTON_PLAY_PAUSE,
-            manager.handle_play_pause
-        )
+        # Verify all configurable button event handlers were registered (BUTTON_0 through BUTTON_4)
+        calls = manager._physical_controls.set_event_handler.call_args_list
+        event_types = [call[0][0] for call in calls]
+
+        assert PhysicalControlEvent.BUTTON_0 in event_types
+        assert PhysicalControlEvent.BUTTON_1 in event_types
+        assert PhysicalControlEvent.BUTTON_2 in event_types
+        assert PhysicalControlEvent.BUTTON_3 in event_types
+        assert PhysicalControlEvent.BUTTON_4 in event_types
 
     def test_setup_encoder_handlers(self, manager):
         """Test encoder handlers are set up with lambdas."""
