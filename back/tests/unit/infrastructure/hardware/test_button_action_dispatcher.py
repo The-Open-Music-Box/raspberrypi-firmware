@@ -16,6 +16,10 @@ def mock_coordinator():
     coordinator = Mock()
     coordinator.set_volume = AsyncMock(return_value=True)
     coordinator.get_volume = Mock(return_value=50)
+    coordinator.get_playback_status = Mock(return_value={
+        "is_playing": True,
+        "volume": 50,
+    })
     coordinator.toggle_pause = Mock(return_value=True)
     coordinator.next_track = Mock(return_value=True)
     coordinator.previous_track = Mock(return_value=True)
@@ -24,13 +28,13 @@ def mock_coordinator():
 
 @pytest.fixture
 def button_configs():
-    """Create test button configurations."""
+    """Create test button configurations matching DEFAULT_BUTTON_CONFIGS."""
     return [
-        ButtonActionConfig(0, 23, "play_pause"),
-        ButtonActionConfig(1, 20, "next_track"),
+        ButtonActionConfig(0, 23, "print_debug"),
+        ButtonActionConfig(1, 20, "volume_down"),
         ButtonActionConfig(2, 16, "previous_track"),
-        ButtonActionConfig(3, 26, "volume_up"),
-        ButtonActionConfig(4, 19, "volume_down"),
+        ButtonActionConfig(3, 26, "next_track"),
+        ButtonActionConfig(4, 19, "volume_up"),
     ]
 
 
@@ -58,33 +62,33 @@ class TestButtonActionDispatcher:
         status = dispatcher.get_status()
 
         assert "button_mappings" in status
-        assert status["button_mappings"][0] == "play_pause"
-        assert status["button_mappings"][1] == "next_track"
+        assert status["button_mappings"][0] == "print_debug"
+        assert status["button_mappings"][1] == "volume_down"
         assert status["button_mappings"][2] == "previous_track"
-        assert status["button_mappings"][3] == "volume_up"
-        assert status["button_mappings"][4] == "volume_down"
+        assert status["button_mappings"][3] == "next_track"
+        assert status["button_mappings"][4] == "volume_up"
 
     @pytest.mark.asyncio
-    async def test_dispatch_play_pause_action(self, button_configs, mock_coordinator):
-        """Test dispatching play/pause action."""
+    async def test_dispatch_print_debug_action(self, button_configs, mock_coordinator):
+        """Test dispatching print debug action (button 0)."""
         dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
         result = await dispatcher.dispatch(0)
 
         assert result is True
-        mock_coordinator.toggle_pause.assert_called_once()
+        mock_coordinator.get_playback_status.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_dispatch_next_track_action(self, button_configs, mock_coordinator):
-        """Test dispatching next track action."""
+    async def test_dispatch_volume_down_action(self, button_configs, mock_coordinator):
+        """Test dispatching volume down action (button 1)."""
         dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
         result = await dispatcher.dispatch(1)
 
         assert result is True
-        mock_coordinator.next_track.assert_called_once()
+        mock_coordinator.set_volume.assert_called_once_with(45)  # 50 - 5
 
     @pytest.mark.asyncio
     async def test_dispatch_previous_track_action(self, button_configs, mock_coordinator):
-        """Test dispatching previous track action."""
+        """Test dispatching previous track action (button 2)."""
         dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
         result = await dispatcher.dispatch(2)
 
@@ -92,22 +96,22 @@ class TestButtonActionDispatcher:
         mock_coordinator.previous_track.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_dispatch_volume_up_action(self, button_configs, mock_coordinator):
-        """Test dispatching volume up action."""
+    async def test_dispatch_next_track_action(self, button_configs, mock_coordinator):
+        """Test dispatching next track action (button 3)."""
         dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
         result = await dispatcher.dispatch(3)
 
         assert result is True
-        mock_coordinator.set_volume.assert_called_once_with(55)  # 50 + 5
+        mock_coordinator.next_track.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_dispatch_volume_down_action(self, button_configs, mock_coordinator):
-        """Test dispatching volume down action."""
+    async def test_dispatch_volume_up_action(self, button_configs, mock_coordinator):
+        """Test dispatching volume up action (button 4)."""
         dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
         result = await dispatcher.dispatch(4)
 
         assert result is True
-        mock_coordinator.set_volume.assert_called_once_with(45)  # 50 - 5
+        mock_coordinator.set_volume.assert_called_once_with(55)  # 50 + 5
 
     @pytest.mark.asyncio
     async def test_dispatch_unmapped_button(self, button_configs, mock_coordinator):
@@ -153,7 +157,7 @@ class TestButtonActionDispatcher:
         action = dispatcher.get_button_action(0)
 
         assert action is not None
-        assert action.name == "play_pause"
+        assert action.name == "print_debug"
 
     def test_get_button_action_nonexistent(self, button_configs, mock_coordinator):
         """Test getting action for nonexistent button returns None."""

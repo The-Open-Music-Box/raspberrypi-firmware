@@ -113,11 +113,11 @@ class TestDefaultButtonConfigs:
     def test_default_configs_actions(self):
         """Test that default configs have correct actions."""
         expected_actions = {
-            0: "play_pause",
-            1: "next_track",
+            0: "print_debug",
+            1: "volume_down",
             2: "previous_track",
-            3: "volume_up",
-            4: "volume_down",
+            3: "next_track",
+            4: "volume_up",
         }
 
         for config in DEFAULT_BUTTON_CONFIGS:
@@ -229,7 +229,7 @@ class TestGetButtonConfigById:
 
         assert config is not None
         assert config.button_id == 0
-        assert config.action_name == "play_pause"
+        assert config.action_name == "print_debug"
 
     def test_find_nonexistent_button(self):
         """Test finding a nonexistent button returns None."""

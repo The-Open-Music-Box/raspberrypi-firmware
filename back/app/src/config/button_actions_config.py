@@ -48,14 +48,14 @@ DEFAULT_BUTTON_CONFIGS: List[ButtonActionConfig] = [
     ButtonActionConfig(
         button_id=0,
         gpio_pin=23,
-        action_name="play_pause",
-        description="Toggle play/pause"
+        action_name="print_debug",
+        description="Print debug information"
     ),
     ButtonActionConfig(
         button_id=1,
         gpio_pin=20,
-        action_name="next_track",
-        description="Skip to next track"
+        action_name="volume_down",
+        description="Decrease volume"
     ),
     ButtonActionConfig(
         button_id=2,
@@ -66,14 +66,14 @@ DEFAULT_BUTTON_CONFIGS: List[ButtonActionConfig] = [
     ButtonActionConfig(
         button_id=3,
         gpio_pin=26,
-        action_name="volume_up",
-        description="Increase volume"
+        action_name="next_track",
+        description="Skip to next track"
     ),
     ButtonActionConfig(
         button_id=4,
         gpio_pin=19,
-        action_name="volume_down",
-        description="Decrease volume"
+        action_name="volume_up",
+        description="Increase volume"
     ),
 ]
 
