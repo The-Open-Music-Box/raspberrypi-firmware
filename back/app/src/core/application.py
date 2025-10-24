@@ -302,10 +302,19 @@ class Application:
         playlist_repository = infrastructure_container.get("playlist_repository")
         logger.info("✅ Obtained playlist repository for NFC-Playlist synchronization")
 
+        # Get LED event handler for visual feedback (optional)
+        led_event_handler = None
+        try:
+            led_event_handler = infrastructure_container.get("led_event_handler")
+            logger.info("✅ LED event handler obtained for NFC visual feedback")
+        except Exception as e:
+            logger.debug(f"LED event handler not available (optional): {e}")
+
         self._nfc_app_service = NfcApplicationService(
             nfc_hardware=self._nfc_handler,
             nfc_repository=nfc_repository,
             playlist_repository=playlist_repository,  # Enable cross-repository synchronization
+            led_event_handler=led_event_handler,  # LED visual feedback
         )
         # Register callbacks for tag detection (NfcApplicationService handles hardware callbacks internally)
         self._nfc_app_service.register_tag_detected_callback(self._on_nfc_tag_detected)

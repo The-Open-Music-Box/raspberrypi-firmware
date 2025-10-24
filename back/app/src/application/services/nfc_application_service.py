@@ -36,6 +36,7 @@ class NfcApplicationService:
         nfc_repository: NfcRepositoryProtocol,
         nfc_association_service: Optional[NfcAssociationService] = None,
         playlist_repository: Optional["PlaylistRepositoryProtocol"] = None,
+        led_event_handler: Optional[Any] = None,
     ):
         """Initialize NFC application service.
 
@@ -44,9 +45,11 @@ class NfcApplicationService:
             nfc_repository: Repository for NFC persistence
             nfc_association_service: Domain service for associations
             playlist_repository: Repository for playlist sync (optional)
+            led_event_handler: LED event handler for visual feedback (optional)
         """
         self._nfc_hardware = nfc_hardware
         self._nfc_repository = nfc_repository
+        self._led_event_handler = led_event_handler
 
         # Pass playlist repository to domain service for synchronization
         self._association_service = nfc_association_service or NfcAssociationService(
@@ -77,6 +80,13 @@ class NfcApplicationService:
             Status dictionary
         """
         try:
+            # Show LED scanning started
+            if self._led_event_handler:
+                try:
+                    await self._led_event_handler.on_nfc_scan_started()
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
+
             await self._nfc_hardware.start_detection()
             # Start cleanup task for expired sessions
             if not self._cleanup_task or self._cleanup_task.done():
@@ -89,6 +99,14 @@ class NfcApplicationService:
             }
         except Exception as e:
             logger.error(f"❌ Failed to start NFC system: {e}")
+
+            # Show LED error
+            if self._led_event_handler:
+                try:
+                    await self._led_event_handler.on_nfc_scan_error()
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
+
             return {
                 "status": "error",
                 "message": f"Failed to start NFC system: {str(e)}",
@@ -134,6 +152,13 @@ class NfcApplicationService:
         Returns:
             Result dictionary with session info
         """
+        # Show LED association mode started (slow blink blue)
+        if self._led_event_handler:
+            try:
+                await self._led_event_handler.on_nfc_association_mode_started()
+            except Exception as led_error:
+                logger.warning(f"LED event failed (non-critical): {led_error}")
+
         session = await self._association_service.start_association_session(
             playlist_id, timeout_seconds, override_mode
         )
@@ -354,8 +379,27 @@ class NfcApplicationService:
             # ASSOCIATION MODE: Block playback, process association only
             logger.info(f"🔒 Association mode active ({len(active_sessions)} sessions), blocking playback for tag {tag_identifier}")
 
+            # Show LED tag detected during association (double blink blue)
+            if self._led_event_handler:
+                try:
+                    await self._led_event_handler.on_nfc_tag_detected()
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
+
             # Process through association service
             result = await self._association_service.process_tag_detection(tag_identifier)
+
+            # Show LED based on association result
+            if self._led_event_handler and isinstance(result, dict) and "action" in result:
+                try:
+                    if result.get("action") == "associated":
+                        # Association successful (double blink green)
+                        await self._led_event_handler.on_nfc_association_success()
+                    elif result.get("action") == "already_associated" and result.get("result") == "updated":
+                        # Re-associated successfully (double blink green)
+                        await self._led_event_handler.on_nfc_association_success()
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
 
             # Notify association callbacks only (for Socket.IO broadcasting)
             if isinstance(result, dict) and "action" in result:
@@ -406,6 +450,18 @@ class NfcApplicationService:
 
         # Process through association service (for tag_detected action)
         result = await self._association_service.process_tag_detection(tag_identifier)
+
+        # Show LED based on result
+        if self._led_event_handler and isinstance(result, dict) and "action" in result:
+            try:
+                if result.get("action") == "tag_detected" and not result.get("playlist_id"):
+                    # Tag not associated with any playlist (double blink orange)
+                    await self._led_event_handler.on_nfc_tag_unassociated()
+                elif result.get("action") == "tag_detected" and result.get("playlist_id"):
+                    # Tag associated, playback will start (success)
+                    await self._led_event_handler.on_nfc_scan_success()
+            except Exception as led_error:
+                logger.warning(f"LED event failed (non-critical): {led_error}")
 
         # Notify association callbacks if any (should be "tag_detected" action)
         if isinstance(result, dict) and "action" in result:
