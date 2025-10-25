@@ -105,8 +105,21 @@ class DomainBootstrap:
         else:
             logger.warning("⚠️ LED system NOT available - skipping LED initialization")
 
+        # Start audio domain (critical hardware)
         if audio_domain_container.is_initialized:
-            await audio_domain_container.start()
+            try:
+                await audio_domain_container.start()
+                logger.info("✅ Audio domain started successfully")
+            except Exception as e:
+                logger.error(f"❌ Audio domain start failed (boot error): {e}", exc_info=True)
+                # Show boot hardware error LED (slow blink red)
+                if self._led_event_handler:
+                    try:
+                        await self._led_event_handler.on_boot_error(f"Audio initialization failed: {str(e)}")
+                    except Exception as led_error:
+                        logger.warning(f"LED boot error indication failed: {led_error}")
+                # Re-raise to prevent app from starting with broken audio
+                raise
         else:
             logger.warning("⚠️ Audio domain not initialized, skipping start")
 
