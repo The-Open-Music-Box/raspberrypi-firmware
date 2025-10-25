@@ -63,7 +63,7 @@ class TestActiveLEDState:
     def test_is_expired_with_timeout_not_elapsed(self):
         """Test expiration check when timeout not reached."""
         config = LEDStateConfig(
-            state=LEDState.NFC_SCANNING,
+            state=LEDState.NFC_ASSOCIATION_MODE,
             color=LEDColors.BLUE,
             animation=LEDAnimation.PULSE,
             priority=80,
@@ -77,7 +77,7 @@ class TestActiveLEDState:
     def test_is_expired_with_timeout_elapsed(self):
         """Test expiration check when timeout has passed."""
         config = LEDStateConfig(
-            state=LEDState.NFC_SCANNING,
+            state=LEDState.NFC_ASSOCIATION_MODE,
             color=LEDColors.BLUE,
             animation=LEDAnimation.PULSE,
             priority=80,
@@ -109,7 +109,7 @@ class TestActiveLEDState:
     def test_time_remaining_with_timeout(self):
         """Test time remaining calculation."""
         config = LEDStateConfig(
-            state=LEDState.NFC_SCANNING,
+            state=LEDState.NFC_ASSOCIATION_MODE,
             color=LEDColors.BLUE,
             animation=LEDAnimation.PULSE,
             priority=80,
@@ -220,16 +220,16 @@ class TestStateManagement:
         """Test priority ordering in state stack."""
         # Set states in random order
         await manager.set_state(LEDState.PLAYING)  # Priority 50
-        await manager.set_state(LEDState.NFC_SCANNING)  # Priority 80
+        await manager.set_state(LEDState.NFC_ASSOCIATION_MODE)  # Priority 85
         await manager.set_state(LEDState.PAUSED)  # Priority 40
 
         # Highest priority should be displayed
-        assert manager.get_current_state() == LEDState.NFC_SCANNING
+        assert manager.get_current_state() == LEDState.NFC_ASSOCIATION_MODE
 
         # Stack should be ordered by priority
         stack = manager.get_state_stack()
         assert len(stack) == 3
-        assert stack[0]["state"] == "nfc_scanning"  # Highest priority
+        assert stack[0]["state"] == "nfc_association_mode"  # Highest priority
         assert stack[1]["state"] == "playing"
         assert stack[2]["state"] == "paused"  # Lowest priority
 
@@ -269,9 +269,9 @@ class TestStateManagement:
     async def test_clear_specific_state(self, manager):
         """Test clearing a specific state."""
         await manager.set_state(LEDState.PLAYING)
-        await manager.set_state(LEDState.NFC_SCANNING)
+        await manager.set_state(LEDState.NFC_ASSOCIATION_MODE)
 
-        success = await manager.clear_state(LEDState.NFC_SCANNING)
+        success = await manager.clear_state(LEDState.NFC_ASSOCIATION_MODE)
 
         assert success is True
         assert len(manager._state_stack) == 1
@@ -291,7 +291,7 @@ class TestStateManagement:
     async def test_clear_all_states(self, manager, mock_controller):
         """Test clearing all states."""
         await manager.set_state(LEDState.PLAYING)
-        await manager.set_state(LEDState.NFC_SCANNING)
+        await manager.set_state(LEDState.NFC_ASSOCIATION_MODE)
         await manager.set_state(LEDState.PAUSED)
 
         success = await manager.clear_all_states()
@@ -330,8 +330,8 @@ class TestTimeoutManagement:
         """Test states with timeout are automatically removed."""
         # Create custom config with very short timeout
         custom_configs = {
-            LEDState.NFC_SCANNING: LEDStateConfig(
-                state=LEDState.NFC_SCANNING,
+            LEDState.NFC_ASSOCIATION_MODE: LEDStateConfig(
+                state=LEDState.NFC_ASSOCIATION_MODE,
                 color=LEDColors.BLUE,
                 animation=LEDAnimation.PULSE,
                 priority=80,
@@ -351,16 +351,16 @@ class TestTimeoutManagement:
 
         # Set both states
         await manager.set_state(LEDState.PLAYING)
-        await manager.set_state(LEDState.NFC_SCANNING)
+        await manager.set_state(LEDState.NFC_ASSOCIATION_MODE)
 
-        # NFC_SCANNING should be displayed (higher priority)
-        assert manager.get_current_state() == LEDState.NFC_SCANNING
+        # NFC_ASSOCIATION_MODE should be displayed (higher priority)
+        assert manager.get_current_state() == LEDState.NFC_ASSOCIATION_MODE
         assert len(manager._state_stack) == 2
 
         # Wait for timeout
         await asyncio.sleep(0.6)  # Wait for timeout + monitoring loop
 
-        # NFC_SCANNING should be removed, PLAYING displayed
+        # NFC_ASSOCIATION_MODE should be removed, PLAYING displayed
         assert manager.get_current_state() == LEDState.PLAYING
         assert len(manager._state_stack) == 1
 
@@ -437,11 +437,11 @@ class TestDisplayUpdates:
         await manager.set_state(LEDState.PLAYING)  # Priority 50
         mock_controller.set_animation.reset_mock()
 
-        await manager.set_state(LEDState.NFC_SCANNING)  # Priority 80
-        assert manager.get_current_state() == LEDState.NFC_SCANNING
+        await manager.set_state(LEDState.NFC_ASSOCIATION_MODE)  # Priority 85
+        assert manager.get_current_state() == LEDState.NFC_ASSOCIATION_MODE
         mock_controller.set_animation.reset_mock()
 
-        await manager.clear_state(LEDState.NFC_SCANNING)
+        await manager.clear_state(LEDState.NFC_ASSOCIATION_MODE)
 
         # Should revert to PLAYING
         assert manager.get_current_state() == LEDState.PLAYING
@@ -478,11 +478,11 @@ class TestStatusQueries:
         await manager.initialize()
 
         await manager.set_state(LEDState.PLAYING)
-        await manager.set_state(LEDState.NFC_SCANNING)
+        await manager.set_state(LEDState.NFC_ASSOCIATION_MODE)
 
         stack = manager.get_state_stack()
-        assert len(stack) == 3  # NFC_SCANNING + PLAYING + IDLE
-        assert stack[0]["state"] == "nfc_scanning"  # Highest priority first
+        assert len(stack) == 3  # NFC_ASSOCIATION_MODE + PLAYING + IDLE
+        assert stack[0]["state"] == "nfc_association_mode"  # Highest priority first
         assert "priority" in stack[0]
         assert "color" in stack[0]
         assert "time_remaining" in stack[0]

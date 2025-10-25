@@ -118,13 +118,6 @@ class TestSystemLifecycleEvents:
         mock_led_manager.set_state.assert_called_once_with(LEDState.IDLE)
 
     @pytest.mark.asyncio
-    async def test_on_system_shutting_down(self, initialized_handler, mock_led_manager):
-        """Test system shutdown event sets SHUTTING_DOWN state."""
-        await initialized_handler.on_system_shutting_down()
-
-        mock_led_manager.set_state.assert_called_once_with(LEDState.SHUTTING_DOWN)
-
-    @pytest.mark.asyncio
     async def test_system_starting_error_handling(self, initialized_handler, mock_led_manager):
         """Test error handling during system start event."""
         mock_led_manager.set_state.side_effect = Exception("LED hardware error")
@@ -142,13 +135,6 @@ class TestNFCEvents:
     """Test NFC-related event handlers."""
 
     @pytest.mark.asyncio
-    async def test_on_nfc_scan_started(self, initialized_handler, mock_led_manager):
-        """Test NFC scan start event sets NFC_SCANNING state."""
-        await initialized_handler.on_nfc_scan_started()
-
-        mock_led_manager.set_state.assert_called_once_with(LEDState.NFC_SCANNING)
-
-    @pytest.mark.asyncio
     async def test_on_nfc_scan_success(self, initialized_handler, mock_led_manager):
         """Test NFC scan success event sets NFC_SUCCESS state."""
         await initialized_handler.on_nfc_scan_success()
@@ -164,7 +150,7 @@ class TestNFCEvents:
 
     @pytest.mark.asyncio
     async def test_on_nfc_tag_unassociated(self, initialized_handler, mock_led_manager):
-        """Test unassociated NFC tag event (NEW - will fail until implemented)."""
+        """Test NFC tag unassociated event sets NFC_TAG_UNASSOCIATED state."""
         await initialized_handler.on_nfc_tag_unassociated()
 
         mock_led_manager.set_state.assert_called_once_with(LEDState.NFC_TAG_UNASSOCIATED)
@@ -175,20 +161,6 @@ class TestNFCEvents:
         await initialized_handler.on_nfc_association_mode_started()
 
         mock_led_manager.set_state.assert_called_once_with(LEDState.NFC_ASSOCIATION_MODE)
-
-    @pytest.mark.asyncio
-    async def test_on_nfc_tag_detected(self, initialized_handler, mock_led_manager):
-        """Test NFC tag detected event (NEW - will fail until implemented)."""
-        await initialized_handler.on_nfc_tag_detected()
-
-        mock_led_manager.set_state.assert_called_once_with(LEDState.NFC_TAG_DETECTED)
-
-    @pytest.mark.asyncio
-    async def test_on_nfc_association_success(self, initialized_handler, mock_led_manager):
-        """Test NFC association success event (NEW - will fail until implemented)."""
-        await initialized_handler.on_nfc_association_success()
-
-        mock_led_manager.set_state.assert_called_once_with(LEDState.NFC_ASSOCIATION_SUCCESS)
 
     @pytest.mark.asyncio
     async def test_nfc_error_handling(self, initialized_handler, mock_led_manager):
@@ -435,10 +407,10 @@ class TestEventSequencing:
 
     @pytest.mark.asyncio
     async def test_nfc_scan_sequence(self, initialized_handler, mock_led_manager):
-        """Test NFC scan sequence: SCANNING → SUCCESS."""
-        # Start scan
-        await initialized_handler.on_nfc_scan_started()
-        mock_led_manager.set_state.assert_called_with(LEDState.NFC_SCANNING)
+        """Test NFC scan sequence: ASSOCIATION_MODE → SUCCESS."""
+        # Start association mode
+        await initialized_handler.on_nfc_association_mode_started()
+        mock_led_manager.set_state.assert_called_with(LEDState.NFC_ASSOCIATION_MODE)
 
         # Success
         await initialized_handler.on_nfc_scan_success()
@@ -476,10 +448,6 @@ class TestEventSequencing:
     @pytest.mark.asyncio
     async def test_shutdown_sequence(self, initialized_handler, mock_led_manager):
         """Test shutdown sequence."""
-        # Shutting down
-        await initialized_handler.on_system_shutting_down()
-        mock_led_manager.set_state.assert_called_with(LEDState.SHUTTING_DOWN)
-
-        # Cleanup
+        # Cleanup (no shutting_down state anymore)
         await initialized_handler.cleanup()
         assert initialized_handler._is_initialized is False

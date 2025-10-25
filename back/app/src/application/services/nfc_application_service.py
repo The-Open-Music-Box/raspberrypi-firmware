@@ -13,6 +13,7 @@ from app.src.domain.nfc.protocols.nfc_hardware_protocol import (
     NfcHardwareProtocol,
     NfcRepositoryProtocol,
 )
+from app.src.domain.models.led import LEDState
 from app.src.services.error.unified_error_decorator import handle_service_errors
 import logging
 
@@ -80,13 +81,6 @@ class NfcApplicationService:
             Status dictionary
         """
         try:
-            # Show LED scanning started
-            if self._led_event_handler:
-                try:
-                    await self._led_event_handler.on_nfc_scan_started()
-                except Exception as led_error:
-                    logger.warning(f"LED event failed (non-critical): {led_error}")
-
             await self._nfc_hardware.start_detection()
             # Start cleanup task for expired sessions
             if not self._cleanup_task or self._cleanup_task.done():
@@ -178,6 +172,15 @@ class NfcApplicationService:
             Result dictionary
         """
         success = await self._association_service.stop_association_session(session_id)
+
+        # Clear association mode LED when session stops
+        if self._led_event_handler:
+            try:
+                await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
+                logger.info(f"💡 Association mode stopped, cleared blue pulse LED")
+            except Exception as led_error:
+                logger.warning(f"LED event failed (non-critical): {led_error}")
+
         if success:
             return {
                 "status": "success",
@@ -379,25 +382,23 @@ class NfcApplicationService:
             # ASSOCIATION MODE: Block playback, process association only
             logger.info(f"🔒 Association mode active ({len(active_sessions)} sessions), blocking playback for tag {tag_identifier}")
 
-            # Show LED tag detected during association (double blink blue)
-            if self._led_event_handler:
-                try:
-                    await self._led_event_handler.on_nfc_tag_detected()
-                except Exception as led_error:
-                    logger.warning(f"LED event failed (non-critical): {led_error}")
-
             # Process through association service
             result = await self._association_service.process_tag_detection(tag_identifier)
 
             # Show LED based on association result
+            # Events (priority 95) automatically show over status (priority 85) then auto-revert
             if self._led_event_handler and isinstance(result, dict) and "action" in result:
                 try:
-                    if result.get("action") == "associated":
-                        # Association successful (double blink green)
-                        await self._led_event_handler.on_nfc_association_success()
-                    elif result.get("action") == "already_associated" and result.get("result") == "updated":
-                        # Re-associated successfully (double blink green)
-                        await self._led_event_handler.on_nfc_association_success()
+                    if result.get("action") == "association_success":
+                        # EVENT: Green flash (priority 95) shows over blue pulse (priority 85)
+                        # After timeout, auto-reverts to association mode (blue pulse continues)
+                        await self._led_event_handler.on_nfc_scan_success()
+                        logger.info(f"✅ Association successful - green flash event over blue pulse status")
+                    elif result.get("action") == "duplicate_association":
+                        # EVENT: Orange double blink (priority 95) shows over blue pulse (priority 85)
+                        # After timeout, auto-reverts to association mode (blue pulse continues)
+                        await self._led_event_handler.on_nfc_tag_unassociated()
+                        logger.warning(f"⚠️ Duplicate association - orange blink event over blue pulse status")
                 except Exception as led_error:
                     logger.warning(f"LED event failed (non-critical): {led_error}")
 
@@ -452,14 +453,20 @@ class NfcApplicationService:
         result = await self._association_service.process_tag_detection(tag_identifier)
 
         # Show LED based on result
+        # Events (priority 95) automatically show over status (priority 50 for PLAYING, 10 for IDLE)
         if self._led_event_handler and isinstance(result, dict) and "action" in result:
             try:
-                if result.get("action") == "tag_detected" and not result.get("playlist_id"):
-                    # Tag not associated with any playlist (double blink orange)
-                    await self._led_event_handler.on_nfc_tag_unassociated()
-                elif result.get("action") == "tag_detected" and result.get("playlist_id"):
-                    # Tag associated, playback will start (success)
-                    await self._led_event_handler.on_nfc_scan_success()
+                if result.get("action") == "tag_detected":
+                    if result.get("associated_playlist") or result.get("playlist_id"):
+                        # EVENT: Green flash (priority 95) shows over current status (IDLE/PLAYING)
+                        # After timeout, auto-reverts to PLAYING (solid green) or previous status
+                        await self._led_event_handler.on_nfc_scan_success()
+                        logger.info(f"✅ Associated tag detected - green flash event over current status")
+                    else:
+                        # EVENT: Orange double blink (priority 95) shows over current status (IDLE)
+                        # After timeout, auto-reverts to previous status (IDLE solid white)
+                        await self._led_event_handler.on_nfc_tag_unassociated()
+                        logger.info(f"⚠️ Unassociated tag detected - orange blink event over current status: {tag_identifier}")
             except Exception as led_error:
                 logger.warning(f"LED event failed (non-critical): {led_error}")
 
@@ -486,6 +493,14 @@ class NfcApplicationService:
                 cleaned = await self._association_service.cleanup_expired_sessions()
                 if cleaned > 0:
                     logger.info(f"🧹 Cleaned up {cleaned} expired NFC sessions")
+                    # Clear association mode LED if no more active sessions
+                    active_sessions = self._association_service.get_active_sessions()
+                    if len(active_sessions) == 0 and self._led_event_handler:
+                        try:
+                            await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
+                            logger.info(f"💡 No more active sessions, cleared blue pulse LED")
+                        except Exception as led_error:
+                            logger.warning(f"LED event failed (non-critical): {led_error}")
             except asyncio.CancelledError:
                 break
             except Exception as e:

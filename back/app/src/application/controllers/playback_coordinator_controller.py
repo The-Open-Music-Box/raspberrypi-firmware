@@ -31,7 +31,7 @@ class PlaybackCoordinator:
     This provides the API that routes will use.
     """
 
-    def __init__(self, audio_backend, playlist_service=None, upload_folder=None, socketio=None, data_application_service=None):
+    def __init__(self, audio_backend, playlist_service=None, upload_folder=None, socketio=None, data_application_service=None, led_event_handler=None):
         """
         Initialize the playback coordinator.
 
@@ -41,6 +41,7 @@ class PlaybackCoordinator:
             upload_folder: Base folder for track files
             socketio: Socket.IO server for state broadcasting (optional)
             data_application_service: Data application service for NFC lookups (optional)
+            led_event_handler: LED event handler for visual feedback (optional)
         """
         # Initialize components
         self._track_resolver = TrackResolver(upload_folder)
@@ -61,6 +62,9 @@ class PlaybackCoordinator:
 
         # Store data application service for NFC lookups
         self._data_application_service = data_application_service
+
+        # Store LED event handler for visual feedback
+        self._led_event_handler = led_event_handler
 
         logger.info("✅ PlaybackCoordinator initialized")
 
@@ -104,6 +108,15 @@ class PlaybackCoordinator:
                 success = self._audio_player.play_file(current_track.file_path, current_track.duration_ms)
                 if success:
                     logger.info(f"▶️ Playing: {current_track.title}")
+                    # Show LED playing state (solid green)
+                    if self._led_event_handler:
+                        try:
+                            import asyncio
+                            # Use PlaybackState enum from common.data_models
+                            from app.src.common.data_models import PlaybackState
+                            asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.PLAYING))
+                        except Exception as led_error:
+                            logger.warning(f"LED event failed (non-critical): {led_error}")
                 return success
             else:
                 logger.error(f"Track {current_track.title} has no valid file path")
@@ -115,15 +128,45 @@ class PlaybackCoordinator:
 
     def pause(self) -> bool:
         """Pause current playback."""
-        return self._audio_player.pause()
+        success = self._audio_player.pause()
+        if success:
+            # Show LED paused state (solid yellow)
+            if self._led_event_handler:
+                try:
+                    import asyncio
+                    from app.src.common.data_models import PlaybackState
+                    asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.PAUSED))
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
+        return success
 
     def resume(self) -> bool:
         """Resume paused playback."""
-        return self._audio_player.resume()
+        success = self._audio_player.resume()
+        if success:
+            # Show LED playing state (solid green)
+            if self._led_event_handler:
+                try:
+                    import asyncio
+                    from app.src.common.data_models import PlaybackState
+                    asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.PLAYING))
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
+        return success
 
     def stop(self) -> bool:
         """Stop current playback."""
-        return self._audio_player.stop()
+        success = self._audio_player.stop()
+        if success:
+            # Show LED stopped state (goes back to IDLE)
+            if self._led_event_handler:
+                try:
+                    import asyncio
+                    from app.src.common.data_models import PlaybackState
+                    asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.STOPPED))
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
+        return success
 
     def toggle_pause(self) -> bool:
         """Toggle between play and pause."""

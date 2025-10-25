@@ -25,14 +25,13 @@ class LEDState(Enum):
     ERROR_BOOT_HARDWARE = "error_boot_hardware"  # Slow blink red - Priority 98 (boot error)
     ERROR_PLAYBACK = "error_playback"          # Orange blinking - Priority 90
 
-    # Temporary interactive states - NFC Association
-    NFC_ASSOCIATION_MODE = "nfc_association_mode"  # Slow blink blue - Priority 85
-    NFC_TAG_DETECTED = "nfc_tag_detected"      # 2x rapid blink blue - Priority 82
-    NFC_SCANNING = "nfc_scanning"              # Blue pulsing - Priority 80
-    NFC_TAG_UNASSOCIATED = "nfc_tag_unassociated"  # Double blink orange - Priority 78
-    NFC_ASSOCIATION_SUCCESS = "nfc_association_success"  # 2x rapid blink green - Priority 77
-    NFC_SUCCESS = "nfc_success"                # Green flash - Priority 75
-    NFC_ERROR = "nfc_error"                    # Red flash - Priority 75
+    # NFC states (status vs events architecture)
+    # STATUS: Persistent state during association session
+    NFC_ASSOCIATION_MODE = "nfc_association_mode"  # Pulse blue - Priority 85 (status)
+    # EVENTS: Temporary notifications that auto-revert to status
+    NFC_SUCCESS = "nfc_success"                # Green flash - Priority 95 (event)
+    NFC_ERROR = "nfc_error"                    # Red flash - Priority 95 (event)
+    NFC_TAG_UNASSOCIATED = "nfc_tag_unassociated"  # Orange double blink - Priority 95 (event)
 
     # Playback states
     PLAYING = "playing"                        # Green solid - Priority 50
@@ -41,10 +40,9 @@ class LEDState(Enum):
 
     # System states
     STARTING = "starting"                      # White pulsing - Priority 30
-    SHUTTING_DOWN = "shutting_down"            # Red pulsing - Priority 95
 
     # Default state
-    IDLE = "idle"                              # Dim green - Priority 10
+    IDLE = "idle"                              # Solid white - Priority 10
     OFF = "off"                                # Off - Priority 0
 
 
@@ -63,18 +61,23 @@ class LEDPriority(Enum):
     Priority levels for LED states.
 
     Higher priority states override lower priority states.
+
+    Architecture:
+    - CRITICAL ERRORS (99-100): Permanent critical states
+    - EVENTS (90-95): Temporary notifications that auto-revert to status
+    - STATUS (10-85): Persistent states (IDLE, PLAYING, ASSOCIATION_MODE, etc.)
     """
+    # Critical errors (permanent)
     CRITICAL = 100                  # System critical errors
     ERROR_CRASH = 99                # Application crash
     ERROR_BOOT = 98                 # Boot errors (missing hardware)
-    SHUTDOWN = 95                   # System shutdown
+
+    # Events (temporary notifications with timeout)
+    NFC_EVENT = 95                  # NFC scan events (success/warning/error) - auto-revert to status
     ERROR = 90                      # Playback errors
-    NFC_ASSOCIATION_MODE = 85       # NFC association mode active
-    NFC_TAG_DETECTED = 82           # NFC tag detected during association
-    NFC_INTERACTION = 80            # NFC scanning/interaction
-    NFC_TAG_UNASSOCIATED = 78       # Unassociated NFC tag warning
-    NFC_ASSOCIATION_SUCCESS = 77    # NFC association success
-    NFC_RESULT = 75                 # NFC scan results
+
+    # Status (persistent states)
+    NFC_ASSOCIATION_MODE = 85       # NFC association mode status (persistent during session)
     PLAYBACK_ACTIVE = 50            # Playing state
     PLAYBACK_INACTIVE = 40          # Paused state
     PLAYBACK_STOPPED = 35           # Stopped state
@@ -231,60 +234,37 @@ DEFAULT_LED_STATE_CONFIGS = {
         priority=LEDPriority.ERROR.value,
         timeout_seconds=5.0  # Clear after 5 seconds
     ),
-    # NFC association states
+    # NFC states (status vs events architecture)
+    # STATUS: NFC Association Mode (persistent state during session)
     LEDState.NFC_ASSOCIATION_MODE: LEDStateConfig(
         state=LEDState.NFC_ASSOCIATION_MODE,
         color=LEDColors.BLUE,
-        animation=LEDAnimation.BLINK_SLOW,
-        priority=LEDPriority.NFC_ASSOCIATION_MODE.value,
-        timeout_seconds=None,  # Permanent until association mode exits
+        animation=LEDAnimation.PULSE,
+        priority=LEDPriority.NFC_ASSOCIATION_MODE.value,  # Priority 85 (status)
+        timeout_seconds=None,  # Permanent until association session ends
         animation_speed=1.0
     ),
-    LEDState.NFC_TAG_DETECTED: LEDStateConfig(
-        state=LEDState.NFC_TAG_DETECTED,
-        color=LEDColors.BLUE,
-        animation=LEDAnimation.DOUBLE_BLINK,
-        priority=LEDPriority.NFC_TAG_DETECTED.value,
-        timeout_seconds=1.0,  # Clear after double blink sequence
-        animation_speed=1.5
-    ),
-    LEDState.NFC_SCANNING: LEDStateConfig(
-        state=LEDState.NFC_SCANNING,
-        color=LEDColors.BLUE,
-        animation=LEDAnimation.PULSE,
-        priority=LEDPriority.NFC_INTERACTION.value,
-        timeout_seconds=3.0,  # Clear after 3 seconds
-        animation_speed=1.5
-    ),
-    LEDState.NFC_TAG_UNASSOCIATED: LEDStateConfig(
-        state=LEDState.NFC_TAG_UNASSOCIATED,
-        color=LEDColors.ORANGE,
-        animation=LEDAnimation.DOUBLE_BLINK,
-        priority=LEDPriority.NFC_TAG_UNASSOCIATED.value,
-        timeout_seconds=1.5,  # Clear after warning shown
-        animation_speed=1.5
-    ),
-    LEDState.NFC_ASSOCIATION_SUCCESS: LEDStateConfig(
-        state=LEDState.NFC_ASSOCIATION_SUCCESS,
-        color=LEDColors.GREEN,
-        animation=LEDAnimation.DOUBLE_BLINK,
-        priority=LEDPriority.NFC_ASSOCIATION_SUCCESS.value,
-        timeout_seconds=1.0,  # Clear after success indication
-        animation_speed=1.5
-    ),
+    # EVENTS: NFC Scan Results (temporary notifications with auto-revert)
     LEDState.NFC_SUCCESS: LEDStateConfig(
         state=LEDState.NFC_SUCCESS,
         color=LEDColors.GREEN,
         animation=LEDAnimation.FLASH,
-        priority=LEDPriority.NFC_RESULT.value,
-        timeout_seconds=0.5  # Quick flash
+        priority=LEDPriority.NFC_EVENT.value,  # Priority 95 (event) - overrides status
+        timeout_seconds=0.5  # Quick flash then auto-revert to status
     ),
     LEDState.NFC_ERROR: LEDStateConfig(
         state=LEDState.NFC_ERROR,
         color=LEDColors.RED,
         animation=LEDAnimation.FLASH,
-        priority=LEDPriority.NFC_RESULT.value,
-        timeout_seconds=0.5  # Quick flash
+        priority=LEDPriority.NFC_EVENT.value,  # Priority 95 (event) - overrides status
+        timeout_seconds=0.5  # Quick flash then auto-revert to status
+    ),
+    LEDState.NFC_TAG_UNASSOCIATED: LEDStateConfig(
+        state=LEDState.NFC_TAG_UNASSOCIATED,
+        color=LEDColors.ORANGE,
+        animation=LEDAnimation.DOUBLE_BLINK,
+        priority=LEDPriority.NFC_EVENT.value,  # Priority 95 (event) - overrides status
+        timeout_seconds=1.0  # Double blink warning then auto-revert to status
     ),
     LEDState.PLAYING: LEDStateConfig(
         state=LEDState.PLAYING,
@@ -314,14 +294,6 @@ DEFAULT_LED_STATE_CONFIGS = {
         priority=LEDPriority.SYSTEM_STARTING.value,
         timeout_seconds=None,  # Cleared by application when ready
         animation_speed=1.0
-    ),
-    LEDState.SHUTTING_DOWN: LEDStateConfig(
-        state=LEDState.SHUTTING_DOWN,
-        color=LEDColors.RED,
-        animation=LEDAnimation.PULSE,
-        priority=LEDPriority.SHUTDOWN.value,
-        timeout_seconds=None,
-        animation_speed=0.5
     ),
     LEDState.IDLE: LEDStateConfig(
         state=LEDState.IDLE,

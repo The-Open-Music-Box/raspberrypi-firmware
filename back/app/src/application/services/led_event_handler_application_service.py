@@ -101,63 +101,39 @@ class LEDEventHandler:
         except Exception as e:
             logger.error(f"❌ Error handling track change: {e}")
 
-    # NFC event handlers
+    # NFC event handlers (simplified to 3 events)
 
-    async def on_nfc_scan_started(self) -> None:
-        """Handle NFC scan start event."""
+    async def on_nfc_association_mode_started(self) -> None:
+        """Handle NFC association mode started event (slow blink blue)."""
         try:
-            await self._led_manager.set_state(LEDState.NFC_SCANNING)
-            logger.debug("LED updated: NFC scanning started")
+            await self._led_manager.set_state(LEDState.NFC_ASSOCIATION_MODE)
+            logger.debug("LED updated: NFC association mode (slow blink blue)")
         except Exception as e:
-            logger.error(f"❌ Error handling NFC scan start: {e}")
+            logger.error(f"❌ Error handling NFC association mode start: {e}")
 
     async def on_nfc_scan_success(self) -> None:
-        """Handle successful NFC scan event."""
+        """Handle successful NFC scan event (green flash)."""
         try:
             await self._led_manager.set_state(LEDState.NFC_SUCCESS)
-            logger.debug("LED updated: NFC scan successful")
+            logger.debug("LED updated: NFC scan successful (green flash)")
         except Exception as e:
             logger.error(f"❌ Error handling NFC scan success: {e}")
 
     async def on_nfc_scan_error(self) -> None:
-        """Handle NFC scan error event."""
+        """Handle NFC scan error event (red flash)."""
         try:
             await self._led_manager.set_state(LEDState.NFC_ERROR)
-            logger.debug("LED updated: NFC scan error")
+            logger.debug("LED updated: NFC scan error (red flash)")
         except Exception as e:
             logger.error(f"❌ Error handling NFC scan error: {e}")
 
     async def on_nfc_tag_unassociated(self) -> None:
-        """Handle unassociated NFC tag event (warning)."""
+        """Handle unassociated NFC tag detection (orange double blink warning)."""
         try:
             await self._led_manager.set_state(LEDState.NFC_TAG_UNASSOCIATED)
-            logger.debug("LED updated: NFC tag unassociated (double blink orange)")
+            logger.debug("LED updated: NFC tag unassociated (orange double blink)")
         except Exception as e:
             logger.error(f"❌ Error handling NFC tag unassociated: {e}")
-
-    async def on_nfc_association_mode_started(self) -> None:
-        """Handle NFC association mode started event."""
-        try:
-            await self._led_manager.set_state(LEDState.NFC_ASSOCIATION_MODE)
-            logger.debug("LED updated: NFC association mode started (slow blink blue)")
-        except Exception as e:
-            logger.error(f"❌ Error handling NFC association mode start: {e}")
-
-    async def on_nfc_tag_detected(self) -> None:
-        """Handle NFC tag detected during association event."""
-        try:
-            await self._led_manager.set_state(LEDState.NFC_TAG_DETECTED)
-            logger.debug("LED updated: NFC tag detected (2x rapid blink blue)")
-        except Exception as e:
-            logger.error(f"❌ Error handling NFC tag detected: {e}")
-
-    async def on_nfc_association_success(self) -> None:
-        """Handle NFC association success event."""
-        try:
-            await self._led_manager.set_state(LEDState.NFC_ASSOCIATION_SUCCESS)
-            logger.debug("LED updated: NFC association success (2x rapid blink green)")
-        except Exception as e:
-            logger.error(f"❌ Error handling NFC association success: {e}")
 
     # System event handlers
 
@@ -180,14 +156,6 @@ class LEDEventHandler:
             logger.info("✅ LED state set to IDLE")
         except Exception as e:
             logger.error(f"❌ Error handling system ready: {e}", exc_info=True)
-
-    async def on_system_shutting_down(self) -> None:
-        """Handle system shutdown event."""
-        try:
-            await self._led_manager.set_state(LEDState.SHUTTING_DOWN)
-            logger.debug("LED updated: System shutting down")
-        except Exception as e:
-            logger.error(f"❌ Error handling system shutdown: {e}")
 
     # Error event handlers
 

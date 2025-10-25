@@ -143,14 +143,6 @@ class DomainBootstrap:
 
         self._is_stopping = True
         try:
-            # Show shutting down LED state
-            if self._led_event_handler:
-                try:
-                    await self._led_event_handler.on_system_shutting_down()
-                    logger.info("💡 LED system shutting down state")
-                except Exception as e:
-                    logger.warning(f"⚠️ LED shutdown state failed: {e}")
-
             # Note: unified_controller has been moved to application layer
             if audio_domain_container.is_initialized:
                 await audio_domain_container.stop()
