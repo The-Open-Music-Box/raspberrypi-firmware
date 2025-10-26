@@ -1,0 +1,7 @@
+-r base.txt
+# Development dependencies
+watchdog
+pytest
+ipython
+black
+flake8

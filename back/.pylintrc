@@ -1,0 +1,10 @@
+[MASTER]
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+# Disable false positive import errors for our app modules
+disable=import-error
+
+[DESIGN]
+# Allow more arguments for complex functions
+max-args=7

@@ -1,0 +1,742 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TheOpenMusicBox Socket.IO Contracts",
+  "description": "Complete contract definitions for all Socket.IO events based on DDD implementation analysis",
+  "version": "3.0.0",
+  "event_envelope_format": {
+    "description": "All state events use standardized envelope format via StateEventCoordinator",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "event_type": {"type": "string"},
+        "server_seq": {"type": "number"},
+        "data": {"type": ["object", "array", "null"]},
+        "timestamp": {"type": "number"},
+        "event_id": {"type": "string"},
+        "playlist_id": {"type": ["string", "null"]},
+        "track_id": {"type": ["string", "null"]}
+      },
+      "required": ["event_type", "server_seq", "data", "timestamp", "event_id"]
+    }
+  },
+  "contracts": {
+    "connection_events": {
+      "description": "Connection lifecycle events",
+      "events": {
+        "connect": {
+          "direction": "client_to_server",
+          "payload": null,
+          "description": "Client connects to server"
+        },
+        "disconnect": {
+          "direction": "client_to_server",
+          "payload": null,
+          "description": "Client disconnects from server"
+        },
+        "connection_status": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "status": {"type": "string", "enum": ["connected"]},
+              "sid": {"type": "string"},
+              "server_seq": {"type": "number"},
+              "server_time": {"type": "number"}
+            },
+            "required": ["status", "sid", "server_seq"]
+          },
+          "description": "Server sends connection confirmation"
+        },
+        "client_ping": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "timestamp": {"type": "number"}
+            }
+          },
+          "description": "Client health check ping"
+        },
+        "client_pong": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "timestamp": {"type": "number"},
+              "server_time": {"type": "number"},
+              "server_seq": {"type": "number"}
+            },
+            "required": ["timestamp", "server_time", "server_seq"]
+          },
+          "description": "Server health check pong"
+        }
+      }
+    },
+    "subscription_events": {
+      "description": "Room subscription management events",
+      "events": {
+        "join:playlists": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {}
+          },
+          "description": "Subscribe to global playlists updates"
+        },
+        "join:playlist": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"}
+            },
+            "required": ["playlist_id"]
+          },
+          "description": "Subscribe to specific playlist updates"
+        },
+        "join:nfc": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "assoc_id": {"type": "string"}
+            },
+            "required": ["assoc_id"]
+          },
+          "description": "Subscribe to NFC association session"
+        },
+        "leave:playlists": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {}
+          },
+          "description": "Unsubscribe from global playlists updates"
+        },
+        "leave:playlist": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"}
+            },
+            "required": ["playlist_id"]
+          },
+          "description": "Unsubscribe from specific playlist updates"
+        },
+        "ack:join": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "room": {"type": "string"},
+              "success": {"type": "boolean"},
+              "server_seq": {"type": "number"},
+              "playlist_seq": {"type": "number"},
+              "playlist_id": {"type": "string"},
+              "message": {"type": "string"}
+            },
+            "required": ["room", "success"]
+          },
+          "description": "Room join acknowledgment"
+        },
+        "ack:leave": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "room": {"type": "string"},
+              "success": {"type": "boolean"},
+              "playlist_id": {"type": "string"},
+              "message": {"type": "string"}
+            },
+            "required": ["room", "success"]
+          },
+          "description": "Room leave acknowledgment"
+        }
+      }
+    },
+    "state_events": {
+      "description": "Server-authoritative state events with envelope format",
+      "events": {
+        "state:player": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "is_playing": {"type": "boolean"},
+              "active_playlist_id": {"type": ["string", "null"]},
+              "active_playlist_title": {"type": ["string", "null"]},
+              "active_track_id": {"type": ["string", "null"]},
+              "active_track_number": {"type": ["integer", "null"]},
+              "active_track_title": {"type": ["string", "null"]},
+              "position_ms": {"type": "integer"},
+              "duration_ms": {"type": ["integer", "null"]},
+              "can_prev": {"type": "boolean"},
+              "can_next": {"type": "boolean"},
+              "volume": {"type": ["integer", "null"]},
+              "server_seq": {"type": "number"}
+            },
+            "required": ["is_playing", "position_ms", "can_prev", "can_next", "server_seq"]
+          },
+          "description": "Complete player state updates",
+          "frequency": "on_demand"
+        },
+        "state:track_position": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "position_ms": {"type": "integer"},
+              "track_id": {"type": ["string", "null"]},
+              "is_playing": {"type": "boolean"},
+              "duration_ms": {"type": ["integer", "null"]}
+            },
+            "required": ["position_ms", "is_playing"]
+          },
+          "description": "Lightweight position updates for smooth UI",
+          "frequency": "500ms_intervals"
+        },
+        "state:playlists": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "playlists": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "track_count": {"type": "integer"},
+                    "nfc_tag_id": {"type": ["string", "null"]},
+                    "server_seq": {"type": "number"}
+                  },
+                  "required": ["id", "title", "track_count"]
+                }
+              }
+            },
+            "required": ["playlists"]
+          },
+          "description": "Global playlists collection updates",
+          "frequency": "on_demand"
+        },
+        "state:playlist": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "title": {"type": "string"},
+              "description": {"type": "string"},
+              "tracks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {"type": "integer"},
+                    "title": {"type": "string"},
+                    "filename": {"type": "string"},
+                    "duration": {"type": ["integer", "null"]},
+                    "artist": {"type": ["string", "null"]},
+                    "album": {"type": ["string", "null"]}
+                  },
+                  "required": ["number", "title", "filename"]
+                }
+              },
+              "nfc_tag_id": {"type": ["string", "null"]},
+              "server_seq": {"type": "number"}
+            },
+            "required": ["id", "title", "tracks"]
+          },
+          "description": "Specific playlist updates",
+          "frequency": "on_demand"
+        },
+        "state:track": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "number": {"type": "integer"},
+              "title": {"type": "string"},
+              "filename": {"type": "string"},
+              "duration": {"type": ["integer", "null"]},
+              "playlist_id": {"type": "string"}
+            },
+            "required": ["number", "title", "filename", "playlist_id"]
+          },
+          "description": "Track-level changes",
+          "frequency": "on_demand"
+        },
+        "state:playlist_deleted": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "message": {"type": "string"}
+            },
+            "required": ["playlist_id"]
+          },
+          "description": "Playlist deletion notification",
+          "frequency": "on_demand"
+        },
+        "state:playlist_created": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "playlist": {
+                "type": "object",
+                "properties": {
+                  "id": {"type": "string"},
+                  "title": {"type": "string"},
+                  "description": {"type": "string"},
+                  "tracks": {"type": "array"},
+                  "server_seq": {"type": "number"}
+                },
+                "required": ["id", "title", "tracks"]
+              }
+            },
+            "required": ["playlist"]
+          },
+          "description": "Playlist creation notification",
+          "frequency": "on_demand"
+        },
+        "state:playlist_updated": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "playlist": {
+                "type": "object",
+                "properties": {
+                  "id": {"type": "string"},
+                  "title": {"type": "string"},
+                  "description": {"type": "string"},
+                  "server_seq": {"type": "number"}
+                },
+                "required": ["id", "title"]
+              }
+            },
+            "required": ["playlist"]
+          },
+          "description": "Playlist update notification",
+          "frequency": "on_demand"
+        },
+        "state:track_deleted": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "track_numbers": {
+                "type": "array",
+                "items": {"type": "integer"}
+              }
+            },
+            "required": ["playlist_id", "track_numbers"]
+          },
+          "description": "Track deletion notification",
+          "frequency": "on_demand"
+        },
+        "state:track_added": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "track": {
+                "type": "object",
+                "properties": {
+                  "number": {"type": "integer"},
+                  "title": {"type": "string"},
+                  "filename": {"type": "string"},
+                  "duration": {"type": ["integer", "null"]}
+                },
+                "required": ["number", "title", "filename"]
+              }
+            },
+            "required": ["playlist_id", "track"]
+          },
+          "description": "Track addition notification",
+          "frequency": "on_demand"
+        },
+        "state:volume_changed": {
+          "direction": "server_to_client",
+          "envelope": true,
+          "data_schema": {
+            "type": "object",
+            "properties": {
+              "volume": {"type": "integer", "minimum": 0, "maximum": 100}
+            },
+            "required": ["volume"]
+          },
+          "description": "Volume change notification",
+          "frequency": "on_demand"
+        }
+      }
+    },
+    "operation_events": {
+      "description": "Operation acknowledgment and error events",
+      "events": {
+        "ack:op": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"},
+              "success": {"type": "boolean", "const": true},
+              "data": {"type": ["object", "null"]},
+              "server_seq": {"type": "number"}
+            },
+            "required": ["client_op_id", "success", "server_seq"]
+          },
+          "description": "Operation success acknowledgment"
+        },
+        "err:op": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"},
+              "success": {"type": "boolean", "const": false},
+              "message": {"type": "string"},
+              "error_type": {"type": "string"},
+              "server_seq": {"type": "number"}
+            },
+            "required": ["client_op_id", "success", "message", "server_seq"]
+          },
+          "description": "Operation error acknowledgment"
+        }
+      }
+    },
+    "sync_events": {
+      "description": "State synchronization events",
+      "events": {
+        "sync:request": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "last_global_seq": {"type": "integer"},
+              "last_playlist_seqs": {
+                "type": "object",
+                "additionalProperties": {"type": "integer"}
+              },
+              "requested_rooms": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          },
+          "description": "Client requests state synchronization"
+        },
+        "sync:complete": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "current_global_seq": {"type": "number"},
+              "synced_rooms": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            },
+            "required": ["current_global_seq", "synced_rooms"]
+          },
+          "description": "Server confirms sync completion"
+        },
+        "sync:error": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "error": {"type": "string"},
+              "requested_rooms": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            },
+            "required": ["error"]
+          },
+          "description": "Server reports sync error"
+        },
+        "client:request_current_state": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "timestamp": {"type": "number"},
+              "client_id": {"type": "string"},
+              "requested_states": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          },
+          "description": "Client requests immediate state sync"
+        }
+      }
+    },
+    "nfc_events": {
+      "description": "NFC association and status events",
+      "events": {
+        "nfc_status": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "assoc_id": {"type": "string"},
+              "state": {"type": "string"},
+              "playlist_id": {"type": ["string", "null"]},
+              "tag_id": {"type": ["string", "null"]},
+              "server_seq": {"type": "number"}
+            },
+            "required": ["assoc_id", "state"]
+          },
+          "description": "NFC session status updates"
+        },
+        "nfc_association_state": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": ["activated", "waiting", "success", "duplicate", "timeout", "cancelled", "error"]
+              },
+              "playlist_id": {"type": ["string", "null"]},
+              "tag_id": {"type": ["string", "null"]},
+              "message": {"type": ["string", "null"]},
+              "expires_at": {"type": ["number", "null"]},
+              "existing_playlist": {
+                "type": ["object", "null"],
+                "properties": {
+                  "id": {"type": "string"},
+                  "title": {"type": "string"}
+                }
+              },
+              "server_seq": {"type": "number"}
+            },
+            "required": ["state", "server_seq"]
+          },
+          "description": "NFC association state changes"
+        },
+        "start_nfc_link": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "client_op_id": {"type": ["string", "null"]}
+            },
+            "required": ["playlist_id"]
+          },
+          "description": "Start NFC association session"
+        },
+        "stop_nfc_link": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "client_op_id": {"type": ["string", "null"]}
+            },
+            "required": ["playlist_id"]
+          },
+          "description": "Stop NFC association session"
+        },
+        "override_nfc_tag": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "client_op_id": {"type": ["string", "null"]}
+            },
+            "required": ["playlist_id"]
+          },
+          "description": "Override existing NFC tag association"
+        }
+      }
+    },
+    "upload_events": {
+      "description": "File upload progress events",
+      "events": {
+        "upload:progress": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "session_id": {"type": "string"},
+              "progress": {"type": "number", "minimum": 0, "maximum": 100},
+              "chunk_index": {"type": "integer"},
+              "file_name": {"type": "string"},
+              "complete": {"type": "boolean"}
+            },
+            "required": ["session_id", "progress"]
+          },
+          "description": "Upload progress updates"
+        },
+        "upload:complete": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "session_id": {"type": "string"},
+              "filename": {"type": "string"},
+              "track": {
+                "type": "object",
+                "properties": {
+                  "number": {"type": "integer"},
+                  "title": {"type": "string"},
+                  "filename": {"type": "string"},
+                  "duration": {"type": ["integer", "null"]}
+                }
+              }
+            },
+            "required": ["session_id", "filename"]
+          },
+          "description": "Upload completion notification"
+        },
+        "upload:error": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "session_id": {"type": "string"},
+              "error": {"type": "string"},
+              "code": {"type": "string"},
+              "context": {"type": "string"}
+            },
+            "required": ["session_id", "error"]
+          },
+          "description": "Upload error notification"
+        }
+      }
+    },
+    "youtube_events": {
+      "description": "YouTube download progress events",
+      "events": {
+        "youtube:progress": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "task_id": {"type": "string"},
+              "status": {"type": "string"},
+              "progress_percent": {"type": "number"},
+              "current_step": {"type": "string"}
+            },
+            "required": ["task_id", "status"]
+          },
+          "description": "YouTube download progress"
+        },
+        "youtube:complete": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "task_id": {"type": "string"},
+              "track": {
+                "type": "object",
+                "properties": {
+                  "title": {"type": "string"},
+                  "filename": {"type": "string"},
+                  "duration": {"type": ["integer", "null"]}
+                }
+              },
+              "playlist_id": {"type": "string"}
+            },
+            "required": ["task_id", "track", "playlist_id"]
+          },
+          "description": "YouTube download completion"
+        },
+        "youtube:error": {
+          "direction": "server_to_client",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "task_id": {"type": "string"},
+              "message": {"type": "string"}
+            },
+            "required": ["task_id", "message"]
+          },
+          "description": "YouTube download error"
+        }
+      }
+    }
+  },
+  "event_flow_patterns": {
+    "player_control_flow": {
+      "description": "Typical flow for player control operations",
+      "sequence": [
+        {
+          "step": 1,
+          "event": "POST /api/player/toggle",
+          "description": "Client sends HTTP request"
+        },
+        {
+          "step": 2,
+          "event": "state:player",
+          "description": "Server broadcasts player state change to all subscribed clients"
+        },
+        {
+          "step": 3,
+          "event": "ack:op",
+          "description": "Server sends operation acknowledgment if client_op_id provided"
+        }
+      ]
+    },
+    "playlist_modification_flow": {
+      "description": "Typical flow for playlist modifications",
+      "sequence": [
+        {
+          "step": 1,
+          "event": "POST /api/playlists",
+          "description": "Client sends HTTP request"
+        },
+        {
+          "step": 2,
+          "event": "state:playlist_created",
+          "description": "Server broadcasts playlist creation to playlists room"
+        },
+        {
+          "step": 3,
+          "event": "state:playlists",
+          "description": "Server broadcasts updated playlists collection"
+        }
+      ]
+    },
+    "real_time_position_flow": {
+      "description": "High-frequency position updates",
+      "sequence": [
+        {
+          "step": 1,
+          "event": "TrackProgressService (500ms timer)",
+          "description": "Background service checks playback position"
+        },
+        {
+          "step": 2,
+          "event": "state:track_position",
+          "description": "Lightweight position update broadcasted to all clients"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+# TMB Application Service Configuration
+# this should be moved to /etc/systemd/system/app.service
+# and then run sudo
+# systemctl daemon-reload
+# systemctl enable app.service
+# systemctl start app.service
+
+[Unit]
+Description=TMB Application Service
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/tomb
+
+# Environment settings
+# Include all necessary binary paths for the application
+Environment=PATH=/home/admin/tomb/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PYTHONUNBUFFERED=1
+Environment=FORCE_COLOR=1
+Environment=COLORTERM=truecolor
+
+# Main application startup command
+ExecStart=/home/admin/tomb/venv/bin/python start_app.py
+
+# Restart settings in case of failure
+Restart=on-failure
+RestartSec=5
+
+# Logging settings
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

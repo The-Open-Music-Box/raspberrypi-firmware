@@ -1,0 +1,10 @@
+# Raspberry Pi specific requirements for GPIO
+# Use this instead of lgpio on older Raspberry Pi OS versions
+
+# GPIO libraries (in order of preference)
+RPi.GPIO==0.7.1  # Most compatible with older systems
+gpiozero==2.0.1  # Already in base.txt but ensure it's installed
+pigpio==1.78  # Optional, provides more advanced features
+
+# Remove lgpio from requirements as it needs newer GLIBC
+# lgpio is replaced by RPi.GPIO for better compatibility

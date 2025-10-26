@@ -1,41 +1,67 @@
+# =========================
+# Project-specific
+# =========================
+public_release/
+release_dev/
+.windsurf/
+.claude/
+# =========================
 # Dependencies
-/node_modules
-/.pnp
+# =========================
+node_modules/
+.pnp
 .pnp.js
 yarn.lock
-package-lock.json
+# package-lock.json should be committed for reproducible builds
 
+# =========================
 # Build output
-/dist
-/build
-/.next
-/.nuxt
-/out
+# =========================
+dist/
+build/
+.next/
+.nuxt/
+out/
+static/
+.cache
+.parcel-cache
 
+# =========================
 # Testing
-/coverage
-/.nyc_output
-/cypress/videos/
-/cypress/screenshots/
+# =========================
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+.coverage
+.pytest_cache/
+htmlcov/
+contract-validation-reports/
 
-# Development
-.env
+# =========================
+# Environment variables
+# =========================
 .env.local
 .env.*.local
 .env.development.local
 .env.test.local
 .env.production.local
 
+# =========================
 # Logs
-logs
+# =========================
+logs/
+log/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Editor directories and files
-.idea
+# =========================
+# Editor & IDE
+# =========================
+.idea/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
@@ -44,10 +70,14 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
 *.sublime-workspace
 *.sublime-project
 
+# =========================
 # OS generated files
+# =========================
 .DS_Store
 .DS_Store?
 ._*
@@ -56,6 +86,9 @@ pnpm-debug.log*
 ehthumbs.db
 Thumbs.db
 
+# =========================
+# Framework caches
+# =========================
 # Vite
 *.local
 
@@ -65,24 +98,51 @@ Thumbs.db
 # Tailwind
 .tailwindcss-cache
 
-# Optional npm cache directory
+# =========================
+# Optional caches
+# =========================
 .npm
-
-# Optional eslint cache
 .eslintcache
-
-# Optional stylelint cache
 .stylelintcache
 
-# Temporary files
+# =========================
+# Temporary & misc
+# =========================
 *.tmp
 *.temp
-
-# Production files
 *.production
 *.prod
-
-# Misc
 *.pem
-.cache
-.parcel-cache
+*.db
+*.db-shm
+*.db-wal
+uploads/
+pydocstyle_report.txt
+isort_report.txt
+
+# =========================
+# Python artifacts
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/

@@ -1,0 +1,105 @@
+{
+  "name": "themusicbox",
+  "version": "0.5.0",
+  "private": false,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "build:analyze": "vue-cli-service build --analyze",
+    "build:report": "vue-cli-service build --report",
+    "optimize:images": "node scripts/optimize-images.js",
+    "lint": "vue-cli-service lint",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch",
+    "test:unit": "vitest run",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:integration": "vitest run src/tests/integration",
+    "test:contracts": "vitest run src/tests/contracts",
+    "fix:unit-tests": "node scripts/repair-unit-tests.js"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.5.2",
+    "@fortawesome/fontawesome-svg-core": "^6.5.2",
+    "@fortawesome/free-brands-svg-icons": "^6.5.2",
+    "@fortawesome/free-regular-svg-icons": "^6.5.2",
+    "@fortawesome/free-solid-svg-icons": "^6.5.2",
+    "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@headlessui/vue": "^1.7.22",
+    "@heroicons/vue": "^2.1.5",
+    "axios": "^1.12.2",
+    "core-js": "^3.8.3",
+    "pinia": "^3.0.3",
+    "register-service-worker": "^1.7.2",
+    "socket.io-client": "^4.8.1",
+    "vue": "^3.2.13",
+    "vue-class-component": "^8.0.0-0",
+    "vue-i18n": "^9.14.4",
+    "vue-router": "^4.0.3",
+    "vuedraggable": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/ui": "^3.2.4",
+    "@vue/cli-plugin-babel": "^5.0.8",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-plugin-pwa": "~5.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-typescript": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "@vue/eslint-config-typescript": "^9.1.0",
+    "@vue/test-utils": "^2.4.0-alpha.2",
+    "autoprefixer": "^10.4.19",
+    "compression-webpack-plugin": "^10.0.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^8.0.3",
+    "glob": "^11.0.3",
+    "happy-dom": "^19.0.1",
+    "imagemin": "^8.0.1",
+    "imagemin-mozjpeg": "^10.0.0",
+    "imagemin-pngquant": "^9.0.2",
+    "imagemin-webp": "^7.0.0",
+    "jsdom": "^26.1.0",
+    "lint-staged": "^11.1.2",
+    "msw": "^2.11.3",
+    "postcss": "^8.4.38",
+    "sass": "^1.32.7",
+    "sass-loader": "^12.0.0",
+    "tailwindcss": "^3.4.4",
+    "typescript": "~5.3.0",
+    "vite": "^6.3.6",
+    "vitest": "^3.2.4",
+    "webpack-bundle-analyzer": "^4.9.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended",
+      "@vue/typescript/recommended"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2020
+    },
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,vue,ts,tsx}": "vue-cli-service lint"
+  }
+}
