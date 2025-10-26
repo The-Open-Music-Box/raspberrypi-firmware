@@ -29,6 +29,14 @@ readonly NC='\033[0m' # No Color
 readonly PROJECT_ROOT="$(dirname "$(realpath "$0")")"
 readonly CONFIG_FILE="${PROJECT_ROOT}/sync_tmbdev.config"
 readonly DEPLOY_CONFIG_FILE="${PROJECT_ROOT}/.deploy_config"
+readonly VERSION_FILE="${PROJECT_ROOT}/VERSION"
+
+# Read app version
+if [ -f "$VERSION_FILE" ]; then
+    readonly APP_VERSION=$(cat "$VERSION_FILE" | tr -d '\n')
+else
+    readonly APP_VERSION="unknown"
+fi
 
 # Default configuration
 DEPLOY_MODE=""
@@ -57,6 +65,7 @@ print_header() {
 
 show_help() {
     echo -e "${BOLD}${SCRIPT_NAME} v${SCRIPT_VERSION}${NC}"
+    echo -e "${BOLD}App Version: v${APP_VERSION}${NC}"
     echo "==============================================="
     echo ""
     echo "USAGE:"
@@ -533,7 +542,7 @@ parse_arguments() {
 # Main execution
 main() {
     # Show header
-    print_header "🎵 ${SCRIPT_NAME} v${SCRIPT_VERSION}"
+    print_header "🎵 ${SCRIPT_NAME} v${SCRIPT_VERSION} (App v${APP_VERSION})"
 
     # Parse arguments
     parse_arguments "$@"
@@ -553,6 +562,7 @@ main() {
     # Show configuration
     if [ "$QUIET" != true ]; then
         echo "Configuration:"
+        echo "  • App version: v$APP_VERSION"
         echo "  • Mode: $DEPLOY_MODE"
         echo "  • Run tests: $RUN_TESTS"
         echo "  • Build frontend: $BUILD_FRONTEND"
