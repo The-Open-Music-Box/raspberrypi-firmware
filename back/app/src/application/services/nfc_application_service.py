@@ -57,6 +57,12 @@ class NfcApplicationService:
         self._tag_detected_callbacks: List[Callable[[str], None]] = []
         self._association_callbacks: List[Callable[[Dict], None]] = []
 
+        # CRITICAL FIX: Active tag state management
+        # Prevents multiple playback triggers from the same tag
+        self._current_active_tag: Optional[str] = None
+        self._tag_triggered_playback: bool = False
+        self._last_trigger_time: Optional[float] = None
+
         # Setup hardware callbacks
         self._nfc_hardware.set_tag_detected_callback(self._on_tag_detected)
         self._nfc_hardware.set_tag_removed_callback(self._on_tag_removed)
@@ -318,8 +324,18 @@ class NfcApplicationService:
         asyncio.create_task(self._handle_tag_detection(tag_identifier))
 
     def _on_tag_removed(self) -> None:
-        """Handle tag removal from hardware."""
-        logger.debug("📱 NFC tag removed")
+        """Handle tag removal from hardware.
+
+        CRITICAL FIX: Reset active tag state when tag is removed.
+        This allows the same tag to trigger playback again when re-inserted.
+        """
+        if self._current_active_tag:
+            logger.info(f"🔓 Tag {self._current_active_tag} removed, resetting state for potential re-trigger")
+            self._current_active_tag = None
+            self._tag_triggered_playback = False
+            self._last_trigger_time = None
+        else:
+            logger.debug("📱 NFC tag removed (no active tag was tracked)")
 
     async def _handle_tag_detection(self, tag_identifier: TagIdentifier) -> None:
         """Handle detected tag processing.
@@ -329,6 +345,7 @@ class NfcApplicationService:
         when user is trying to associate a tag.
         """
         logger.info(f"🔄 NfcApplicationService processing tag detection: {tag_identifier}")
+        tag_uid = str(tag_identifier)
 
         # Check if ANY association session is active
         active_sessions = self._association_service.get_active_sessions()
@@ -373,6 +390,19 @@ class NfcApplicationService:
 
         # NORMAL MODE: No active association sessions, proceed with normal tag detection
         logger.info(f"▶️ Normal mode, processing tag detection for playback: {tag_identifier}")
+
+        # CRITICAL FIX: Check if this is the same tag already active
+        if self._current_active_tag == tag_uid:
+            if self._tag_triggered_playback:
+                logger.debug(f"🔒 Tag {tag_uid} already active and playback already triggered, ignoring duplicate detection")
+                return  # Ignore repeated detections of the same tag
+
+        # CRITICAL FIX: New tag or tag re-inserted after removal
+        logger.info(f"✨ New tag detected or tag re-inserted: {tag_uid}")
+        import time
+        self._current_active_tag = tag_uid
+        self._tag_triggered_playback = True
+        self._last_trigger_time = time.time()
 
         # Process through association service (for tag_detected action)
         result = await self._association_service.process_tag_detection(tag_identifier)

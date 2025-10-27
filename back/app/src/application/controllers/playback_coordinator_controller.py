@@ -403,6 +403,21 @@ class PlaybackCoordinator:
 
                     logger.info(f"🎵 Found playlist '{playlist_title}' for NFC tag")
 
+                    # CRITICAL FIX: Check if this playlist is already active and playing
+                    current_status = self.get_playback_status()
+                    current_playlist_id = current_status.get("active_playlist_id")
+                    is_playing = current_status.get("is_playing")
+                    is_paused = current_status.get("is_paused")
+
+                    if current_playlist_id == playlist_id:
+                        if is_playing:
+                            logger.info(f"🔒 Playlist '{playlist_title}' is already playing, ignoring duplicate trigger")
+                            return  # Avoid restarting the same playlist
+                        elif is_paused:
+                            logger.info(f"▶️ Playlist '{playlist_title}' is paused, resuming playback")
+                            self.resume()
+                            return  # Resume instead of restarting
+
                     # Load and start the playlist (async)
                     load_success = await self.load_playlist(playlist_id)
                     if load_success:

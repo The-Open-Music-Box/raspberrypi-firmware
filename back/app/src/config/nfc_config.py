@@ -26,7 +26,7 @@ class NFCConfig:
     tag_cooldown: float = 0.5  # Cooldown period after tag detection
     tag_removal_threshold: float = 1.0  # Time to confirm tag removal
     max_errors: int = 3  # Max consecutive errors before reset
-    debounce_time: float = 0.2  # Debounce time for tag detection
+    debounce_time: float = 0.3  # Debounce time for tag detection (increased for stability)
 
     # Playback control
     manual_action_priority_window: float = 1.0  # Window for manual actions to override NFC
