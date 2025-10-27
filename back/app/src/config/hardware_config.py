@@ -22,8 +22,14 @@ class HardwareConfig:
     gpio_next_track_button: int = 16
     gpio_previous_track_button: int = 26
     gpio_volume_encoder_clk: int = 7
-    gpio_volume_encoder_dt: int = 24
+    gpio_volume_encoder_dt: int = 8  # Changed from 24 to avoid conflict with LED blue
     gpio_volume_encoder_sw: int = 23
+
+    # RGB LED pins (SMD5050) - User specified wiring
+    gpio_led_red: int = 25
+    gpio_led_green: int = 12
+    gpio_led_blue: int = 24  # As per user's physical wiring
+
     # Button settings
     button_debounce_time: float = 0.3  # Debounce time in seconds
     button_hold_time: float = 2.0  # Time to register a long press
@@ -62,6 +68,9 @@ class HardwareConfig:
             self.gpio_volume_encoder_clk,
             self.gpio_volume_encoder_dt,
             self.gpio_volume_encoder_sw,
+            self.gpio_led_red,
+            self.gpio_led_green,
+            self.gpio_led_blue,
         ]
 
         for pin in gpio_pins:

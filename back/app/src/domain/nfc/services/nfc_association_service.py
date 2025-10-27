@@ -116,13 +116,33 @@ class NfcAssociationService:
                 result = await self._process_tag_for_session(tag, session)
                 results.append(result)
 
-        # If no active sessions, just save the tag detection
+        # If no active sessions, check DATABASE for association (normal mode)
         if not results:
+            # ✅ CHECK DATABASE (SSOT) - Single Source of Truth even in normal mode
+            # This ensures we detect tags that were associated in previous sessions
+            playlist_id = None
+            if self._playlist_repository:
+                try:
+                    existing_playlist = await self._playlist_repository.find_by_nfc_tag(
+                        str(tag_identifier)
+                    )
+                    if existing_playlist:
+                        playlist_id = existing_playlist.id
+                        logger.info(
+                            f"🔍 Normal mode DB check: Tag {tag_identifier} found associated with playlist {playlist_id}"
+                        )
+                    else:
+                        logger.debug(
+                            f"🔍 Normal mode DB check: Tag {tag_identifier} NOT associated"
+                        )
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to check DB for tag association: {e}")
+
             await self._nfc_repository.save_tag(tag)
             return {
                 "action": "tag_detected",
                 "tag_id": str(tag_identifier),
-                "associated_playlist": tag.get_associated_playlist_id(),
+                "associated_playlist": playlist_id,  # ✅ Now from DB, not just memory cache
                 "no_active_sessions": True,
             }
 

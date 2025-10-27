@@ -150,6 +150,16 @@ class Application:
         Args:
             tag_data: The data associated with the NFC tag event.
         """
+        # Get LED event handler from domain bootstrap
+        led_handler = None
+        try:
+            from app.src.infrastructure.di.container import get_container
+            container = get_container()
+            domain_bootstrap = container.get("domain_bootstrap")
+            led_handler = domain_bootstrap.led_event_handler
+        except Exception:
+            pass  # LED not available, continue without it
+
         logger.info(f"🎵 Processing NFC event: {tag_data}")
         if isinstance(tag_data, dict) and tag_data.get("absence"):
             logger.debug("Handling NFC tag absence event.")
@@ -159,6 +169,13 @@ class Application:
                 return
             self._playlist_controller.handle_tag_absence()
         else:
+            # Show NFC scanning LED state
+            if led_handler:
+                try:
+                    await led_handler.on_nfc_scan_started()
+                except Exception as e:
+                    logger.debug(f"LED NFC scan indicator failed: {e}")
+
             uid = None
             full_data = None
             if isinstance(tag_data, dict):
@@ -176,6 +193,12 @@ class Application:
                 if not playlist_controller:
                     logger.error("❌ Playlist controller not initialized - cannot handle NFC tag scanned event",
                     )
+                    # Show NFC error
+                    if led_handler:
+                        try:
+                            await led_handler.on_nfc_scan_error()
+                        except Exception:
+                            pass
                     return
 
                 # Schedule async handler in event loop
@@ -183,8 +206,20 @@ class Application:
 
                 try:
                     asyncio.create_task(playlist_controller.handle_tag_scanned(uid, full_data))
+                    # Show NFC success
+                    if led_handler:
+                        try:
+                            await led_handler.on_nfc_scan_success()
+                        except Exception:
+                            pass
                 except Exception as e:
                     logger.error(f"Error scheduling NFC event handler: {e}")
+                    # Show NFC error
+                    if led_handler:
+                        try:
+                            await led_handler.on_nfc_scan_error()
+                        except Exception:
+                            pass
 
     # MARK: - Domain Playlist Synchronization
     @handle_errors("_sync_playlists_domain")
@@ -267,10 +302,19 @@ class Application:
         playlist_repository = infrastructure_container.get("playlist_repository")
         logger.info("✅ Obtained playlist repository for NFC-Playlist synchronization")
 
+        # Get LED event handler for visual feedback (optional)
+        led_event_handler = None
+        try:
+            led_event_handler = infrastructure_container.get("led_event_handler")
+            logger.info("✅ LED event handler obtained for NFC visual feedback")
+        except Exception as e:
+            logger.debug(f"LED event handler not available (optional): {e}")
+
         self._nfc_app_service = NfcApplicationService(
             nfc_hardware=self._nfc_handler,
             nfc_repository=nfc_repository,
             playlist_repository=playlist_repository,  # Enable cross-repository synchronization
+            led_event_handler=led_event_handler,  # LED visual feedback
         )
         # Register callbacks for tag detection (NfcApplicationService handles hardware callbacks internally)
         self._nfc_app_service.register_tag_detected_callback(self._on_nfc_tag_detected)

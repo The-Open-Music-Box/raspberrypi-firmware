@@ -8,7 +8,7 @@ This module provides the main entry point for initializing the domain-driven arc
 and provides compatibility layers for legacy code.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import logging
 
 # Direct imports instead of dynamic imports
@@ -29,10 +29,25 @@ class DomainBootstrap:
 
     # MARK: - Initialization
 
-    def __init__(self):
-        """Initialize the bootstrap."""
+    def __init__(self, led_manager: Optional[Any] = None, led_event_handler: Optional[Any] = None):
+        """Initialize the bootstrap.
+
+        Args:
+            led_manager: Optional LED state manager (injected via DI)
+            led_event_handler: Optional LED event handler (injected via DI)
+        """
         self._is_initialized = False
         self._is_stopping = False
+
+        # LED management (injected dependencies)
+        self._led_manager = led_manager
+        self._led_event_handler = led_event_handler
+
+        # Log LED component injection status
+        if led_manager and led_event_handler:
+            logger.info(f"✅ DomainBootstrap created WITH LED components: manager={type(led_manager).__name__}, handler={type(led_event_handler).__name__}")
+        else:
+            logger.warning(f"⚠️ DomainBootstrap created WITHOUT LED components: manager={led_manager}, handler={led_event_handler}")
 
     @handle_errors(operation_name="initialize", component="domain.bootstrap")
     def initialize(self, existing_backend: Any = None) -> None:
@@ -56,6 +71,12 @@ class DomainBootstrap:
                 f"Pure domain audio initialized with {type(default_backend).__name__}"
             )
 
+        # LED system already injected via constructor (if available)
+        if self._led_manager and self._led_event_handler:
+            logger.info("✅ LED system available (injected via DI)")
+        else:
+            logger.debug("LED system not available (not injected)")
+
         self._is_initialized = True
         logger.info("✅ Domain bootstrap initialized")
 
@@ -69,10 +90,48 @@ class DomainBootstrap:
             raise RuntimeError("DomainBootstrap not initialized")
             return
 
+        # Initialize LED system and show STARTING state
+        if self._led_manager and self._led_event_handler:
+            try:
+                logger.info("💡 Initializing LED system...")
+                await self._led_manager.initialize()
+                logger.info("💡 LED manager initialized")
+                await self._led_event_handler.initialize()
+                logger.info("💡 LED event handler initialized")
+                await self._led_event_handler.on_system_starting()
+                logger.info("💡 LED system started - showing STARTING state (white blinking)")
+            except Exception as e:
+                logger.error(f"❌ LED system start failed: {e}", exc_info=True)
+        else:
+            logger.warning("⚠️ LED system NOT available - skipping LED initialization")
+
+        # Start audio domain (critical hardware)
         if audio_domain_container.is_initialized:
-            await audio_domain_container.start()
+            try:
+                await audio_domain_container.start()
+                logger.info("✅ Audio domain started successfully")
+            except Exception as e:
+                logger.error(f"❌ Audio domain start failed (boot error): {e}", exc_info=True)
+                # Show boot hardware error LED (slow blink red)
+                if self._led_event_handler:
+                    try:
+                        await self._led_event_handler.on_boot_error(f"Audio initialization failed: {str(e)}")
+                    except Exception as led_error:
+                        logger.warning(f"LED boot error indication failed: {led_error}")
+                # Re-raise to prevent app from starting with broken audio
+                raise
         else:
             logger.warning("⚠️ Audio domain not initialized, skipping start")
+
+        # Clear STARTING state and set to IDLE when ready
+        if self._led_event_handler:
+            try:
+                logger.info("💡 System ready - transitioning LED to IDLE state...")
+                await self._led_event_handler.on_system_ready()
+                logger.info("💡 LED system ready - showing IDLE state (solid white)")
+            except Exception as e:
+                logger.error(f"❌ LED ready state failed: {e}", exc_info=True)
+
         # Note: unified_controller has been moved to application layer
         logger.info("🚀 Domain services started")
 
@@ -87,6 +146,15 @@ class DomainBootstrap:
             # Note: unified_controller has been moved to application layer
             if audio_domain_container.is_initialized:
                 await audio_domain_container.stop()
+
+            # Cleanup LED
+            if self._led_manager:
+                try:
+                    await self._led_manager.cleanup()
+                    logger.info("💡 LED system cleaned up")
+                except Exception as e:
+                    logger.warning(f"⚠️ LED cleanup failed: {e}")
+
             logger.debug("Domain services stopped")
         except Exception as e:
             logger.error(f"Error stopping domain services: {e}")
@@ -111,6 +179,11 @@ class DomainBootstrap:
     def is_initialized(self) -> bool:
         """Check if bootstrap is initialized."""
         return self._is_initialized
+
+    @property
+    def led_event_handler(self) -> Optional[Any]:
+        """Get LED event handler for application use."""
+        return self._led_event_handler
 
     # MARK: - System Status
 

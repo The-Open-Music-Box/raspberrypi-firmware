@@ -462,10 +462,12 @@ class NFCAPIRoutes:
                         client_op_id=client_op_id
                     )
 
-                logger.info(f"Cancelling NFC association session {session_id}")
+                logger.info(f"🚫 Cancelling NFC association session {session_id}")
 
                 # Stop the association session
+                logger.info(f"🔄 Calling stop_association_use_case for session {session_id}")
                 result = await nfc_service.stop_association_use_case(session_id)
+                logger.info(f"✅ stop_association_use_case returned: {result}")
 
                 if result.get("status") == "success":
                     # Broadcast "cancelled" state to all clients
