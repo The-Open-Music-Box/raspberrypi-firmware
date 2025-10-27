@@ -59,7 +59,7 @@
             <p><strong>{{ $t('nfc.associate.existingPlaylist') }}:</strong> {{ existingPlaylistInfo.title }}</p>
           </div>
           <div class="button-group">
-            <button class="btn btn-secondary" @click="handleClose">
+            <button class="btn btn-secondary" @click="cancelAssociation">
               {{ $t('common.cancel') }}
             </button>
             <button class="btn btn-warning" @click="replaceAssociation">
@@ -75,7 +75,7 @@
           </div>
           <p>{{ message || $t('nfc.associate.error') }}</p>
           <div class="button-group">
-            <button class="btn btn-secondary" @click="handleClose">
+            <button class="btn btn-secondary" @click="cancelAssociation">
               {{ $t('common.close') }}
             </button>
             <button class="btn btn-primary" @click="retryAssociation">
@@ -102,7 +102,7 @@
           </div>
           <p>{{ $t('nfc.associate.timedOut') }}</p>
           <div class="button-group">
-            <button class="btn btn-secondary" @click="handleClose">
+            <button class="btn btn-secondary" @click="cancelAssociation">
               {{ $t('common.close') }}
             </button>
             <button class="btn btn-primary" @click="retryAssociation">
@@ -342,6 +342,11 @@ async function cancelAssociation() {
   stopCountdown()
   stopAssociationPolling()
   state.value = 'cancelled'
+
+  // Auto-close dialog after showing cancelled state briefly
+  setTimeout(() => {
+    handleClose()
+  }, 1500)
 }
 
 function retryAssociation() {
@@ -370,7 +375,8 @@ function handleBackdropClick() {
 async function handleClose() {
   console.log('🚪 handleClose() called, state:', state.value, 'session_id:', currentSessionId.value)
 
-  // Stop any ongoing association
+  // Stop any ongoing association if user closes with X button while waiting
+  // (cancelAssociation() handles this for Cancel buttons)
   if (state.value === 'waiting' && currentSessionId.value) {
     try {
       console.log('🔄 Cancelling association on close with session_id:', currentSessionId.value)
