@@ -17,31 +17,31 @@
 
       <!-- Real-time (Socket.IO) debug info -->
       <section>
-        <h2 class="text-lg font-semibold mb-2">Real-time (Socket.IO)</h2>
+        <h2 class="text-lg font-semibold mb-2">{{ t('settings.realtime') }}</h2>
         <div class="rounded border border-border p-4 bg-background">
           <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="text-onBackground-medium">Connection</div>
-            <div class="text-onBackground">{{ isConnected ? 'connected' : 'disconnected' }}</div>
+            <div class="text-onBackground-medium">{{ t('settings.connection') }}</div>
+            <div class="text-onBackground">{{ isConnected ? t('settings.connected') : t('settings.disconnected') }}</div>
 
-            <div class="text-onBackground-medium">Socket ID</div>
+            <div class="text-onBackground-medium">{{ t('settings.socketId') }}</div>
             <div class="text-onBackground">{{ socketId || '-' }}</div>
 
-            <div class="text-onBackground-medium">Last server_seq</div>
+            <div class="text-onBackground-medium">{{ t('settings.lastServerSeq') }}</div>
             <div class="text-onBackground">{{ lastServerSeq }}</div>
 
-            <div class="text-onBackground-medium">Last event</div>
+            <div class="text-onBackground-medium">{{ t('settings.lastEvent') }}</div>
             <div class="text-onBackground">{{ lastEventName || '-' }}</div>
 
-            <div class="text-onBackground-medium">Last playlist_id</div>
+            <div class="text-onBackground-medium">{{ t('settings.lastPlaylistId') }}</div>
             <div class="text-onBackground">{{ lastPlaylistId || '-' }}</div>
 
-            <div class="text-onBackground-medium">Last timestamp</div>
+            <div class="text-onBackground-medium">{{ t('settings.lastTimestamp') }}</div>
             <div class="text-onBackground">{{ lastTimestamp ? new Date(lastTimestamp * 1000).toLocaleString() : '-' }}</div>
           </div>
 
           <div class="mt-3">
             <button class="text-primary underline text-sm" @click="showPayload = !showPayload">
-              {{ showPayload ? 'Hide' : 'Show' }} last payload
+              {{ showPayload ? t('settings.hidePayload') : t('settings.showPayload') }}
             </button>
             <pre v-if="showPayload" class="mt-2 text-xs overflow-auto max-h-64 bg-surface p-2 rounded">
 {{ formattedPayload }}
