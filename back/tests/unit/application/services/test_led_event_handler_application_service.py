@@ -195,10 +195,13 @@ class TestPlaybackStateEvents:
 
     @pytest.mark.asyncio
     async def test_on_playback_state_stopped(self, initialized_handler, mock_led_manager):
-        """Test playback state change to STOPPED."""
+        """Test playback state change to STOPPED (should revert to IDLE)."""
         await initialized_handler.on_playback_state_changed(PlaybackState.STOPPED)
 
-        mock_led_manager.set_state.assert_called_once_with(LEDState.STOPPED)
+        # When stopped, should clear PLAYING/PAUSED states and set IDLE
+        mock_led_manager.clear_state.assert_any_call(LEDState.PLAYING)
+        mock_led_manager.clear_state.assert_any_call(LEDState.PAUSED)
+        mock_led_manager.set_state.assert_called_with(LEDState.IDLE)
 
     @pytest.mark.asyncio
     async def test_on_playback_state_unknown(self, initialized_handler, mock_led_manager):
@@ -418,7 +421,7 @@ class TestEventSequencing:
 
     @pytest.mark.asyncio
     async def test_playback_sequence(self, initialized_handler, mock_led_manager):
-        """Test playback sequence: PLAYING → PAUSED → PLAYING → STOPPED."""
+        """Test playback sequence: PLAYING → PAUSED → PLAYING → STOPPED (reverts to IDLE)."""
         # Start playing
         await initialized_handler.on_playback_state_changed(PlaybackState.PLAYING)
         mock_led_manager.set_state.assert_called_with(LEDState.PLAYING)
@@ -430,9 +433,11 @@ class TestEventSequencing:
         # Resume
         await initialized_handler.on_playback_state_changed(PlaybackState.PLAYING)
 
-        # Stop
+        # Stop - should clear playback states and revert to IDLE
         await initialized_handler.on_playback_state_changed(PlaybackState.STOPPED)
-        mock_led_manager.set_state.assert_called_with(LEDState.STOPPED)
+        mock_led_manager.clear_state.assert_any_call(LEDState.PLAYING)
+        mock_led_manager.clear_state.assert_any_call(LEDState.PAUSED)
+        mock_led_manager.set_state.assert_called_with(LEDState.IDLE)
 
     @pytest.mark.asyncio
     async def test_error_and_recovery_sequence(self, initialized_handler, mock_led_manager):

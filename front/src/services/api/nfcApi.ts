@@ -81,5 +81,20 @@ export const nfcApi = {
       API_ROUTES.NFC_STATUS
     )
     return ApiResponseHandler.extractData(response)
+  },
+
+  /**
+   * Cancel an active NFC association session
+   */
+  async cancelNfcAssociation(sessionId: string, clientOpId?: string): Promise<void> {
+    const response = await apiClient.delete<ApiResponse<void>>(
+      API_ROUTES.NFC_CANCEL_SESSION(sessionId),
+      {
+        data: {
+          client_op_id: clientOpId || generateClientOpId('nfc_cancel')
+        }
+      }
+    )
+    return ApiResponseHandler.extractData(response)
   }
 }

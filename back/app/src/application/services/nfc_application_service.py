@@ -174,10 +174,12 @@ class NfcApplicationService:
         success = await self._association_service.stop_association_session(session_id)
 
         # Clear association mode LED when session stops
+        # The LED state manager will automatically revert to the next highest priority state
+        # (e.g., PLAYING if music is playing, or IDLE if nothing is playing)
         if self._led_event_handler:
             try:
                 await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
-                logger.info(f"💡 Association mode stopped, cleared blue pulse LED")
+                logger.info(f"💡 Association mode stopped, cleared blue pulse LED (will revert to previous state)")
             except Exception as led_error:
                 logger.warning(f"LED event failed (non-critical): {led_error}")
 

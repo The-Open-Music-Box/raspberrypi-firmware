@@ -33,12 +33,13 @@ The LED system provides visual feedback for all major application events using a
 | `NFC_SUCCESS` | Green | Flash | 75 | Tag scan successful |
 | `NFC_ERROR` | Red | Flash | 75 | NFC scan error |
 
-### Playback States (Priority 35-50)
+### Playback States (Priority 40-50)
 | State | Color | Animation | Priority | Trigger Event |
 |-------|-------|-----------|----------|---------------|
 | `PLAYING` | Green | Solid | 50 | Music playing |
 | `PAUSED` | Yellow | Solid | 40 | Playback paused |
-| `STOPPED` | Off | Solid | 35 | Playback stopped |
+
+**Note on STOPPED state**: When playback stops (`PlaybackState.STOPPED`), the LED event handler clears PLAYING/PAUSED states and explicitly sets IDLE (solid white, priority 10) to maintain visual feedback that the system is ready. The `LEDState.STOPPED` (off, priority 35) is no longer used in normal operation.
 
 ### System States (Priority 10-95)
 | State | Color | Animation | Priority | Trigger Event |
@@ -224,7 +225,7 @@ The LED system uses a priority-based stack:
 4. NFC scan → NFC_SCANNING (priority 80, blue pulse)
    - NFC_SCANNING overrides PLAYING
 5. Scan timeout (3s) → falls back to PLAYING (green solid)
-6. Stop playback → STOPPED cleared, falls back to IDLE (white solid)
+6. Stop playback → PLAYING/PAUSED cleared, IDLE set → IDLE (white solid)
 ```
 
 ### Timeout Behavior

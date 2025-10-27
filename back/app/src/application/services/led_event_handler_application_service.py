@@ -72,16 +72,21 @@ class LEDEventHandler:
             new_state: New playback state
         """
         try:
-            led_state_mapping = {
-                PlaybackState.PLAYING: LEDState.PLAYING,
-                PlaybackState.PAUSED: LEDState.PAUSED,
-                PlaybackState.STOPPED: LEDState.STOPPED,
-            }
-
-            led_state = led_state_mapping.get(new_state)
-            if led_state:
-                await self._led_manager.set_state(led_state)
-                logger.debug(f"LED updated for playback state: {new_state.value} → {led_state.value}")
+            # Map playback states to LED states
+            # Note: STOPPED reverts to IDLE (solid white) rather than turning off the LED
+            if new_state == PlaybackState.PLAYING:
+                await self._led_manager.set_state(LEDState.PLAYING)
+                logger.debug(f"LED updated for playback state: PLAYING → solid green")
+            elif new_state == PlaybackState.PAUSED:
+                await self._led_manager.set_state(LEDState.PAUSED)
+                logger.debug(f"LED updated for playback state: PAUSED → solid yellow")
+            elif new_state == PlaybackState.STOPPED:
+                # Clear PLAYING/PAUSED states and ensure IDLE is set
+                await self._led_manager.clear_state(LEDState.PLAYING)
+                await self._led_manager.clear_state(LEDState.PAUSED)
+                # Explicitly set IDLE state to ensure LED shows solid white
+                await self._led_manager.set_state(LEDState.IDLE)
+                logger.debug(f"LED updated for playback state: STOPPED → IDLE (solid white)")
             else:
                 logger.debug(f"No LED mapping for playback state: {new_state.value}")
 

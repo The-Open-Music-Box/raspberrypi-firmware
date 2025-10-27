@@ -46,6 +46,7 @@ vi.mock('@/services/api/nfcApi', () => ({
     startNfcScan: vi.fn(),
     associateNfcTag: vi.fn(),
     removeNfcAssociation: vi.fn(),
+    cancelNfcAssociation: vi.fn(),
     getNfcStatus: vi.fn()
   }
 }))
@@ -167,8 +168,9 @@ describe('apiService', () => {
     ;(nfcApi.getNfcStatus as any).mockResolvedValue({})
     ;(nfcApi.associateNfcTag as any).mockResolvedValue({})
     ;(nfcApi.removeNfcAssociation as any).mockResolvedValue({})
+    ;(nfcApi.cancelNfcAssociation as any).mockResolvedValue({})
     await apiService.startNfcAssociation('pid')
-    await apiService.cancelNfcObservation('id')
+    await apiService.cancelNfcObservation('session-id')
     await apiService.overrideNfcAssociation('pid')
     await apiService.startNfcScan(123, 'id')
     await apiService.getNfcStatus()
