@@ -454,12 +454,23 @@ class WM8960AudioBackend(BaseAudioBackend):
                 pygame_volume = self._volume / 100.0
                 pygame.mixer.music.set_volume(pygame_volume)
                 logger.debug(f"🔊 WM8960: pygame volume set to {pygame_volume}")
-                # Also set system volume via ALSA
-                volume_percent = f"{self._volume}%"
-                subprocess.run(
-                    ["amixer", "sset", "Master", volume_percent], check=True, capture_output=True
-                )
-                logger.debug(f"🔊 WM8960: ALSA volume set to {self._volume}%")
+
+                # Try to set system volume via ALSA (optional - pygame is the primary control)
+                try:
+                    volume_percent = f"{self._volume}%"
+                    subprocess.run(
+                        ["amixer", "sset", "Master", volume_percent],
+                        check=True,
+                        capture_output=True,
+                        timeout=1.0  # Don't hang if amixer is slow
+                    )
+                    logger.debug(f"🔊 WM8960: ALSA volume set to {self._volume}%")
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+                    # ALSA control failed - this is OK, pygame volume is still set
+                    logger.debug(f"🔊 WM8960: ALSA volume control unavailable (using pygame only): {e}")
+
+                return True
+            return False
 
     @property
     def is_paused(self) -> bool:

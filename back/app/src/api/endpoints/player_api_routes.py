@@ -93,6 +93,14 @@ class PlayerAPIRoutes:
                 # Use player service
                 result = await self._player_service.play_use_case()
 
+                # Check if service returned an error
+                if result.get("status") == "error":
+                    logger.error(f"Service error in play_use_case: {result.get('message')}")
+                    return UnifiedResponseService.internal_error(
+                        message=result.get("message", "Failed to start playback"),
+                        operation="play_player"
+                    )
+
                 if result.get("success"):
                     status = result.get("status", {})
 
@@ -461,13 +469,14 @@ class PlayerAPIRoutes:
                     # Broadcast volume change
                     await self._broadcasting_service.broadcast_volume_changed(body.volume)
 
-                    # Get updated status for server_seq
+                    # CONTRACT COMPLIANT: Return PlayerState (which includes volume field)
+                    # Get updated status after volume change
                     status_result = await self._player_service.get_status_use_case()
                     status = status_result.get("status", {})
 
                     return UnifiedResponseService.success(
                         message=f"Volume set to {body.volume}%",
-                        data={"volume": body.volume, **status},
+                        data=status,
                         server_seq=status.get("server_seq"),
                         client_op_id=body.client_op_id
                     )

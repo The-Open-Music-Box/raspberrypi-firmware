@@ -81,7 +81,7 @@ class AudioApplicationService:
                 )
                 tracks.append(track)
             playlist = Playlist(
-                name=playlist_data.get("name", ""),
+                title=playlist_data.get("title", playlist_data.get("name", "")),
                 tracks=tracks,
                 description=playlist_data.get("description"),
                 id=playlist_data.get("id"),

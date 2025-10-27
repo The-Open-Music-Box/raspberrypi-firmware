@@ -64,7 +64,7 @@ export interface Playlist {
   id: string;
   title: string;                 // Resolved to 'title' everywhere (no more name/title confusion)
   description: string;           // Now required with default empty string
-  
+
   // Type identifier
   type: 'playlist';
 
@@ -74,14 +74,15 @@ export interface Playlist {
   // Tracks
   tracks: Track[];
   track_count: number;           // Always matches tracks.length
+  total_duration_ms?: number;    // Contract v3.1.0: Total playlist duration in milliseconds
 
   // Playback state
   last_played: number;           // Unix timestamp in milliseconds
-  
+
   // Timestamps (can be null from backend)
   created_at: string | null;     // ISO8601 format or null
   updated_at?: string | null;    // ISO8601 format or null
-  
+
   // State synchronization
   server_seq: number;
   playlist_seq: number;
@@ -113,30 +114,32 @@ export interface PlayerState {
   // Playback state
   is_playing: boolean;
   state: PlaybackState;          // New detailed state field
-  
+
   // Current playlist/track
   active_playlist_id?: string;
   active_playlist_title?: string;
   active_track_id?: string;
+  active_track_number?: number;  // Contract v3.1.0: Track number in playlist
+  active_track_title?: string;   // Contract v3.1.0: Track title for lightweight updates
   active_track?: Track;          // Full track object, not partial
-  
+
   // Playback position
   position_ms: number;
   duration_ms: number;           // Now required, not optional
-  
-  // Playlist navigation  
+
+  // Playlist navigation
   track_index: number;           // Now required
   track_count: number;           // Now required
   can_prev: boolean;
   can_next: boolean;
-  
+
   // Audio control
   volume: number;                // Now required (0-100)
   muted: boolean;                // New field
-  
+
   // State synchronization
   server_seq: number;
-  
+
   // Optional error information
   error_message?: string;
 }
@@ -219,6 +222,41 @@ export interface NFCAssociation {
   playlist_id: string;
   playlist_title: string;
   created_at: string;
+}
+
+// Health status model (Contract v3.1.0: server_seq required)
+export interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  services: {
+    api: boolean;
+    audio: boolean;
+    nfc: boolean;
+    gpio: boolean;
+    led_hat: boolean;
+    websocket: boolean;
+  };
+  timestamp: number;
+  server_seq: number;  // Required by contract v3.1.0
+}
+
+// System info model (Contract v3.1.0: server_seq required)
+export interface SystemInfo {
+  system_info: {
+    platform: string;
+    platform_release: string;
+    platform_version: string;
+    architecture: string;
+    hostname: string;
+    processor: string;
+    memory_total?: number;
+    memory_available?: number;
+    memory_percent?: number;
+  };
+  version: string;
+  contract_version: string;
+  hostname: string;
+  uptime: number;
+  server_seq: number;  // Required by contract v3.1.0
 }
 
 // YouTube progress model  
