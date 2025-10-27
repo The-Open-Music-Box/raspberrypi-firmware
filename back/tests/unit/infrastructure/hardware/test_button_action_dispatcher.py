@@ -183,3 +183,45 @@ class TestButtonActionDispatcher:
         assert "available_actions" in status
         assert "button_mappings" in status
         assert status["configured_buttons"] == 5
+
+    def test_dispatch_sync_success(self, button_configs, mock_coordinator):
+        """Test synchronous dispatch wrapper succeeds."""
+        dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
+
+        # dispatch_sync should execute without errors
+        result = dispatcher.dispatch_sync(3)  # next_track
+
+        assert result is True
+        mock_coordinator.next_track.assert_called_once()
+
+    def test_dispatch_sync_unmapped_button(self, button_configs, mock_coordinator):
+        """Test synchronous dispatch with unmapped button."""
+        dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
+
+        result = dispatcher.dispatch_sync(99)
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_dispatch_action_execution_failure(self, button_configs, mock_coordinator):
+        """Test dispatch handles action execution failure gracefully."""
+        # Make next_track fail
+        mock_coordinator.next_track = Mock(return_value=False)
+
+        dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
+        result = await dispatcher.dispatch(3)
+
+        assert result is False
+        mock_coordinator.next_track.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_dispatch_action_raises_exception(self, button_configs, mock_coordinator):
+        """Test dispatch handles exceptions from actions gracefully."""
+        # Make next_track raise an exception
+        mock_coordinator.next_track = Mock(side_effect=Exception("Hardware failure"))
+
+        dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
+        result = await dispatcher.dispatch(3)
+
+        assert result is False
+        mock_coordinator.next_track.assert_called_once()
