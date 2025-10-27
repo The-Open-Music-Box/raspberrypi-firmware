@@ -195,12 +195,28 @@ class PhysicalControlsManager:
         Args:
             button_id: ID of the button that was pressed (0-4)
         """
+        logger.info(f"🔘 [BUTTON] Button {button_id} pressed - starting dispatch")
+
         if not self._button_dispatcher:
-            logger.warning(f"⚠️ Button {button_id} pressed but no dispatcher available")
+            logger.warning(f"⚠️  [BUTTON] Button {button_id} pressed but no dispatcher available")
+            return
+
+        # Get action name for logging
+        action = self._button_dispatcher.get_button_action(button_id)
+        if action:
+            logger.info(f"🎯 [BUTTON] Button {button_id} → Action: '{action.name}'")
+        else:
+            logger.warning(f"⚠️  [BUTTON] Button {button_id} has no configured action")
             return
 
         # Dispatch button press to configured action (sync wrapper)
-        self._button_dispatcher.dispatch_sync(button_id)
+        logger.debug(f"📤 [BUTTON] Dispatching button {button_id} to action '{action.name}'")
+        result = self._button_dispatcher.dispatch_sync(button_id)
+
+        if result:
+            logger.info(f"✅ [BUTTON] Button {button_id} action '{action.name}' completed successfully")
+        else:
+            logger.error(f"❌ [BUTTON] Button {button_id} action '{action.name}' FAILED")
 
     @handle_errors("handle_play_pause")
     def handle_play_pause(self) -> None:

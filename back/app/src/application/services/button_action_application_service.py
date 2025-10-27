@@ -128,25 +128,27 @@ class ButtonActionDispatcher:
         Returns:
             True if action executed successfully, False otherwise
         """
+        logger.debug(f"📥 [DISPATCH] Received button {button_id} press event")
+
         action = self._button_to_action.get(button_id)
 
         if not action:
-            logger.warning(f"⚠️ No action configured for button {button_id}")
+            logger.warning(f"⚠️  [DISPATCH] No action configured for button {button_id}")
             return False
 
         try:
-            logger.info(f"🔘 Button {button_id} pressed, dispatching to action '{action.name}'")
+            logger.info(f"🚀 [DISPATCH] Button {button_id} → Executing action '{action.name}'")
             success = await action.execute(self._coordinator)
 
             if success:
-                logger.debug(f"✅ Action '{action.name}' completed successfully")
+                logger.info(f"✅ [DISPATCH] Action '{action.name}' completed successfully")
             else:
-                logger.warning(f"⚠️ Action '{action.name}' failed")
+                logger.warning(f"⚠️  [DISPATCH] Action '{action.name}' returned False (operation failed or at limit)")
 
             return success
 
         except Exception as e:
-            logger.error(f"❌ Error executing action '{action.name}' for button {button_id}: {e}")
+            logger.error(f"❌ [DISPATCH] Exception in action '{action.name}' for button {button_id}: {e}", exc_info=True)
             return False
 
     def dispatch_sync(self, button_id: int) -> bool:
@@ -159,18 +161,22 @@ class ButtonActionDispatcher:
         Returns:
             True if action dispatched successfully, False otherwise
         """
+        logger.debug(f"🔄 [SYNC_DISPATCH] Wrapping async dispatch for button {button_id}")
+
         try:
             # Create new event loop or use existing one
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 # If loop is already running, schedule as a task
+                logger.debug(f"⚡ [SYNC_DISPATCH] Event loop running, scheduling task for button {button_id}")
                 asyncio.create_task(self.dispatch(button_id))
                 return True
             else:
                 # Run in the event loop
+                logger.debug(f"⏳ [SYNC_DISPATCH] Running in event loop for button {button_id}")
                 return loop.run_until_complete(self.dispatch(button_id))
         except Exception as e:
-            logger.error(f"❌ Error in sync dispatch for button {button_id}: {e}")
+            logger.error(f"❌ [SYNC_DISPATCH] Error in sync dispatch for button {button_id}: {e}", exc_info=True)
             return False
 
     def get_button_action(self, button_id: int) -> Optional[ButtonAction]:
