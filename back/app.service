@@ -1,13 +1,17 @@
 # TMB Application Service Configuration
 # this should be moved to /etc/systemd/system/app.service
-# and then run sudo
-# systemctl daemon-reload
-# systemctl enable app.service
-# systemctl start app.service
+# and then run:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable app.service
+#   sudo systemctl start app.service
 
 [Unit]
 Description=TMB Application Service
-After=network.target
+# Wait for hardware to be fully initialized
+After=network.target multi-user.target systemd-user-sessions.service
+# Ensure I2C and GPIO are ready (if using device tree)
+After=sys-devices-platform-soc-3f804000.i2c-i2c\x2d1.device
+Wants=sys-devices-platform-soc-3f804000.i2c-i2c\x2d1.device
 
 [Service]
 Type=simple
@@ -21,12 +25,17 @@ Environment=PYTHONUNBUFFERED=1
 Environment=FORCE_COLOR=1
 Environment=COLORTERM=truecolor
 
-# Main application startup command
+# Add startup delay to ensure hardware is ready
+ExecStartPre=/bin/sleep 5
+
+# Main application startup command with wrapper for hardware retry
 ExecStart=/home/admin/tomb/venv/bin/python start_app.py
 
-# Restart settings in case of failure
+# Restart settings - more aggressive retry on first boot
 Restart=on-failure
-RestartSec=5
+RestartSec=10
+# Increase startup timeout for hardware initialization
+TimeoutStartSec=60
 
 # Logging settings
 StandardOutput=journal
