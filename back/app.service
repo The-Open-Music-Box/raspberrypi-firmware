@@ -25,10 +25,10 @@ Environment=PYTHONUNBUFFERED=1
 Environment=FORCE_COLOR=1
 Environment=COLORTERM=truecolor
 
-# Add startup delay to ensure hardware is ready
-ExecStartPre=/bin/sleep 5
+# No startup delay - rely on application retry logic for hardware initialization
+# This provides the fastest boot time while still being resilient to timing issues
 
-# Main application startup command with wrapper for hardware retry
+# Main application startup command with hardware retry logic
 ExecStart=/home/admin/tomb/venv/bin/python start_app.py
 
 # Restart settings - more aggressive retry on first boot
