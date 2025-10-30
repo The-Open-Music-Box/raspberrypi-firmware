@@ -396,6 +396,18 @@ class NfcApplicationService:
                         # After timeout, auto-reverts to association mode (blue pulse continues)
                         await self._led_event_handler.on_nfc_scan_success()
                         logger.info(f"✅ Association successful - green flash event over blue pulse status")
+
+                        # CRITICAL FIX: Clear association mode LED after successful association
+                        # This ensures we exit the blue pulse mode and return to normal state
+                        # Schedule the cleanup to happen after the green flash event completes
+                        import asyncio
+                        async def cleanup_association_mode_led():
+                            await asyncio.sleep(2.5)  # Wait for green flash to complete (2s event + 0.5s buffer)
+                            if self._led_event_handler:
+                                await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
+                                logger.info(f"💡 Association completed, cleared blue pulse LED (reverting to previous state)")
+                        asyncio.create_task(cleanup_association_mode_led())
+
                     elif result.get("action") == "duplicate_association":
                         # EVENT: Orange double blink (priority 95) shows over blue pulse (priority 85)
                         # After timeout, auto-reverts to association mode (blue pulse continues)
