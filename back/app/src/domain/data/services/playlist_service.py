@@ -6,6 +6,7 @@
 
 import os
 import uuid
+import shutil
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -14,6 +15,8 @@ import logging
 
 from app.src.domain.decorators.error_handler import handle_domain_errors
 from app.src.domain.data.models.playlist import Playlist
+from app.src.config import config as app_config
+from app.src.utils.path_utils import normalize_folder_name
 
 logger = logging.getLogger(__name__)
 
@@ -177,11 +180,6 @@ class PlaylistService:
             old_path: Previous playlist path
         """
         try:
-            from app.src.config import config as app_config
-            from pathlib import Path
-            from app.src.utils.path_utils import normalize_folder_name
-            import shutil
-
             upload_folder = Path(app_config.upload_folder)
             new_title = playlist.title
 
@@ -281,8 +279,12 @@ class PlaylistService:
             logger.info(f"✅ Deleted playlist {playlist_id} from database")
 
             # Clean up filesystem directory
-            if playlist:
+            # IMPORTANT: Check 'is not None' explicitly because empty playlists have len() == 0
+            # which evaluates to False in boolean context
+            if playlist is not None:
                 await self._cleanup_playlist_folder(playlist)
+            else:
+                logger.warning(f"⚠️ Skipping filesystem cleanup - playlist entity not found")
         else:
             logger.warning(f"Failed to delete playlist {playlist_id}")
 
@@ -295,11 +297,6 @@ class PlaylistService:
             playlist: Playlist domain entity
         """
         try:
-            from app.src.config import config as app_config
-            from pathlib import Path
-            from app.src.utils.path_utils import normalize_folder_name
-            import shutil
-
             upload_folder = Path(app_config.upload_folder)
             playlist_title = playlist.title
             playlist_path = playlist.path
