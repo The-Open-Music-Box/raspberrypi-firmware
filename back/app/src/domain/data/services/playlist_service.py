@@ -301,6 +301,14 @@ class PlaylistService:
         # Get all playlists once for efficiency
         all_playlists = await self._playlist_repo.find_all()
 
+        # Helper: Check if a string is a valid UUID
+        def is_uuid(s: str) -> bool:
+            try:
+                # UUID format: 8-4-4-4-12 hex digits
+                return len(s) == 36 and s.count('-') == 4
+            except:
+                return False
+
         # Scan all directories in upload folder
         for playlist_dir in upload_path.iterdir():
             if not playlist_dir.is_dir():
@@ -309,30 +317,35 @@ class PlaylistService:
             stats['playlists_scanned'] += 1
             folder_name = playlist_dir.name
 
-            # Helper: Check if a string is a valid UUID
-            def is_uuid(s: str) -> bool:
-                try:
-                    # UUID format: 8-4-4-4-12 hex digits
-                    return len(s) == 36 and s.count('-') == 4
-                except:
-                    return False
+            # OPTIMIZATION: Skip migration check if folder is already UUID format
+            folder_is_uuid = is_uuid(folder_name)
 
             # Strategy 1: Try to find playlist by path (UUID match - for already migrated playlists)
             existing = next((p for p in all_playlists if p.path == folder_name), None)
+
+            # Fast path: If folder is UUID and found by path, skip migration logic entirely
+            if existing and folder_is_uuid:
+                # Already migrated - just sync tracks
+                await self._sync_playlist_tracks(existing.id, playlist_dir, stats)
+                stats['playlists_updated'] += 1
+                continue
+
+            # MIGRATION PATH: Only check migration if folder is NOT UUID format
             needs_migration = False
 
-            # If found by path but path is not a UUID, it needs migration
-            if existing and not is_uuid(existing.path or ''):
-                needs_migration = True
-                logger.info(f"🔄 Found playlist by non-UUID path '{folder_name}' - needs migration")
-
-            # Strategy 2: Try to find by title (for legacy folders needing migration)
-            if not existing:
-                existing = next((p for p in all_playlists if p.title == folder_name), None)
-                if existing:
+            if not folder_is_uuid:
+                # Check if path exists but is not UUID (needs migration)
+                if existing and not is_uuid(existing.path or ''):
                     needs_migration = True
+                    logger.info(f"🔄 Found playlist by non-UUID path '{folder_name}' - needs migration")
 
-            # Migrate if needed
+                # Strategy 2: Try to find by title (for legacy folders needing migration)
+                if not existing:
+                    existing = next((p for p in all_playlists if p.title == folder_name), None)
+                    if existing:
+                        needs_migration = True
+
+            # Execute migration if needed
             if existing and needs_migration:
                 logger.info(f"🔄 Migrating legacy folder '{folder_name}' to UUID-based name")
 
