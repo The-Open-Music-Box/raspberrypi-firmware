@@ -1,0 +1,133 @@
+# ============================================================================
+# Deployment Exclusion Manifest
+# ============================================================================
+# Files and directories to EXCLUDE from ALL deployments (dev and prod)
+# Format: One pattern per line (rsync --exclude format)
+# Comments start with #
+#
+# This file is used by:
+# - deploy.sh (package_release function)
+# - export_public_package.sh (public release builds)
+#
+# Pattern examples:
+#   __pycache__/     - Directory (trailing slash)
+#   *.pyc            - All .pyc files
+#   test_*.py        - Files matching pattern
+#   logs             - Specific file or directory name
+# ============================================================================
+
+# ============================================================================
+# Python artifacts
+# ============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# ============================================================================
+# Testing and coverage
+# ============================================================================
+.coverage
+.coveragerc
+coverage.json
+htmlcov/
+coverage_html/
+coverage_html_*/
+.pytest_cache/
+.tox/
+.nox/
+.hypothesis/
+pytest.ini
+.pytest_cache/
+
+# Test files and directories
+tests/
+test_*.py
+*_test.py
+*/test_*.py
+*/tests/
+*/*_test.py
+
+# Test requirements
+requirements-test.txt
+
+# ============================================================================
+# Development tools and configs
+# ============================================================================
+.flake8
+.pylintrc
+.pydocstyle
+.pre-commit-config.yaml
+pyproject.toml
+
+# IDE and editors
+.idea/
+.vscode/
+.DS_Store
+
+# ============================================================================
+# Build artifacts
+# ============================================================================
+*.egg-info/
+*.egg
+dist/
+build/
+*.production
+*.prod
+
+# ============================================================================
+# Logs and temporary files
+# ============================================================================
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.temp
+
+# ============================================================================
+# Database files (use server's existing data)
+# ============================================================================
+app.db
+app.db-shm
+app.db-wal
+*.db
+*.sqlite
+
+# ============================================================================
+# Data directory (preserve server's existing data)
+# ============================================================================
+app/data/
+
+# ============================================================================
+# Documentation (internal development docs)
+# ============================================================================
+documentation/
+
+# ============================================================================
+# Development scripts
+# ============================================================================
+run_tests.sh
+start_dev.py
+start_with_hardware_check.sh
+
+# ============================================================================
+# Configuration templates
+# ============================================================================
+config/
+
+# ============================================================================
+# Git
+# ============================================================================
+.git/
+.gitignore
+.gitattributes
