@@ -167,10 +167,19 @@ class TestPhysicalButtonControlsE2E:
 
         assert result is False
 
-    def test_dispatch_sync_wrapper_works(self, button_dispatcher, mock_playback_coordinator):
+    @pytest.mark.asyncio
+    async def test_dispatch_sync_wrapper_works(self, button_dispatcher, mock_playback_coordinator):
         """Test that synchronous dispatch wrapper works for GPIO callbacks."""
+        import asyncio
+
+        # Set main event loop for dispatcher
+        button_dispatcher._main_loop = asyncio.get_running_loop()
+
         # This simulates a GPIO callback calling dispatch_sync for next track
         result = button_dispatcher.dispatch_sync(4)
+
+        # Give async task time to execute
+        await asyncio.sleep(0.01)
 
         assert result is True
         mock_playback_coordinator.next_track.assert_called_once()

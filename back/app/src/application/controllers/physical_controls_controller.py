@@ -91,10 +91,12 @@ class PhysicalControlsManager:
         )
 
         # Create button action dispatcher (only for PlaybackCoordinator)
+        # Note: main_loop will be None initially, but will be set during initialize()
         if self._controller_type == "PlaybackCoordinator":
             self._button_dispatcher = ButtonActionDispatcher(
                 self._button_configs,
-                self.audio_controller
+                self.audio_controller,
+                main_loop=self._main_loop  # Pass main loop for cross-thread async calls
             )
             logger.info("✅ ButtonActionDispatcher created with configurable button support")
 
@@ -114,6 +116,11 @@ class PhysicalControlsManager:
                 try:
                     self._main_loop = asyncio.get_running_loop()
                     logger.info(f"✅ Captured main event loop during initialize: {self._main_loop}")
+
+                    # Update dispatcher's main loop reference if it exists
+                    if self._button_dispatcher:
+                        self._button_dispatcher._main_loop = self._main_loop
+                        logger.info("✅ Updated ButtonActionDispatcher with main event loop")
                 except RuntimeError:
                     logger.error("❌ No running event loop - physical controls may not work properly")
 

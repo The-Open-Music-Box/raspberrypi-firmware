@@ -184,12 +184,19 @@ class TestButtonActionDispatcher:
         assert "button_mappings" in status
         assert status["configured_buttons"] == 5
 
-    def test_dispatch_sync_success(self, button_configs, mock_coordinator):
+    @pytest.mark.asyncio
+    async def test_dispatch_sync_success(self, button_configs, mock_coordinator):
         """Test synchronous dispatch wrapper succeeds."""
-        dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator)
+        import asyncio
+        loop = asyncio.get_running_loop()
+
+        dispatcher = ButtonActionDispatcher(button_configs, mock_coordinator, main_loop=loop)
 
         # dispatch_sync should execute without errors
         result = dispatcher.dispatch_sync(3)  # next_track
+
+        # Give async task time to execute
+        await asyncio.sleep(0.01)
 
         assert result is True
         mock_coordinator.next_track.assert_called_once()

@@ -41,16 +41,18 @@ class ButtonActionDispatcher:
     3. Executes actions when buttons are pressed
     """
 
-    def __init__(self, configs: List[ButtonActionConfig], coordinator: PlaybackCoordinatorProtocol):
+    def __init__(self, configs: List[ButtonActionConfig], coordinator: PlaybackCoordinatorProtocol, main_loop=None):
         """
         Initialize the button action dispatcher.
 
         Args:
             configs: List of button configurations
             coordinator: PlaybackCoordinator to execute actions on
+            main_loop: Optional main event loop for cross-thread async calls
         """
         self._coordinator = coordinator
         self._configs = configs
+        self._main_loop = main_loop
 
         # Build action registry (action_name -> Action instance)
         self._action_registry = self._build_action_registry()
@@ -164,17 +166,20 @@ class ButtonActionDispatcher:
         logger.debug(f"🔄 [SYNC_DISPATCH] Wrapping async dispatch for button {button_id}")
 
         try:
-            # Create new event loop or use existing one
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If loop is already running, schedule as a task
-                logger.debug(f"⚡ [SYNC_DISPATCH] Event loop running, scheduling task for button {button_id}")
-                asyncio.create_task(self.dispatch(button_id))
-                return True
-            else:
-                # Run in the event loop
-                logger.debug(f"⏳ [SYNC_DISPATCH] Running in event loop for button {button_id}")
-                return loop.run_until_complete(self.dispatch(button_id))
+            # Use main event loop for cross-thread async calls (GPIO callbacks run in different threads)
+            if self._main_loop is None:
+                logger.error(f"❌ [SYNC_DISPATCH] No main event loop available for button {button_id}")
+                return False
+
+            # Schedule the coroutine to run in the main loop from this GPIO thread
+            logger.debug(f"⚡ [SYNC_DISPATCH] Scheduling in main loop for button {button_id}")
+            future = asyncio.run_coroutine_threadsafe(
+                self.dispatch(button_id),
+                self._main_loop
+            )
+            # Don't block waiting for result - fire and forget
+            # The async dispatch method will log success/failure
+            return True
         except Exception as e:
             logger.error(f"❌ [SYNC_DISPATCH] Error in sync dispatch for button {button_id}: {e}", exc_info=True)
             return False
