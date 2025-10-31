@@ -37,7 +37,7 @@ class HardwareConfig:
     gpio_led_blue: int = 24  # As per user's physical wiring
 
     # Button settings
-    button_debounce_time: float = 0.0  # Debounce time in seconds (0 = instant response)
+    button_debounce_time: float = 0.01  # Debounce time in seconds (10ms for quick response)
     button_hold_time: float = 2.0  # Time to register a long press
 
     # Rotary encoder settings
