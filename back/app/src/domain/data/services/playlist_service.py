@@ -309,40 +309,59 @@ class PlaylistService:
             stats['playlists_scanned'] += 1
             folder_name = playlist_dir.name
 
+            # Helper: Check if a string is a valid UUID
+            def is_uuid(s: str) -> bool:
+                try:
+                    # UUID format: 8-4-4-4-12 hex digits
+                    return len(s) == 36 and s.count('-') == 4
+                except:
+                    return False
+
             # Strategy 1: Try to find playlist by path (UUID match - for already migrated playlists)
             existing = next((p for p in all_playlists if p.path == folder_name), None)
+            needs_migration = False
+
+            # If found by path but path is not a UUID, it needs migration
+            if existing and not is_uuid(existing.path or ''):
+                needs_migration = True
+                logger.info(f"🔄 Found playlist by non-UUID path '{folder_name}' - needs migration")
 
             # Strategy 2: Try to find by title (for legacy folders needing migration)
             if not existing:
                 existing = next((p for p in all_playlists if p.title == folder_name), None)
-
                 if existing:
-                    # Migr folder: rename to UUID and update DB
-                    logger.info(f"🔄 Migrating legacy folder '{folder_name}' to UUID-based name")
-                    new_folder_name = existing.path if existing.path else str(uuid.uuid4())
-                    new_folder_path = upload_path / new_folder_name
+                    needs_migration = True
 
-                    try:
-                        playlist_dir.rename(new_folder_path)
+            # Migrate if needed
+            if existing and needs_migration:
+                logger.info(f"🔄 Migrating legacy folder '{folder_name}' to UUID-based name")
 
-                        # Update path in DB if not set
-                        if not existing.path:
-                            existing.path = new_folder_name
-                            await self._playlist_repo.update(existing)
+                # Generate new UUID if path is not already a UUID
+                if not existing.path or not is_uuid(existing.path):
+                    new_folder_name = str(uuid.uuid4())
+                    existing.path = new_folder_name
+                    await self._playlist_repo.update(existing)
+                else:
+                    new_folder_name = existing.path
 
-                        # Update track file_paths
-                        tracks = await self._track_repo.get_tracks_by_playlist(existing.id)
-                        for track in tracks:
-                            if track.file_path and str(playlist_dir) in track.file_path:
-                                new_file_path = track.file_path.replace(str(playlist_dir), str(new_folder_path))
-                                await self._track_repo.update_track(track.id, {'file_path': new_file_path})
+                new_folder_path = upload_path / new_folder_name
 
-                        playlist_dir = new_folder_path  # Use new path for track sync
-                        stats['folders_migrated'] += 1
-                        logger.info(f"✅ Migrated folder: {folder_name} → {new_folder_name}")
-                    except Exception as e:
-                        logger.error(f"Failed to migrate folder {folder_name}: {e}")
-                        # Continue with old folder if migration fails
+                try:
+                    playlist_dir.rename(new_folder_path)
+
+                    # Update track file_paths
+                    tracks = await self._track_repo.get_tracks_by_playlist(existing.id)
+                    for track in tracks:
+                        if track.file_path and str(playlist_dir) in track.file_path:
+                            new_file_path = track.file_path.replace(str(playlist_dir), str(new_folder_path))
+                            await self._track_repo.update_track(track.id, {'file_path': new_file_path})
+
+                    playlist_dir = new_folder_path  # Use new path for track sync
+                    stats['folders_migrated'] += 1
+                    logger.info(f"✅ Migrated folder: {folder_name} → {new_folder_name}")
+                except Exception as e:
+                    logger.error(f"Failed to migrate folder {folder_name}: {e}")
+                    # Continue with old folder if migration fails
 
             if existing:
                 # Update tracks for existing playlist
