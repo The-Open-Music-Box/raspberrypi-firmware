@@ -424,15 +424,15 @@ class PlaylistService:
             playlist_name = playlist_dir.name
 
             # Check if playlist already exists
-            existing_playlists = await self._playlist_repo.get_all()
+            existing_playlists = await self._playlist_repo.find_all()
             existing = next(
-                (p for p in existing_playlists if p['title'] == playlist_name),
+                (p for p in existing_playlists if p.title == playlist_name),
                 None
             )
 
             if existing:
                 # Update tracks for existing playlist
-                await self._sync_playlist_tracks(existing['id'], playlist_dir, stats)
+                await self._sync_playlist_tracks(existing.id, playlist_dir, stats)
             else:
                 # Create new playlist
                 playlist = await self.create_playlist(
