@@ -292,7 +292,7 @@ class TestPlaylistService:
         # Mock app config to use temp folder
         mock_config = MagicMock()
         mock_config.upload_folder = str(upload_folder)
-        monkeypatch.setattr('app.src.config.config', mock_config)
+        monkeypatch.setattr('app.src.domain.data.services.playlist_service.app_config', mock_config)
 
         # Create test playlist entity
         playlist_id = 'playlist-1'
@@ -332,7 +332,7 @@ class TestPlaylistService:
 
         mock_config = MagicMock()
         mock_config.upload_folder = str(upload_folder)
-        monkeypatch.setattr('app.src.config.config', mock_config)
+        monkeypatch.setattr('app.src.domain.data.services.playlist_service.app_config', mock_config)
 
         playlist = Playlist(
             id='playlist-1',
@@ -360,7 +360,7 @@ class TestPlaylistService:
 
         mock_config = MagicMock()
         mock_config.upload_folder = str(upload_folder)
-        monkeypatch.setattr('app.src.config.config', mock_config)
+        monkeypatch.setattr('app.src.domain.data.services.playlist_service.app_config', mock_config)
 
         playlist = Playlist(
             id='playlist-1',
@@ -457,7 +457,7 @@ class TestPlaylistService:
 
         mock_config = MagicMock()
         mock_config.upload_folder = str(upload_folder)
-        monkeypatch.setattr('app.src.config.config', mock_config)
+        monkeypatch.setattr('app.src.domain.data.services.playlist_service.app_config', mock_config)
 
         playlist = Playlist(
             id='playlist-1',
@@ -483,7 +483,7 @@ class TestPlaylistService:
 
         mock_config = MagicMock()
         mock_config.upload_folder = str(upload_folder)
-        monkeypatch.setattr('app.src.config.config', mock_config)
+        monkeypatch.setattr('app.src.domain.data.services.playlist_service.app_config', mock_config)
 
         playlist = Playlist(
             id=playlist_id,
