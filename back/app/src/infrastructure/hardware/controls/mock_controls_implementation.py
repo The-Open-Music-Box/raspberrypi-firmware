@@ -60,13 +60,22 @@ class MockPhysicalControls(PhysicalControlsProtocol):
 
     def get_status(self) -> dict:
         """Get current status of mock controls."""
+        # Build button configuration info
+        button_info = {}
+        for config in self._button_configs:
+            if config.enabled:
+                button_info[f"button_{config.button_id}"] = {
+                    "gpio_pin": config.gpio_pin,
+                    "action": config.action_name,
+                    "description": config.description,
+                }
+
         return {
             "initialized": self._is_initialized,
             "mock_mode": True,
             "event_handlers_count": len(self._event_handlers),
-            "mock_pin_assignments": {
-                "next_button": self.config.gpio_next_track_button,
-                "previous_button": self.config.gpio_previous_track_button,
+            "configurable_buttons": button_info,
+            "encoder": {
                 "play_pause_button": self.config.gpio_volume_encoder_sw,
                 "volume_encoder_clk": self.config.gpio_volume_encoder_clk,
                 "volume_encoder_dt": self.config.gpio_volume_encoder_dt,

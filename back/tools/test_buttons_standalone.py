@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import GPIO libraries
 try:
-    from gpiozero import Button, Device
+    from gpiozero import Button, RotaryEncoder, Device
     from gpiozero.pins.rpigpio import RPiGPIOFactory
     Device.pin_factory = RPiGPIOFactory()
     GPIO_AVAILABLE = True
@@ -53,7 +53,7 @@ except ImportError as e:
 except Exception as e:
     logger.warning(f"⚠️ RPi.GPIO backend failed, trying lgpio: {e}")
     try:
-        from gpiozero import Button, Device
+        from gpiozero import Button, RotaryEncoder, Device
         from gpiozero.pins.lgpio import LgpioFactory
         Device.pin_factory = LgpioFactory()
         GPIO_AVAILABLE = True
@@ -78,9 +78,21 @@ class ButtonTester:
             'SW': {'gpio': 16, 'description': 'Play/Pause (encoder switch)'},
         }
 
+        # Rotary encoder configuration
+        self.encoder_config = {
+            'clk': 13,  # Channel A
+            'dt': 26,   # Channel B
+        }
+
         self.buttons = {}
+        self.encoder = None
         self.press_counts = {name: 0 for name in self.button_configs.keys()}
         self.last_press_times = {name: None for name in self.button_configs.keys()}
+
+        # Encoder rotation tracking
+        self.volume_up_count = 0
+        self.volume_down_count = 0
+        self.last_volume_change = None
 
     def on_button_pressed(self, button_name: str):
         """Handle button press event."""
@@ -95,6 +107,30 @@ class ButtonTester:
         )
 
         # Print visual separator for clarity
+        print("─" * 80)
+
+    def on_volume_up(self):
+        """Handle volume encoder rotation clockwise (volume up)."""
+        now = datetime.now()
+        self.volume_up_count += 1
+        self.last_volume_change = now
+
+        logger.info(
+            f"🔊 [VOLUME UP] Encoder rotated clockwise - "
+            f"Total volume increases: {self.volume_up_count}"
+        )
+        print("─" * 80)
+
+    def on_volume_down(self):
+        """Handle volume encoder rotation counter-clockwise (volume down)."""
+        now = datetime.now()
+        self.volume_down_count += 1
+        self.last_volume_change = now
+
+        logger.info(
+            f"🔉 [VOLUME DOWN] Encoder rotated counter-clockwise - "
+            f"Total volume decreases: {self.volume_down_count}"
+        )
         print("─" * 80)
 
     def initialize_buttons(self):
@@ -173,14 +209,59 @@ class ButtonTester:
                 except Exception as e2:
                     logger.error(f"❌ Failed to init [{name}] on GPIO {config['gpio']}: {e2}")
 
+        # Initialize rotary encoder
+        try:
+            self._init_encoder()
+            success_count += 1
+        except Exception as e:
+            logger.warning(f"⚠️ Encoder initialization had errors: {e}")
+
         print("=" * 80)
-        logger.info(f"✅ Initialized {success_count}/{len(self.button_configs)} buttons")
+        logger.info(f"✅ Initialized {success_count}/{len(self.button_configs) + 1} devices (buttons + encoder)")
         return success_count > 0
+
+    def _init_encoder(self):
+        """Initialize rotary encoder for volume control."""
+        if not GPIO_AVAILABLE:
+            return
+
+        try:
+            # Clean up encoder pins first
+            try:
+                import RPi.GPIO as GPIO_Direct
+                GPIO_Direct.setmode(GPIO_Direct.BCM)
+                GPIO_Direct.setwarnings(False)
+                GPIO_Direct.cleanup(self.encoder_config['clk'])
+                GPIO_Direct.cleanup(self.encoder_config['dt'])
+            except:
+                pass
+
+            # Initialize the rotary encoder
+            self.encoder = RotaryEncoder(
+                self.encoder_config['clk'],
+                self.encoder_config['dt'],
+                bounce_time=0.01,  # Small bounce time for encoder
+                max_steps=0  # No step limit
+            )
+
+            # Set encoder event handlers
+            self.encoder.when_rotated_clockwise = self.on_volume_up
+            self.encoder.when_rotated_counter_clockwise = self.on_volume_down
+
+            logger.info(
+                f"✅ [ENCODER] Volume encoder initialized on GPIO {self.encoder_config['clk']}/"
+                f"{self.encoder_config['dt']} (CLK/DT)"
+            )
+
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to initialize encoder: {e}")
+            logger.info("Volume control via encoder will not be available")
 
     def cleanup(self):
         """Clean up GPIO resources."""
         logger.info("🧹 Cleaning up GPIO resources...")
 
+        # Close all buttons
         for name, button in self.buttons.items():
             try:
                 if button and hasattr(button, 'close'):
@@ -190,14 +271,25 @@ class ButtonTester:
                 logger.error(f"Error closing button {name}: {e}")
 
         self.buttons.clear()
+
+        # Close encoder
+        if self.encoder:
+            try:
+                if hasattr(self.encoder, 'close'):
+                    self.encoder.close()
+                    logger.debug("Closed encoder")
+            except Exception as e:
+                logger.error(f"Error closing encoder: {e}")
+
         logger.info("✅ Cleanup completed")
 
     def print_status(self):
         """Print current test status."""
         print("\n" + "=" * 80)
-        print("📊 BUTTON TEST STATUS")
+        print("📊 BUTTON & ENCODER TEST STATUS")
         print("=" * 80)
 
+        # Print button status
         for name in sorted(self.button_configs.keys()):
             config = self.button_configs[name]
             count = self.press_counts[name]
@@ -213,6 +305,18 @@ class ButtonTester:
 
             print(status_line)
 
+        # Print encoder status
+        print("-" * 80)
+        encoder_status = f"[ENCODER] GPIO {self.encoder_config['clk']}/{self.encoder_config['dt']} (CLK/DT) - Volume control"
+        if self.volume_up_count > 0 or self.volume_down_count > 0:
+            time_str = self.last_volume_change.strftime('%H:%M:%S') if self.last_volume_change else 'N/A'
+            encoder_status += f"\n  🔊 Volume UP:   {self.volume_up_count:3d} rotations"
+            encoder_status += f"\n  🔉 Volume DOWN: {self.volume_down_count:3d} rotations"
+            encoder_status += f"\n  ⏱️  Last change: {time_str}"
+        else:
+            encoder_status += "\n  Not rotated yet"
+
+        print(encoder_status)
         print("=" * 80)
 
     def run(self):
@@ -222,9 +326,10 @@ class ButtonTester:
             return
 
         print("\n" + "=" * 80)
-        print("🎮 BUTTON TEST - TheOpenMusicBox")
+        print("🎮 BUTTON & ENCODER TEST - TheOpenMusicBox")
         print("=" * 80)
         print("\nPress any button to test it.")
+        print("Rotate the encoder to test volume control (clockwise = up, counter-clockwise = down).")
         print("Press Ctrl+C to exit and see final statistics.")
         print("=" * 80 + "\n")
 

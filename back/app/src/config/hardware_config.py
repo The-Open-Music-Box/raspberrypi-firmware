@@ -36,17 +36,6 @@ class HardwareConfig:
     gpio_led_green: int = 12
     gpio_led_blue: int = 24  # As per user's physical wiring
 
-    # Legacy compatibility - mapped to new buttons
-    @property
-    def gpio_next_track_button(self) -> int:
-        """Legacy: maps to bt4"""
-        return self.gpio_button_bt4
-
-    @property
-    def gpio_previous_track_button(self) -> int:
-        """Legacy: maps to bt1"""
-        return self.gpio_button_bt1
-
     # Button settings
     button_debounce_time: float = 0.3  # Debounce time in seconds
     button_hold_time: float = 2.0  # Time to register a long press

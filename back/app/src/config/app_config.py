@@ -525,10 +525,20 @@ class AppConfig:
                 "1",
                 "yes",
             )
-        if "GPIO_NEXT_BUTTON" in os.environ:
-            self.hardware.gpio_next_track_button = int(os.environ["GPIO_NEXT_BUTTON"])
-        if "GPIO_PREV_BUTTON" in os.environ:
-            self.hardware.gpio_previous_track_button = int(os.environ["GPIO_PREV_BUTTON"])
+
+        # Button GPIO overrides
+        if "GPIO_BUTTON_BT0" in os.environ:
+            self.hardware.gpio_button_bt0 = int(os.environ["GPIO_BUTTON_BT0"])
+        if "GPIO_BUTTON_BT1" in os.environ:
+            self.hardware.gpio_button_bt1 = int(os.environ["GPIO_BUTTON_BT1"])
+        if "GPIO_BUTTON_BT2" in os.environ:
+            self.hardware.gpio_button_bt2 = int(os.environ["GPIO_BUTTON_BT2"])
+        if "GPIO_BUTTON_BT3" in os.environ:
+            self.hardware.gpio_button_bt3 = int(os.environ["GPIO_BUTTON_BT3"])
+        if "GPIO_BUTTON_BT4" in os.environ:
+            self.hardware.gpio_button_bt4 = int(os.environ["GPIO_BUTTON_BT4"])
+
+        # Encoder GPIO overrides
         if "GPIO_VOLUME_CLK" in os.environ:
             self.hardware.gpio_volume_encoder_clk = int(os.environ["GPIO_VOLUME_CLK"])
         if "GPIO_VOLUME_DT" in os.environ:

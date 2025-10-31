@@ -26,11 +26,14 @@ class TestPhysicalControlsIntegration:
     def hardware_config(self):
         """Create test hardware configuration."""
         return HardwareConfig(
-            gpio_next_track_button=26,
-            gpio_previous_track_button=16,
-            gpio_volume_encoder_clk=8,
-            gpio_volume_encoder_dt=12,
-            gpio_volume_encoder_sw=7,
+            gpio_button_bt0=23,
+            gpio_button_bt1=27,
+            gpio_button_bt2=22,
+            gpio_button_bt3=6,
+            gpio_button_bt4=5,
+            gpio_volume_encoder_sw=16,
+            gpio_volume_encoder_clk=13,
+            gpio_volume_encoder_dt=26,
             mock_hardware=True
         )
 
@@ -67,14 +70,14 @@ class TestPhysicalControlsIntegration:
 
         # Test invalid pin assignment
         with pytest.raises(ValueError, match="GPIO pin .* is out of valid range"):
-            invalid_config = HardwareConfig(gpio_next_track_button=50)
+            invalid_config = HardwareConfig(gpio_button_bt0=50)
             invalid_config.validate()
 
         # Test duplicate pin assignment
         with pytest.raises(ValueError, match="Duplicate GPIO pin assignments detected"):
             duplicate_config = HardwareConfig(
-                gpio_next_track_button=26,
-                gpio_previous_track_button=26  # Same pin as next
+                gpio_button_bt0=23,
+                gpio_button_bt1=23  # Same pin as bt0
             )
             duplicate_config.validate()
 
