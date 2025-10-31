@@ -167,7 +167,13 @@ class PhysicalControlsManager:
             lambda: self.handle_volume_change("down")
         )
 
-        logger.info("Physical control event handlers configured")
+        # Setup encoder switch handler (play/pause button on encoder)
+        self._physical_controls.set_event_handler(
+            PhysicalControlEvent.ENCODER_SWITCH,
+            lambda: self.handle_play_pause()
+        )
+
+        logger.info("Physical control event handlers configured (including encoder switch)")
 
     @handle_errors("cleanup")
     async def cleanup(self) -> None:

@@ -31,6 +31,7 @@ class PhysicalControlEvent(Enum):
     # Encoder events
     ENCODER_VOLUME_UP = "encoder_volume_up"
     ENCODER_VOLUME_DOWN = "encoder_volume_down"
+    ENCODER_SWITCH = "encoder_switch"  # Encoder push button (play/pause)
 
 
 class PhysicalControlsProtocol(ABC):

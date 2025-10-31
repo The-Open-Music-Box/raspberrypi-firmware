@@ -134,6 +134,12 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 except Exception as e:
                     logger.warning(f"⚠️ Button initialization had errors: {e}")
 
+                # Initialize encoder switch (play/pause button on encoder)
+                try:
+                    self._init_encoder_switch()
+                except Exception as e:
+                    logger.warning(f"⚠️ Encoder switch initialization failed: {e}")
+
                 # Initialize rotary encoder (don't fail if encoder fails)
                 try:
                     self._init_encoder()
@@ -229,6 +235,41 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                     logger.error(f"❌ Failed to init {description} on GPIO {pin}: {e2}")
                     # Continue with other buttons even if one fails
 
+    def _init_encoder_switch(self) -> None:
+        """Initialize encoder switch button (play/pause)."""
+        if not GPIO_AVAILABLE:
+            return
+
+        try:
+            # Clean up encoder switch pin first
+            try:
+                import RPi.GPIO as GPIO_Direct
+                GPIO_Direct.setmode(GPIO_Direct.BCM)
+                GPIO_Direct.setwarnings(False)
+                GPIO_Direct.cleanup(self.config.gpio_volume_encoder_sw)
+            except:
+                pass
+
+            # Initialize the encoder switch as a button
+            self._devices['encoder_switch'] = Button(
+                self.config.gpio_volume_encoder_sw,
+                pull_up=True,
+                bounce_time=self.config.button_debounce_time,
+                hold_time=self.config.button_hold_time
+            )
+
+            # Set the play/pause handler
+            self._devices['encoder_switch'].when_pressed = self._on_encoder_switch_pressed
+
+            logger.info(
+                f"✅ Encoder switch (Play/Pause) initialized on GPIO {self.config.gpio_volume_encoder_sw}"
+            )
+
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to initialize encoder switch: {e}")
+            logger.info("Play/Pause via encoder switch will not be available")
+            # Don't raise - allow system to work without switch
+
     def _init_encoder(self) -> None:
         """Initialize rotary encoder for volume control."""
         if not GPIO_AVAILABLE:
@@ -273,12 +314,15 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
         Args:
             button_id: ID of the button that was pressed (0-4)
         """
-        logger.info(f"🔘 Button {button_id} pressed")
+        logger.info(f"🔘 [GPIO] Button {button_id} pressed - HARDWARE EVENT DETECTED")
 
         # Find the button config to get GPIO pin
         config = next((c for c in self._button_configs if c.button_id == button_id), None)
         if config:
+            logger.info(f"🔘 [GPIO] Button {button_id} config found: GPIO {config.gpio_pin}, action={config.action_name}")
             self._emit_button_event(f"button_{button_id}", config.gpio_pin)
+        else:
+            logger.error(f"❌ [GPIO] No config found for button {button_id}")
 
         # Trigger the corresponding generic button event
         event_map = {
@@ -291,9 +335,17 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
 
         event = event_map.get(button_id)
         if event:
+            logger.info(f"🔘 [GPIO] Triggering event {event} for button {button_id}")
             self._trigger_event(event)
         else:
-            logger.warning(f"⚠️ No event mapping for button {button_id}")
+            logger.warning(f"⚠️ [GPIO] No event mapping for button {button_id}")
+
+    def _on_encoder_switch_pressed(self) -> None:
+        """Handle encoder switch press (play/pause button)."""
+        logger.info(f"🎮 [GPIO] Encoder switch pressed - HARDWARE EVENT DETECTED (GPIO {self.config.gpio_volume_encoder_sw})")
+        self._emit_button_event("encoder_switch", self.config.gpio_volume_encoder_sw)
+        logger.info(f"🎮 [GPIO] Triggering ENCODER_SWITCH event for play/pause")
+        self._trigger_event(PhysicalControlEvent.ENCODER_SWITCH)
 
     def _on_volume_up(self) -> None:
         """Handle volume encoder rotation clockwise (volume up)."""
@@ -341,11 +393,14 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
         handler = self._event_handlers.get(event_type)
         if handler:
             try:
+                logger.info(f"🎯 [GPIO] Calling handler for event {event_type}")
                 handler()
+                logger.info(f"✅ [GPIO] Handler for {event_type} completed successfully")
             except Exception as e:
-                logger.error(f"❌ Error in event handler for {event_type}: {e}")
+                logger.error(f"❌ [GPIO] Error in event handler for {event_type}: {e}", exc_info=True)
         else:
-            logger.debug(f"No handler registered for event: {event_type}")
+            logger.warning(f"⚠️ [GPIO] No handler registered for event: {event_type}")
+            logger.warning(f"⚠️ [GPIO] Available handlers: {list(self._event_handlers.keys())}")
 
     def set_event_handler(self, event_type: PhysicalControlEvent, handler: Callable[[], None]) -> None:
         """Set event handler for a specific control event."""
