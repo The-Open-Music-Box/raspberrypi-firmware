@@ -238,7 +238,7 @@ class TestNfcOverrideLEDCleanup:
         # Verify green flash was triggered (success event)
         success_events = [
             call_info for call_info in led_manager.state_calls[initial_state_count:]
-            if call_info['state'] in [LEDState.NFC_SCAN_SUCCESS, LEDState.NFC_TAG_DETECTED]
+            if call_info['state'] == LEDState.NFC_SUCCESS
         ]
         assert len(success_events) > 0, "LED should show success event (green flash)"
 

@@ -43,16 +43,15 @@ class TestPhysicalControlsInitialization:
         assert manager._controller_type == "PlaybackCoordinator"
 
     def test_create_without_controller_uses_fallback(self):
-        """Test creating without controller uses fallback."""
+        """Test creating without controller logs warning but continues."""
         hardware_config = Mock()
 
-        with patch("app.src.application.controllers.PlaybackCoordinator") as mock_coordinator:
-            with patch("app.src.domain.audio.container.audio_domain_container") as mock_container:
-                mock_container.is_initialized = False
+        # Creating without audio_controller should log warning but not raise
+        # Physical controls can still initialize for GPIO events
+        manager = PhysicalControlsManager(None, hardware_config)
 
-                # Should raise RuntimeError when container is not initialized
-                with pytest.raises(RuntimeError, match="Audio domain container is not initialized"):
-                    PhysicalControlsManager(None, hardware_config)
+        assert manager.audio_controller is None
+        assert manager._controller_type == "AudioController"  # Default when no controller
 
     def test_physical_controls_factory_called(self):
         """Test physical controls factory is called during init with correct parameters."""
@@ -112,15 +111,21 @@ class TestInitializationAndCleanup:
         assert manager._is_initialized is True
         physical_controls.initialize.assert_called_once()
 
-    def test_initialize_without_audio_controller(self, hardware_config):
-        """Test initialization without audio controller raises error."""
-        with patch("app.src.application.controllers.physical_controls_controller.PhysicalControlsFactory"):
-            with patch("app.src.domain.audio.container.audio_domain_container") as mock_container:
-                mock_container.is_initialized = False
+    @pytest.mark.asyncio
+    async def test_initialize_without_audio_controller(self, hardware_config):
+        """Test initialization without audio controller still initializes hardware."""
+        with patch("app.src.application.controllers.physical_controls_controller.PhysicalControlsFactory") as mock_factory:
+            mock_physical_controls = Mock()
+            mock_physical_controls.initialize = AsyncMock(return_value=True)
+            mock_factory.create_controls.return_value = mock_physical_controls
 
-                # Should raise RuntimeError when container is not initialized
-                with pytest.raises(RuntimeError, match="Audio domain container is not initialized"):
-                    PhysicalControlsManager(None, hardware_config)
+            # Creating without audio_controller should work (just logs warning)
+            manager = PhysicalControlsManager(None, hardware_config)
+
+            # Hardware should still initialize even without audio controller
+            success = await manager.initialize()
+            assert success is True
+            mock_physical_controls.initialize.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_initialize_hardware_failure(self, manager, physical_controls):

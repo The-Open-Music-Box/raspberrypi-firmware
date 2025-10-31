@@ -113,6 +113,43 @@ async def _start_domain_bootstrap():
     container = get_container()
     domain_bootstrap = container.get("domain_bootstrap")
 
+    # Create and inject PhysicalControlsManager (done here to avoid circular dependencies in DI container)
+    try:
+        from app.src.application.controllers.physical_controls_controller import PhysicalControlsManager
+        from app.src.application.controllers import PlaybackCoordinator
+        from app.src.domain.audio.container import audio_domain_container
+        from app.src.dependencies import get_data_playlist_service
+        from app.src.config import config
+
+        logger.log(LogLevel.INFO, "🎮 Creating PlaybackCoordinator for physical controls...")
+
+        # Create PlaybackCoordinator with proper dependencies
+        if audio_domain_container.is_initialized:
+            audio_backend = audio_domain_container._backend
+            playlist_service = get_data_playlist_service()
+
+            playback_coordinator = PlaybackCoordinator(
+                audio_backend=audio_backend,
+                playlist_service=playlist_service
+            )
+            logger.log(LogLevel.INFO, "✅ PlaybackCoordinator created for physical controls")
+
+            # Create PhysicalControlsManager with injected PlaybackCoordinator
+            logger.log(LogLevel.INFO, "🎮 Creating PhysicalControlsManager with PlaybackCoordinator...")
+            physical_controls_manager = PhysicalControlsManager(
+                audio_controller=playback_coordinator,  # Inject coordinator
+                hardware_config=config.hardware_config,
+                button_configs=None  # Will use DEFAULT_BUTTON_CONFIGS
+            )
+            domain_bootstrap.set_physical_controls_manager(physical_controls_manager)
+            logger.log(LogLevel.INFO, "✅ PhysicalControlsManager injected into domain bootstrap")
+        else:
+            logger.log(LogLevel.WARNING, "⚠️ Audio domain not initialized, skipping physical controls")
+
+    except Exception as e:
+        logger.log(LogLevel.WARNING, f"⚠️ Failed to create PhysicalControlsManager: {e}")
+        logger.log(LogLevel.WARNING, "⚠️ Continuing without physical controls (buttons/encoder will not work)")
+
     if domain_bootstrap.is_initialized:
         await domain_bootstrap.start()
         logger.log(LogLevel.INFO, "✅ Domain bootstrap started (includes physical controls)")

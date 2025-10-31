@@ -49,33 +49,16 @@ class PhysicalControlsManager:
         """
         # Use domain architecture directly if not provided
         if audio_controller is None:
-            try:
-                # Use PlaybackCoordinator directly from domain architecture
-                from app.src.application.controllers import PlaybackCoordinator
-                from app.src.domain.audio.container import audio_domain_container
-
-                if not audio_domain_container.is_initialized:
-                    raise RuntimeError(
-                        "Audio domain container is not initialized. "
-                        "PhysicalControlsManager requires a valid audio controller."
-                    )
-
-                # Create PlaybackCoordinator with domain dependencies
-                audio_backend = audio_domain_container._backend
-                from app.src.dependencies import get_data_playlist_service
-                playlist_service = get_data_playlist_service()
-
-                audio_controller = PlaybackCoordinator(
-                    audio_backend=audio_backend,
-                    playlist_service=playlist_service
-                )
-                logger.info("✅ Using PlaybackCoordinator with domain architecture for physical controls")
-
-            except ImportError as e:
-                logger.error(f"❌ Failed to initialize PlaybackCoordinator for physical controls: {e}")
-                raise RuntimeError(
-                    f"Failed to import required components for PhysicalControlsManager: {e}"
-                ) from e
+            # PhysicalControlsManager requires an audio controller to be injected
+            # It should NOT auto-create one to avoid tight coupling and circular dependencies
+            # The caller (main.py) should create and inject PlaybackCoordinator
+            logger.warning(
+                "⚠️ PhysicalControlsManager created without audio_controller. "
+                "Physical controls will be initialized but won't control playback until "
+                "an audio controller is provided."
+            )
+            # Set to None - physical controls can still initialize for GPIO events
+            audio_controller = None
 
         self.audio_controller = audio_controller
         self._controller_type = "PlaybackCoordinator" if hasattr(audio_controller, 'toggle_pause') else "AudioController"
@@ -116,8 +99,7 @@ class PhysicalControlsManager:
         """
         try:
             if not self.audio_controller:
-                logger.error("No audio controller available for physical controls integration")
-                return False
+                logger.warning("⚠️ No audio controller - physical controls will initialize but won't control playback")
 
             if not self._physical_controls:
                 logger.error("No physical controls implementation available")
@@ -218,6 +200,22 @@ class PhysicalControlsManager:
         else:
             logger.error(f"❌ [BUTTON] Button {button_id} action '{action.name}' FAILED")
 
+    async def _async_set_volume(self, volume: int, direction: str) -> None:
+        """Helper to call async set_volume from sync context.
+
+        Args:
+            volume: New volume level (0-100)
+            direction: Direction for logging ("up" or "down")
+        """
+        try:
+            success = await self.audio_controller.set_volume(volume)
+            if success:
+                logger.info(f"✅ Volume {direction} to {volume}% via PlaybackCoordinator")
+            else:
+                logger.warning(f"⚠️ Volume {direction} failed via PlaybackCoordinator")
+        except Exception as e:
+            logger.error(f"❌ Error setting volume: {e}")
+
     @handle_errors("handle_play_pause")
     def handle_play_pause(self) -> None:
         """Handle play/pause control for domain architecture."""
@@ -259,11 +257,19 @@ class PhysicalControlsManager:
             else:
                 new_volume = max(0, current_volume - 5)  # Decrease by 5%
 
-            success = self.audio_controller.set_volume(new_volume)
-            if success:
-                logger.info(f"✅ Volume {direction} to {new_volume}% via PlaybackCoordinator")
-            else:
-                logger.warning(f"⚠️ Volume {direction} failed via PlaybackCoordinator")
+            # set_volume is async, need to schedule it as a task
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Schedule the coroutine to run in the event loop
+                    asyncio.create_task(self._async_set_volume(new_volume, direction))
+                else:
+                    # If loop isn't running, run it synchronously (shouldn't happen in production)
+                    loop.run_until_complete(self.audio_controller.set_volume(new_volume))
+                    logger.info(f"✅ Volume {direction} to {new_volume}% via PlaybackCoordinator")
+            except Exception as e:
+                logger.error(f"❌ Failed to set volume: {e}")
         elif direction == "up" and hasattr(self.audio_controller, "increase_volume"):
             # AudioController style (backward compatibility)
             success = self.audio_controller.increase_volume()

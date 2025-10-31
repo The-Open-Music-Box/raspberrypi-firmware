@@ -29,12 +29,13 @@ class DomainBootstrap:
 
     # MARK: - Initialization
 
-    def __init__(self, led_manager: Optional[Any] = None, led_event_handler: Optional[Any] = None):
+    def __init__(self, led_manager: Optional[Any] = None, led_event_handler: Optional[Any] = None, physical_controls_manager: Optional[Any] = None):
         """Initialize the bootstrap.
 
         Args:
             led_manager: Optional LED state manager (injected via DI)
             led_event_handler: Optional LED event handler (injected via DI)
+            physical_controls_manager: Optional physical controls manager (injected via DI)
         """
         self._is_initialized = False
         self._is_stopping = False
@@ -43,11 +44,20 @@ class DomainBootstrap:
         self._led_manager = led_manager
         self._led_event_handler = led_event_handler
 
+        # Physical controls management (injected dependency)
+        self._physical_controls_manager = physical_controls_manager
+
         # Log LED component injection status
         if led_manager and led_event_handler:
             logger.info(f"✅ DomainBootstrap created WITH LED components: manager={type(led_manager).__name__}, handler={type(led_event_handler).__name__}")
         else:
             logger.warning(f"⚠️ DomainBootstrap created WITHOUT LED components: manager={led_manager}, handler={led_event_handler}")
+
+        # Log physical controls injection status
+        if physical_controls_manager:
+            logger.info(f"✅ DomainBootstrap created WITH PhysicalControlsManager: {type(physical_controls_manager).__name__}")
+        else:
+            logger.warning("⚠️ DomainBootstrap created WITHOUT PhysicalControlsManager")
 
     @handle_errors(operation_name="initialize", component="domain.bootstrap")
     def initialize(self, existing_backend: Any = None) -> None:
@@ -141,6 +151,34 @@ class DomainBootstrap:
                     # Re-raise to prevent app from starting with broken audio
                     raise
 
+    async def _initialize_physical_controls_with_retry(self, max_retries: int = 3, retry_delay: float = 2.0) -> None:
+        """Initialize physical controls with retry logic for first boot.
+
+        Args:
+            max_retries: Maximum number of retry attempts
+            retry_delay: Delay in seconds between retries
+        """
+        import asyncio
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(f"🎮 Initializing physical controls (attempt {attempt}/{max_retries})...")
+                success = await self._physical_controls_manager.initialize()
+                if success:
+                    logger.info("✅ Physical controls initialized successfully (buttons + encoder)")
+                    return  # Success!
+                else:
+                    raise RuntimeError("Physical controls initialization returned False")
+            except Exception as e:
+                if attempt < max_retries:
+                    logger.warning(f"⚠️ Physical controls initialization attempt {attempt} failed: {e}")
+                    logger.info(f"🔄 Retrying in {retry_delay}s... (GPIO hardware may not be ready yet)")
+                    await asyncio.sleep(retry_delay)
+                else:
+                    logger.error(f"❌ Physical controls failed after {max_retries} attempts: {e}", exc_info=True)
+                    logger.warning("⚠️ Continuing without physical controls (non-critical)")
+                    # Don't raise - physical controls are non-critical, app can run without them
+
     # MARK: - Lifecycle Management
 
     @handle_errors(operation_name="start", component="domain.bootstrap")
@@ -162,6 +200,12 @@ class DomainBootstrap:
             await self._initialize_audio_with_retry()
         else:
             logger.warning("⚠️ Audio domain not initialized, skipping start")
+
+        # Initialize physical controls (buttons + encoder) with retry
+        if self._physical_controls_manager:
+            await self._initialize_physical_controls_with_retry()
+        else:
+            logger.warning("⚠️ Physical controls NOT available - skipping initialization")
 
         # Clear STARTING state and set to IDLE when ready
         if self._led_event_handler:
@@ -224,6 +268,21 @@ class DomainBootstrap:
     def led_event_handler(self) -> Optional[Any]:
         """Get LED event handler for application use."""
         return self._led_event_handler
+
+    def set_physical_controls_manager(self, physical_controls_manager: Optional[Any]) -> None:
+        """Set physical controls manager after bootstrap creation.
+
+        This method allows injecting PhysicalControlsManager after DomainBootstrap
+        is created, avoiding circular dependencies in the DI container.
+
+        Args:
+            physical_controls_manager: PhysicalControlsManager instance to inject
+        """
+        self._physical_controls_manager = physical_controls_manager
+        if physical_controls_manager:
+            logger.info(f"✅ PhysicalControlsManager injected into DomainBootstrap: {type(physical_controls_manager).__name__}")
+        else:
+            logger.warning("⚠️ PhysicalControlsManager set to None in DomainBootstrap")
 
     # MARK: - System Status
 
