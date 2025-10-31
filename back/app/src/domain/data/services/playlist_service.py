@@ -485,3 +485,69 @@ class PlaylistService:
             if track.get('filename') and track['filename'] not in current_files:
                 await self._track_repo.delete(track['id'])
                 stats['tracks_removed'] += 1
+
+    @handle_domain_errors(operation_name="cleanup_orphaned_folders")
+    async def cleanup_orphaned_folders(self, upload_folder: str) -> Dict[str, Any]:
+        """Remove folders in upload directory that have no corresponding playlist in database.
+
+        This is the inverse operation of sync_with_filesystem():
+        - sync_with_filesystem: uploads → DB (create missing playlists)
+        - cleanup_orphaned_folders: DB → uploads (remove orphaned folders)
+
+        Args:
+            upload_folder: Path to the upload folder
+
+        Returns:
+            Cleanup statistics with folders_scanned, folders_removed, removed_paths
+        """
+        import shutil
+
+        stats = {
+            'folders_scanned': 0,
+            'folders_removed': 0,
+            'removed_paths': []
+        }
+
+        upload_path = Path(upload_folder)
+        if not upload_path.exists():
+            logger.warning(f"Upload folder does not exist: {upload_folder}")
+            return stats
+
+        # Get all playlists from database
+        all_playlists = await self._playlist_repo.find_all()
+
+        # Build sets of known paths and titles (case-insensitive)
+        db_paths = set()
+        db_titles = set()
+        for playlist in all_playlists:
+            if playlist.path:
+                db_paths.add(playlist.path)
+            if playlist.title:
+                db_titles.add(playlist.title.lower())
+
+        # Scan upload folder for orphaned directories
+        for folder in upload_path.iterdir():
+            if not folder.is_dir():
+                continue
+
+            stats['folders_scanned'] += 1
+            folder_name = folder.name
+
+            # Check if folder corresponds to any playlist (by path or title)
+            is_in_db = (
+                folder_name in db_paths or
+                folder_name.lower() in db_titles
+            )
+
+            if not is_in_db:
+                # Orphaned folder - remove it
+                try:
+                    shutil.rmtree(folder)
+                    stats['folders_removed'] += 1
+                    stats['removed_paths'].append(str(folder))
+                    logger.info(f"🗑️ Removed orphaned folder: {folder}")
+                except Exception as e:
+                    logger.error(f"Failed to remove orphaned folder {folder}: {e}")
+
+        logger.info(f"✅ Cleanup completed: {stats}")
+        return stats

@@ -224,34 +224,49 @@ class Application:
     # MARK: - Domain Playlist Synchronization
     @handle_errors("_sync_playlists_domain")
     async def _sync_playlists_domain(self):
-        """Synchronize playlists using pure domain architecture."""
+        """Synchronize playlists using pure domain architecture.
+
+        Performs bidirectional synchronization:
+        1. uploads → DB: Create playlists from folders (sync_with_filesystem)
+        2. DB → uploads: Remove orphaned folders (cleanup_orphaned_folders)
+        """
         logger.info("🔄 Starting DOMAIN playlist synchronization")
-        # Use domain application service for synchronization
-        from app.src.services.filesystem_sync_service import FilesystemSyncService
 
         # Get upload folder from config
         upload_folder = self._get_upload_folder_path()
-        # Create filesystem sync service
-        sync_service = FilesystemSyncService()
-        # Use domain application service to sync
-        # NOTE: Filesystem sync migration to DDD architecture
-        # Current: FilesystemSyncService (legacy) is created but not used
-        # Planned: Migrate to DataApplicationService.sync_filesystem_to_database()
-        # Timeline: Q1 2026 (after DDD migration stabilizes)
-        # For now, skip this sync operation as it's not critical for core functionality
-        sync_result = {"status": "success", "data": {"message": "Filesystem sync skipped in DDD architecture"}}
-        if sync_result.get("status") == "success":
-            stats = sync_result.get("data", {})
-            logger.info("✅ Domain playlist synchronization completed",
-                extra={
-                    "playlists_added": stats.get("playlists_added", 0),
-                    "playlists_updated": stats.get("playlists_updated", 0),
-                    "tracks_added": stats.get("tracks_added", 0),
-                    "tracks_removed": stats.get("tracks_removed", 0),
-                },
-            )
-        else:
-            logger.warning(f"⚠️ Domain sync completed with issues: {sync_result}")
+
+        # Get domain playlist service
+        from app.src.dependencies import get_data_playlist_service
+        playlist_service = get_data_playlist_service()
+
+        try:
+            # Step 1: Sync uploads → DB (create missing playlists)
+            logger.info("📥 Syncing uploads → database")
+            sync_result = await playlist_service.sync_with_filesystem(str(upload_folder))
+            logger.info("✅ Upload → DB sync completed", extra=sync_result)
+
+            # Step 2: Cleanup DB → uploads (remove orphaned folders)
+            logger.info("🗑️ Cleaning up orphaned folders")
+            cleanup_result = await playlist_service.cleanup_orphaned_folders(str(upload_folder))
+            logger.info("✅ Orphaned folders cleanup completed", extra=cleanup_result)
+
+            # Combined stats for logging
+            combined_stats = {
+                "playlists_scanned": sync_result.get("playlists_scanned", 0),
+                "playlists_added": sync_result.get("playlists_added", 0),
+                "playlists_updated": sync_result.get("playlists_updated", 0),
+                "tracks_added": sync_result.get("tracks_added", 0),
+                "tracks_removed": sync_result.get("tracks_removed", 0),
+                "folders_scanned": cleanup_result.get("folders_scanned", 0),
+                "folders_removed": cleanup_result.get("folders_removed", 0),
+            }
+
+            logger.info("✅ Domain playlist synchronization completed", extra=combined_stats)
+
+        except Exception as e:
+            logger.error(f"❌ Domain sync failed: {e}", exc_info=True)
+            # Don't raise - allow app to continue even if sync fails
+            logger.warning("⚠️ Application will continue despite sync failure")
 
     def _get_upload_folder_path(self) -> Path:
         """Get the upload folder path from config."""
