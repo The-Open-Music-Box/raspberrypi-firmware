@@ -81,7 +81,7 @@ class TestPlaylistService:
         mock_playlist_repo.find_all.return_value = playlist_entities
         mock_playlist_repo.count.return_value = 2
         # This mock is no longer used since tracks are included in playlists
-        mock_track_repo.get_by_playlist.return_value = []
+        mock_track_repo.get_tracks_by_playlist.return_value = []
 
         result = await service.get_playlists(page=1, page_size=50)
 
@@ -101,7 +101,7 @@ class TestPlaylistService:
 
         mock_playlist_repo.find_by_id.return_value = playlist_entity
         # This mock is no longer used since tracks are included in playlist
-        mock_track_repo.get_by_playlist.return_value = []
+        mock_track_repo.get_tracks_by_playlist.return_value = []
 
         result = await service.get_playlist('playlist-1')
 
@@ -133,7 +133,7 @@ class TestPlaylistService:
 
         mock_playlist_repo.save.return_value = playlist_id
         mock_playlist_repo.find_by_id.return_value = created_playlist
-        mock_track_repo.get_by_playlist.return_value = []
+        mock_track_repo.get_tracks_by_playlist.return_value = []
 
         result = await service.create_playlist('New Playlist', 'Test description')
 
@@ -312,7 +312,7 @@ class TestPlaylistService:
         # Setup mocks
         mock_playlist_repo.find_by_id.return_value = old_entity
         mock_playlist_repo.update.return_value = updated_entity
-        mock_track_repo.get_by_playlist.return_value = []
+        mock_track_repo.get_tracks_by_playlist.return_value = []
 
         # Perform update
         updates = {'title': 'New Title'}
@@ -514,7 +514,7 @@ class TestPlaylistService:
 
         # Mock repository responses
         mock_playlist_repo.get_all.return_value = []
-        mock_track_repo.get_by_playlist.return_value = []
+        mock_track_repo.get_tracks_by_playlist.return_value = []
 
         # Mock create_playlist to return playlist data
         created_count = {'count': 0}
@@ -548,8 +548,8 @@ class TestPlaylistService:
         (playlist_dir / "readme.txt").write_text("not audio")  # Should be ignored
 
         # No existing tracks
-        mock_track_repo.get_by_playlist.return_value = []
-        mock_track_repo.add_to_playlist.return_value = True
+        mock_track_repo.get_tracks_by_playlist.return_value = []
+        mock_track_repo.add_track_to_playlist.return_value = True
 
         stats = {
             'tracks_added': 0,
@@ -559,7 +559,7 @@ class TestPlaylistService:
         await service._sync_playlist_tracks(playlist_id, playlist_dir, stats)
 
         assert stats['tracks_added'] == 2
-        assert mock_track_repo.add_to_playlist.call_count == 2
+        assert mock_track_repo.add_track_to_playlist.call_count == 2
 
     @pytest.mark.asyncio
     async def test_sync_playlist_tracks_removes_deleted_tracks(self, service, mock_track_repo, tmp_path):
@@ -572,12 +572,13 @@ class TestPlaylistService:
         (playlist_dir / "track1.mp3").write_text("audio 1")
 
         # Mock existing tracks - track2 no longer exists on disk
+        from app.src.domain.data.models.track import Track
         existing_tracks = [
-            {'id': 'track-1', 'filename': 'track1.mp3', 'title': 'Track 1'},
-            {'id': 'track-2', 'filename': 'track2.mp3', 'title': 'Track 2'}  # File deleted
+            Track(id='track-1', track_number=1, title='Track 1', filename='track1.mp3', file_path='/tmp/track1.mp3'),
+            Track(id='track-2', track_number=2, title='Track 2', filename='track2.mp3', file_path='/tmp/track2.mp3')  # File deleted
         ]
-        mock_track_repo.get_by_playlist.return_value = existing_tracks
-        mock_track_repo.delete.return_value = True
+        mock_track_repo.get_tracks_by_playlist.return_value = existing_tracks
+        mock_track_repo.delete_track.return_value = True
 
         stats = {
             'tracks_added': 0,
@@ -587,7 +588,7 @@ class TestPlaylistService:
         await service._sync_playlist_tracks(playlist_id, playlist_dir, stats)
 
         assert stats['tracks_removed'] == 1
-        mock_track_repo.delete.assert_called_once_with('track-2')
+        mock_track_repo.delete_track.assert_called_once_with('track-2')
 
     @pytest.mark.asyncio
     async def test_get_playlists_pagination_edge_cases(self, service, mock_playlist_repo, mock_track_repo):

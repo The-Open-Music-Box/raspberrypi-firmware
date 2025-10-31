@@ -461,8 +461,8 @@ class PlaylistService:
         ])
 
         # Get existing tracks
-        existing_tracks = await self._track_repo.get_by_playlist(playlist_id)
-        existing_files = {t['filename'] for t in existing_tracks if t.get('filename')}
+        existing_tracks = await self._track_repo.get_tracks_by_playlist(playlist_id)
+        existing_files = {t.filename for t in existing_tracks if t.filename}
 
         # Add new tracks
         for idx, audio_file in enumerate(audio_files, 1):
@@ -476,14 +476,14 @@ class PlaylistService:
                     'file_path': str(audio_file),
                     'created_at': datetime.utcnow().isoformat()
                 }
-                await self._track_repo.add_to_playlist(playlist_id, track_data)
+                await self._track_repo.add_track_to_playlist(playlist_id, track_data)
                 stats['tracks_added'] += 1
 
         # Remove tracks that no longer exist
         current_files = {f.name for f in audio_files}
         for track in existing_tracks:
-            if track.get('filename') and track['filename'] not in current_files:
-                await self._track_repo.delete(track['id'])
+            if track.filename and track.filename not in current_files:
+                await self._track_repo.delete_track(track.id)
                 stats['tracks_removed'] += 1
 
     @handle_domain_errors(operation_name="cleanup_orphaned_folders")
