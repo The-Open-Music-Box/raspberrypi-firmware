@@ -74,6 +74,16 @@ class PhysicalControlsManager:
         self._physical_controls: Optional[PhysicalControlsProtocol] = None
         self._button_dispatcher: Optional[ButtonActionDispatcher] = None
 
+        # Store reference to main event loop for GPIO callbacks (which run in different threads)
+        import asyncio
+        try:
+            self._main_loop = asyncio.get_running_loop()
+            logger.debug(f"✅ Captured main event loop: {self._main_loop}")
+        except RuntimeError:
+            # No running loop yet - will be set during initialize()
+            self._main_loop = None
+            logger.debug("⚠️ No running loop yet - will capture during initialize()")
+
         # Create physical controls implementation with button configs
         self._physical_controls = PhysicalControlsFactory.create_controls(
             self.hardware_config,
@@ -98,6 +108,15 @@ class PhysicalControlsManager:
             True if initialization was successful, False otherwise
         """
         try:
+            # Capture the main event loop if not already done
+            if self._main_loop is None:
+                import asyncio
+                try:
+                    self._main_loop = asyncio.get_running_loop()
+                    logger.info(f"✅ Captured main event loop during initialize: {self._main_loop}")
+                except RuntimeError:
+                    logger.error("❌ No running event loop - physical controls may not work properly")
+
             if not self.audio_controller:
                 logger.warning("⚠️ No audio controller - physical controls will initialize but won't control playback")
 
@@ -257,17 +276,21 @@ class PhysicalControlsManager:
             else:
                 new_volume = max(0, current_volume - 5)  # Decrease by 5%
 
-            # set_volume is async, need to schedule it as a task
+            # set_volume is async, need to schedule it in the main event loop
+            # GPIO callbacks run in a different thread, so we need run_coroutine_threadsafe
             import asyncio
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # Schedule the coroutine to run in the event loop
-                    asyncio.create_task(self._async_set_volume(new_volume, direction))
-                else:
-                    # If loop isn't running, run it synchronously (shouldn't happen in production)
-                    loop.run_until_complete(self.audio_controller.set_volume(new_volume))
-                    logger.info(f"✅ Volume {direction} to {new_volume}% via PlaybackCoordinator")
+                if self._main_loop is None:
+                    logger.error("❌ No main event loop available - cannot set volume")
+                    return
+
+                # Schedule the coroutine to run in the main loop from this GPIO thread
+                future = asyncio.run_coroutine_threadsafe(
+                    self._async_set_volume(new_volume, direction),
+                    self._main_loop
+                )
+                # Don't block waiting for result - fire and forget
+                # The async method will log success/failure
             except Exception as e:
                 logger.error(f"❌ Failed to set volume: {e}")
         elif direction == "up" and hasattr(self.audio_controller, "increase_volume"):

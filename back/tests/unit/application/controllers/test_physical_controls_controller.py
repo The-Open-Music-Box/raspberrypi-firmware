@@ -251,55 +251,81 @@ class TestPlayPauseHandling:
 class TestVolumeHandling:
     """Test volume control handling."""
 
-    def test_handle_volume_up_with_coordinator(self):
+    @pytest.mark.asyncio
+    async def test_handle_volume_up_with_coordinator(self):
         """Test volume up with PlaybackCoordinator."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=50)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
 
+        # Set the main loop for testing (pytest-asyncio provides running loop)
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
+
         manager.handle_volume_change("up")
+
+        # Give async task time to execute
+        await asyncio.sleep(0.01)
 
         coordinator.set_volume.assert_called_with(55)  # +5%
 
-    def test_handle_volume_down_with_coordinator(self):
+    @pytest.mark.asyncio
+    async def test_handle_volume_down_with_coordinator(self):
         """Test volume down with PlaybackCoordinator."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=50)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
 
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
+
         manager.handle_volume_change("down")
+
+        await asyncio.sleep(0.01)
 
         coordinator.set_volume.assert_called_with(45)  # -5%
 
-    def test_volume_up_max_limit(self):
+    @pytest.mark.asyncio
+    async def test_volume_up_max_limit(self):
         """Test volume up respects maximum limit."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=98)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
+
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
 
         manager.handle_volume_change("up")
 
+        await asyncio.sleep(0.01)
+
         coordinator.set_volume.assert_called_with(100)  # Capped at 100
 
-    def test_volume_down_min_limit(self):
+    @pytest.mark.asyncio
+    async def test_volume_down_min_limit(self):
         """Test volume down respects minimum limit."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=2)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
 
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
+
         manager.handle_volume_change("down")
+
+        await asyncio.sleep(0.01)
 
         coordinator.set_volume.assert_called_with(0)  # Capped at 0
 
