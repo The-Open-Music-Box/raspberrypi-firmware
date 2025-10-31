@@ -326,7 +326,6 @@ class TestPlaylistService:
         assert not old_folder.exists(), "Old folder should not exist after rename"
         assert result['title'] == 'New Title'
 
-    @pytest.mark.skip(reason="UUID migration - folder operations simplified")
     @pytest.mark.asyncio
     async def test_rename_playlist_folder_when_old_folder_not_found(self, service, tmp_path, monkeypatch):
         """Test _rename_playlist_folder when old folder doesn't exist."""
@@ -351,7 +350,6 @@ class TestPlaylistService:
         new_folder = upload_folder / "New_Title"
         assert not new_folder.exists()
 
-    @pytest.mark.skip(reason="UUID migration - folder operations simplified")
     @pytest.mark.asyncio
     async def test_rename_playlist_folder_when_target_exists(self, service, tmp_path, monkeypatch):
         """Test _rename_playlist_folder when target folder already exists."""
@@ -380,7 +378,6 @@ class TestPlaylistService:
         assert old_folder.exists()
         assert target_folder.exists()
 
-    @pytest.mark.skip(reason="UUID migration - folder operations simplified")
     @pytest.mark.asyncio
     async def test_update_track_file_paths_after_rename(self, service, mock_playlist_repo, mock_track_repo, tmp_path):
         """Test _update_track_file_paths updates track paths correctly."""
@@ -422,7 +419,6 @@ class TestPlaylistService:
         assert str(new_folder / 'track1.mp3') in str(calls[0])
         assert str(new_folder / 'track2.mp3') in str(calls[1])
 
-    @pytest.mark.skip(reason="UUID migration - folder operations simplified")
     @pytest.mark.asyncio
     async def test_update_track_file_paths_handles_dict_tracks(self, service, mock_track_repo, tmp_path):
         """Test _update_track_file_paths handles dict-based tracks."""
@@ -476,7 +472,6 @@ class TestPlaylistService:
 
         assert not playlist_folder.exists(), "Playlist folder should be cleaned up"
 
-    @pytest.mark.skip(reason="UUID migration - folder operations simplified")
     @pytest.mark.asyncio
     async def test_cleanup_playlist_folder_fallback_to_id(self, service, tmp_path, monkeypatch):
         """Test _cleanup_playlist_folder falls back to ID when title-based folders not found."""
