@@ -43,20 +43,22 @@ class TestPhysicalControlsInitialization:
         assert manager._controller_type == "PlaybackCoordinator"
 
     def test_create_without_controller_uses_fallback(self):
-        """Test creating without controller uses fallback."""
+        """Test creating without controller logs warning but continues."""
         hardware_config = Mock()
 
-        with patch("app.src.application.controllers.PlaybackCoordinator") as mock_coordinator:
-            with patch("app.src.domain.audio.container.audio_domain_container") as mock_container:
-                mock_container.is_initialized = False
+        # Creating without audio_controller should log warning but not raise
+        # Physical controls can still initialize for GPIO events
+        manager = PhysicalControlsManager(None, hardware_config)
 
-                # Should raise RuntimeError when container is not initialized
-                with pytest.raises(RuntimeError, match="Audio domain container is not initialized"):
-                    PhysicalControlsManager(None, hardware_config)
+        assert manager.audio_controller is None
+        assert manager._controller_type == "AudioController"  # Default when no controller
 
     def test_physical_controls_factory_called(self):
-        """Test physical controls factory is called during init."""
+        """Test physical controls factory is called during init with correct parameters."""
+        from app.src.config.button_actions_config import DEFAULT_BUTTON_CONFIGS
+
         audio_controller = Mock()
+        audio_controller.toggle_pause = Mock()  # Make it look like PlaybackCoordinator
         hardware_config = Mock()
 
         with patch("app.src.application.controllers.physical_controls_controller.PhysicalControlsFactory") as mock_factory:
@@ -64,7 +66,11 @@ class TestPhysicalControlsInitialization:
 
             manager = PhysicalControlsManager(audio_controller, hardware_config)
 
-            mock_factory.create_controls.assert_called_once_with(hardware_config)
+            # Should be called with hardware_config and button_configs
+            mock_factory.create_controls.assert_called_once_with(
+                hardware_config,
+                DEFAULT_BUTTON_CONFIGS
+            )
 
 
 class TestInitializationAndCleanup:
@@ -105,15 +111,21 @@ class TestInitializationAndCleanup:
         assert manager._is_initialized is True
         physical_controls.initialize.assert_called_once()
 
-    def test_initialize_without_audio_controller(self, hardware_config):
-        """Test initialization without audio controller raises error."""
-        with patch("app.src.application.controllers.physical_controls_controller.PhysicalControlsFactory"):
-            with patch("app.src.domain.audio.container.audio_domain_container") as mock_container:
-                mock_container.is_initialized = False
+    @pytest.mark.asyncio
+    async def test_initialize_without_audio_controller(self, hardware_config):
+        """Test initialization without audio controller still initializes hardware."""
+        with patch("app.src.application.controllers.physical_controls_controller.PhysicalControlsFactory") as mock_factory:
+            mock_physical_controls = Mock()
+            mock_physical_controls.initialize = AsyncMock(return_value=True)
+            mock_factory.create_controls.return_value = mock_physical_controls
 
-                # Should raise RuntimeError when container is not initialized
-                with pytest.raises(RuntimeError, match="Audio domain container is not initialized"):
-                    PhysicalControlsManager(None, hardware_config)
+            # Creating without audio_controller should work (just logs warning)
+            manager = PhysicalControlsManager(None, hardware_config)
+
+            # Hardware should still initialize even without audio controller
+            success = await manager.initialize()
+            assert success is True
+            mock_physical_controls.initialize.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_initialize_hardware_failure(self, manager, physical_controls):
@@ -171,22 +183,18 @@ class TestEventHandlerSetup:
             return mgr
 
     def test_setup_all_button_handlers(self, manager):
-        """Test all button handlers are set up."""
+        """Test all configurable button handlers are set up."""
         manager._setup_event_handlers()
 
-        # Verify all expected event handlers were registered
-        manager._physical_controls.set_event_handler.assert_any_call(
-            PhysicalControlEvent.BUTTON_NEXT_TRACK,
-            manager.handle_next_track
-        )
-        manager._physical_controls.set_event_handler.assert_any_call(
-            PhysicalControlEvent.BUTTON_PREVIOUS_TRACK,
-            manager.handle_previous_track
-        )
-        manager._physical_controls.set_event_handler.assert_any_call(
-            PhysicalControlEvent.BUTTON_PLAY_PAUSE,
-            manager.handle_play_pause
-        )
+        # Verify all configurable button event handlers were registered (BUTTON_0 through BUTTON_4)
+        calls = manager._physical_controls.set_event_handler.call_args_list
+        event_types = [call[0][0] for call in calls]
+
+        assert PhysicalControlEvent.BUTTON_0 in event_types
+        assert PhysicalControlEvent.BUTTON_1 in event_types
+        assert PhysicalControlEvent.BUTTON_2 in event_types
+        assert PhysicalControlEvent.BUTTON_3 in event_types
+        assert PhysicalControlEvent.BUTTON_4 in event_types
 
     def test_setup_encoder_handlers(self, manager):
         """Test encoder handlers are set up with lambdas."""
@@ -243,55 +251,81 @@ class TestPlayPauseHandling:
 class TestVolumeHandling:
     """Test volume control handling."""
 
-    def test_handle_volume_up_with_coordinator(self):
+    @pytest.mark.asyncio
+    async def test_handle_volume_up_with_coordinator(self):
         """Test volume up with PlaybackCoordinator."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=50)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
 
+        # Set the main loop for testing (pytest-asyncio provides running loop)
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
+
         manager.handle_volume_change("up")
+
+        # Give async task time to execute
+        await asyncio.sleep(0.01)
 
         coordinator.set_volume.assert_called_with(55)  # +5%
 
-    def test_handle_volume_down_with_coordinator(self):
+    @pytest.mark.asyncio
+    async def test_handle_volume_down_with_coordinator(self):
         """Test volume down with PlaybackCoordinator."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=50)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
 
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
+
         manager.handle_volume_change("down")
+
+        await asyncio.sleep(0.01)
 
         coordinator.set_volume.assert_called_with(45)  # -5%
 
-    def test_volume_up_max_limit(self):
+    @pytest.mark.asyncio
+    async def test_volume_up_max_limit(self):
         """Test volume up respects maximum limit."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=98)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
+
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
 
         manager.handle_volume_change("up")
 
+        await asyncio.sleep(0.01)
+
         coordinator.set_volume.assert_called_with(100)  # Capped at 100
 
-    def test_volume_down_min_limit(self):
+    @pytest.mark.asyncio
+    async def test_volume_down_min_limit(self):
         """Test volume down respects minimum limit."""
         coordinator = Mock()
         coordinator.get_volume = Mock(return_value=2)
-        coordinator.set_volume = Mock(return_value=True)
+        coordinator.set_volume = AsyncMock(return_value=True)
         hardware_config = Mock()
 
         manager = PhysicalControlsManager(coordinator, hardware_config)
 
+        import asyncio
+        manager._main_loop = asyncio.get_running_loop()
+
         manager.handle_volume_change("down")
+
+        await asyncio.sleep(0.01)
 
         coordinator.set_volume.assert_called_with(0)  # Capped at 0
 

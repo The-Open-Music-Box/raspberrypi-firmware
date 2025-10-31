@@ -18,12 +18,18 @@ class HardwareConfig:
     related settings.
     """
 
-    # GPIO Pin Assignments (BCM numbering) - Updated to avoid SPI conflicts
-    gpio_next_track_button: int = 16
-    gpio_previous_track_button: int = 26
-    gpio_volume_encoder_clk: int = 7
-    gpio_volume_encoder_dt: int = 8  # Changed from 24 to avoid conflict with LED blue
-    gpio_volume_encoder_sw: int = 23
+    # GPIO Pin Assignments (BCM numbering)
+    # Physical buttons
+    gpio_button_bt4: int = 5    # Next track
+    gpio_button_bt3: int = 6    # To be defined (debug print)
+    gpio_button_bt2: int = 22   # To be defined (debug print)
+    gpio_button_bt1: int = 27   # Previous track
+    gpio_button_bt0: int = 23   # To be defined (debug print)
+
+    # Rotary encoder for volume control
+    gpio_volume_encoder_sw: int = 16   # Play/Pause
+    gpio_volume_encoder_clk: int = 26  # Channel A (swapped for correct direction)
+    gpio_volume_encoder_dt: int = 13   # Channel B (swapped for correct direction)
 
     # RGB LED pins (SMD5050) - User specified wiring
     gpio_led_red: int = 25
@@ -31,7 +37,7 @@ class HardwareConfig:
     gpio_led_blue: int = 24  # As per user's physical wiring
 
     # Button settings
-    button_debounce_time: float = 0.3  # Debounce time in seconds
+    button_debounce_time: float = 0.01  # Debounce time in seconds (10ms for quick response)
     button_hold_time: float = 2.0  # Time to register a long press
 
     # Rotary encoder settings
@@ -63,8 +69,11 @@ class HardwareConfig:
         """
         # Validate GPIO pins are in valid range (0-27 for most Pi models)
         gpio_pins = [
-            self.gpio_next_track_button,
-            self.gpio_previous_track_button,
+            self.gpio_button_bt0,
+            self.gpio_button_bt1,
+            self.gpio_button_bt2,
+            self.gpio_button_bt3,
+            self.gpio_button_bt4,
             self.gpio_volume_encoder_clk,
             self.gpio_volume_encoder_dt,
             self.gpio_volume_encoder_sw,
