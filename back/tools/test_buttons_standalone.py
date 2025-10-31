@@ -78,10 +78,10 @@ class ButtonTester:
             'SW': {'gpio': 16, 'description': 'Play/Pause (encoder switch)'},
         }
 
-        # Rotary encoder configuration
+        # Rotary encoder configuration (channels swapped for correct rotation direction)
         self.encoder_config = {
-            'clk': 13,  # Channel A
-            'dt': 26,   # Channel B
+            'clk': 26,  # Channel A (was 13)
+            'dt': 13,   # Channel B (was 26)
         }
 
         self.buttons = {}
@@ -166,7 +166,7 @@ class ButtonTester:
                 self.buttons[name] = Button(
                     config['gpio'],
                     pull_up=True,
-                    bounce_time=0.3,  # 300ms debounce
+                    bounce_time=0.0,  # Instant response
                 )
 
                 # Set up the callback
@@ -191,7 +191,7 @@ class ButtonTester:
                     self.buttons[name] = Button(
                         config['gpio'],
                         pull_up=False,
-                        bounce_time=0.3,
+                        bounce_time=0.0,  # Instant response
                     )
 
                     def make_handler(btn_name):

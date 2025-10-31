@@ -143,8 +143,8 @@ Le projet utilise les broches GPIO suivantes (numérotation BCM) :
 | Fonction | GPIO | Description |
 |----------|------|-------------|
 | SW (Switch) | 16 | Play/Pause (bouton pressoir de l'encodeur) |
-| CLK (Channel A) | 13 | Signal d'encodage - rotation horaire = volume + |
-| DT (Channel B) | 26 | Signal d'encodage - rotation anti-horaire = volume - |
+| CLK (Channel A) | 26 | Signal d'encodage - rotation horaire = volume + |
+| DT (Channel B) | 13 | Signal d'encodage - rotation anti-horaire = volume - |
 
 #### LED RGB (indicateur d'état)
 | Couleur | GPIO | Description |

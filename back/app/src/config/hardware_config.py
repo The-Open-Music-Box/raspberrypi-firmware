@@ -28,8 +28,8 @@ class HardwareConfig:
 
     # Rotary encoder for volume control
     gpio_volume_encoder_sw: int = 16   # Play/Pause
-    gpio_volume_encoder_clk: int = 13  # Channel A (volume up)
-    gpio_volume_encoder_dt: int = 26   # Channel B (volume down)
+    gpio_volume_encoder_clk: int = 26  # Channel A (swapped for correct direction)
+    gpio_volume_encoder_dt: int = 13   # Channel B (swapped for correct direction)
 
     # RGB LED pins (SMD5050) - User specified wiring
     gpio_led_red: int = 25
@@ -37,7 +37,7 @@ class HardwareConfig:
     gpio_led_blue: int = 24  # As per user's physical wiring
 
     # Button settings
-    button_debounce_time: float = 0.3  # Debounce time in seconds
+    button_debounce_time: float = 0.0  # Debounce time in seconds (0 = instant response)
     button_hold_time: float = 2.0  # Time to register a long press
 
     # Rotary encoder settings
