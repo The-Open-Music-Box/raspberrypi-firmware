@@ -57,33 +57,44 @@ class TestPhysicalButtonControlsE2E:
     """Integration tests for complete button control flow."""
 
     @pytest.mark.asyncio
-    async def test_volume_up_button_increases_volume(self, button_dispatcher, mock_playback_coordinator):
-        """Test that pressing volume up button increases volume."""
-        # Button 4 is volume_up in DEFAULT_BUTTON_CONFIGS
+    async def test_volume_actions_with_custom_config(self, mock_playback_coordinator):
+        """Test volume actions with custom button configuration."""
+        # Create custom config with volume buttons
+        volume_configs = [
+            ButtonActionConfig(0, 23, "volume_up"),
+            ButtonActionConfig(1, 27, "volume_down"),
+        ]
+
+        volume_dispatcher = ButtonActionDispatcher(volume_configs, mock_playback_coordinator)
+
+        # Test volume up
         mock_playback_coordinator.get_volume = Mock(return_value=50)
-
-        result = await button_dispatcher.dispatch(4)
-
+        result = await volume_dispatcher.dispatch(0)
         assert result is True
         mock_playback_coordinator.set_volume.assert_called_once_with(55)  # 50 + 5
 
-    @pytest.mark.asyncio
-    async def test_volume_down_button_decreases_volume(self, button_dispatcher, mock_playback_coordinator):
-        """Test that pressing volume down button decreases volume."""
-        # Button 1 is volume_down in DEFAULT_BUTTON_CONFIGS
+        # Test volume down
+        mock_playback_coordinator.reset_mock()
         mock_playback_coordinator.get_volume = Mock(return_value=50)
-
-        result = await button_dispatcher.dispatch(1)
-
+        mock_playback_coordinator.set_volume = AsyncMock(return_value=True)
+        result = await volume_dispatcher.dispatch(1)
         assert result is True
         mock_playback_coordinator.set_volume.assert_called_once_with(45)  # 50 - 5
 
     @pytest.mark.asyncio
-    async def test_volume_boundaries_are_respected(self, button_dispatcher, mock_playback_coordinator):
+    async def test_volume_boundaries_are_respected(self, mock_playback_coordinator):
         """Test that volume stays within 0-100% bounds."""
+        # Create custom config with volume buttons
+        volume_configs = [
+            ButtonActionConfig(0, 23, "volume_up"),
+            ButtonActionConfig(1, 27, "volume_down"),
+        ]
+
+        volume_dispatcher = ButtonActionDispatcher(volume_configs, mock_playback_coordinator)
+
         # Test upper boundary
         mock_playback_coordinator.get_volume = Mock(return_value=98)
-        result = await button_dispatcher.dispatch(4)  # volume_up
+        result = await volume_dispatcher.dispatch(0)  # volume_up
         assert result is True
         mock_playback_coordinator.set_volume.assert_called_with(100)  # Clamped to 100
 
@@ -91,15 +102,15 @@ class TestPhysicalButtonControlsE2E:
         mock_playback_coordinator.reset_mock()
         mock_playback_coordinator.get_volume = Mock(return_value=3)
         mock_playback_coordinator.set_volume = AsyncMock(return_value=True)
-        result = await button_dispatcher.dispatch(1)  # volume_down
+        result = await volume_dispatcher.dispatch(1)  # volume_down
         assert result is True
         mock_playback_coordinator.set_volume.assert_called_with(0)  # Clamped to 0
 
     @pytest.mark.asyncio
     async def test_next_track_button_triggers_navigation(self, button_dispatcher, mock_playback_coordinator):
         """Test that pressing next track button navigates to next track."""
-        # Button 3 is next_track in DEFAULT_BUTTON_CONFIGS
-        result = await button_dispatcher.dispatch(3)
+        # Button 4 is next_track in DEFAULT_BUTTON_CONFIGS
+        result = await button_dispatcher.dispatch(4)
 
         assert result is True
         mock_playback_coordinator.next_track.assert_called_once()
@@ -107,8 +118,8 @@ class TestPhysicalButtonControlsE2E:
     @pytest.mark.asyncio
     async def test_previous_track_button_triggers_navigation(self, button_dispatcher, mock_playback_coordinator):
         """Test that pressing previous track button navigates to previous track."""
-        # Button 2 is previous_track in DEFAULT_BUTTON_CONFIGS
-        result = await button_dispatcher.dispatch(2)
+        # Button 1 is previous_track in DEFAULT_BUTTON_CONFIGS
+        result = await button_dispatcher.dispatch(1)
 
         assert result is True
         mock_playback_coordinator.previous_track.assert_called_once()
@@ -126,20 +137,16 @@ class TestPhysicalButtonControlsE2E:
     @pytest.mark.asyncio
     async def test_multiple_button_presses_in_sequence(self, button_dispatcher, mock_playback_coordinator):
         """Test multiple button presses work correctly in sequence."""
-        mock_playback_coordinator.get_volume = Mock(return_value=50)
+        # Press next track twice
+        await button_dispatcher.dispatch(4)  # next_track
+        assert mock_playback_coordinator.next_track.call_count == 1
 
-        # Press volume up twice
-        await button_dispatcher.dispatch(4)
-        mock_playback_coordinator.set_volume.assert_called_with(55)
+        await button_dispatcher.dispatch(4)  # next_track
+        assert mock_playback_coordinator.next_track.call_count == 2
 
-        mock_playback_coordinator.get_volume = Mock(return_value=55)
-        await button_dispatcher.dispatch(4)
-        mock_playback_coordinator.set_volume.assert_called_with(60)
-
-        # Press volume down once
-        mock_playback_coordinator.get_volume = Mock(return_value=60)
-        await button_dispatcher.dispatch(1)
-        mock_playback_coordinator.set_volume.assert_called_with(55)
+        # Press previous track once
+        await button_dispatcher.dispatch(1)  # previous_track
+        assert mock_playback_coordinator.previous_track.call_count == 1
 
     @pytest.mark.asyncio
     async def test_button_press_with_coordinator_failure(self, button_dispatcher, mock_playback_coordinator):
@@ -147,8 +154,8 @@ class TestPhysicalButtonControlsE2E:
         # Make next_track fail
         mock_playback_coordinator.next_track = Mock(return_value=False)
 
-        # Try to press next track
-        result = await button_dispatcher.dispatch(3)
+        # Try to press next track (button 4)
+        result = await button_dispatcher.dispatch(4)
 
         # Should return False since operation failed
         assert result is False
@@ -162,13 +169,11 @@ class TestPhysicalButtonControlsE2E:
 
     def test_dispatch_sync_wrapper_works(self, button_dispatcher, mock_playback_coordinator):
         """Test that synchronous dispatch wrapper works for GPIO callbacks."""
-        mock_playback_coordinator.get_volume = Mock(return_value=50)
-
-        # This simulates a GPIO callback calling dispatch_sync
+        # This simulates a GPIO callback calling dispatch_sync for next track
         result = button_dispatcher.dispatch_sync(4)
 
         assert result is True
-        mock_playback_coordinator.set_volume.assert_called_once_with(55)
+        mock_playback_coordinator.next_track.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_custom_button_configuration(self, mock_playback_coordinator):

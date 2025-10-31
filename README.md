@@ -126,12 +126,40 @@ Basé sur Raspberry Pi, ce projet open source combine hardware accessible et sof
 - **Boîtier**: Pour protection et design
 - **Tags NFC**: NTAG213/215/216 ou Mifare Classic (basiquement nimporte quel tag NFC peut etre utilisé)
 
-### Configuration matérielle
+### Configuration GPIO détaillée
 
-- **NFC Reader**: Connecté via I2C (GPIO 2/3) ou SPI
-- **Audio HAT**: Monte directement sur les pins GPIO
-- **Boutons**: GPIO configurables (voir configuration)
-- **Encodeur**: GPIO pour CLK, DT, SW
+Le projet utilise les broches GPIO suivantes (numérotation BCM) :
+
+#### Boutons physiques (5 boutons configurables)
+| Bouton | GPIO | Fonction par défaut | Description |
+|--------|------|---------------------|-------------|
+| BT0 | 23 | À définir | Debug print (configurable) |
+| BT1 | 27 | Piste précédente | Skip to previous track |
+| BT2 | 22 | À définir | Debug print (configurable) |
+| BT3 | 6 | À définir | Debug print (configurable) |
+| BT4 | 5 | Piste suivante | Skip to next track |
+
+#### Encodeur rotatif (volume)
+| Fonction | GPIO | Description |
+|----------|------|-------------|
+| SW (Switch) | 16 | Play/Pause (bouton pressoir de l'encodeur) |
+| CLK (Channel A) | 13 | Signal d'encodage - rotation horaire = volume + |
+| DT (Channel B) | 26 | Signal d'encodage - rotation anti-horaire = volume - |
+
+#### LED RGB (indicateur d'état)
+| Couleur | GPIO | Description |
+|---------|------|-------------|
+| Rouge | 25 | Composante rouge de la LED RGB |
+| Vert | 12 | Composante verte de la LED RGB |
+| Bleu | 24 | Composante bleue de la LED RGB |
+
+#### Interfaces matérielles
+| Interface | Pins | Description |
+|-----------|------|-------------|
+| I2C (NFC) | GPIO 2/3 | Lecteur NFC PN532 |
+| Audio HAT | Tous les GPIO | WM8960 monte sur header GPIO |
+
+> **Note**: Les boutons BT0, BT2 et BT3 sont configurables et peuvent être assignés à différentes actions via le fichier de configuration `button_actions_config.py`. Par défaut, ils affichent des messages de debug.
 
 ---
 

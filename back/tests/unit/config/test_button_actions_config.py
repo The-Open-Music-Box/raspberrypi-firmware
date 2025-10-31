@@ -105,19 +105,21 @@ class TestDefaultButtonConfigs:
 
     def test_default_configs_gpio_assignments(self):
         """Test that default configs have correct GPIO assignments."""
-        expected_pins = {0: 23, 1: 20, 2: 16, 3: 26, 4: 19}
+        # Updated GPIO pin assignments: bt0=23, bt1=27, bt2=22, bt3=6, bt4=5
+        expected_pins = {0: 23, 1: 27, 2: 22, 3: 6, 4: 5}
 
         for config in DEFAULT_BUTTON_CONFIGS:
             assert config.gpio_pin == expected_pins[config.button_id]
 
     def test_default_configs_actions(self):
         """Test that default configs have correct actions."""
+        # Updated action assignments
         expected_actions = {
-            0: "print_debug",
-            1: "volume_down",
-            2: "previous_track",
-            3: "next_track",
-            4: "volume_up",
+            0: "print_debug",      # BT0 - to be defined
+            1: "previous_track",   # BT1 - previous track
+            2: "print_debug",      # BT2 - to be defined
+            3: "print_debug",      # BT3 - to be defined
+            4: "next_track",       # BT4 - next track
         }
 
         for config in DEFAULT_BUTTON_CONFIGS:
