@@ -270,9 +270,17 @@ package_release() {
     local back_dir="${PROJECT_ROOT}/back"
     local front_dir="${PROJECT_ROOT}/front"
     local release_dir="${PROJECT_ROOT}/${RELEASE_DEV_DIR}/tomb-rpi"
+    local deploy_exclude="${back_dir}/.deploy-exclude"
+    local deploy_dev_include="${back_dir}/.deploy-dev-include"
 
     if [ "$QUIET" != true ]; then
         print_status $BLUE "📋 Creating release package in: $release_dir"
+    fi
+
+    # Validate manifest files exist
+    if [ ! -f "$deploy_exclude" ]; then
+        print_status $RED "❌ Missing deployment exclusion manifest: $deploy_exclude"
+        exit 1
     fi
 
     # Create release directory
@@ -280,56 +288,70 @@ package_release() {
 
     # Copy backend files
     if [ "$VERBOSE" = true ]; then
-        print_status $BLUE "📂 Copying backend files..."
+        print_status $BLUE "📂 Copying backend files using deployment manifests..."
     fi
 
-    rsync -a --delete \
-        --exclude='__pycache__' \
-        --exclude='*.pyc' \
-        --exclude='logs' \
-        --exclude='app.db' \
-        --exclude='venv' \
-        --exclude='.pytest_cache' \
-        "${back_dir}/app/" "${release_dir}/app/"
+    # Build rsync exclude arguments from manifest
+    local exclude_args=()
+    while IFS= read -r pattern; do
+        # Skip empty lines and comments
+        [[ -z "$pattern" || "$pattern" =~ ^[[:space:]]*# ]] && continue
+        exclude_args+=("--exclude=$pattern")
+    done < "$deploy_exclude"
 
-    # Create flattened requirements.txt
-    local req_dst="${release_dir}/requirements.txt"
-    awk -v src_dir="${back_dir}/requirements" '
-      /^-r / {
-        sub(/^-r /, "", $0);
-        file = src_dir "/" $0;
-        while ((getline line < file) > 0) print line;
-        close(file);
-        next;
-      }
-      { print }
-    ' "${back_dir}/requirements/prod.txt" > "$req_dst"
-
-    # Remove comments and blank lines
-    sed -i.bak "/^\\s*#/d;/^\\s*$/d" "$req_dst" && rm "$req_dst.bak"
-
-    # Copy additional files
-    [ -f "${back_dir}/README.md" ] && cp "${back_dir}/README.md" "${release_dir}/"
-    [ -f "${back_dir}/app.service" ] && cp "${back_dir}/app.service" "${release_dir}/"
-    [ -f "${back_dir}/LICENSE" ] && cp "${back_dir}/LICENSE" "${release_dir}/"
-    [ -f "${back_dir}/setup.sh" ] && cp "${back_dir}/setup.sh" "${release_dir}/"
-    [ -f "${back_dir}/start_app.py" ] && cp "${back_dir}/start_app.py" "${release_dir}/" && chmod +x "${release_dir}/start_app.py"
-
-    # Copy tools directory
-    if [ -d "${back_dir}/tools" ]; then
-        cp -r "${back_dir}/tools" "${release_dir}/"
-        chmod +x "${release_dir}/tools/"*.py 2>/dev/null || true
-    fi
-
-    # Copy .env file
-    if [ -f "${back_dir}/.env" ]; then
-        cp "${back_dir}/.env" "${release_dir}/.env"
+    # For development deployments, we want to include additional files
+    # so we need to NOT exclude them from the dev-include list
+    local include_args=()
+    if [ "$DEPLOY_MODE" = "development" ] && [ -f "$deploy_dev_include" ]; then
         if [ "$VERBOSE" = true ]; then
-            print_status $GREEN "✅ Configuration file (.env) included"
+            print_status $BLUE "📋 Including development files..."
         fi
-    else
-        print_status $YELLOW "⚠️  WARNING: .env file not found!"
+        while IFS= read -r pattern; do
+            # Skip empty lines and comments
+            [[ -z "$pattern" || "$pattern" =~ ^[[:space:]]*# ]] && continue
+            # Remove these patterns from exclusions by adding them as includes
+            include_args+=("--include=$pattern")
+        done < "$deploy_dev_include"
     fi
+
+    # Copy backend files using rsync with manifest-based exclusions
+    rsync -a --delete \
+        "${include_args[@]}" \
+        "${exclude_args[@]}" \
+        --exclude='export_public_package.sh' \
+        "${back_dir}/" "${release_dir}/"
+
+    # Create flattened requirements.txt for production
+    if [ "$VERBOSE" = true ]; then
+        print_status $BLUE "📋 Creating flattened requirements.txt..."
+    fi
+
+    local req_dst="${release_dir}/requirements.txt"
+    if [ -f "${back_dir}/requirements/prod.txt" ]; then
+        awk -v src_dir="${back_dir}/requirements" '
+          /^-r / {
+            sub(/^-r /, "", $0);
+            file = src_dir "/" $0;
+            while ((getline line < file) > 0) print line;
+            close(file);
+            next;
+          }
+          { print }
+        ' "${back_dir}/requirements/prod.txt" > "$req_dst"
+
+        # Remove comments and blank lines
+        sed -i.bak "/^\\s*#/d;/^\\s*$/d" "$req_dst" && rm "$req_dst.bak"
+    fi
+
+    # Ensure critical files are executable
+    chmod +x "${release_dir}/start_app.py" 2>/dev/null || true
+    chmod +x "${release_dir}/setup.sh" 2>/dev/null || true
+    chmod +x "${release_dir}/tools/"*.py 2>/dev/null || true
+    chmod +x "${release_dir}/tools/"*.sh 2>/dev/null || true
+
+    # Create empty data directory structure
+    mkdir -p "${release_dir}/app/data"
+    touch "${release_dir}/app/data/.gitkeep"
 
     # Copy frontend build
     if [ "$VERBOSE" = true ]; then
@@ -338,6 +360,20 @@ package_release() {
 
     mkdir -p "${release_dir}/app/static"
     cp -r "${front_dir}/dist/"* "${release_dir}/app/static/"
+
+    # Validate critical files exist
+    local critical_files=("start_app.py" "app/main.py" "requirements.txt")
+    for file in "${critical_files[@]}"; do
+        if [ ! -f "${release_dir}/$file" ]; then
+            print_status $RED "❌ Critical file missing in package: $file"
+            exit 1
+        fi
+    done
+
+    if [ "$VERBOSE" = true ]; then
+        print_status $BLUE "📊 Package contents:"
+        du -sh "${release_dir}" 2>/dev/null || true
+    fi
 
     print_status $GREEN "✅ Release packaged successfully!"
 }

@@ -46,8 +46,13 @@ readonly DATA_DIR="${BACK_DIR}/app/data"
 echo -e "${BLUE}📦 Creating public release directory...${NC}"
 mkdir -p "${PUBLIC_RELEASE_DIR}"
 
-# Step 2: Export backend package
-echo -e "${BLUE}📦 Exporting backend package...${NC}"
+# Step 2: Export backend package using deployment manifest system
+echo -e "${BLUE}📦 Exporting backend package using deployment manifests...${NC}"
+if [ ! -x "${BACK_DIR}/export_public_package.sh" ]; then
+    echo -e "${RED}❌ export_public_package.sh not found or not executable.${NC}"
+    exit 1
+fi
+
 "${BACK_DIR}/export_public_package.sh"
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Error exporting backend package.${NC}"
@@ -55,11 +60,7 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}✅ Backend package exported successfully.${NC}"
 
-# Step 2b: Create empty data directory structure but exclude content
-echo -e "${BLUE}📂 Setting up empty data directory structure...${NC}"
-mkdir -p "${PUBLIC_RELEASE_DIR}/app/data"
-touch "${PUBLIC_RELEASE_DIR}/app/data/.gitkeep"
-echo -e "${GREEN}✅ Empty data directory structure created.${NC}"
+# Note: export_public_package.sh now handles the data directory creation
 
 # Step 3: Build frontend
 echo -e "${BLUE}🔨 Building frontend...${NC}"

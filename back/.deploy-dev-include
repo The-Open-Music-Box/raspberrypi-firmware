@@ -1,0 +1,43 @@
+# ============================================================================
+# Development Deployment Additional Inclusions
+# ============================================================================
+# Additional files to include ONLY in development deployments
+# Format: Relative paths from back/ directory
+# Comments start with #
+#
+# These files are useful for local development and debugging but should
+# NOT be included in production or public releases.
+#
+# This file is used by:
+# - deploy.sh with --dev flag
+# ============================================================================
+
+# ============================================================================
+# Development scripts
+# ============================================================================
+start_dev.py
+run_tests.sh
+start_with_hardware_check.sh
+
+# ============================================================================
+# Testing infrastructure
+# ============================================================================
+tests/
+requirements-test.txt
+pytest.ini
+
+# ============================================================================
+# Development documentation
+# ============================================================================
+documentation/
+
+# ============================================================================
+# Coverage and quality tools (for local testing)
+# ============================================================================
+.coveragerc
+pyproject.toml
+
+# ============================================================================
+# Configuration templates
+# ============================================================================
+config/
