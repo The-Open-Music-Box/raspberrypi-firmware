@@ -6,6 +6,7 @@
 
 import os
 import uuid
+import shutil
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -14,6 +15,7 @@ import logging
 
 from app.src.domain.decorators.error_handler import handle_domain_errors
 from app.src.domain.data.models.playlist import Playlist
+from app.src.config import config as app_config
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +133,9 @@ class PlaylistService:
 
     @handle_domain_errors(operation_name="update_playlist")
     async def update_playlist(self, playlist_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
-        """Update playlist metadata and rename filesystem directory if title changed.
+        """Update playlist metadata.
+
+        With UUID-based folder names, no filesystem operations are needed when title changes.
 
         Args:
             playlist_id: The playlist ID
@@ -145,15 +149,8 @@ class PlaylistService:
         if playlist_entity is None:
             raise ValueError(f"Playlist {playlist_id} not found")
 
-        # Track if title is being changed (for directory rename)
-        old_title = playlist_entity.title
-        old_path = playlist_entity.path
-        title_changed = False
-
         # Update the playlist entity with new values
         for key, value in updates.items():
-            if key == 'title' and value != old_title:
-                title_changed = True
             if hasattr(playlist_entity, key):
                 setattr(playlist_entity, key, value)
 
@@ -161,102 +158,9 @@ class PlaylistService:
         if updated_entity is None:
             raise RuntimeError(f"Failed to update playlist {playlist_id}")
 
-        # Rename filesystem directory if title changed
-        if title_changed and old_title:
-            await self._rename_playlist_folder(playlist_entity, old_title, old_path)
-
         logger.info(f"✅ Updated playlist {playlist_id}")
         return await self.get_playlist(playlist_id)
 
-    async def _rename_playlist_folder(self, playlist: Playlist, old_title: str, old_path: Optional[str]) -> None:
-        """Rename the filesystem directory when playlist title changes.
-
-        Args:
-            playlist: Updated playlist entity with new title
-            old_title: Previous playlist title
-            old_path: Previous playlist path
-        """
-        try:
-            from app.src.config import config as app_config
-            from pathlib import Path
-            from app.src.utils.path_utils import normalize_folder_name
-            import shutil
-
-            upload_folder = Path(app_config.upload_folder)
-            new_title = playlist.title
-
-            logger.info(f"📝 Renaming playlist folder: '{old_title}' -> '{new_title}'")
-
-            # Determine old folder path
-            old_folder = None
-            if old_path:
-                old_folder = upload_folder / old_path
-            else:
-                # Try to find folder by old normalized title
-                old_normalized = normalize_folder_name(old_title)
-                old_folder_candidate = upload_folder / old_normalized
-                if old_folder_candidate.exists():
-                    old_folder = old_folder_candidate
-                else:
-                    # Try original title
-                    old_folder_candidate = upload_folder / old_title
-                    if old_folder_candidate.exists():
-                        old_folder = old_folder_candidate
-
-            if not old_folder or not old_folder.exists():
-                logger.warning(f"📁 Old folder not found, skipping rename: {old_folder}")
-                return
-
-            # Determine new folder path
-            new_normalized = normalize_folder_name(new_title)
-            new_folder = upload_folder / new_normalized
-
-            # Rename the directory
-            if old_folder != new_folder:
-                if new_folder.exists():
-                    logger.warning(f"⚠️ Target folder already exists: {new_folder}")
-                    return
-
-                shutil.move(str(old_folder), str(new_folder))
-                logger.info(f"✅ Renamed playlist folder: {old_folder} -> {new_folder}")
-
-                # Update track file_paths in database
-                await self._update_track_file_paths(playlist.id, old_folder, new_folder)
-            else:
-                logger.debug(f"📁 Folder names are the same, no rename needed")
-
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to rename folder for playlist {playlist.title}: {e}")
-            # Don't fail the update operation if folder rename fails
-
-    async def _update_track_file_paths(self, playlist_id: str, old_folder: Path, new_folder: Path) -> None:
-        """Update track file_paths after playlist folder rename.
-
-        Args:
-            playlist_id: Playlist identifier
-            old_folder: Old folder path
-            new_folder: New folder path
-        """
-        try:
-            tracks = await self._track_repo.get_by_playlist(playlist_id)
-            old_folder_str = str(old_folder)
-
-            for track in tracks:
-                track_dict = asdict(track) if not isinstance(track, dict) else track
-                old_file_path = track_dict.get('file_path', '')
-
-                if old_file_path and old_folder_str in old_file_path:
-                    new_file_path = old_file_path.replace(old_folder_str, str(new_folder))
-                    track_id = track_dict.get('id')
-
-                    if track_id:
-                        await self._track_repo.update(track_id, {'file_path': new_file_path})
-                        logger.debug(f"Updated track file_path: {old_file_path} -> {new_file_path}")
-
-            logger.info(f"✅ Updated file paths for {len(tracks)} tracks in playlist {playlist_id}")
-
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to update track file paths: {e}")
 
     @handle_domain_errors(operation_name="delete_playlist")
     async def delete_playlist(self, playlist_id: str) -> bool:
@@ -281,8 +185,12 @@ class PlaylistService:
             logger.info(f"✅ Deleted playlist {playlist_id} from database")
 
             # Clean up filesystem directory
-            if playlist:
+            # IMPORTANT: Check 'is not None' explicitly because empty playlists have len() == 0
+            # which evaluates to False in boolean context
+            if playlist is not None:
                 await self._cleanup_playlist_folder(playlist)
+            else:
+                logger.warning(f"⚠️ Skipping filesystem cleanup - playlist entity not found")
         else:
             logger.warning(f"Failed to delete playlist {playlist_id}")
 
@@ -291,58 +199,25 @@ class PlaylistService:
     async def _cleanup_playlist_folder(self, playlist: Playlist) -> None:
         """Clean up the filesystem directory for a deleted playlist.
 
+        With UUID-based folder names, cleanup is straightforward - just delete the folder at playlist.path.
+
         Args:
             playlist: Playlist domain entity
         """
         try:
-            from app.src.config import config as app_config
-            from pathlib import Path
-            from app.src.utils.path_utils import normalize_folder_name
-            import shutil
+            if not playlist.path:
+                logger.warning(f"📁 No path set for playlist {playlist.title}, skipping cleanup")
+                return
 
             upload_folder = Path(app_config.upload_folder)
-            playlist_title = playlist.title
-            playlist_path = playlist.path
-            playlist_id = playlist.id
+            folder_path = upload_folder / playlist.path
 
-            logger.info(f"🧹 Starting folder cleanup for playlist: {playlist_title}")
-
-            # List of possible folder names to check
-            possible_folders = []
-
-            # 1. Use the stored path (new format)
-            if playlist_path:
-                folder_path = upload_folder / playlist_path
-                possible_folders.append(folder_path)
-
-            # 2. Try normalized path based on title
-            if playlist_title:
-                normalized_path = normalize_folder_name(playlist_title)
-                folder_path = upload_folder / normalized_path
-                possible_folders.append(folder_path)
-
-                # 3. Try original title as folder name
-                folder_path = upload_folder / playlist_title
-                possible_folders.append(folder_path)
-
-            # 4. Fallback: try playlist ID as folder name
-            if playlist_id:
-                folder_path = upload_folder / playlist_id
-                possible_folders.append(folder_path)
-
-            # Try to remove any of the possible folders
-            removed_folders = []
-            for folder_path in possible_folders:
-                if folder_path.exists() and folder_path.is_dir():
-                    logger.info(f"🗂️ Removing folder: {folder_path}")
-                    shutil.rmtree(folder_path)
-                    removed_folders.append(str(folder_path))
-                    logger.info(f"✅ Removed playlist folder: {folder_path}")
-
-            if not removed_folders:
-                logger.warning(f"📁 No folder found to clean up for playlist: {playlist_title}")
-            elif len(removed_folders) > 1:
-                logger.info(f"🗂️ Removed multiple folders: {removed_folders}")
+            if folder_path.exists() and folder_path.is_dir():
+                logger.info(f"🗂️ Removing folder: {folder_path}")
+                shutil.rmtree(folder_path)
+                logger.info(f"✅ Removed playlist folder: {folder_path}")
+            else:
+                logger.warning(f"📁 Folder not found: {folder_path}")
 
         except Exception as e:
             logger.warning(f"⚠️ Failed to clean up folder for playlist {playlist.title}: {e}")
@@ -397,18 +272,23 @@ class PlaylistService:
 
     @handle_domain_errors(operation_name="sync_with_filesystem")
     async def sync_with_filesystem(self, upload_folder: str) -> Dict[str, Any]:
-        """Synchronize playlists with filesystem.
+        """Synchronize playlists with filesystem, migrating old folder names to UUID.
+
+        This method handles both:
+        - New UUID-named folders (direct match via path)
+        - Legacy title-based folders (migration to UUID)
 
         Args:
             upload_folder: Path to the upload folder
 
         Returns:
-            Synchronization statistics
+            Synchronization statistics including folders_migrated count
         """
         stats = {
             'playlists_scanned': 0,
             'playlists_added': 0,
             'playlists_updated': 0,
+            'folders_migrated': 0,  # Track folder renames during migration
             'tracks_added': 0,
             'tracks_removed': 0
         }
@@ -418,31 +298,115 @@ class PlaylistService:
             logger.warning(f"Upload folder does not exist: {upload_folder}")
             return stats
 
+        # Get all playlists once for efficiency
+        all_playlists = await self._playlist_repo.find_all()
+
+        # Helper: Check if a string is a valid UUID
+        def is_uuid(s: str) -> bool:
+            try:
+                # UUID format: 8-4-4-4-12 hex digits
+                return len(s) == 36 and s.count('-') == 4
+            except:
+                return False
+
         # Scan all directories in upload folder
         for playlist_dir in upload_path.iterdir():
             if not playlist_dir.is_dir():
                 continue
 
             stats['playlists_scanned'] += 1
-            playlist_name = playlist_dir.name
+            folder_name = playlist_dir.name
 
-            # Check if playlist already exists
-            existing_playlists = await self._playlist_repo.get_all()
-            existing = next(
-                (p for p in existing_playlists if p['title'] == playlist_name),
-                None
-            )
+            # OPTIMIZATION: Skip migration check if folder is already UUID format
+            folder_is_uuid = is_uuid(folder_name)
+
+            # Strategy 1: Try to find playlist by path (UUID match - for already migrated playlists)
+            existing = next((p for p in all_playlists if p.path == folder_name), None)
+
+            # Fast path: If folder is UUID and found by path, skip migration logic entirely
+            if existing and folder_is_uuid:
+                # Already migrated - just sync tracks
+                await self._sync_playlist_tracks(existing.id, playlist_dir, stats)
+                stats['playlists_updated'] += 1
+                continue
+
+            # MIGRATION PATH: Only check migration if folder is NOT UUID format
+            needs_migration = False
+
+            if not folder_is_uuid:
+                # Check if path exists but is not UUID (needs migration)
+                if existing and not is_uuid(existing.path or ''):
+                    needs_migration = True
+                    logger.info(f"🔄 Found playlist by non-UUID path '{folder_name}' - needs migration")
+
+                # Strategy 2: Try to find by title (for legacy folders needing migration)
+                if not existing:
+                    existing = next((p for p in all_playlists if p.title == folder_name), None)
+                    if existing:
+                        needs_migration = True
+
+            # Execute migration if needed
+            if existing and needs_migration:
+                logger.info(f"🔄 Migrating legacy folder '{folder_name}' to UUID-based name")
+
+                # Generate new UUID if path is not already a UUID
+                if not existing.path or not is_uuid(existing.path):
+                    new_folder_name = str(uuid.uuid4())
+                    existing.path = new_folder_name
+                    await self._playlist_repo.update(existing)
+                else:
+                    new_folder_name = existing.path
+
+                new_folder_path = upload_path / new_folder_name
+
+                try:
+                    playlist_dir.rename(new_folder_path)
+
+                    # Update track file_paths
+                    tracks = await self._track_repo.get_tracks_by_playlist(existing.id)
+                    for track in tracks:
+                        if track.file_path and str(playlist_dir) in track.file_path:
+                            new_file_path = track.file_path.replace(str(playlist_dir), str(new_folder_path))
+                            await self._track_repo.update_track(track.id, {'file_path': new_file_path})
+
+                    playlist_dir = new_folder_path  # Use new path for track sync
+                    stats['folders_migrated'] += 1
+                    logger.info(f"✅ Migrated folder: {folder_name} → {new_folder_name}")
+                except Exception as e:
+                    logger.error(f"Failed to migrate folder {folder_name}: {e}")
+                    # Continue with old folder if migration fails
 
             if existing:
                 # Update tracks for existing playlist
-                await self._sync_playlist_tracks(existing['id'], playlist_dir, stats)
+                await self._sync_playlist_tracks(existing.id, playlist_dir, stats)
+                stats['playlists_updated'] += 1
             else:
-                # Create new playlist
+                # Create new playlist (folder name doesn't match any existing playlist)
+                # Use folder name as title if it looks like a title, otherwise generate a title
+                if len(folder_name) == 36 and folder_name.count('-') == 4:
+                    # Looks like a UUID - generate a better title
+                    playlist_title = f"Playlist {folder_name[:8]}"
+                else:
+                    # Use folder name as title
+                    playlist_title = folder_name
+
                 playlist = await self.create_playlist(
-                    name=playlist_name,
-                    description=f"Auto-imported from {playlist_dir.name}"
+                    name=playlist_title,
+                    description=f"Auto-imported from filesystem"
                 )
                 stats['playlists_added'] += 1
+
+                # If folder isn't already UUID, rename it to match the playlist's UUID path
+                playlist_entity = await self._playlist_repo.find_by_id(playlist['id'])
+                if playlist_entity and playlist_entity.path != folder_name:
+                    try:
+                        new_folder_path = upload_path / playlist_entity.path
+                        playlist_dir.rename(new_folder_path)
+                        playlist_dir = new_folder_path
+                        logger.info(f"✅ Renamed new playlist folder: {folder_name} → {playlist_entity.path}")
+                    except Exception as e:
+                        logger.error(f"Failed to rename new playlist folder {folder_name}: {e}")
+
                 await self._sync_playlist_tracks(playlist['id'], playlist_dir, stats)
 
         logger.info(f"✅ Filesystem sync completed: {stats}")
@@ -464,8 +428,8 @@ class PlaylistService:
         ])
 
         # Get existing tracks
-        existing_tracks = await self._track_repo.get_by_playlist(playlist_id)
-        existing_files = {t['filename'] for t in existing_tracks if t.get('filename')}
+        existing_tracks = await self._track_repo.get_tracks_by_playlist(playlist_id)
+        existing_files = {t.filename for t in existing_tracks if t.filename}
 
         # Add new tracks
         for idx, audio_file in enumerate(audio_files, 1):
@@ -479,12 +443,78 @@ class PlaylistService:
                     'file_path': str(audio_file),
                     'created_at': datetime.utcnow().isoformat()
                 }
-                await self._track_repo.add_to_playlist(playlist_id, track_data)
+                await self._track_repo.add_track_to_playlist(playlist_id, track_data)
                 stats['tracks_added'] += 1
 
         # Remove tracks that no longer exist
         current_files = {f.name for f in audio_files}
         for track in existing_tracks:
-            if track.get('filename') and track['filename'] not in current_files:
-                await self._track_repo.delete(track['id'])
+            if track.filename and track.filename not in current_files:
+                await self._track_repo.delete_track(track.id)
                 stats['tracks_removed'] += 1
+
+    @handle_domain_errors(operation_name="cleanup_orphaned_folders")
+    async def cleanup_orphaned_folders(self, upload_folder: str) -> Dict[str, Any]:
+        """Remove folders in upload directory that have no corresponding playlist in database.
+
+        This is the inverse operation of sync_with_filesystem():
+        - sync_with_filesystem: uploads → DB (create missing playlists)
+        - cleanup_orphaned_folders: DB → uploads (remove orphaned folders)
+
+        Args:
+            upload_folder: Path to the upload folder
+
+        Returns:
+            Cleanup statistics with folders_scanned, folders_removed, removed_paths
+        """
+        import shutil
+
+        stats = {
+            'folders_scanned': 0,
+            'folders_removed': 0,
+            'removed_paths': []
+        }
+
+        upload_path = Path(upload_folder)
+        if not upload_path.exists():
+            logger.warning(f"Upload folder does not exist: {upload_folder}")
+            return stats
+
+        # Get all playlists from database
+        all_playlists = await self._playlist_repo.find_all()
+
+        # Build sets of known paths and titles (case-insensitive)
+        db_paths = set()
+        db_titles = set()
+        for playlist in all_playlists:
+            if playlist.path:
+                db_paths.add(playlist.path)
+            if playlist.title:
+                db_titles.add(playlist.title.lower())
+
+        # Scan upload folder for orphaned directories
+        for folder in upload_path.iterdir():
+            if not folder.is_dir():
+                continue
+
+            stats['folders_scanned'] += 1
+            folder_name = folder.name
+
+            # Check if folder corresponds to any playlist (by path or title)
+            is_in_db = (
+                folder_name in db_paths or
+                folder_name.lower() in db_titles
+            )
+
+            if not is_in_db:
+                # Orphaned folder - remove it
+                try:
+                    shutil.rmtree(folder)
+                    stats['folders_removed'] += 1
+                    stats['removed_paths'].append(str(folder))
+                    logger.info(f"🗑️ Removed orphaned folder: {folder}")
+                except Exception as e:
+                    logger.error(f"Failed to remove orphaned folder {folder}: {e}")
+
+        logger.info(f"✅ Cleanup completed: {stats}")
+        return stats
