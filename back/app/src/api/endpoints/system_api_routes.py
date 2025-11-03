@@ -225,6 +225,10 @@ class SystemAPIRoutes:
                     "player_monitoring": True,      # RPI can monitor playback efficiently
                     "nfc_available": False,         # Default, detect at runtime
                     "led_control": False,           # Default, detect at runtime
+                    # v3.3.0 fields
+                    "backend_type": "rpi",
+                    "position_update_interval_ms": 500,  # High-frequency updates
+                    "supports_websocket_position": True,
                 }
 
                 # Detect NFC service availability
@@ -261,7 +265,7 @@ class SystemAPIRoutes:
                     "data": {
                         "system_info": system_info,
                         "version": version,
-                        "contract_version": "3.2.0",  # Updated to 3.2.0
+                        "contract_version": "3.3.0",  # Updated to 3.3.0
                         "hostname": system_info.get("hostname", "localhost"),
                         "uptime": 3600,  # System uptime in seconds
                         "server_seq": server_seq,

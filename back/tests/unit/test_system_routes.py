@@ -550,13 +550,44 @@ class TestSystemRoutes:
         data = response.json()
         caps = data["data"]["capabilities"]
 
-        # Type checks
+        # Type checks - v3.2.0 fields
         assert isinstance(caps["upload_format"], str)
         assert isinstance(caps["max_chunk_size"], int)
         assert isinstance(caps["player_monitoring"], bool)
         assert isinstance(caps["nfc_available"], bool)
         assert isinstance(caps["led_control"], bool)
 
+        # Type checks - v3.3.0 fields
+        assert isinstance(caps["backend_type"], str)
+        assert isinstance(caps["position_update_interval_ms"], int)
+        assert isinstance(caps["supports_websocket_position"], bool)
+
         # Value constraints
         assert caps["upload_format"] in ["raw_binary", "multipart"]
         assert caps["max_chunk_size"] > 0
+        assert caps["backend_type"] in ["rpi", "esp32", "custom"]
+        assert 100 <= caps["position_update_interval_ms"] <= 5000
+
+    def test_system_info_includes_v3_3_0_capabilities(self, test_client):
+        """Test that system info includes v3.3.0 extended capabilities for RPI."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check v3.3.0 fields exist
+        assert "capabilities" in data["data"]
+        caps = data["data"]["capabilities"]
+
+        # Verify RPI-specific v3.3.0 values
+        assert caps["backend_type"] == "rpi"
+        assert caps["position_update_interval_ms"] == 500  # High-frequency for RPI
+        assert caps["supports_websocket_position"] is True
+
+    def test_contract_version_is_3_3_0(self, test_client):
+        """Test that contract version is updated to 3.3.0."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["data"]["contract_version"] == "3.3.0"
