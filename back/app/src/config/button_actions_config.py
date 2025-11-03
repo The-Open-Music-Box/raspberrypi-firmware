@@ -44,36 +44,37 @@ class ButtonActionConfig:
 
 
 # Default button configuration matching the requested GPIO assignments
+# bt0=GPIO23, bt1=GPIO27, bt2=GPIO22, bt3=GPIO6, bt4=GPIO5
 DEFAULT_BUTTON_CONFIGS: List[ButtonActionConfig] = [
     ButtonActionConfig(
         button_id=0,
         gpio_pin=23,
-        action_name="play_pause",
-        description="Toggle play/pause"
+        action_name="print_debug",
+        description="BT0 (GPIO23) - To be defined (debug print)"
     ),
     ButtonActionConfig(
         button_id=1,
-        gpio_pin=20,
-        action_name="next_track",
-        description="Skip to next track"
+        gpio_pin=27,
+        action_name="previous_track",
+        description="BT1 (GPIO27) - Previous track"
     ),
     ButtonActionConfig(
         button_id=2,
-        gpio_pin=16,
-        action_name="previous_track",
-        description="Go to previous track"
+        gpio_pin=22,
+        action_name="print_debug",
+        description="BT2 (GPIO22) - To be defined (debug print)"
     ),
     ButtonActionConfig(
         button_id=3,
-        gpio_pin=26,
-        action_name="volume_up",
-        description="Increase volume"
+        gpio_pin=6,
+        action_name="print_debug",
+        description="BT3 (GPIO6) - To be defined (debug print)"
     ),
     ButtonActionConfig(
         button_id=4,
-        gpio_pin=19,
-        action_name="volume_down",
-        description="Decrease volume"
+        gpio_pin=5,
+        action_name="next_track",
+        description="BT4 (GPIO5) - Next track"
     ),
 ]
 
