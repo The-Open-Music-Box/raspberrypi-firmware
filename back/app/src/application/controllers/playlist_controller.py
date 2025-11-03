@@ -87,10 +87,7 @@ class PlaylistController:
                 logger.error(f"Failed to convert playlist {playlist_id}")
                 return False
 
-            # Resolve track file paths
-            self._resolve_track_paths(playlist)
-
-            # Validate playlist
+            # Validate playlist (file_paths already set from database)
             valid_tracks = self._validate_tracks(playlist.tracks)
             if not valid_tracks:
                 logger.error(f"No valid tracks in playlist {playlist_id}")
@@ -181,6 +178,7 @@ class PlaylistController:
             track_id = track_data.get("id")
             title = track_data.get("title", track_data.get("filename", "Unknown"))
             filename = track_data.get("filename")
+            file_path = track_data.get("file_path")  # Can be None for backward compatibility
             duration_ms = track_data.get("duration_ms")
 
             if not track_id or not filename:
@@ -191,23 +189,13 @@ class PlaylistController:
                 id=str(track_id),
                 title=title,
                 filename=filename,
+                file_path=file_path,
                 duration_ms=duration_ms
             )
 
         except Exception as e:
             logger.error(f"Error converting track data: {e}")
             return None
-
-    def _resolve_track_paths(self, playlist: Playlist) -> None:
-        """
-        Resolve file paths for all tracks in playlist.
-
-        Args:
-            playlist: Playlist to resolve paths for
-        """
-        for track in playlist.tracks:
-            file_path = self._track_resolver.resolve_path(track.filename)
-            track.file_path = file_path
 
     def _validate_tracks(self, tracks: List[Track]) -> List[Track]:
         """
