@@ -520,7 +520,7 @@ class TestSystemRoutes:
         # Verify contract version
         assert "data" in data
         assert "contract_version" in data["data"]
-        assert data["data"]["contract_version"] == "3.2.0"
+        assert data["data"]["contract_version"] == "3.3.0"
 
     def test_system_info_capabilities_without_container(self, mock_app):
         """Test that capabilities still work when app.container is None."""
