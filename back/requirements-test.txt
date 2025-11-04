@@ -29,3 +29,6 @@ fastapi[test]>=0.100.0
 
 # Architecture testing
 networkx>=3.0
+
+# Contract validation (for integration tests)
+jsonschema>=4.20.0
