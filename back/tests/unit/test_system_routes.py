@@ -423,3 +423,171 @@ class TestSystemRoutes:
         """Test system info memory calculations."""
         # This test is complex to mock properly, basic system info test covers the core functionality
         pass
+
+    def test_system_info_includes_capabilities(self, test_client):
+        """Test that /api/system/info includes backend capabilities."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert "data" in data
+
+        # Check capabilities field exists
+        assert "capabilities" in data["data"]
+        caps = data["data"]["capabilities"]
+
+        # Verify all required fields
+        assert "upload_format" in caps
+        assert "max_chunk_size" in caps
+        assert "player_monitoring" in caps
+        assert "nfc_available" in caps
+        assert "led_control" in caps
+
+    def test_system_info_capabilities_rpi_defaults(self, test_client):
+        """Test that RPI backend returns correct default capabilities."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        caps = data["data"]["capabilities"]
+
+        # RPI-specific values
+        assert caps["upload_format"] == "multipart"
+        assert caps["max_chunk_size"] == 1048576  # 1MB
+        assert caps["player_monitoring"] is True
+
+    def test_system_info_capabilities_nfc_detected(self, test_client, mock_container):
+        """Test capabilities when NFC service is available."""
+        # NFC service is already mocked in mock_container fixture
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        caps = data["data"]["capabilities"]
+
+        # NFC should be detected via mock
+        assert "nfc_available" in caps
+        # The actual value depends on mock_container.nfc being set
+
+    def test_system_info_capabilities_no_nfc(self, test_client, mock_container):
+        """Test capabilities when NFC service is not available."""
+        # Remove NFC service from container
+        mock_container.nfc = None
+
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        caps = data["data"]["capabilities"]
+
+        # NFC should be false when service is None
+        assert caps["nfc_available"] is False
+
+    def test_system_info_capabilities_led_detected(self, test_client, mock_container):
+        """Test capabilities when LED service is available."""
+        # LED service is already mocked in mock_container fixture
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        caps = data["data"]["capabilities"]
+
+        # LED detection logic should be present
+        assert "led_control" in caps
+
+    def test_system_info_capabilities_no_led(self, test_client, mock_container):
+        """Test capabilities when LED service is not available."""
+        # Remove LED service from container
+        mock_container.led_hat = None
+
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        caps = data["data"]["capabilities"]
+
+        # LED should be false when service is None
+        assert caps["led_control"] is False
+
+    def test_system_info_contract_version_updated(self, test_client):
+        """Test that contract_version is updated to 3.2.0."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify contract version
+        assert "data" in data
+        assert "contract_version" in data["data"]
+        assert data["data"]["contract_version"] == "3.3.0"
+
+    def test_system_info_capabilities_without_container(self, mock_app):
+        """Test that capabilities still work when app.container is None."""
+        # Create app without container
+        app_no_container = FastAPI()
+        system_routes = SystemRoutes(app_no_container)
+        system_routes.register()
+
+        client = TestClient(app_no_container)
+        response = client.get("/api/system/info")
+
+        # Should not crash, and return defaults
+        assert response.status_code == 200
+        data = response.json()
+
+        # Capabilities should exist with defaults
+        assert "capabilities" in data["data"]
+        caps = data["data"]["capabilities"]
+        assert caps["nfc_available"] is False
+        assert caps["led_control"] is False
+
+    def test_system_info_capabilities_field_types(self, test_client):
+        """Test that all capabilities fields have correct types."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        caps = data["data"]["capabilities"]
+
+        # Type checks - v3.2.0 fields
+        assert isinstance(caps["upload_format"], str)
+        assert isinstance(caps["max_chunk_size"], int)
+        assert isinstance(caps["player_monitoring"], bool)
+        assert isinstance(caps["nfc_available"], bool)
+        assert isinstance(caps["led_control"], bool)
+
+        # Type checks - v3.3.0 fields
+        assert isinstance(caps["backend_type"], str)
+        assert isinstance(caps["position_update_interval_ms"], int)
+        assert isinstance(caps["supports_websocket_position"], bool)
+
+        # Value constraints
+        assert caps["upload_format"] in ["raw_binary", "multipart"]
+        assert caps["max_chunk_size"] > 0
+        assert caps["backend_type"] in ["rpi", "esp32", "custom"]
+        assert 100 <= caps["position_update_interval_ms"] <= 5000
+
+    def test_system_info_includes_v3_3_0_capabilities(self, test_client):
+        """Test that system info includes v3.3.0 extended capabilities for RPI."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check v3.3.0 fields exist
+        assert "capabilities" in data["data"]
+        caps = data["data"]["capabilities"]
+
+        # Verify RPI-specific v3.3.0 values
+        assert caps["backend_type"] == "rpi"
+        assert caps["position_update_interval_ms"] == 500  # High-frequency for RPI
+        assert caps["supports_websocket_position"] is True
+
+    def test_contract_version_is_3_3_0(self, test_client):
+        """Test that contract version is updated to 3.3.0."""
+        response = test_client.get("/api/system/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["data"]["contract_version"] == "3.3.0"

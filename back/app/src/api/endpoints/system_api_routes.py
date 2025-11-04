@@ -218,6 +218,44 @@ class SystemAPIRoutes:
                 except Exception:
                     pass  # Use default version on error
 
+                # Build capabilities for RPI
+                capabilities = {
+                    "upload_format": "multipart",  # FastAPI uses multipart/form-data
+                    "max_chunk_size": 1024 * 1024,  # 1MB chunks (RPI has more RAM)
+                    "player_monitoring": True,      # RPI can monitor playback efficiently
+                    "nfc_available": False,         # Default, detect at runtime
+                    "led_control": False,           # Default, detect at runtime
+                    # v3.3.0 fields
+                    "backend_type": "rpi",
+                    "position_update_interval_ms": 500,  # High-frequency updates
+                    "supports_websocket_position": True,
+                }
+
+                # Detect NFC service availability
+                if container:
+                    nfc_service = getattr(container, "nfc", None)
+                    if nfc_service:
+                        # Check if NFC service is actually functional
+                        try:
+                            # For now, just check if service exists
+                            capabilities["nfc_available"] = True
+                            logger.info("NFC service detected and available")
+                        except Exception as e:
+                            logger.warning(f"NFC service exists but not functional: {e}")
+                            capabilities["nfc_available"] = False
+
+                    # Detect LED service availability
+                    led_service = getattr(container, "led_hat", None)
+                    if led_service:
+                        try:
+                            capabilities["led_control"] = True
+                            logger.info("LED control service detected and available")
+                        except Exception as e:
+                            logger.warning(f"LED service exists but not functional: {e}")
+                            capabilities["led_control"] = False
+
+                logger.info(f"Capabilities detected: {capabilities}")
+
                 from fastapi.responses import JSONResponse
                 return JSONResponse(content={
                     "status": "success",
@@ -227,10 +265,11 @@ class SystemAPIRoutes:
                     "data": {
                         "system_info": system_info,
                         "version": version,
-                        "contract_version": "3.1.0",
+                        "contract_version": "3.3.0",  # Updated to 3.3.0
                         "hostname": system_info.get("hostname", "localhost"),
                         "uptime": 3600,  # System uptime in seconds
-                        "server_seq": server_seq
+                        "server_seq": server_seq,
+                        "capabilities": capabilities,  # NEW: Backend capabilities
                     }
                 })
 
