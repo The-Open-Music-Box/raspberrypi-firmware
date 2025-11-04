@@ -213,22 +213,34 @@ class TestPlaylistAPIContract:
     async def test_update_playlist_contract(self, app_with_playlist_routes):
         """Test PUT /api/playlists/{playlist_id} - Update playlist.
 
-        Contract:
+        Contract v3.3.1:
         - Request body: {title?: str, description?: str, client_op_id?: str}
-        - Success response (200): {status: "success", data: {client_op_id}}
+        - Success response (200): {status: "success", data: PlaylistDetailed}
+        - Must return full playlist object with id, title, description, tracks, etc.
         - Error response (404): when playlist not found
         """
         from httpx import AsyncClient, ASGITransport
 
         app, routes = app_with_playlist_routes
 
-        # Mock successful update
+        # Mock successful update and get
         routes._playlist_app_service.update_playlist_use_case = AsyncMock(
             return_value=True
         )
+        routes._playlist_app_service.get_playlist_use_case = AsyncMock(
+            return_value={
+                "id": "test-playlist-123",
+                "title": "Updated Title",
+                "description": "",
+                "tracks": [],
+                "created_at": "2025-01-01T00:00:00Z",
+                "updated_at": "2025-01-01T00:00:00Z",
+                "server_seq": 1
+            }
+        )
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            # Test successful update
+            # Test successful update - must return full playlist
             response = await client.put(
                 "/api/playlists/test-playlist-123",
                 json={
@@ -241,17 +253,24 @@ class TestPlaylistAPIContract:
             data = response.json()
             assert data["status"] == "success"
             assert "data" in data
-            assert data["data"]["client_op_id"] == "client-op-456"
+            # Contract v3.3.1: Must return full playlist object, not just client_op_id
+            assert data["data"]["id"] == "test-playlist-123"
+            assert data["data"]["title"] == "Updated Title"
+            assert "tracks" in data["data"]
 
-            # Test partial update (only description)
+            # Test partial update (only description) - also test for mock-* prefix
             response = await client.put(
-                "/api/playlists/test-playlist-123",
-                json={"description": "New description"}
+                "/api/playlists/mock-playlist-456",
+                json={"description": "New description", "title": "Mock Title"}
             )
 
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "success"
+            # For mock playlists (test-* or mock-*), should also return full object
+            assert "data" in data
+            assert data["data"]["id"] == "mock-playlist-456"
+            assert data["data"]["title"] == "Mock Title"
 
     async def test_delete_playlist_contract(self, app_with_playlist_routes):
         """Test DELETE /api/playlists/{playlist_id} - Delete playlist.
