@@ -58,6 +58,115 @@ jobs:
         cd front
         npm ci
 
+    - name: Run unit tests with coverage
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run unit tests with coverage
+        pytest app/tests/unit/ -v \
+          --cov=app \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-unit \
+          --cov-report=json:test-reports/coverage-unit.json \
+          --cov-fail-under=70 \
+          --junitxml=test-reports/junit-unit.xml
+
+    - name: Run contract tests with coverage
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run contract tests with coverage
+        pytest app/tests/contracts/ -v \
+          --cov=app \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-contracts \
+          --cov-report=json:test-reports/coverage-contracts.json \
+          --junitxml=test-reports/junit-contracts.xml
+
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pytest-reports-${{ github.run_number }}
+        path: back/test-reports/
+        retention-days: 30
+
+    - name: Generate test summary
+      if: always()
+      run: |
+        cd back
+        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+
+        if [ -f test-reports/junit-unit.xml ]; then
+          echo "### Unit Tests" >> $GITHUB_STEP_SUMMARY
+          # Parse JUnit XML for test counts
+          python3 << 'EOF'
+import xml.etree.ElementTree as ET
+import sys
+
+try:
+    tree = ET.parse('test-reports/junit-unit.xml')
+    root = tree.getroot()
+    tests = root.attrib.get('tests', '0')
+    failures = root.attrib.get('failures', '0')
+    errors = root.attrib.get('errors', '0')
+    skipped = root.attrib.get('skipped', '0')
+    passed = int(tests) - int(failures) - int(errors) - int(skipped)
+
+    print(f"- Total tests: {tests}")
+    print(f"- Passed: {passed}")
+    print(f"- Failed: {failures}")
+    print(f"- Errors: {errors}")
+    print(f"- Skipped: {skipped}")
+except Exception as e:
+    print(f"Could not parse unit test results: {e}")
+EOF
+        fi >> $GITHUB_STEP_SUMMARY
+
+        if [ -f test-reports/junit-contracts.xml ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Contract Tests" >> $GITHUB_STEP_SUMMARY
+          python3 << 'EOF'
+import xml.etree.ElementTree as ET
+import sys
+
+try:
+    tree = ET.parse('test-reports/junit-contracts.xml')
+    root = tree.getroot()
+    tests = root.attrib.get('tests', '0')
+    failures = root.attrib.get('failures', '0')
+    errors = root.attrib.get('errors', '0')
+    skipped = root.attrib.get('skipped', '0')
+    passed = int(tests) - int(failures) - int(errors) - int(skipped)
+
+    print(f"- Total tests: {tests}")
+    print(f"- Passed: {passed}")
+    print(f"- Failed: {failures}")
+    print(f"- Errors: {errors}")
+    print(f"- Skipped: {skipped}")
+except Exception as e:
+    print(f"Could not parse contract test results: {e}")
+EOF
+        fi >> $GITHUB_STEP_SUMMARY
+
+        if [ -f test-reports/coverage-unit.json ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
+          python3 << 'EOF'
+import json
+
+try:
+    with open('test-reports/coverage-unit.json') as f:
+        data = json.load(f)
+    coverage = data.get('totals', {}).get('percent_covered', 0)
+    print(f"- Unit test coverage: {coverage:.1f}%")
+except Exception as e:
+    print(f"Could not parse coverage data: {e}")
+EOF
+        fi >> $GITHUB_STEP_SUMMARY
+
     - name: Start backend server
       run: |
         cd back
