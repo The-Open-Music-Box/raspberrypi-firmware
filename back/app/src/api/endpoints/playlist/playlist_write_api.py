@@ -121,15 +121,7 @@ class PlaylistWriteAPI:
                 if not updates:
                     return UnifiedResponseService.bad_request(message="No valid updates provided")
 
-                # Handle contract testing scenarios
-                if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistWriteAPI: Contract testing detected, returning mock update response")
-                    return UnifiedResponseService.success(
-                        message="Playlist updated successfully (mock response for testing)",
-                        data={"client_op_id": client_op_id or ""}
-                    )
-
-                # Use application service (now returns None if not found)
+                # Use application service (now returns full playlist data or None if not found)
                 result = await self._playlist_service.update_playlist_use_case(playlist_id, updates)
 
                 if result is None:
@@ -140,9 +132,11 @@ class PlaylistWriteAPI:
                     # Broadcast state change
                     await self._broadcasting_service.broadcast_playlist_updated(playlist_id, updates)
 
+                    # Return full playlist object per contract v3.3.1
                     return UnifiedResponseService.success(
                         message="Playlist updated successfully",
-                        data={"client_op_id": client_op_id}
+                        data=result,
+                        client_op_id=client_op_id
                     )
                 else:
                     return UnifiedResponseService.internal_error(
@@ -164,12 +158,6 @@ class PlaylistWriteAPI:
             """Delete a playlist."""
             try:
                 client_op_id = body.get("client_op_id")
-
-                # Handle contract testing scenarios
-                if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistWriteAPI: Contract testing detected, returning mock delete response")
-                    # Return 204 No Content for successful deletion
-                    return Response(status_code=204)
 
                 # Use application service (now returns False if not found)
                 success = await self._playlist_service.delete_playlist_use_case(playlist_id)
