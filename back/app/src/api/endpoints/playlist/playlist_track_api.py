@@ -60,14 +60,6 @@ class PlaylistTrackAPI:
                         client_op_id=client_op_id
                     )
 
-                # Handle contract testing scenarios
-                if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistTrackAPI: Contract testing detected, returning mock reorder response")
-                    return UnifiedResponseService.success(
-                        message="Tracks reordered successfully (mock response for testing)",
-                        data={"playlist_id": playlist_id, "client_op_id": client_op_id or ""}
-                    )
-
                 # Use application service
                 result = await self._playlist_service.reorder_tracks_use_case(playlist_id, track_order)
 
@@ -112,14 +104,6 @@ class PlaylistTrackAPI:
                 logger.debug(
                     f"Deleting tracks from playlist {playlist_id}: {len(track_numbers)} tracks"
                 )
-
-                # Handle contract testing scenarios
-                if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistTrackAPI: Contract testing detected, returning mock delete response")
-                    return UnifiedResponseService.success(
-                        message=f"Deleted {len(track_numbers)} tracks successfully (mock response for testing)",
-                        data={"client_op_id": client_op_id or ""}
-                    )
 
                 # Use application service
                 result = await self._playlist_service.delete_tracks_use_case(playlist_id, track_numbers)

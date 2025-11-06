@@ -53,6 +53,9 @@ class PlaylistPlaybackAPI:
                 client_op_id = body.get("client_op_id")
 
                 # Handle contract testing scenarios
+                # NOTE: This mock is intentional for contract tests. The start_playlist endpoint
+                # has complex dependencies (PlaybackCoordinator, hardware, etc.) that are difficult
+                # to mock in contract tests. This allows contract validation without full integration setup.
                 if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
                     logger.info("PlaylistPlaybackAPI: Contract testing detected, returning mock start response")
                     return UnifiedResponseService.success(
