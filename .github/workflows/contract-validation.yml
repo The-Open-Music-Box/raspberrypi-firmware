@@ -85,6 +85,58 @@ jobs:
           --cov-report=json:test-reports/coverage-contracts.json \
           --junitxml=test-reports/junit-contracts.xml
 
+    - name: Start backend server for integration tests
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Start server in background (use app_sio for Socket.IO support)
+        python -m uvicorn app.main:app_sio --host 0.0.0.0 --port 8000 &
+        echo $! > backend-integration.pid
+        # Wait for server to be ready
+        timeout 60 bash -c 'until curl -f http://localhost:8000/api/health; do sleep 2; done'
+        echo "✅ Backend server ready for integration tests"
+
+    - name: Run integration tests - WebSocket
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run WebSocket integration tests
+        pytest tests/integration/websocket/ -v \
+          --cov=app \
+          --cov-append \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-integration-websocket \
+          --cov-report=json:test-reports/coverage-integration-websocket.json \
+          --junitxml=test-reports/junit-integration-websocket.xml \
+          -m "not slow" || echo "⚠️ Some WebSocket tests failed"
+
+    - name: Run integration tests - E2E
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run E2E integration tests (excluding hardware and websocket)
+        pytest tests/integration/ -v \
+          --ignore=tests/integration/websocket \
+          --ignore=tests/integration/hardware \
+          --cov=app \
+          --cov-append \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-integration-e2e \
+          --cov-report=json:test-reports/coverage-integration-e2e.json \
+          --junitxml=test-reports/junit-integration-e2e.xml \
+          -m "not slow and not hardware" || echo "⚠️ Some E2E tests failed"
+
+    - name: Stop backend server (integration tests)
+      if: always()
+      run: |
+        if [ -f back/backend-integration.pid ]; then
+          kill $(cat back/backend-integration.pid) || true
+          rm back/backend-integration.pid
+        fi
+
     - name: Upload test reports
       uses: actions/upload-artifact@v4
       if: always()
@@ -164,6 +216,60 @@ try:
     print(f"- Unit test coverage: {coverage:.1f}%")
 except Exception as e:
     print(f"Could not parse coverage data: {e}")
+EOF
+        fi >> $GITHUB_STEP_SUMMARY
+
+        # Integration test results - WebSocket
+        if [ -f test-reports/junit-integration-websocket.xml ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Integration Tests - WebSocket" >> $GITHUB_STEP_SUMMARY
+          python3 << 'EOF'
+import xml.etree.ElementTree as ET
+import sys
+
+try:
+    tree = ET.parse('test-reports/junit-integration-websocket.xml')
+    root = tree.getroot()
+    tests = root.attrib.get('tests', '0')
+    failures = root.attrib.get('failures', '0')
+    errors = root.attrib.get('errors', '0')
+    skipped = root.attrib.get('skipped', '0')
+    passed = int(tests) - int(failures) - int(errors) - int(skipped)
+
+    print(f"- Total tests: {tests}")
+    print(f"- Passed: {passed}")
+    print(f"- Failed: {failures}")
+    print(f"- Errors: {errors}")
+    print(f"- Skipped: {skipped}")
+except Exception as e:
+    print(f"Could not parse WebSocket integration test results: {e}")
+EOF
+        fi >> $GITHUB_STEP_SUMMARY
+
+        # Integration test results - E2E
+        if [ -f test-reports/junit-integration-e2e.xml ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Integration Tests - E2E" >> $GITHUB_STEP_SUMMARY
+          python3 << 'EOF'
+import xml.etree.ElementTree as ET
+import sys
+
+try:
+    tree = ET.parse('test-reports/junit-integration-e2e.xml')
+    root = tree.getroot()
+    tests = root.attrib.get('tests', '0')
+    failures = root.attrib.get('failures', '0')
+    errors = root.attrib.get('errors', '0')
+    skipped = root.attrib.get('skipped', '0')
+    passed = int(tests) - int(failures) - int(errors) - int(skipped)
+
+    print(f"- Total tests: {tests}")
+    print(f"- Passed: {passed}")
+    print(f"- Failed: {failures}")
+    print(f"- Errors: {errors}")
+    print(f"- Skipped: {skipped}")
+except Exception as e:
+    print(f"Could not parse E2E integration test results: {e}")
 EOF
         fi >> $GITHUB_STEP_SUMMARY
 
