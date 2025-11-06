@@ -213,18 +213,29 @@ class TestPlaylistAPIContract:
     async def test_update_playlist_contract(self, app_with_playlist_routes):
         """Test PUT /api/playlists/{playlist_id} - Update playlist.
 
-        Contract:
+        Contract v3.3.1:
         - Request body: {title?: str, description?: str, client_op_id?: str}
-        - Success response (200): {status: "success", data: {client_op_id}}
+        - Success response (200): {status: "success", data: PlaylistDetailed}
         - Error response (404): when playlist not found
         """
         from httpx import AsyncClient, ASGITransport
 
         app, routes = app_with_playlist_routes
 
-        # Mock successful update
+        # Mock successful update - now returns full playlist data per v3.3.1
+        mock_playlist_data = {
+            "id": "test-playlist-123",
+            "title": "Updated Title",
+            "description": "Test description",
+            "tracks": [],
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "track_count": 0,
+            "total_duration_ms": 0,
+            "server_seq": 1
+        }
         routes._playlist_app_service.update_playlist_use_case = AsyncMock(
-            return_value=True
+            return_value=mock_playlist_data
         )
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -241,7 +252,10 @@ class TestPlaylistAPIContract:
             data = response.json()
             assert data["status"] == "success"
             assert "data" in data
-            assert data["data"]["client_op_id"] == "client-op-456"
+            # Per contract v3.3.1, data should contain full PlaylistDetailed object
+            assert data["data"]["id"] == "test-playlist-123"
+            assert data["data"]["title"] == "Updated Title"
+            assert "tracks" in data["data"]
 
             # Test partial update (only description)
             response = await client.put(
@@ -252,6 +266,7 @@ class TestPlaylistAPIContract:
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "success"
+            assert data["data"]["id"] == "test-playlist-123"
 
     async def test_delete_playlist_contract(self, app_with_playlist_routes):
         """Test DELETE /api/playlists/{playlist_id} - Delete playlist.
@@ -379,6 +394,18 @@ class TestPlaylistAPIContract:
         from httpx import AsyncClient, ASGITransport
 
         app, routes = app_with_playlist_routes
+
+        # Mock playlist exists
+        mock_playlist = {
+            "id": "test-playlist-123",
+            "title": "Test Playlist",
+            "tracks": [],
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z"
+        }
+        routes._playlist_app_service.get_playlist_use_case = AsyncMock(
+            return_value=mock_playlist
+        )
 
         # Mock successful start
         routes.operations_service.start_playlist = AsyncMock(

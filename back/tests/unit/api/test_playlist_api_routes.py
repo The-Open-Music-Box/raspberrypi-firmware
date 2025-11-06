@@ -224,21 +224,26 @@ class TestPlaylistAPIRoutes:
         """Test successful playlist update."""
         # Arrange
         playlist_id = "playlist-123"
-        update_data = {"title": "Updated Title", "description": "Updated description"}
+        client_op_id = "client-op-456"
+        update_data = {
+            "title": "Updated Title",
+            "description": "Updated description",
+            "client_op_id": client_op_id
+        }
 
-        # Configure mock to return success for update
-        mock_playlist_service.update_playlist_use_case = AsyncMock(return_value=True)
-
-        # Configure mock to return updated playlist (contract v3.3.1)
-        mock_playlist_service.get_playlist_use_case = AsyncMock(return_value={
+        # Configure mock to return full playlist data per v3.3.1
+        mock_playlist_data = {
             "id": playlist_id,
             "title": "Updated Title",
             "description": "Updated description",
             "tracks": [],
             "created_at": "2025-01-01T00:00:00Z",
             "updated_at": "2025-01-01T00:00:00Z",
+            "track_count": 0,
+            "total_duration_ms": 0,
             "server_seq": 1
-        })
+        }
+        mock_playlist_service.update_playlist_use_case = AsyncMock(return_value=mock_playlist_data)
 
         # Act
         response = client.put(f"/api/playlists/{playlist_id}", json=update_data)
@@ -247,14 +252,14 @@ class TestPlaylistAPIRoutes:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
-        # Verify response contains full playlist object (contract v3.3.1)
+        # Verify response contains full PlaylistDetailed object per contract v3.3.1
+        assert "data" in data
         assert data["data"]["id"] == playlist_id
         assert data["data"]["title"] == "Updated Title"
         assert "tracks" in data["data"]
         mock_playlist_service.update_playlist_use_case.assert_called_once_with(
             playlist_id, {"title": "Updated Title", "description": "Updated description"}
         )
-        mock_playlist_service.get_playlist_use_case.assert_called_once_with(playlist_id)
 
     @pytest.mark.asyncio
     async def test_update_playlist_no_updates(self, client):
