@@ -7,7 +7,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { logger } from '../../utils/logger'
 import { apiConfig } from '../../config/environment'
-import { ApiResponse, ApiError } from '../../types/contracts'
+import { ApiResponse, ApiError } from '../../types'
 
 // Extend axios types to include metadata
 declare module 'axios' {
@@ -114,8 +114,7 @@ export class ApiResponseHandler {
         errorData.message || 'API Error',
         errorData.error_type || 'api_error',
         response.status,
-        errorData.details,
-        errorData.request_id
+        errorData.details
       )
     }
 
@@ -159,7 +158,6 @@ export class ApiResponseHandler {
       let message = `HTTP ${status}: ${error.response.statusText}`
       let errorType = 'api_error'
       let details = undefined
-      let requestId = undefined
 
       if (responseData && typeof responseData === 'object') {
         if (responseData.message) {
@@ -171,12 +169,9 @@ export class ApiResponseHandler {
         if (responseData.details) {
           details = responseData.details
         }
-        if (responseData.request_id) {
-          requestId = responseData.request_id
-        }
       }
 
-      throw new StandardApiError(message, errorType, status, details, requestId)
+      throw new StandardApiError(message, errorType, status, details)
     } else if (error.request) {
       // Request made but no response received
       logger.error('API Request failed - no response received', {

@@ -9,7 +9,7 @@ import { API_ROUTES, API_CONFIG } from '../../constants/apiRoutes'
 import { generateClientOpId } from '../../utils/operationUtils'
 import { logger } from '../../utils/logger'
 import { cacheService } from '../cacheService'
-import { ApiResponse, PlayerState, Playlist, PaginatedData } from '../../types/contracts'
+import { ApiResponse, PlayerState, Playlist, PaginatedData } from '../../types'
 
 /**
  * Playlist API methods with standardized response handling

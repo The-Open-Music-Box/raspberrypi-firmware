@@ -6,7 +6,7 @@ import './registerServiceWorker'
 import router from './router'
 import './assets/tailwind.css'
 import './assets/modern-theme.css'
-import socketService from './services/socketService'
+import { socketService } from './services/SocketServiceFactory'
 import { useServerStateStore } from './stores/serverStateStore'
 
 const app = createApp(App)

@@ -118,7 +118,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import socketService from '@/services/socketService'
+import { socketService } from '@/services/SocketServiceFactory'
 import apiService from '@/services/apiService'
 import { SOCKET_EVENTS } from '@/constants/apiRoutes'
 import { NfcAssociationStateData, NfcTagDuplicateData } from '@/types/socket'

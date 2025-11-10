@@ -105,7 +105,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import apiService from '@/services/apiService'
-import { socketService } from '@/services/socketService'
+import { socketService } from '@/services/SocketServiceFactory'
 import { logger } from '@/utils/logger'
 
 const { t } = useI18n()

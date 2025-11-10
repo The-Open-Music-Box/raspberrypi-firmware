@@ -10,7 +10,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { PlayList, Track } from '@/components/files/types'
 import { logger } from '@/utils/logger'
-import socketService from '@/services/socketService'
+import { socketService } from '@/services/SocketServiceFactory'
 import { SOCKET_EVENTS } from '@/constants/apiRoutes'
 import apiService from '@/services/apiService'
 import {
@@ -179,10 +179,11 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
       
       if (fullPlaylist && fullPlaylist.tracks) {
         // Update tracks data
-        tracks.value.set(playlistId, fullPlaylist.tracks)
-        
+        // Note: API returns tracks without id, play_count, server_seq - cast to Track type
+        tracks.value.set(playlistId, fullPlaylist.tracks as Track[])
+
         // Update performance index
-        updateTrackIndexMap(playlistId, fullPlaylist.tracks)
+        updateTrackIndexMap(playlistId, fullPlaylist.tracks as Track[])
         
         // Update playlist metadata if needed
         if (playlists.value.has(playlistId)) {
@@ -190,12 +191,13 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
           playlists.value.set(playlistId, {
             ...existingPlaylist,
             ...fullPlaylist,
+            nfc_tag_id: fullPlaylist.nfc_tag_id || undefined, // Convert null to undefined
             tracks: [] // Keep tracks separate
           })
         }
-        
+
         logger.debug(`Loaded ${fullPlaylist.tracks.length} tracks for playlist ${playlistId}`)
-        return fullPlaylist.tracks
+        return fullPlaylist.tracks as Track[]
       }
 
       return []
@@ -228,6 +230,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
       const newPlaylist: PlayList = {
         ...newPlaylistData,
         type: 'playlist' as const,
+        nfc_tag_id: newPlaylistData.nfc_tag_id || undefined, // Convert null to undefined
         tracks: [], // Keep tracks separate in our store
         track_count: 0,
         last_played: 0 // Initialize with 0

@@ -26,7 +26,7 @@ import type {
   UploadProgress,
   YouTubeProgress,
   NFCAssociation
-} from '../types/contracts'
+} from '../types'
 
 /**
  * Socket event type definitions for type safety
@@ -490,8 +490,8 @@ export class SocketService {
     })
 
     socketIO.on('err:op', (data: OperationAck) => {
-      this.logger.debug(`Operation error: ${data.client_op_id} - ${data.message}`)
-      this.rejectOperation(data.client_op_id, new Error((data as { message?: string }).message || 'Operation failed'))
+      this.logger.debug(`Operation error: ${data.client_op_id} - ${(data as any).message || 'Unknown error'}`)
+      this.rejectOperation(data.client_op_id, new Error((data as any).message || 'Operation failed'))
       this.emitLocal('err:op', data)
     })
 

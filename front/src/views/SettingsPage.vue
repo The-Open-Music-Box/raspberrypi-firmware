@@ -58,7 +58,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import StatsInfo from '../components/StatsInfo.vue'
-import socketService from '@/services/socketService'
+import { socketService } from '@/services/SocketServiceFactory'
 import { SOCKET_EVENTS } from '@/constants/apiRoutes'
 
 const { t, locale, availableLocales } = useI18n()

@@ -5,7 +5,7 @@
 
 import { apiClient, ApiResponseHandler } from './apiClient'
 import { API_ROUTES } from '../../constants/apiRoutes'
-import { ApiResponse, HealthStatus, SystemInfo } from '../../types/contracts'
+import { ApiResponse, HealthStatus, SystemInfo } from '../../types'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**

@@ -13,7 +13,7 @@
  */
 
 import { logger } from '../utils/logger'
-import { StateEventEnvelope } from '../types/contracts'
+import { StateEventEnvelope } from '../types'
 
 export interface NativeWebSocketConfig {
   url: string
