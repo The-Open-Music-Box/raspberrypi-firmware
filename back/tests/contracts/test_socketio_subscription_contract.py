@@ -59,6 +59,39 @@ async def socketio_handlers(mock_state_manager, mock_app):
     sio.event = mock_event
     sio.on = mock_on
 
+    # Create real handler instances with mocked services
+    from app.src.routes.handlers.sync_handlers import SyncHandlers
+    from app.src.routes.handlers.subscription_handlers import SubscriptionHandlers
+    from app.src.routes.handlers.nfc_handlers import NFCHandlers
+    from unittest.mock import Mock as UnittestMock
+
+    # Mock services
+    mock_nfc_service = UnittestMock()
+    mock_nfc_service.get_session_snapshot = AsyncMock(return_value=None)
+    mock_playback_coordinator = UnittestMock()
+    mock_player_state_service = UnittestMock()
+
+    # Create real handler instances
+    handlers.sync_handlers = SyncHandlers(
+        sio=sio,
+        state_manager=mock_state_manager,
+        playback_coordinator=mock_playback_coordinator,
+        player_state_service=mock_player_state_service,
+    )
+
+    handlers.subscription_handlers = SubscriptionHandlers(
+        sio=sio,
+        state_manager=mock_state_manager,
+        nfc_service=mock_nfc_service,
+    )
+
+    handlers.nfc_handlers = NFCHandlers(
+        sio=sio,
+        state_manager=mock_state_manager,
+        nfc_service=mock_nfc_service,
+    )
+
+    # Register handlers
     handlers.register()
     return handlers
 

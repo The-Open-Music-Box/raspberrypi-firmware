@@ -102,7 +102,15 @@ class PlaylistWriteAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error creating playlist: {str(e)}", extra={"traceback": True})
+                logger.error(
+                    f"Error in create_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "create_playlist",
+                        "title": body.get("title") if isinstance(body, dict) else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to create playlist",
                     operation="create_playlist",
@@ -147,7 +155,16 @@ class PlaylistWriteAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error updating playlist: {str(e)}")
+                logger.error(
+                    f"Error in update_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "update_playlist",
+                        "playlist_id": playlist_id,
+                        "updates": updates if 'updates' in locals() else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to update playlist", operation="update_playlist"
                 )
@@ -177,7 +194,15 @@ class PlaylistWriteAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error deleting playlist: {str(e)}")
+                logger.error(
+                    f"Error in delete_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "delete_playlist",
+                        "playlist_id": playlist_id,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to delete playlist", operation="delete_playlist"
                 )

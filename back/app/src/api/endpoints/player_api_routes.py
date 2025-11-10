@@ -333,9 +333,17 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error in previous_track: {str(e)}")
+                logger.error(
+                    f"Error in previous_track: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "previous_track",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
-                    message="Failed to skip to previous track", operation="previous_track"
+                    message="Failed to skip to previous_track", operation="previous_track"
                 )
 
         @self.router.post("/toggle")
@@ -377,7 +385,15 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error in toggle_playback: {str(e)}")
+                logger.error(
+                    f"Error in toggle_playback: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "toggle_playback",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to toggle playback", operation="toggle_playback"
                 )
@@ -404,7 +420,14 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in get_player_status: {str(e)}")
+                logger.error(
+                    f"Error in get_player_status: {str(e)}",
+                    extra={
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "get_player_status",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to get player status", operation="get_player_status"
                 )
@@ -449,7 +472,16 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in seek_player: {str(e)}")
+                logger.error(
+                    f"Error in seek_player: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "seek_player",
+                        "position_ms": body.position_ms,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to seek", operation="seek_player"
                 )
@@ -492,7 +524,16 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in set_volume: {str(e)}")
+                logger.error(
+                    f"Error in set_volume: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "set_volume",
+                        "volume": body.volume,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to set volume", operation="set_volume"
                 )

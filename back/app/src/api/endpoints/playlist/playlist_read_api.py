@@ -91,7 +91,12 @@ class PlaylistReadAPI:
                     raise
                 logger.error(
                     f"Error in list_playlists: {str(e)}",
-                    extra={"traceback": True},
+                    extra={
+                        "operation": "list_playlists",
+                        "page": page,
+                        "limit": limit,
+                    },
+                    exc_info=True
                 )
                 return UnifiedResponseService.internal_error(
                     message="Failed to retrieve playlists", operation="list_playlists"
@@ -149,7 +154,14 @@ class PlaylistReadAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error getting playlist {playlist_id}: {str(e)}")
+                logger.error(
+                    f"Error in get_playlist: {str(e)}",
+                    extra={
+                        "operation": "get_playlist",
+                        "playlist_id": playlist_id,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to retrieve playlist", operation="get_playlist"
                 )

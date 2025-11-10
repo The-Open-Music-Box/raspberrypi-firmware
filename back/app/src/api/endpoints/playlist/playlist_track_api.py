@@ -82,7 +82,16 @@ class PlaylistTrackAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error reordering tracks: {str(e)}")
+                logger.error(
+                    f"Error in reorder_tracks: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "reorder_tracks",
+                        "playlist_id": playlist_id,
+                        "track_count": len(track_order) if isinstance(track_order, list) else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to reorder tracks", operation="reorder_tracks"
                 )
@@ -127,7 +136,16 @@ class PlaylistTrackAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error deleting tracks: {str(e)}")
+                logger.error(
+                    f"Error in delete_tracks: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "delete_tracks",
+                        "playlist_id": playlist_id,
+                        "track_count": len(track_numbers) if isinstance(track_numbers, list) else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to delete tracks", operation="delete_tracks"
                 )
@@ -174,7 +192,17 @@ class PlaylistTrackAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error moving track: {str(e)}")
+                logger.error(
+                    f"Error in move_track_between_playlists: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "move_track_between_playlists",
+                        "source_playlist_id": body.get("source_playlist_id") if isinstance(body, dict) else None,
+                        "target_playlist_id": body.get("target_playlist_id") if isinstance(body, dict) else None,
+                        "track_number": body.get("track_number") if isinstance(body, dict) else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to move track",
                     operation="move_track_between_playlists"

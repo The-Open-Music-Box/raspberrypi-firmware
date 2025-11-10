@@ -178,7 +178,17 @@ class NFCAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error associating NFC tag: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Error in associate_tag_with_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "associate_tag_with_playlist",
+                        "playlist_id": body.playlist_id if hasattr(body, 'playlist_id') else None,
+                        "tag_id": body.tag_id if hasattr(body, 'tag_id') else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to associate NFC tag",
                     operation="associate_tag_with_playlist"
@@ -252,7 +262,16 @@ class NFCAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error removing NFC association: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Error in remove_tag_association: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "remove_tag_association",
+                        "tag_id": tag_id,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to remove NFC tag association",
                     operation="remove_tag_association",
@@ -285,7 +304,14 @@ class NFCAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error getting NFC status: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Error in get_nfc_status: {str(e)}",
+                    extra={
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "get_nfc_status",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to get NFC status",
                     operation="get_nfc_status"
@@ -428,7 +454,17 @@ class NFCAPIRoutes:
                         )
 
             except Exception as e:
-                logger.error(f"Error starting NFC scan: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Error in start_nfc_scan: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "start_nfc_scan",
+                        "playlist_id": body.playlist_id if hasattr(body, 'playlist_id') else None,
+                        "timeout_ms": body.timeout_ms if hasattr(body, 'timeout_ms') else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to start NFC scan session",
                     operation="start_nfc_scan",
@@ -509,7 +545,16 @@ class NFCAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error cancelling NFC session: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Error in cancel_association_session: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "cancel_association_session",
+                        "session_id": session_id,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to cancel NFC association session",
                     operation="cancel_association_session",

@@ -158,7 +158,16 @@ class PlaylistPlaybackAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error starting playlist: {str(e)}")
+                logger.error(
+                    f"Error in start_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "start_playlist",
+                        "playlist_id": playlist_id,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to start playlist playback",
                     operation="start_playlist",
@@ -201,7 +210,13 @@ class PlaylistPlaybackAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error syncing playlists: {str(e)}")
+                logger.error(
+                    f"Error in sync_playlists: {str(e)}",
+                    extra={
+                        "operation": "sync_playlists",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to sync playlists",
                     operation="sync_playlists"
