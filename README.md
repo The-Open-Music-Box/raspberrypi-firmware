@@ -659,8 +659,8 @@ Pour approfondir vos connaissances sur l'architecture et le développement:
 
 ```bash
 # Clone du repository
-git clone https://github.com/yourusername/tomb-rpi.git
-cd tomb-rpi
+git clone https://github.com/The-Open-Music-Box/raspberrypi-firmware.git
+cd raspberrypi-firmware
 
 # Backend
 cd back
@@ -924,7 +924,7 @@ Les contributions sont les bienvenues! Voici comment contribuer:
 
 ### Signaler un bug
 
-Ouvrez une [issue](https://github.com/yourusername/tomb-rpi/issues) en incluant:
+Ouvrez une [issue](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues) en incluant:
 
 - Description détaillée du problème
 - Steps pour reproduire
@@ -951,15 +951,15 @@ Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 **Jonathan Piette** - Créateur et mainteneur
 
-- 🐙 GitHub: [@yourusername](https://github.com/yourusername)
-- 📧 Email: your.email@example.com
-- 💬 Discord: [The Open Music Box Community](#) *(à créer)*
+- 🐙 GitHub: [@The-Open-Music-Box](https://github.com/The-Open-Music-Box)
+- 📧 Email: contact@theopenmusicbox.com
+- 💬 Discord: En cours de création
 
 ### Support
 
-- 🐛 **Bugs**: Ouvrez une [issue](https://github.com/yourusername/tomb-rpi/issues)
-- 💡 **Feature requests**: Ouvrez une [issue](https://github.com/yourusername/tomb-rpi/issues) avec le tag "enhancement"
-- 💬 **Questions**: Utilisez les [Discussions](https://github.com/yourusername/tomb-rpi/discussions)
+- 🐛 **Bugs**: Ouvrez une [issue](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues)
+- 💡 **Feature requests**: Ouvrez une [issue](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues) avec le tag "enhancement"
+- 💬 **Questions**: Utilisez les [Discussions](https://github.com/The-Open-Music-Box/raspberrypi-firmware/discussions)
 - 📖 **Documentation**: Consultez le dossier [documentation/](documentation/)
 
 ---
@@ -971,7 +971,7 @@ Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 - [Waveshare](https://www.waveshare.com/) pour le WM8960 Audio HAT
 - [NXP](https://www.nxp.com/) pour le PN532 NFC reader
 - La communauté [Raspberry Pi](https://www.raspberrypi.com/)
-- Tous les [contributeurs](https://github.com/yourusername/tomb-rpi/contributors) du projet
+- Tous les [contributeurs](https://github.com/The-Open-Music-Box/raspberrypi-firmware/contributors) du projet
 
 ---
 

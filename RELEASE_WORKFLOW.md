@@ -259,5 +259,5 @@ git tag -a v0.5.0 -m "Release v0.5.0"
 
 ---
 
-**Version actuelle du système de release :** v0.4.1
-**Date de création de ce guide :** 2025-10-26
+**Version actuelle du système de release :** v0.5.0
+**Date de dernière mise à jour :** 2025-11-10

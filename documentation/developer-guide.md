@@ -2,7 +2,7 @@
 
 **Purpose**: Practical guide for developers working on TheOpenMusicBox codebase
 **Audience**: Backend and Full-Stack developers
-**Last Updated**: 2025-10-06
+**Last Updated**: 2025-11-10
 
 ---
 

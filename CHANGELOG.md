@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - (Add bug fixes here)
 
+## [0.5.0] - 2025-11-10
+
+### Added
+- Enhanced documentation and repository structure
+- Updated repository URLs and contact information
+
+### Changed
+- Updated all GitHub links to reflect correct repository paths
+- Improved documentation accuracy across all files
+
+### Fixed
+- Fixed outdated version references in documentation
+- Corrected placeholder URLs and contact information
+
 ## [0.4.1] - 2025-10-26
 
 ### Added
