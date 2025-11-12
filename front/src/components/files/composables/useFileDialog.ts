@@ -1,6 +1,6 @@
 // components/files/composables/useFilesDialog.ts
 import { ref } from 'vue'
-import type { LegacyAudioFile } from '../types'
+import type { AudioFile } from '../types'
 
 /**
  * FileDialog Composable
@@ -11,13 +11,13 @@ import type { LegacyAudioFile } from '../types'
 export function useFileDialog() {
   // State for delete dialog
   const showDeleteDialog = ref(false)
-  const fileToDelete = ref<LegacyAudioFile | null>(null)
+  const fileToDelete = ref<AudioFile | null>(null)
 
   /**
    * Opens the delete confirmation dialog
-   * @param {LegacyAudioFile} file - The file to be deleted
+   * @param {AudioFile} file - The file to be deleted
    */
-  const openDeleteDialog = (file: LegacyAudioFile) => {
+  const openDeleteDialog = (file: AudioFile) => {
     fileToDelete.value = file
     showDeleteDialog.value = true
   }

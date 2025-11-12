@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 /**
  * Unified Playlist Store
- * 
+ *
  * Single source of truth for all playlist and track data.
  * Centralizes WebSocket management and eliminates data source conflicts.
+ * Uses ONLY OpenAPI Contract v4.0.0 types.
  */
 
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { PlayList, Track } from '@/components/files/types'
+import type { Track, PlaylistDetailed } from '@/types'
 import { logger } from '@/utils/logger'
 import { socketService } from '@/services/SocketServiceFactory'
 import { SOCKET_EVENTS } from '@/constants/apiRoutes'
@@ -27,7 +28,7 @@ import { handleDragError, DragContext } from '@/utils/dragOperationErrorHandler'
 
 export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
   // === STATE ===
-  const playlists = ref<Map<string, PlayList>>(new Map())
+  const playlists = ref<Map<string, PlaylistDetailed>>(new Map())
   const tracks = ref<Map<string, Track[]>>(new Map())
   // Performance optimization: Track index maps for O(1) lookups
   const trackIndexMaps = ref<Map<string, Map<number, Track>>>(new Map())
@@ -40,18 +41,18 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
   const ongoingDragOperations = ref<Set<string>>(new Set())
 
   // === GETTERS ===
-  const getAllPlaylists = computed<PlayList[]>(() => {
+  const getAllPlaylists = computed<PlaylistDetailed[]>(() => {
     return Array.from(playlists.value.values())
   })
 
   const getPlaylistById = computed(() => {
-    return (id: string): PlayList | undefined => {
+    return (id: string): PlaylistDetailed | undefined => {
       return playlists.value.get(id)
     }
   })
 
   const getPlaylistWithTracks = computed(() => {
-    return (id: string): PlayList | undefined => {
+    return (id: string): PlaylistDetailed | undefined => {
       const playlist = playlists.value.get(id)
       if (!playlist) return undefined
 
@@ -227,13 +228,10 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
       
       // The playlist will be added via WebSocket events
       // But we can optimistically add it locally for immediate UI feedback
-      const newPlaylist: PlayList = {
+      const newPlaylist: PlaylistDetailed = {
         ...newPlaylistData,
-        type: 'playlist' as const,
         nfc_tag_id: newPlaylistData.nfc_tag_id || undefined, // Convert null to undefined
-        tracks: [], // Keep tracks separate in our store
-        track_count: 0,
-        last_played: 0 // Initialize with 0
+        tracks: [] // Keep tracks separate in our store
       }
       
       playlists.value.set(playlistId, newPlaylist)
@@ -336,15 +334,9 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         
         // Update performance index
         updateTrackIndexMap(playlistId, updatedTracks)
-        
-        // Update playlist track count
-        const playlist = playlists.value.get(playlistId)
-        if (playlist) {
-          playlists.value.set(playlistId, {
-            ...playlist,
-            track_count: updatedTracks.length
-          })
-        }
+
+        // Track count is derived from tracks array length in v3.3.2
+        // No need to store it separately
       }
       
       logger.info('Deleted track', { playlistId, trackNumber })
@@ -395,7 +387,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         trackIndexMaps.value.set(playlistId, trackMap)
       }
 
-      // Map track numbers to track IDs
+      // Map track numbers to track IDs (using filename as ID in v3.3.2)
       const trackIds = newOrder
         .map(num => {
           const track = trackMap!.get(num)
@@ -403,7 +395,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
             logger.warn(`Track with number ${num} not found in playlist ${playlistId}`, { availableTracks: playlistTracks.length })
             return null
           }
-          return track.id
+          return track.filename
         })
         .filter((id): id is string => id !== null)
 
@@ -430,8 +422,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         .filter((track): track is Track => track !== undefined)
         .map((track, index) => ({
           ...track,
-          track_number: index + 1, // Update track numbers for new positions
-          number: undefined // Remove legacy field
+          number: index + 1 // Update track numbers for new positions (v3.3.2 uses 'number')
         }))
 
       tracks.value.set(playlistId, reorderedTracks)
@@ -632,12 +623,8 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
 
       // Update playlist track count
       const playlist = playlists.value.get(data.playlist_id)
-      if (playlist) {
-        playlists.value.set(data.playlist_id, {
-          ...playlist,
-          track_count: updatedTracks.length
-        })
-      }
+      // Track count is derived from tracks.length in v3.3.2
+      // No need to update playlist separately
     }
   }
 
@@ -682,12 +669,8 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
       
       // Update playlist track count
       const playlist = playlists.value.get(data.playlist_id)
-      if (playlist) {
-        playlists.value.set(data.playlist_id, {
-          ...playlist,
-          track_count: updatedTracks.length
-        })
-      }
+      // Track count is derived from tracks.length in v3.3.2
+      // No need to update playlist separately
     }
   }
 

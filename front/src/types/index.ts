@@ -1,12 +1,12 @@
 /**
  * Frontend Types - Central Export Point
  *
- * Uses ONLY generated types from OpenAPI Contract v4.0.0
+ * Uses ONLY generated types from OpenAPI Contract v3.3.2
  * Zero legacy code - 100% contract-driven development
  */
 
-// Import generated types from contracts v4.0.0
-import type { components } from '../../../contracts/releases/4.0.0-82d5310/typescript/api-types';
+// Import generated types from contracts v3.3.2
+import type { components } from '../../../contracts/releases/3.3.2-cbcb101/typescript/api-types';
 
 // Export core data types from OpenAPI schema
 export type Track = components['schemas']['Track'];

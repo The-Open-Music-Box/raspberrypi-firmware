@@ -1,74 +1,52 @@
 /**
  * Track Field Accessor Utilities
- * 
- * Centralized utilities for accessing track fields safely during migration.
- * Provides fallback logic for legacy field names.
+ *
+ * Centralized utilities for accessing track fields safely.
+ * Uses ONLY OpenAPI Contract v3.3.2 types.
  */
 
-import type { Track } from '@/components/files/types'
+import type { Track } from '@/types'
 
 /**
- * Get track number with fallback logic
- * Priority: track_number > number > 0
+ * Get track number from contract v3.3.2
  */
 export function getTrackNumber(track: Track): number {
   if (!track) return 0
-  return track.track_number ?? track.number ?? 0
+  return track.number ?? 0
 }
 
 /**
- * Get track duration in milliseconds with fallback logic
- * Priority: duration_ms > duration * 1000 > 0
+ * Get track duration in milliseconds from contract v3.3.2
+ * Prefers duration_ms, falls back to duration * 1000 (deprecated field)
  */
 export function getTrackDurationMs(track: Track): number {
   if (!track) return 0
-
-  if (track.duration_ms !== undefined) {
-    return track.duration_ms
-  }
-
-  // Legacy fallback - duration in seconds, convert to ms
-  if (track.duration !== undefined) {
-    return track.duration * 1000
-  }
-
+  // Prefer duration_ms (milliseconds)
+  if (track.duration_ms != null) return track.duration_ms
+  // Fallback to duration (seconds, deprecated)
+  if (track.duration != null) return track.duration * 1000
   return 0
 }
 
 /**
- * Get track duration in seconds with fallback logic
- * Priority: duration_ms / 1000 > duration > 0
+ * Get track duration in seconds from contract v3.3.2
  */
 export function getTrackDurationSeconds(track: Track): number {
   if (!track) return 0
-
-  if (track.duration_ms !== undefined) {
-    return track.duration_ms / 1000
-  }
-
-  // Legacy fallback
-  if (track.duration !== undefined) {
-    return track.duration
-  }
-
+  // Prefer duration_ms (convert to seconds)
+  if (track.duration_ms != null) return track.duration_ms / 1000
+  // Fallback to duration (seconds, deprecated)
+  if (track.duration != null) return track.duration
   return 0
 }
 
 /**
- * Create a normalized track object with unified field names
- * Converts legacy fields to new standardized format
+ * Ensure track has all required fields from contract v3.3.2
  */
 export function normalizeTrack(track: Track): Track {
   if (!track) return track
-
-  return {
-    ...track,
-    track_number: getTrackNumber(track),
-    duration_ms: getTrackDurationMs(track),
-    // Remove legacy fields in normalized version
-    number: undefined,
-    duration: undefined
-  }
+  // Contract v3.3.2 - Track uses 'number' field
+  return track
 }
 
 /**
@@ -191,20 +169,15 @@ export function createTrackIndexMap(tracks: Track[]): Map<number, Track> {
 }
 
 /**
- * Batch update track numbers efficiently
+ * Batch update track numbers efficiently (v3.3.2 uses 'number' field)
  */
 export function batchUpdateTrackNumbers(tracks: Track[], newOrder: number[]): Track[] {
   if (tracks.length !== newOrder.length) {
     throw new Error(`Track count mismatch: ${tracks.length} tracks vs ${newOrder.length} positions`)
   }
-  
-  return tracks.map((track, index) => {
-    const newPosition = index + 1
-    return {
-      ...track,
-      track_number: newPosition,
-      // Handle legacy field
-      number: undefined
-    }
-  })
+
+  return tracks.map((track, index) => ({
+    ...track,
+    number: index + 1
+  }))
 }

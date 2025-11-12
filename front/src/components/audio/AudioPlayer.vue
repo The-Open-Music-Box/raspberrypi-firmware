@@ -150,9 +150,10 @@
  * - No frontend timers - all position comes from backend
  * - Optimistic UI updates for seek operations only
  * - Compact modern design with inline controls
+ * Uses ONLY OpenAPI Contract v4.0.0 types.
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import type { Track, PlayList } from '../files/types'
+import type { Track, PlaylistDetailed } from '@/types'
 import { useServerStateStore } from '@/stores/serverStateStore'
 import { useUnifiedPlaylistStore } from '@/stores/unifiedPlaylistStore'
 import { storeToRefs } from 'pinia'
@@ -166,7 +167,7 @@ const { t } = useI18n()
 // Props
 interface Props {
   selectedTrack?: Track
-  playlist?: PlayList
+  playlist?: PlaylistDetailed
 }
 const props = defineProps<Props>()
 

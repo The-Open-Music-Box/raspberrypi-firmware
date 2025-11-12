@@ -9,12 +9,13 @@
  * - Playlist state management
  * - NFC state handling
  * - Error scenarios and edge cases
+ * Uses ONLY OpenAPI Contract v4.0.0 types.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useServerStateStore } from '@/stores/serverStateStore'
-import type { Track } from '@/components/files/types'
+import type { Track } from '@/types'
 
 // Mock socket service with full implementation
 vi.mock('@/services/socketService', () => ({
