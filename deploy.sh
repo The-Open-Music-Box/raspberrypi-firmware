@@ -108,8 +108,9 @@ load_config() {
             print_status $BLUE "📋 Loaded configuration from: $CONFIG_FILE"
         fi
     else
-        print_status $RED "❌ Configuration file not found: $CONFIG_FILE"
-        exit 1
+        if [ "$VERBOSE" = true ]; then
+            print_status $YELLOW "⚠️  Configuration file not found: $CONFIG_FILE (using defaults)"
+        fi
     fi
 }
 

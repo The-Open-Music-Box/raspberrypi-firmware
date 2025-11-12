@@ -158,6 +158,7 @@ esac
 run_pytest() {
     local test_path=$1
     local description=$2
+    local cov_threshold=$3  # Optional coverage threshold
 
     # Prefer project venv Python if available
     local PYTHON_BIN="python3"
@@ -197,8 +198,12 @@ run_pytest() {
         echo ""
     fi
 
-    # Build command
-    local cmd="$WARNING_ENV $PYTHON_BIN -m pytest $test_path $PYTEST_VERBOSITY $PYTEST_OUTPUT $WARNING_FLAGS"
+    # Build command with optional coverage threshold
+    local cov_flag=""
+    if [ -n "$cov_threshold" ]; then
+        cov_flag="--cov-fail-under=$cov_threshold"
+    fi
+    local cmd="$WARNING_ENV $PYTHON_BIN -m pytest $test_path $PYTEST_VERBOSITY $PYTEST_OUTPUT $WARNING_FLAGS $cov_flag"
 
     # Execute command
     if eval $cmd; then
@@ -257,14 +262,14 @@ main() {
         # Full Test Suite Mode (Comprehensive)
         print_header "🔬 Full Test Suite (78+ tests)"
 
-        # Main tests directory (comprehensive business logic)
-        if run_pytest "tests/" "Main Business Logic Tests"; then
+        # Main tests directory (comprehensive business logic) - with coverage threshold
+        if run_pytest "tests/" "Main Business Logic Tests" "67"; then
             TOTAL_TESTS_RUN=$((TOTAL_TESTS_RUN + 1))
         else
             FAILED_TESTS=$((FAILED_TESTS + 1))
         fi
 
-        # App unit tests
+        # App unit tests (without coverage threshold - limited scope)
         if run_pytest "app/tests/unit/" "App Unit Tests"; then
             TOTAL_TESTS_RUN=$((TOTAL_TESTS_RUN + 1))
         else
