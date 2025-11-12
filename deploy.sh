@@ -358,7 +358,15 @@ deploy_production() {
     fi
 
     local release_dir="${PROJECT_ROOT}/${RELEASE_DEV_DIR}/tomb-rpi"
-    local ssh_opts="${SSH_OPTS} -i ${SSH_KEY}"
+
+    # Build SSH options only if configured
+    local ssh_opts=""
+    if [ -n "$SSH_OPTS" ]; then
+        ssh_opts="$SSH_OPTS"
+    fi
+    if [ -n "$SSH_KEY" ]; then
+        ssh_opts="$ssh_opts -i ${SSH_KEY}"
+    fi
 
     if [ "$QUIET" != true ]; then
         print_status $BLUE "📤 Deploying to: $SSH_TARGET"
@@ -462,7 +470,15 @@ monitor_server() {
     print_status $BLUE "📋 Press Ctrl+C to stop monitoring"
     echo ""
 
-    local ssh_opts="${SSH_OPTS} -i ${SSH_KEY}"
+    # Build SSH options only if configured
+    local ssh_opts=""
+    if [ -n "$SSH_OPTS" ]; then
+        ssh_opts="$SSH_OPTS"
+    fi
+    if [ -n "$SSH_KEY" ]; then
+        ssh_opts="$ssh_opts -i ${SSH_KEY}"
+    fi
+
     ssh $ssh_opts "$target" "sudo journalctl -fu app.service --output=cat"
 }
 
