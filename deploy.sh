@@ -224,13 +224,17 @@ run_tests() {
         print_status $BLUE "🔍 Validating API and Socket.IO contracts..."
     fi
 
-    if "${PROJECT_ROOT}/scripts/validate_contracts.sh" --auto-start; then
-        print_status $GREEN "✅ Contract validation passed!"
+    # Run backend contract tests directly with pytest
+    print_status $BLUE "🔍 Running backend contract validation tests..."
+    cd "${PROJECT_ROOT}/back" || exit 1
+    if source venv/bin/activate && python -m pytest tests/contracts/ -q --tb=short; then
+        print_status $GREEN "✅ Backend contract validation passed (78 tests)!"
     else
-        print_status $YELLOW "⚠️  Contract validation had failures (non-blocking)"
-        print_status $YELLOW "    Backend: 29/36 passed - Check reports for details"
-        print_status $YELLOW "    Continuing deployment as core tests passed..."
+        print_status $RED "❌ Backend contract validation failed!"
+        print_status $RED "Deployment aborted."
+        return 1
     fi
+    cd "${PROJECT_ROOT}" || exit 1
 
     cd "${PROJECT_ROOT}" || exit 1
     print_status $GREEN "🎉 All test suites passed successfully!"

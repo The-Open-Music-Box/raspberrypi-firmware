@@ -158,6 +158,7 @@ export class ApiResponseHandler {
       let message = `HTTP ${status}: ${error.response.statusText}`
       let errorType = 'api_error'
       let details = undefined
+      let requestId = undefined
 
       if (responseData && typeof responseData === 'object') {
         if (responseData.message) {
@@ -169,9 +170,12 @@ export class ApiResponseHandler {
         if (responseData.details) {
           details = responseData.details
         }
+        if (responseData.request_id) {
+          requestId = responseData.request_id
+        }
       }
 
-      throw new StandardApiError(message, errorType, status, details)
+      throw new StandardApiError(message, errorType, status, details, requestId)
     } else if (error.request) {
       // Request made but no response received
       logger.error('API Request failed - no response received', {
