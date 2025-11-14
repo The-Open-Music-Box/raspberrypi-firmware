@@ -2,9 +2,9 @@ name: Contract Validation
 
 on:
   push:
-    branches: [ main, develop, feat/*, fix/* ]
+    branches: [ main, dev, develop, feat/*, fix/* ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, dev, develop ]
   schedule:
     # Run daily at 2 AM UTC to catch any drift
     - cron: '0 2 * * *'
