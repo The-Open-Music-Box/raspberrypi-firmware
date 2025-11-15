@@ -44,8 +44,8 @@ class HardwareConfig:
     encoder_step_threshold: int = 2  # Steps required to register a turn
     encoder_acceleration: bool = True  # Enable acceleration on fast turns
 
-    # LED settings (if applicable)
-    led_brightness: int = 100  # LED brightness (0-255)
+    # LED settings
+    led_default_brightness: float = 0.1  # LED default brightness (0.0-1.0, where 1.0 is full brightness)
     led_animation_speed: float = 0.5  # Animation speed in seconds
 
     # I2C settings
