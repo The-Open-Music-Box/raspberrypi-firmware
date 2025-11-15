@@ -385,12 +385,15 @@ deploy_production() {
         print_status $BLUE "📤 Synchronizing files..."
     fi
 
+    # CRITICAL: Protect user data from deletion with --filter
     rsync -azP --delete \
         --rsync-path="sudo rsync" \
         --no-owner --no-group \
         --chown=admin:admin \
         --ignore-errors \
         -e "ssh $ssh_opts" \
+        --filter='protect app/data/' \
+        --filter='protect app/data/**' \
         "${RSYNC_EXCLUDES[@]}" \
         "${release_dir}/" "${SSH_TARGET}:${REMOTE_DIR}/" 2>/dev/null
 
