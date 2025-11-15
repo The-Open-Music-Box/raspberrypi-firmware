@@ -292,6 +292,25 @@ class LEDEventHandler:
             logger.error(f"❌ Error setting brightness: {e}")
             return False
 
+    async def reload_brightness_from_config(self) -> bool:
+        """
+        Reload LED brightness from hardware configuration.
+
+        This allows updating the LED brightness without restarting the application
+        after modifying hardware_config.py.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            from app.src.config import config
+            new_brightness = config.hardware.led_default_brightness
+            logger.info(f"💡 Reloading LED brightness from config: {new_brightness:.1%}")
+            return await self.set_brightness(new_brightness)
+        except Exception as e:
+            logger.error(f"❌ Error reloading brightness from config: {e}")
+            return False
+
     def get_status(self) -> dict:
         """
         Get current status of LED event handler.
