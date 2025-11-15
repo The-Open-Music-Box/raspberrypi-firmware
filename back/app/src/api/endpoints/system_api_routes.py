@@ -38,14 +38,16 @@ class SystemAPIRoutes:
     - Resource monitoring (delegated to monitoring services)
     """
 
-    def __init__(self, playback_coordinator_getter):
+    def __init__(self, playback_coordinator_getter, led_event_handler_getter=None):
         """Initialize system API routes.
 
         Args:
             playback_coordinator_getter: Callable that returns playback coordinator from request
+            led_event_handler_getter: Optional callable that returns LED event handler from request
         """
         self.router = APIRouter(prefix="/api", tags=["system"])
         self._get_coordinator = playback_coordinator_getter
+        self._get_led_handler = led_event_handler_getter
         self._register_routes()
 
     def _register_routes(self):
@@ -373,6 +375,89 @@ class SystemAPIRoutes:
                     message="Failed to restart system",
                     operation="restart_system"
                 )
+
+        # LED control endpoints
+        if self._get_led_handler:
+            from pydantic import BaseModel, Field
+
+            class SetBrightnessRequest(BaseModel):
+                brightness: float = Field(..., ge=0.0, le=1.0, description="LED brightness level (0.0-1.0)")
+
+            @self.router.post("/system/led/brightness")
+            @handle_http_errors()
+            async def set_led_brightness(request: Request, body: SetBrightnessRequest):
+                """Set LED brightness level."""
+                try:
+                    logger.info(f"API /api/system/led/brightness: Set brightness to {body.brightness:.1%}")
+
+                    led_handler = self._get_led_handler(request)
+                    if not led_handler:
+                        return UnifiedResponseService.error(
+                            message="LED event handler not available",
+                            error_type="service_unavailable",
+                            status_code=503
+                        )
+
+                    success = await led_handler.set_brightness(body.brightness)
+
+                    if success:
+                        return UnifiedResponseService.success(
+                            message=f"LED brightness set to {body.brightness:.1%}",
+                            data={"brightness": body.brightness}
+                        )
+                    else:
+                        return UnifiedResponseService.error(
+                            message="Failed to set LED brightness",
+                            error_type="operation_failed",
+                            status_code=500
+                        )
+
+                except Exception as e:
+                    logger.error(f"Error setting LED brightness: {str(e)}")
+                    return UnifiedResponseService.internal_error(
+                        message="Failed to set LED brightness",
+                        operation="set_led_brightness"
+                    )
+
+            @self.router.post("/system/led/reload-config")
+            @handle_http_errors()
+            async def reload_led_config(request: Request):
+                """Reload LED brightness from hardware configuration."""
+                try:
+                    logger.info("API /api/system/led/reload-config: Reloading LED brightness from config")
+
+                    led_handler = self._get_led_handler(request)
+                    if not led_handler:
+                        return UnifiedResponseService.error(
+                            message="LED event handler not available",
+                            error_type="service_unavailable",
+                            status_code=503
+                        )
+
+                    success = await led_handler.reload_brightness_from_config()
+
+                    if success:
+                        # Get current brightness from LED controller status
+                        status = led_handler.get_status()
+                        brightness = status.get("led_manager_status", {}).get("brightness", 0)
+
+                        return UnifiedResponseService.success(
+                            message=f"LED brightness reloaded from config",
+                            data={"brightness": brightness}
+                        )
+                    else:
+                        return UnifiedResponseService.error(
+                            message="Failed to reload LED brightness from config",
+                            error_type="operation_failed",
+                            status_code=500
+                        )
+
+                except Exception as e:
+                    logger.error(f"Error reloading LED config: {str(e)}")
+                    return UnifiedResponseService.internal_error(
+                        message="Failed to reload LED config",
+                        operation="reload_led_config"
+                    )
 
     def get_router(self) -> APIRouter:
         """Get the configured router."""
