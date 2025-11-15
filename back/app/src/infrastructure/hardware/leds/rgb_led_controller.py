@@ -83,6 +83,9 @@ class RGBLEDController(IndicatorLightsProtocol):
         self._pwm_frequency = pwm_frequency
         self._brightness = default_brightness
 
+        # LOG CRITICAL: Trace brightness initialization
+        logger.info(f"💡 RGBLEDController initialized with brightness={default_brightness:.2f} (GPIO pins R:{red_pin} G:{green_pin} B:{blue_pin})")
+
         self._is_initialized = False
         self._lock = Lock()
 
@@ -200,6 +203,10 @@ class RGBLEDController(IndicatorLightsProtocol):
                     self._red_led.value = scaled.red / 255.0
                     self._green_led.value = scaled.green / 255.0
                     self._blue_led.value = scaled.blue / 255.0
+
+                    logger.info(f"💡 LED color: RGB({color.red}, {color.green}, {color.blue}) → scaled to RGB({scaled.red}, {scaled.green}, {scaled.blue}) at brightness={self._brightness:.2f}")
+                else:
+                    logger.warning(f"⚠️ GPIO_AVAILABLE=False - LED color NOT applied to hardware")
 
                 logger.debug(f"LED color set to RGB({color.red}, {color.green}, {color.blue})")
                 return True
@@ -397,19 +404,39 @@ class RGBLEDController(IndicatorLightsProtocol):
         return await self.set_color(LEDColors.OFF)
 
     async def set_brightness(self, brightness: float) -> bool:
-        """Set global brightness level."""
+        """
+        Set global brightness level and reapply current LED state.
+
+        Args:
+            brightness: New brightness level (0.0-1.0)
+
+        Returns:
+            True if successful, False otherwise
+        """
         if not 0.0 <= brightness <= 1.0:
             logger.warning(f"Invalid brightness {brightness}, must be 0.0-1.0")
             return False
 
+        old_brightness = self._brightness
+
         with self._lock:
             self._brightness = brightness
 
-        # Reapply current color with new brightness
-        if self._current_animation == LEDAnimation.SOLID:
-            return await self.set_color(self._current_color)
+        logger.info(f"💡 LED brightness changed: {old_brightness:.1%} → {brightness:.1%}")
 
-        logger.debug(f"LED brightness set to {brightness:.1%}")
+        # Reapply current state with new brightness
+        if self._current_animation == LEDAnimation.SOLID:
+            # For solid color, just reapply
+            return await self.set_color(self._current_color)
+        elif self._current_animation != LEDAnimation.SOLID:
+            # For animations, restart the animation with new brightness
+            logger.info(f"Restarting animation {self._current_animation.value} with new brightness")
+            return await self.set_animation(
+                self._current_color,
+                self._current_animation,
+                self._animation_speed
+            )
+
         return True
 
     def is_initialized(self) -> bool:

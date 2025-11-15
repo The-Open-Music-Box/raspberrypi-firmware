@@ -26,13 +26,17 @@ class MockLEDController(IndicatorLightsProtocol):
     for verification in tests.
     """
 
-    def __init__(self):
-        """Initialize mock LED controller."""
+    def __init__(self, default_brightness: float = 1.0):
+        """Initialize mock LED controller.
+
+        Args:
+            default_brightness: Initial brightness (0.0-1.0)
+        """
         self._is_initialized = False
         self._current_color = LEDColors.OFF
         self._current_animation = LEDAnimation.SOLID
         self._animation_speed = 1.0
-        self._brightness = 1.0
+        self._brightness = default_brightness
         self._lock = Lock()
 
         # Operation tracking for tests
@@ -71,8 +75,17 @@ class MockLEDController(IndicatorLightsProtocol):
         with self._lock:
             self._current_color = color
             self._current_animation = LEDAnimation.SOLID
-            self._operations.append(("set_color", {"color": color.to_tuple()}))
-            logger.info(f"🧪 Mock LED color set to RGB{color.to_tuple()}")
+            # Apply brightness scaling for realistic simulation
+            scaled = color.scaled(self._brightness)
+            self._operations.append(("set_color", {
+                "color": color.to_tuple(),
+                "scaled_color": scaled.to_tuple(),
+                "brightness": self._brightness
+            }))
+            logger.info(
+                f"🧪 Mock LED color set to RGB{color.to_tuple()} "
+                f"(scaled to RGB{scaled.to_tuple()} at {self._brightness:.1%} brightness)"
+            )
             return True
 
     async def set_animation(
@@ -90,17 +103,22 @@ class MockLEDController(IndicatorLightsProtocol):
             self._current_color = color
             self._current_animation = animation
             self._animation_speed = speed
+            # Apply brightness scaling for realistic simulation
+            scaled = color.scaled(self._brightness)
             self._operations.append((
                 "set_animation",
                 {
                     "color": color.to_tuple(),
+                    "scaled_color": scaled.to_tuple(),
                     "animation": animation.value,
-                    "speed": speed
+                    "speed": speed,
+                    "brightness": self._brightness
                 }
             ))
             logger.info(
                 f"🧪 Mock LED animation set: {animation.value} at {speed}x speed, "
-                f"color RGB{color.to_tuple()}"
+                f"color RGB{color.to_tuple()} "
+                f"(scaled to RGB{scaled.to_tuple()} at {self._brightness:.1%} brightness)"
             )
             return True
 

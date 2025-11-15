@@ -41,9 +41,13 @@ class LEDControllerFactory:
         """
         use_mock = os.getenv("USE_MOCK_HARDWARE", "false").lower() == "true"
 
+        # Get brightness from config
+        brightness = hardware_config.led_default_brightness
+        logger.info(f"💡 LEDControllerFactory: Creating controller with brightness={brightness:.2f} from hardware_config")
+
         if use_mock:
             logger.info("🧪 Creating mock LED controller (USE_MOCK_HARDWARE=true)")
-            return MockLEDController()
+            return MockLEDController(default_brightness=brightness)
 
         # Try to create real GPIO controller
         try:
@@ -52,12 +56,13 @@ class LEDControllerFactory:
                 logger.warning(
                     "⚠️ LED GPIO pins not configured, falling back to mock controller"
                 )
-                return MockLEDController()
+                return MockLEDController(default_brightness=brightness)
 
             controller = RGBLEDController(
                 red_pin=hardware_config.gpio_led_red,
                 green_pin=hardware_config.gpio_led_green,
-                blue_pin=hardware_config.gpio_led_blue
+                blue_pin=hardware_config.gpio_led_blue,
+                default_brightness=brightness
             )
 
             logger.info(
@@ -74,24 +79,28 @@ class LEDControllerFactory:
                 f"⚠️ Failed to create real LED controller: {e}, "
                 f"falling back to mock"
             )
-            return MockLEDController()
+            return MockLEDController(default_brightness=brightness)
 
     @staticmethod
-    def create_mock_controller() -> MockLEDController:
+    def create_mock_controller(default_brightness: float = 1.0) -> MockLEDController:
         """
         Create mock LED controller for testing.
+
+        Args:
+            default_brightness: Default brightness level (0.0-1.0), defaults to 1.0
 
         Returns:
             Mock LED controller instance
         """
         logger.info("🧪 Creating mock LED controller (explicit)")
-        return MockLEDController()
+        return MockLEDController(default_brightness=default_brightness)
 
     @staticmethod
     def create_real_controller(
         red_pin: int,
         green_pin: int,
-        blue_pin: int
+        blue_pin: int,
+        default_brightness: float
     ) -> RGBLEDController:
         """
         Create real RGB LED controller with specific pins.
@@ -100,6 +109,7 @@ class LEDControllerFactory:
             red_pin: GPIO pin for red channel
             green_pin: GPIO pin for green channel
             blue_pin: GPIO pin for blue channel
+            default_brightness: Default brightness level (0.0-1.0)
 
         Returns:
             Real RGB LED controller instance
@@ -111,5 +121,6 @@ class LEDControllerFactory:
         return RGBLEDController(
             red_pin=red_pin,
             green_pin=green_pin,
-            blue_pin=blue_pin
+            blue_pin=blue_pin,
+            default_brightness=default_brightness
         )
