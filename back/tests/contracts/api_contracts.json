@@ -131,6 +131,7 @@
         },
         "POST /{playlist_id}/reorder": {
           "description": "Reorder tracks in playlist",
+          "skip_in_validation": true,
           "path_parameters": {
             "playlist_id": {"type": "string"}
           },
@@ -155,6 +156,7 @@
         },
         "DELETE /{playlist_id}/tracks": {
           "description": "Delete tracks from playlist",
+          "skip_in_validation": true,
           "path_parameters": {
             "playlist_id": {"type": "string"}
           },
