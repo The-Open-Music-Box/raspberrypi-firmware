@@ -152,12 +152,10 @@ jobs:
         echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
 
         if [ -f test-reports/junit-unit.xml ]; then
-          echo "### Unit Tests" >> $GITHUB_STEP_SUMMARY
-          # Parse JUnit XML for test counts
-          python3 << 'EOF'
+          {
+            echo "### Unit Tests"
+            python3 -c "
 import xml.etree.ElementTree as ET
-import sys
-
 try:
     tree = ET.parse('test-reports/junit-unit.xml')
     root = tree.getroot()
@@ -166,21 +164,22 @@ try:
     errors = root.attrib.get('errors', '0')
     skipped = root.attrib.get('skipped', '0')
     passed = int(tests) - int(failures) - int(errors) - int(skipped)
-
-    print(f"- Total tests: {tests}")
-    print(f"- Passed: {passed}")
-    print(f"- Failed: {failures}")
-    print(f"- Errors: {errors}")
-    print(f"- Skipped: {skipped}")
+    print(f'- Total tests: {tests}')
+    print(f'- Passed: {passed}')
+    print(f'- Failed: {failures}')
+    print(f'- Errors: {errors}')
+    print(f'- Skipped: {skipped}')
 except Exception as e:
-    print(f"Could not parse unit test results: {e}")
-EOF
-        fi >> $GITHUB_STEP_SUMMARY
+    print(f'Could not parse unit test results: {e}')
+"
+          } >> $GITHUB_STEP_SUMMARY
+        fi
 
         if [ -f test-reports/junit-contracts.xml ]; then
+          {
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Contract Tests" >> $GITHUB_STEP_SUMMARY
-          python3 << 'EOF'
+          python3 -c "
 import xml.etree.ElementTree as ET
 import sys
 
@@ -200,13 +199,14 @@ try:
     print(f"- Skipped: {skipped}")
 except Exception as e:
     print(f"Could not parse contract test results: {e}")
-EOF
-        fi >> $GITHUB_STEP_SUMMARY
+"
+        } >> $GITHUB_STEP_SUMMARY
 
         if [ -f test-reports/coverage-unit.json ]; then
+          {
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
-          python3 << 'EOF'
+          python3 -c "
 import json
 
 try:
@@ -216,14 +216,15 @@ try:
     print(f"- Unit test coverage: {coverage:.1f}%")
 except Exception as e:
     print(f"Could not parse coverage data: {e}")
-EOF
-        fi >> $GITHUB_STEP_SUMMARY
+"
+        } >> $GITHUB_STEP_SUMMARY
 
         # Integration test results - WebSocket
         if [ -f test-reports/junit-integration-websocket.xml ]; then
+          {
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Integration Tests - WebSocket" >> $GITHUB_STEP_SUMMARY
-          python3 << 'EOF'
+          python3 -c "
 import xml.etree.ElementTree as ET
 import sys
 
@@ -243,14 +244,15 @@ try:
     print(f"- Skipped: {skipped}")
 except Exception as e:
     print(f"Could not parse WebSocket integration test results: {e}")
-EOF
-        fi >> $GITHUB_STEP_SUMMARY
+"
+        } >> $GITHUB_STEP_SUMMARY
 
         # Integration test results - E2E
         if [ -f test-reports/junit-integration-e2e.xml ]; then
+          {
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Integration Tests - E2E" >> $GITHUB_STEP_SUMMARY
-          python3 << 'EOF'
+          python3 -c "
 import xml.etree.ElementTree as ET
 import sys
 
@@ -270,8 +272,8 @@ try:
     print(f"- Skipped: {skipped}")
 except Exception as e:
     print(f"Could not parse E2E integration test results: {e}")
-EOF
-        fi >> $GITHUB_STEP_SUMMARY
+"
+        } >> $GITHUB_STEP_SUMMARY
 
     - name: Start backend server
       run: |
