@@ -24,10 +24,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+    # Python 3.13 is pre-installed on self-hosted runner
+    # - name: Set up Python
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
