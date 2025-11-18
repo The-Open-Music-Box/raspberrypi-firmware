@@ -1,8 +1,22 @@
 # TheOpenMusicBox - Unified Deployment Guide
 
-## 🚀 Quick Start
+## End User Installation
 
-The new `deploy.sh` script replaces the old `sync_tmbdev.sh` workflow with a unified deployment system that handles both production and development environments.
+The simplest way to install TheOpenMusicBox on a fresh Raspberry Pi:
+
+```bash
+# Download, extract and install in one command
+wget -qO- https://github.com/The-Open-Music-Box/raspberrypi-firmware/releases/latest/download/tomb.tar.gz | tar -xz && cd tomb && sudo ./setup.sh
+sudo reboot
+```
+
+The `setup.sh` script handles everything: apt packages, WM8960 audio driver (via DKMS), Python venv, and systemd service.
+
+---
+
+## 🚀 Developer Deployment
+
+For developers working on the codebase, the `deploy.sh` script replaces the old `sync_tmbdev.sh` workflow with a unified deployment system that handles both production and development environments.
 
 ### Basic Usage
 
@@ -20,7 +34,7 @@ The new `deploy.sh` script replaces the old `sync_tmbdev.sh` workflow with a uni
 ./deploy.sh --test-only
 
 # Monitor remote server
-./deploy.sh --monitor tomb
+./deploy.sh --monitor your-rpi
 ```
 
 ## 📋 Available Modes
@@ -109,7 +123,6 @@ The script automatically manages SSH targets:
 ```
 
 SSH configuration is stored in:
-- **SSH Settings**: `sync_tmbdev.config`
 - **Last Target**: `.deploy_config` (auto-created)
 
 
@@ -119,7 +132,7 @@ Real-time log monitoring:
 
 ```bash
 # Monitor remote server
-./deploy.sh --monitor tomb
+./deploy.sh --monitor your-rpi
 
 # Monitor specific server
 ./deploy.sh --monitor admin@192.168.1.100
@@ -134,13 +147,13 @@ Real-time log monitoring:
 ### Complete Production Deployment
 ```bash
 # Full production deployment with monitoring
-./deploy.sh --prod tomb
+./deploy.sh --prod your-rpi
 
 # Production deployment without monitoring
-./deploy.sh --prod tomb --no-monitor
+./deploy.sh --prod your-rpi --no-monitor
 
 # Verbose production deployment
-./deploy.sh --prod tomb --verbose
+./deploy.sh --prod your-rpi --verbose
 ```
 
 ### Development Workflow
@@ -179,46 +192,19 @@ cd back && ./run_tests.sh --business-logic --quiet
 ## 📁 File Structure
 
 ```
-tomb-rpi/
-├── deploy.sh                    # ⭐ New unified deployment script
-├── sync_tmbdev.sh              # 🔶 Legacy (still works)
-├── sync_tmbdev.config          # SSH configuration
+rpi-firmware/
+├── deploy.sh                    # Unified deployment script
 ├── .deploy_config              # Auto-generated last SSH target
 ├── back/
 │   ├── start_app.py            # Production server starter
 │   ├── start_dev.py            # Development server starter
 │   └── run_tests.sh            # Enhanced test runner (78+ tests)
 └── release_dev/                # Generated deployment package
-    └── tomb-rpi/
+    └── tomb/
         ├── app/                # Backend + static frontend
         ├── requirements.txt    # Flattened dependencies
         ├── .env               # Configuration file
         └── start_app.py       # Server starter
-```
-
-## 🔧 Migration from sync_tmbdev.sh
-
-The old workflow still works, but the new `deploy.sh` provides:
-
-| Feature | sync_tmbdev.sh | deploy.sh |
-|---------|----------------|-----------|
-| Test Coverage | ❌ None | ✅ 78+ tests |
-| SSH Management | ⚠️ Manual | ✅ Automatic |
-| Server Restart | ❌ Manual | ✅ Automatic |
-| Health Checks | ❌ None | ✅ Automatic |
-| Log Monitoring | ❌ Manual | ✅ Automatic |
-| Dev Environment | ❌ None | ✅ Integrated |
-
-### Simple Migration
-```bash
-# Old way
-./sync_tmbdev.sh
-ssh tomb
-sudo systemctl restart app.service
-sudo journalctl -fu app.service
-
-# New way
-./deploy.sh --prod tomb
 ```
 
 ## 🛠️ Troubleshooting
@@ -237,11 +223,8 @@ cd back && ./run_tests.sh --business-logic
 
 ### SSH Issues
 ```bash
-# Verify SSH configuration
-cat sync_tmbdev.config
-
 # Test SSH connection manually
-ssh -i ~/.ssh/musicbox_key tomb
+ssh -i ~/.ssh/your-ssh-key your-rpi
 
 # Override SSH target
 ./deploy.sh --prod admin@new-server.com
@@ -253,7 +236,7 @@ ssh -i ~/.ssh/musicbox_key tomb
 ./deploy.sh --build-only --verbose
 
 # Monitor server status
-./deploy.sh --monitor tomb
+./deploy.sh --monitor your-rpi
 ```
 
 ### Frontend Build Issues

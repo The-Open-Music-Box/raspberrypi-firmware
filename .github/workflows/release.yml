@@ -117,19 +117,13 @@ jobs:
 
             ### Quick install (always latest)
             ```bash
-            wget https://github.com/${{ github.repository }}/releases/latest/download/tomb.tar.gz
-            tar -xzf tomb.tar.gz
-            cd tomb
-            sudo ./setup.sh
+            wget -qO- https://github.com/${{ github.repository }}/releases/latest/download/tomb.tar.gz | tar -xz && cd tomb && sudo ./setup.sh
             sudo reboot
             ```
 
             ### Specific version
             ```bash
-            wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/tomb-${{ github.ref_name }}.tar.gz
-            tar -xzf tomb-${{ github.ref_name }}.tar.gz
-            cd tomb
-            sudo ./setup.sh
+            wget -qO- https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/tomb-${{ github.ref_name }}.tar.gz | tar -xz && cd tomb && sudo ./setup.sh
             sudo reboot
             ```
 

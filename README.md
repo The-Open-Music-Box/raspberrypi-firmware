@@ -171,6 +171,66 @@ Ce guide détaille le processus de déploiement automatisé de l'application **T
 
 ---
 
+## Installation rapide (recommandée)
+
+La méthode la plus simple pour installer The Open Music Box sur un Raspberry Pi fraîchement configuré.
+
+### Prérequis
+
+- Raspberry Pi avec Raspberry Pi OS installé
+- SSH configuré et accès au Pi
+- Connexion internet
+
+### Installation en 2 commandes
+
+```bash
+# Télécharger, extraire et installer (environ 10 minutes)
+wget -qO- https://github.com/The-Open-Music-Box/raspberrypi-firmware/releases/latest/download/tomb.tar.gz | tar -xz && cd tomb && sudo ./setup.sh
+
+# Redémarrer pour activer les drivers audio
+sudo reboot
+```
+
+### Ce que fait setup.sh
+
+Le script d'installation automatise entièrement la configuration:
+
+- **Packages système**: Python 3, FFmpeg, I2C tools, DKMS, etc.
+- **Driver audio WM8960**: Installation complète du driver audio HAT via DKMS
+- **Configuration audio**: ALSA et service wm8960-soundcard
+- **Environnement Python**: Création du venv et installation des dépendances
+- **Service systemd**: Configuration et activation de `app.service`
+- **Permissions**: Configuration correcte des droits d'accès
+
+### Vérification post-installation
+
+Après le redémarrage:
+
+```bash
+# Vérifier que le service est actif
+sudo systemctl status app.service
+
+# Tester l'audio
+aplay /usr/share/sounds/alsa/Front_Center.wav
+```
+
+L'interface web est accessible sur `http://[IP_DU_PI]:5004`
+
+### Télécharger une version spécifique
+
+Pour installer une version particulière au lieu de la dernière:
+
+```bash
+# Remplacer v0.5.3 par la version souhaitée
+wget https://github.com/The-Open-Music-Box/raspberrypi-firmware/releases/download/v0.5.3/tomb-v0.5.3.tar.gz
+tar -xzf tomb-v0.5.3.tar.gz
+cd tomb
+sudo ./setup.sh
+sudo reboot
+```
+
+---
+
 ## 1. Création de la carte SD
 
 ### Étape 1: Installer Raspberry Pi Imager
@@ -662,6 +722,7 @@ Pour approfondir vos connaissances sur l'architecture et le développement:
 
 - **[Guide développeur](documentation/developer-guide.md)**: Workflows et conventions de code
 - **[Deploy Guide](DEPLOY_GUIDE.md)**: Guide de déploiement avancé
+- **[CI/CD et Releases](documentation/ci-cd-and-releases.md)**: Configuration du runner self-hosted et workflow de release
 
 ### Ressources utiles
 

@@ -27,7 +27,7 @@ readonly NC='\033[0m' # No Color
 
 # Configuration files
 readonly PROJECT_ROOT="$(dirname "$(realpath "$0")")"
-readonly CONFIG_FILE="${PROJECT_ROOT}/sync_tmbdev.config"
+readonly CONFIG_FILE="${PROJECT_ROOT}/deploy.config"
 readonly VERSION_FILE="${PROJECT_ROOT}/VERSION"
 
 # Read app version

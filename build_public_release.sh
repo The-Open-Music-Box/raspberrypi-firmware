@@ -27,7 +27,7 @@ echo -e "${BOLD}${BLUE}🚀 Building public release package${NC}"
 readonly PROJECT_ROOT="$(dirname "$(realpath "$0")")"
 
 # Load configuration
-CONFIG_FILE="${PROJECT_ROOT}/sync_tmbdev.config"
+CONFIG_FILE="${PROJECT_ROOT}/deploy.config"
 if [ ! -f "$CONFIG_FILE" ]; then
     echo -e "${RED}❌ Configuration file not found: $CONFIG_FILE${NC}"
     exit 1
