@@ -33,6 +33,7 @@ types-requests>=2.31.0
 
 # Security scanning
 bandit>=1.7.0
+pip-audit>=2.0.0
 
 # Dead code detection
 vulture>=2.0
