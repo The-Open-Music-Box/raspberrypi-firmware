@@ -54,6 +54,9 @@ prospector[with_everything]>=1.10.0
 # Historical complexity tracking
 wily>=1.20.0
 
+# Mutation testing (requires Python < 3.14)
+# mutmut>=3.0.0
+
 # FastAPI testing
 fastapi[test]>=0.100.0
 

@@ -128,3 +128,14 @@ DEP001 = [
 ]
 # DEP002: Unused dependencies (used indirectly)
 DEP002 = ["uvicorn", "python-multipart", "aiohttp"]
+
+# SonarCloud configuration (requires external setup)
+# 1. Create account at sonarcloud.io
+# 2. Import GitHub repository
+# 3. Add SONAR_TOKEN secret to GitHub repository
+# 4. Create sonar-project.properties:
+#    sonar.projectKey=The-Open-Music-Box_raspberrypi-firmware
+#    sonar.organization=the-open-music-box
+#    sonar.sources=app/src
+#    sonar.python.coverage.reportPaths=coverage.xml
+#    sonar.python.version=3.11
