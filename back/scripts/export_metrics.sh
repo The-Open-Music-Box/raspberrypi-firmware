@@ -127,6 +127,31 @@ average_complexity $AVG_COMPLEXITY
 EOF
 
 echo ""
+echo "--- pytest (Test Coverage) ---"
+# Run pytest with coverage and extract percentage
+COVERAGE_OUTPUT=$(pytest app/tests --cov=app/src --cov-report=term-missing --no-header -q 2>/dev/null || true)
+TEST_COVERAGE=$(echo "$COVERAGE_OUTPUT" | grep "TOTAL" | awk '{print $NF}' | tr -d '%' || echo "0")
+if [ -z "$TEST_COVERAGE" ] || [ "$TEST_COVERAGE" = "0" ]; then
+    # Try alternative format
+    TEST_COVERAGE=$(echo "$COVERAGE_OUTPUT" | grep -oP '\d+(?=%)' | tail -1 || echo "0")
+fi
+echo "test_coverage $TEST_COVERAGE"
+cat >> "$METRICS_FILE" << EOF
+# HELP test_coverage_percent Test coverage percentage from pytest-cov
+# TYPE test_coverage_percent gauge
+test_coverage_percent $TEST_COVERAGE
+EOF
+
+# Count tests
+TESTS_TOTAL=$(pytest app/tests --collect-only -q 2>/dev/null | tail -1 | grep -oP '^\d+' || echo "0")
+echo "tests_total $TESTS_TOTAL"
+cat >> "$METRICS_FILE" << EOF
+# HELP tests_total Total number of tests
+# TYPE tests_total gauge
+tests_total $TESTS_TOTAL
+EOF
+
+echo ""
 echo "--- Source Lines of Code ---"
 SLOC=$(find app/src -name "*.py" -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
 echo "source_lines_of_code $SLOC"
