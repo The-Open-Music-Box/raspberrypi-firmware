@@ -400,6 +400,7 @@ class NfcApplicationService:
                         # This ensures we exit the blue pulse mode and return to normal state
                         # Schedule the cleanup to happen after the green flash event completes
                         import asyncio
+
                         async def cleanup_association_mode_led():
                             await asyncio.sleep(2.5)  # Wait for green flash to complete (2s event + 0.5s buffer)
                             if self._led_event_handler:

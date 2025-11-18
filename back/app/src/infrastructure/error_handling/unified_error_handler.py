@@ -387,7 +387,7 @@ class UnifiedErrorHandler:
 
         # Remove oldest records if we exceed the limit
         if len(self._error_records) > self._max_records:
-            self._error_records = self._error_records[-self._max_records :]
+            self._error_records = self._error_records[-self._max_records:]
 
     def _log_error(self, record: ErrorRecord) -> None:
         """Log the error with appropriate level."""

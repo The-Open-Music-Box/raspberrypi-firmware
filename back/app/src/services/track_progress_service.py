@@ -77,8 +77,8 @@ class TrackProgressService:
 
         self._running = True
         self._task = asyncio.create_task(self._progress_loop())
-        logger.info(f"✅ TrackProgressService STARTED - interval: {self.interval}s (should emit every {int(self.interval*1000)}ms)",
-        )
+        logger.info(f"✅ TrackProgressService STARTED - interval: {self.interval}s (should emit every {int(self.interval * 1000)}ms)",
+                    )
 
     @handle_service_errors("track_progress")
     async def stop(self):
@@ -107,7 +107,7 @@ class TrackProgressService:
     async def _progress_loop(self):
         """Main loop for periodic progress emission with error recovery."""
         logger.info("🔄 TrackProgressService loop STARTED - will emit position events"
-        )
+                    )
 
         loop_counter = 0
         last_playing_state = False
@@ -138,7 +138,7 @@ class TrackProgressService:
             # Log every 100 loops ONLY if playing (reduce logging frequency)
             if loop_counter % 100 == 0 and last_playing_state:
                 logger.debug(f"📍 Progress loop alive - iteration {loop_counter}, errors: {self._error_count}",
-                )
+                             )
 
             # Sleep for the configured interval (critical!)
             await asyncio.sleep(self.interval)
@@ -150,12 +150,12 @@ class TrackProgressService:
             # Enhanced diagnostic: Check service state
             if not self._running:
                 logger.warning("❌ TrackProgressService not running - no position updates will be sent",
-                )
+                               )
                 return
 
             if not self.state_manager:
                 logger.error("❌ No StateManager available - cannot broadcast position updates",
-                )
+                             )
                 return
 
             if not self.audio_controller:
@@ -171,7 +171,7 @@ class TrackProgressService:
             if self._emission_attempt_count % self._diagnostic_reset_interval == 0:
                 self._reset_diagnostic_attributes(preserve_counters=True)
                 logger.info(f"🧹 Diagnostic attributes reset at iteration {self._emission_attempt_count}",
-                )
+                            )
 
             # Handle both sync and async get_playback_status
             if asyncio.iscoroutinefunction(self.audio_controller.get_playback_status):
@@ -188,7 +188,7 @@ class TrackProgressService:
             if not status:
                 if not hasattr(self, "_no_status_logged"):
                     logger.warning(f"⚠️️ No status returned from audio controller (attempt #{self._emission_attempt_count})",
-                    )
+                                   )
                     self._no_status_logged = True
                 return
 
@@ -236,21 +236,21 @@ class TrackProgressService:
             if not self._validate_position_data(current_time, duration, track_id):
                 if not hasattr(self, "_validation_fail_logged"):
                     logger.warning(f"❌ VALIDATION FAILED (attempt #{self._emission_attempt_count}): time={current_time}, duration={duration}, track_id={track_id}",
-                    )
+                                   )
                     self._validation_fail_logged = True
                 return
 
             # Log first successful validation
             if not hasattr(self, "_first_valid_logged"):
                 logger.info(f"✅ FIRST VALID position: time={current_time:.1f}s, duration={duration:.1f}s, track_id={track_id}, playing={is_playing}",
-                )
+                            )
                 self._first_valid_logged = True
 
             # Use lightweight position update for smooth tracking - already in milliseconds
             # Log first broadcast attempt
             if not hasattr(self, "_first_broadcast_logged"):
                 logger.info(f"📡 FIRST BROADCAST attempt: pos={current_time_ms}ms, track={track_id}, playing={is_playing}",
-                )
+                            )
                 self._first_broadcast_logged = True
             result = await self.state_manager.broadcast_position_update(
                 position_ms=current_time_ms,  # Already in milliseconds
@@ -269,7 +269,7 @@ class TrackProgressService:
                 self._throttle_logged = True
             elif result and not hasattr(self, "_broadcast_success_logged"):
                 logger.info(f"✅ FIRST BROADCAST SUCCESS: {result.get('event_type', 'unknown')}",
-                )
+                            )
                 self._broadcast_success_logged = True
 
     def _validate_position_data(self, current_time: float, duration: float, track_id) -> bool:
@@ -329,8 +329,8 @@ class TrackProgressService:
             self._recovery_delay = recovery_delay
 
         logger.info(f"Error handling configured: max_errors={self._max_consecutive_errors}, "
-            f"recovery_delay={self._recovery_delay}s",
-        )
+                    f"recovery_delay={self._recovery_delay}s",
+                    )
 
     def _reset_diagnostic_attributes(self, preserve_counters: bool = False):
         """Reset diagnostic tracking attributes to prevent memory accumulation.
@@ -387,7 +387,7 @@ class TrackProgressService:
         track_changed = track_number != self._last_track_number or track_id != self._last_track_id
         if track_changed and track_number is not None:
             logger.info(f"🎵 Track change detected: {self._last_track_number} → {track_number}",
-            )
+                        )
             # Get full track info from audio controller
             if hasattr(self.audio_controller, "_audio_service"):
                 track_info = self.audio_controller._audio_service.get_current_track_info()
@@ -401,7 +401,7 @@ class TrackProgressService:
                     immediate=True,  # Send immediately for UI responsiveness
                 )
                 logger.info(f"✅ Broadcasted state:track event for '{track_info.get('title', 'Unknown')}'",
-                )
+                            )
 
     async def _check_for_track_end(self, current_time: float, duration: float, is_playing: bool):
         """Check if track has ended and trigger auto-advance if appropriate."""
@@ -432,7 +432,7 @@ class TrackProgressService:
 
                 self._last_track_end_time = current_timestamp
                 logger.info(f"🔚 Track end detected: {current_time:.1f}s >= {duration:.1f}s"
-                )
+                            )
 
                 # Trigger auto-advance via controller
                 if self._controller_type == "PlaybackCoordinator":

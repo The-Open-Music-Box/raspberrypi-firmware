@@ -116,7 +116,7 @@ class WM8960AudioBackend(BaseAudioBackend):
         if pygame.mixer.get_init():
             init_info = pygame.mixer.get_init()
             logger.info(f"🔊 WM8960: pygame mixer initialized successfully with {init_info} (simple default)"
-            )
+                        )
             return True
         else:
             logger.error("🔊 WM8960: pygame mixer failed to initialize")
@@ -151,7 +151,7 @@ class WM8960AudioBackend(BaseAudioBackend):
                                 # Use plughw for better compatibility with different audio formats
                                 device = f"plughw:{card_part},0"
                                 logger.info(f"🔊 WM8960: Detected audio device: {device}"
-                                )
+                                            )
                                 return device
                             else:
                                 # Fallback: try card name format
@@ -160,7 +160,7 @@ class WM8960AudioBackend(BaseAudioBackend):
                                 )  # Get card name
                                 device = f"hw:{card_name},0"
                                 logger.info(f"🔊 WM8960: Using card name format: {device}"
-                                )
+                                            )
                                 return device
             # Fallback: look for any card with wm8960 in name and extract number
             for line in output.split("\n"):
@@ -248,7 +248,7 @@ class WM8960AudioBackend(BaseAudioBackend):
                 return False
             if not pygame.mixer.get_init():
                 logger.warning("🔊 WM8960: pygame mixer not initialized, attempting to initialize",
-                )
+                               )
                 if not self._init_pygame_simple():
                     logger.error("🔊 WM8960: Failed to initialize pygame mixer")
                     return False
@@ -378,11 +378,11 @@ class WM8960AudioBackend(BaseAudioBackend):
             # Validate position - should not be negative or extremely large
             if position < 0:
                 logger.warning(f"🔊 WM8960: Negative position detected ({position:.2f}s), resetting to 0",
-                )
+                               )
                 return 0.0
             elif position > 7200:  # More than 2 hours is suspicious
                 logger.warning(f"🔊 WM8960: Suspiciously large position ({position:.2f}s), might indicate timing issue",
-                )
+                               )
             return position
 
     @handle_errors("set_position")
@@ -423,13 +423,13 @@ class WM8960AudioBackend(BaseAudioBackend):
                         # Assume seeking worked for now - pygame doesn't give us feedback
                         seek_success = True
                         logger.info(f"🔊 WM8960: Attempted seek to {position:.1f}s using play(start=)",
-                        )
+                                    )
                     else:
                         # No start parameter available
                         pygame.mixer.music.play()
                         seek_success = False
                         logger.warning("🔊 WM8960: pygame.mixer.music.play() doesn't support start parameter",
-                        )
+                                       )
                 except Exception as e:
                     # Fallback to simple play without seeking
                     pygame.mixer.music.play()

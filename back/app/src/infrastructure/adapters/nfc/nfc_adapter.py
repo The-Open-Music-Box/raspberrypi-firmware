@@ -33,6 +33,7 @@ class NFCHardwareInterface(Protocol):
         """Cleanup NFC hardware resources."""
         ...
 
+
 logger = get_logger(__name__)
 
 
@@ -98,7 +99,7 @@ class NFCHandlerAdapter:
         """
         self._tag_callbacks.append(callback)
         logger.debug(f"✅ Tag detected callback registered (total: {len(self._tag_callbacks)})",
-        )
+                     )
 
     def set_tag_removed_callback(self, callback: Callable[[], None]) -> None:
         """Set callback for when a tag is removed.
@@ -108,7 +109,7 @@ class NFCHandlerAdapter:
         """
         self._tag_removed_callbacks.append(callback)
         logger.debug(f"✅ Tag removed callback registered (total: {len(self._tag_removed_callbacks)})",
-        )
+                     )
 
     async def start_detection(self) -> None:
         """Start NFC tag detection - compatibility method for NfcApplicationService."""

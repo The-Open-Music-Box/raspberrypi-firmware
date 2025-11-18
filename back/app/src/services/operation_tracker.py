@@ -115,7 +115,7 @@ class OperationTracker:
             total_cleaned = cleaned_ops + cleaned_results
             if total_cleaned > 0:
                 logger.debug(f"Cleaned up {cleaned_ops} operations and {cleaned_results} results",
-                )
+                             )
 
             return total_cleaned
 

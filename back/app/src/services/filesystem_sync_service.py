@@ -242,8 +242,8 @@ class FilesystemSyncService:
                 logger.warning("Skipping new playlists due to timeout")
             elapsed = time.time() - start_time
             logger.info(f"Playlist sync completed in {elapsed:.2f}s",
-                extra=stats,
-            )
+                        extra=stats,
+                        )
             return stats
 
     @handle_service_errors("filesystem_sync")
@@ -260,7 +260,7 @@ class FilesystemSyncService:
             # Check global timeout
             if time.time() - scan_start > self.SYNC_FOLDER_TIMEOUT:
                 logger.warning("Folder scan timeout, processing items scanned so far",
-                )
+                               )
                 break
             if item.is_dir():
                 # Relative path with respect to the parent of the uploads folder
@@ -271,7 +271,7 @@ class FilesystemSyncService:
                     # Timeout per folder
                     if time.time() - folder_scan_start > self.SYNC_OPERATION_TIMEOUT:
                         logger.warning(f"Partial scan of {rel_path} due to timeout",
-                        )
+                                       )
                         break
                     if f.is_file() and f.suffix.lower() in self.SUPPORTED_AUDIO_EXTENSIONS:
                         audio_files.append(f)
@@ -354,7 +354,7 @@ class FilesystemSyncService:
             if folder_name in db_playlists_by_title:
                 existing_playlist = db_playlists_by_title[folder_name]
                 logger.info(f"Playlist already exists with name '{folder_name}' (ID: {existing_playlist.get('id')}), skipping duplicate creation",
-                )
+                            )
                 continue
 
             # If the playlist doesn't exist in the database, create it
@@ -366,7 +366,7 @@ class FilesystemSyncService:
                         stats["playlists_added"] += 1
                         stats["tracks_added"] += len(audio_files)
                         logger.info(f"Created new playlist from folder: {path} (ID: {playlist_id})",
-                        )
+                                    )
                 except (OSError, IOError, PermissionError, ValueError) as e:
                     logger.error(f"Error creating playlist from folder {path}: {str(e)}",
-                    )
+                                 )

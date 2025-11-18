@@ -22,9 +22,12 @@ from app.src.infrastructure.error_handling.unified_error_handler import (
 )
 
 # AppError is now replaced by the domain unified error handler
+
+
 class AppError(Exception):
     """Deprecated - use domain error handling instead."""
     pass
+
 
 __all__ = [
     "AppError",

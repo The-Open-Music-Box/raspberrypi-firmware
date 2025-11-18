@@ -68,7 +68,7 @@ class YouTubeDownloader:
                 percentage = 0
             else:  # Not enough info to calculate percentage reliably yet
                 logger.debug(f"Progress hook: Not enough data for percentage (total: {total}, downloaded: {downloaded_bytes})",
-                )
+                             )
                 return
         else:
             percentage = int((downloaded_bytes / total) * 100)
@@ -210,7 +210,7 @@ class YouTubeDownloader:
             files_output_folder = abs_playlist_folder / "files"
             files_output_folder.mkdir(parents=True, exist_ok=True)
             logger.debug(f"Ensured output subfolder exists: {files_output_folder}",
-            )
+                         )
 
             # Notify that we're preparing to download
             if self.progress_callback and self.main_loop:
@@ -274,7 +274,7 @@ class YouTubeDownloader:
             # Scan the 'files' subfolder for MP3 files
             mp3_files = list(files_output_folder.glob("*.mp3"))
             logger.info(f"Found {len(mp3_files)} MP3 files in {files_output_folder}",
-            )
+                        )
 
             # Get chapters or build a track list
             chapters = info.get("chapters", [])
@@ -287,7 +287,7 @@ class YouTubeDownloader:
                 entries = info.get("entries", [])
                 if entries:
                     logger.debug(f"Playlist '{info.get('title', 'Unknown')}' (ID: {info.get('id', 'Unknown')}): No explicit chapters found. Processing {len(entries)} entries as individual chapters.",
-                    )
+                                 )
 
                     # Try to match entries with files
                     for idx, entry in enumerate(entries, 1):
@@ -311,7 +311,7 @@ class YouTubeDownloader:
                         else:
                             # Fallback if no match found
                             logger.warning(f"Could not find matching file for playlist entry '{entry_title}'. Using entry title as filename basis.",
-                            )
+                                           )
                             processed_files_info.append(
                                 {
                                     "title": entry_title,
@@ -370,7 +370,7 @@ class YouTubeDownloader:
                         )
                     else:
                         logger.warning(f"Could not find matching file for chapter '{chapter_title}'. Using chapter title as filename basis: {str(Path('files') / f'{chapter_title}.mp3')}",
-                        )
+                                       )
                         processed_files_info.append(
                             {
                                 "title": chapter_title,
@@ -434,7 +434,7 @@ class YouTubeDownloader:
                     )
                 except Exception as cb_e:
                     logger.error(f"Error sending final error notification: {cb_e}",
-                    )
+                                 )
             raise
 
     async def download(self, url: str) -> Dict[str, Any]:
@@ -499,5 +499,5 @@ class YouTubeDownloader:
                     await self.progress_callback(error_data)
                 except Exception as cb_e:
                     logger.error(f"Error sending async error notification: {cb_e}",
-                    )
+                                 )
             raise

@@ -106,7 +106,7 @@ class UploadController:
         session_id = session.get("session_id")
 
         logger.info(f"Upload session created: {session_id} for playlist {playlist_id}"
-        )
+                    )
         return {
             "session_id": session_id,
             "chunk_size": chunk_size,
@@ -182,13 +182,13 @@ class UploadController:
 
             if session.get("status") != "completed":
                 logger.error(f"❌ Upload not completed yet. Current status: {session.get('status')}",
-                )
+                             )
                 return {"status": "error", "message": "Upload not completed yet"}
 
             # Get completion result (includes assembled file path and metadata)
             completion_data = session.get("completion_data", {})
             logger.info(f"📦 Completion data status: {completion_data.get('completion_status')}",
-            )
+                        )
 
             if completion_data.get("completion_status") != "success":
                 logger.error(f"❌ Upload completion failed: {completion_data}")
@@ -224,7 +224,7 @@ class UploadController:
             }
 
             logger.info(f"✅ Upload finalized, track ready for domain integration: {track_entry.get('title')}",
-            )
+                        )
 
             # Emit completion event
             await self.socketio.emit(

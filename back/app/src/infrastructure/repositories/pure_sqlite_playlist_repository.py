@@ -20,6 +20,7 @@ from app.src.services.error.unified_error_decorator import handle_repository_err
 
 logger = logging.getLogger(__name__)
 
+
 def _handle_repository_errors(entity_name: str):
     return handle_repository_errors(entity_name)
 
@@ -517,13 +518,13 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                 )
             else:
                 logger.error(f"❌ Failed to update track numbers for playlist {playlist_id}"
-                )
+                             )
 
             return result
 
         except Exception as e:
             logger.error(f"❌ Error updating track numbers for playlist {playlist_id}: {e}"
-            )
+                         )
             return False
 
     def _build_playlist_from_rows(self, playlist_row, track_rows) -> Playlist:

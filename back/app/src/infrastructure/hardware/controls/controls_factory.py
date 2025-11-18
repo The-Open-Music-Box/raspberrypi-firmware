@@ -37,8 +37,8 @@ class PhysicalControlsFactory:
         """
         # Check if mock hardware is requested
         use_mock = (
-            os.getenv("USE_MOCK_HARDWARE", "false").lower() == "true" or
-            hardware_config.mock_hardware
+            os.getenv("USE_MOCK_HARDWARE", "false").lower() == "true"
+            or hardware_config.mock_hardware
         )
 
         if use_mock:

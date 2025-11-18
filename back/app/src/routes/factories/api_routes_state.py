@@ -124,10 +124,10 @@ class APIRoutesState:
                 service = self.playlist_routes.progress_service
                 loop.create_task(service.start())
                 logger.info(f"🎵 TrackProgressService started successfully - should emit position events every {int(service.interval * 1000)}ms",
-                )
+                            )
                 # Log service configuration
                 logger.info(f"🔧 TrackProgressService config: interval={service.interval}s, running={service.is_running}",
-                )
+                            )
             else:
                 logger.error("❌ TrackProgressService NOT FOUND in playlist_routes!")
             # Start StateManager cleanup task for periodic maintenance
@@ -137,7 +137,7 @@ class APIRoutesState:
             logger.info("✅ All background services started successfully")
         else:
             logger.warning("Event loop not running, background services will start with app"
-            )
+                           )
         logger.debug("Route initialization completed")
 
 

@@ -100,12 +100,12 @@ class NFCAPIRoutes:
 
                 # Handle contract testing
                 is_test_data = (
-                    not playlist_id or not tag_id or
-                    playlist_id == "test-playlist-id" or
-                    tag_id == "test-tag-id" or
-                    (tag_id and tag_id.startswith("test-tag-")) or
-                    (playlist_id and "Contract-Test-Playlist" in str(playlist_id)) or
-                    (tag_id and "test" in tag_id.lower())
+                    not playlist_id or not tag_id
+                    or playlist_id == "test-playlist-id"
+                    or tag_id == "test-tag-id"
+                    or (tag_id and tag_id.startswith("test-tag-"))
+                    or (playlist_id and "Contract-Test-Playlist" in str(playlist_id))
+                    or (tag_id and "test" in tag_id.lower())
                 )
 
                 if is_test_data:
@@ -205,9 +205,9 @@ class NFCAPIRoutes:
             try:
                 # Handle contract testing
                 is_test_tag = (
-                    not tag_id or
-                    tag_id == "test-tag-id" or
-                    tag_id.startswith("test-tag-")
+                    not tag_id
+                    or tag_id == "test-tag-id"
+                    or tag_id.startswith("test-tag-")
                 )
 
                 if is_test_tag:
@@ -331,10 +331,10 @@ class NFCAPIRoutes:
 
                 # Handle contract testing
                 is_test_scan = (
-                    not playlist_id or
-                    playlist_id == "test-playlist-id" or
-                    (playlist_id and "Contract-Test-Playlist" in str(playlist_id)) or
-                    (client_op_id and client_op_id.startswith("test-"))
+                    not playlist_id
+                    or playlist_id == "test-playlist-id"
+                    or (playlist_id and "Contract-Test-Playlist" in str(playlist_id))
+                    or (client_op_id and client_op_id.startswith("test-"))
                 )
 
                 if is_test_scan:

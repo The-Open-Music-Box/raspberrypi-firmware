@@ -78,14 +78,14 @@ class NfcEventPublisher:
 
         handlers = self._event_handlers.get(event.event_type, [])
         logger.debug(f"📡 Publishing {event.event_type} event to {len(handlers)} handlers"
-        )
+                     )
 
         for handler in handlers:
             try:
                 handler(event)
             except Exception as e:
                 logger.error(f"❌ Error in event handler for {event.event_type}: {e}"
-                )
+                             )
 
     def publish_tag_detected(
         self,

@@ -160,7 +160,6 @@ class PlaylistService:
         logger.info(f"✅ Updated playlist {playlist_id}")
         return await self.get_playlist(playlist_id)
 
-
     @handle_domain_errors(operation_name="delete_playlist")
     async def delete_playlist(self, playlist_id: str) -> bool:
         """Delete a playlist, all its tracks, and filesystem directory.
@@ -501,8 +500,8 @@ class PlaylistService:
 
             # Check if folder corresponds to any playlist (by path or title)
             is_in_db = (
-                folder_name in db_paths or
-                folder_name.lower() in db_titles
+                folder_name in db_paths
+                or folder_name.lower() in db_titles
             )
 
             if not is_in_db:

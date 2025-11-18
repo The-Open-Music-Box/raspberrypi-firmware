@@ -59,6 +59,7 @@ sio = socketio.AsyncServer(
     engineio_logger=False
 )
 
+
 @handle_errors(operation_name="initialize_application", component="main.startup")
 async def _initialize_application(fastapi_app):
     """Initialize the application instance."""
@@ -297,6 +298,7 @@ _fastapi_app.add_middleware(
 # Save reference to original openapi method before overriding
 _original_openapi = _fastapi_app.openapi
 
+
 def custom_openapi():
     """Generate customized OpenAPI schema."""
     if _fastapi_app.openapi_schema:
@@ -307,6 +309,7 @@ def custom_openapi():
     customized_schema = customize_openapi_schema(openapi_schema)
     _fastapi_app.openapi_schema = customized_schema
     return _fastapi_app.openapi_schema
+
 
 _fastapi_app.openapi = custom_openapi
 

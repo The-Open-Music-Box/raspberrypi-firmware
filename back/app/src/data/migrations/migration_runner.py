@@ -47,7 +47,7 @@ class Migration:
                 return self.module.migrate_database(db_path)
             else:
                 logger.error(f"Migration {self.version} missing migrate_database function"
-                )
+                             )
                 return False
         except (ImportError, AttributeError, sqlite3.Error) as e:
             logger.error(f"Migration {self.version} failed: {str(e)}")
@@ -190,7 +190,7 @@ class MigrationRunner:
                 if verified:
                     self._record_migration(migration, True)
                     logger.info(f"Migration {migration.version} completed successfully"
-                    )
+                                )
                 else:
                     self._record_migration(migration, False)
                     logger.error(f"Migration {migration.version} verification failed")

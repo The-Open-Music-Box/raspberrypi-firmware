@@ -80,7 +80,7 @@ class ChunkedUploadService:
 
         if total_size > self.max_file_size:
             raise InvalidFileError(
-                f"File too large. Maximum size: {self.max_file_size/1024/1024}MB"
+                f"File too large. Maximum size: {self.max_file_size / 1024 / 1024}MB"
             )
 
         # Generate a unique session ID
@@ -139,7 +139,7 @@ class ChunkedUploadService:
         # Check if adding this chunk would exceed max file size
         if not self._check_file_size(session["current_size"], chunk_size):
             raise InvalidFileError(
-                f"File too large. Maximum size: {self.max_file_size/1024/1024}MB"
+                f"File too large. Maximum size: {self.max_file_size / 1024 / 1024}MB"
             )
 
         # Save the chunk to the session directory

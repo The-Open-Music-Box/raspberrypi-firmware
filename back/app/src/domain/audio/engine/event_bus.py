@@ -33,7 +33,7 @@ class EventBus(EventBusProtocol):
         if handler in self._subscribers[event_type]:
             self._subscribers[event_type].remove(handler)
             logger.debug(f"Unsubscribed from {event_type.__name__}: {handler.__name__}"
-            )
+                         )
 
     @handle_errors("publish")
     async def publish(self, event: EventType) -> None:
@@ -55,7 +55,7 @@ class EventBus(EventBusProtocol):
                 handler(event)
             self._stats["events_handled"] += 1
         logger.debug(f"Published {event_type.__name__} to {len(subscribers)} subscribers"
-        )
+                     )
 
     def get_subscriber_count(self, event_type: Type[EventType]) -> int:
         """Get number of subscribers for an event type."""

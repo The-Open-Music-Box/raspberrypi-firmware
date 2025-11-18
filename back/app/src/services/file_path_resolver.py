@@ -59,7 +59,7 @@ class FilePathResolver:
                 return path
         # Log all attempted paths for debugging
         logger.warning(f"Track file not found. Attempted paths: {[str(p) for p in possible_paths]}",
-        )
+                       )
         return None
 
     def resolve_multiple_tracks(

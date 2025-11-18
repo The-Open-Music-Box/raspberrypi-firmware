@@ -500,7 +500,7 @@ class ErrorTracker:
 
         # Trim history if too long
         if len(self.error_history) > self.max_history:
-            self.error_history = self.error_history[-self.max_history :]
+            self.error_history = self.error_history[-self.max_history:]
 
     def get_error_stats(self) -> Dict[str, Any]:
         """Get error statistics."""

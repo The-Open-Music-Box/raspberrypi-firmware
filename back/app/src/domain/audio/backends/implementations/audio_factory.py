@@ -38,8 +38,6 @@ def get_audio_backend(
     return _create_audio_backend(playback_subject)
 
 
-
-
 @handle_errors("_create_audio_backend")
 def _create_audio_backend(
     playback_subject: Optional[PlaybackSubject] = None,

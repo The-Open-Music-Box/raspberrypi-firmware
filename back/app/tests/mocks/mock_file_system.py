@@ -292,14 +292,14 @@ class MockFileSystem:
         # Add direct file children
         for file_path in self._files:
             if file_path.startswith(prefix):
-                relative = file_path[len(prefix) :]
+                relative = file_path[len(prefix):]
                 if os.sep not in relative:  # Direct child, not nested
                     contents.append(relative)
 
         # Add direct directory children
         for dir_path in self._directories:
             if dir_path.startswith(prefix) and dir_path != normalized:
-                relative = dir_path[len(prefix) :]
+                relative = dir_path[len(prefix):]
                 if os.sep not in relative:  # Direct child, not nested
                     contents.append(relative)
 

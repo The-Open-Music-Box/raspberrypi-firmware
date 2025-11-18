@@ -90,12 +90,12 @@ class PlayerStateService:
         # Enhanced diagnostic: Log playlist info to debug missing title
         if active_playlist_id and not active_playlist_title:
             logger.warning(f"⚠️ Missing playlist title for ID {active_playlist_id}. playlist_info: {playlist_info}",
-            )
+                           )
             # Try to get title from status fallback
             if status.get("playlist_title"):
                 active_playlist_title = status.get("playlist_title")
                 logger.info(f"✅ Recovered playlist title from status: {active_playlist_title}",
-                )
+                            )
         # Get track information
         active_track_data = playlist_info.get("current_track") if playlist_info else None
         active_track = self._build_track_model(active_track_data) if active_track_data else None
@@ -139,8 +139,8 @@ class PlayerStateService:
             server_seq=server_seq,
         )
         logger.debug(f"Built player state - playing={is_playing}, playlist={active_playlist_id}, "
-            f"track={active_track_id}, position={position_ms}ms",
-        )
+                     f"track={active_track_id}, position={position_ms}ms",
+                     )
         return player_state
 
     async def build_stopped_player_state(self, state_manager=None) -> PlayerStateModel:
@@ -281,7 +281,7 @@ class PlayerStateService:
             if client_op_id:
                 await self.state_manager.send_acknowledgment(client_op_id, True, player_state_dict)
         logger.info(f"Player state broadcasted: {playlist_data.get('title')} (source: {source})",
-        )
+                    )
         return player_state_dict
 
     def _parse_playback_state(self, raw_state: str) -> PlaybackState:

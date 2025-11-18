@@ -161,7 +161,7 @@ class Application:
             logger.debug("Handling NFC tag absence event.")
             if not self._playlist_controller:
                 logger.error("❌ Playlist controller not initialized - cannot handle NFC tag absence event",
-                )
+                             )
                 return
             self._playlist_controller.handle_tag_absence()
         else:
@@ -178,17 +178,17 @@ class Application:
                 uid = tag_data.get("uid")
                 full_data = tag_data  # Pass full dict if available
                 logger.info(f"🎵 Handling NFC tag scanned event (dict): UID={uid}",
-                )
+                            )
             else:
                 uid = tag_data  # Assume it's the UID string
                 logger.info(f"🎵 Handling NFC tag scanned event (string): UID={uid}",
-                )
+                            )
             if uid:
                 # Thread-safe check and capture of playlist controller to avoid race conditions
                 playlist_controller = self._playlist_controller
                 if not playlist_controller:
                     logger.error("❌ Playlist controller not initialized - cannot handle NFC tag scanned event",
-                    )
+                                 )
                     # Show NFC error
                     if led_handler:
                         try:
@@ -299,7 +299,7 @@ class Application:
         # Initialize the NFC hardware handler
         self._nfc_handler = await NfcFactory.create_nfc_handler_adapter(self._nfc_lock)
         logger.info(f"NFC handler initialized: {type(self._nfc_handler).__name__}",
-        )
+                    )
         # Initialize NFC application service using domain architecture
         from app.src.infrastructure.nfc.repositories.nfc_memory_repository import (
             NfcMemoryRepository,
@@ -336,7 +336,7 @@ class Application:
             logger.info("✅ NFC application service started successfully")
         else:
             logger.warning(f"⚠️ NFC service start warning: {start_result.get('message')}"
-            )
+                           )
         # Link with playlist controller if available
         if self._playlist_controller and hasattr(self._playlist_controller, "set_nfc_service"):
             self._playlist_controller.set_nfc_service(self._nfc_app_service)

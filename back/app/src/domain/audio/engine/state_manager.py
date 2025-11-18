@@ -60,7 +60,7 @@ class StateManager(StateManagerProtocol):
         self._playlist_info = playlist_info.copy()
         self._last_updated = time.time()
         logger.debug(f"Playlist info updated: {playlist_info.get('title', 'Unknown')}"
-        )
+                     )
 
     def update_position(self, position_seconds: float) -> None:
         """Update current playback position."""

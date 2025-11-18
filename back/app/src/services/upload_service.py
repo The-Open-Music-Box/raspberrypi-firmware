@@ -104,7 +104,7 @@ class UploadService:
 
         if not await self._check_file_size(file):
             raise InvalidFileError(
-                f"File too large. Maximum size: {self.max_file_size/1024/1024}MB"
+                f"File too large. Maximum size: {self.max_file_size / 1024 / 1024}MB"
             )
 
         # Secure the filename

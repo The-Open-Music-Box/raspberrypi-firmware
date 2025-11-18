@@ -92,7 +92,7 @@ class ClientSubscriptionManager:
             room_count = len(self._client_subscriptions[client_id])
             del self._client_subscriptions[client_id]
             logger.info(f"Cleaned up {room_count} subscriptions for client {client_id}"
-            )
+                        )
 
     def get_stats(self) -> dict:
         """Get subscription statistics for monitoring."""

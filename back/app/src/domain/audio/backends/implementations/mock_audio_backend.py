@@ -17,11 +17,13 @@ from app.src.config import config
 from app.src.domain.audio.backends.implementations.base_audio_backend import BaseAudioBackend
 from app.src.domain.decorators.error_handler import handle_domain_errors
 
+
 def handle_errors(*dargs, **dkwargs):
     def _decorator(func):
         return handle_domain_errors(*dargs, **dkwargs)(func)
 
     return _decorator
+
 
 logger = logging.getLogger(__name__)
 

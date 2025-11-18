@@ -152,7 +152,7 @@ class LocalFileStorageAdapter(FileStorageProtocol):
             actual_size = file_path.stat().st_size
             if actual_size != expected_size:
                 logger.error(f"❌ Size mismatch: expected {expected_size:,}, got {actual_size:,}",
-                )
+                             )
                 return False
 
             # Additional checks could be added here (checksums, etc.)

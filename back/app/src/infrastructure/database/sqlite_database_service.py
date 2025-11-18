@@ -20,8 +20,10 @@ from app.src.domain.protocols.persistence_service_protocol import PersistenceSer
 from app.src.data.connection_pool import ConnectionPool
 from app.src.services.error.unified_error_decorator import handle_infrastructure_errors
 
+
 def _handle_infrastructure_errors(component_name: str = "infrastructure"):
     return handle_infrastructure_errors(component_name)
+
 
 logger = logging.getLogger(__name__)
 

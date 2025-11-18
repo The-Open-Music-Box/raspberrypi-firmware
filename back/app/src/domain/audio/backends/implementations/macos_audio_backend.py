@@ -99,7 +99,7 @@ class MacOSAudioBackend(BaseAudioBackend):
             # Verify playback actually started
             if not pygame.mixer.music.get_busy():
                 logger.warning(f"⚠️️ macOS: Playback may not have started for {path.name}"
-                )
+                               )
             # Update state and start timing
             self._is_playing = True
             self._current_file_path = str(path)
@@ -303,7 +303,6 @@ class MacOSAudioBackend(BaseAudioBackend):
         """Seek to a specific position (not implemented for pygame)."""
         logger.warning("⚠️ macOS: Seek not supported with pygame backend")
         return False
-
 
     async def get_duration(self) -> Optional[int]:
         """Get duration of current track.

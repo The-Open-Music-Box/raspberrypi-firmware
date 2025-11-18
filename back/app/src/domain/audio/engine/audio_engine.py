@@ -55,7 +55,7 @@ class AudioEngine(AudioEngineProtocol):
         # Validate state manager has required methods
         if not hasattr(state_manager, "set_state"):
             logger.error(f"❌ Invalid StateManager type: {type(state_manager).__name__} lacks set_state method",
-            )
+                         )
             raise ValueError(
                 f"StateManager must have set_state method, got {type(state_manager).__name__}"
             )
@@ -64,7 +64,7 @@ class AudioEngine(AudioEngineProtocol):
         self._setup_event_subscriptions()
 
         logger.info(f"AudioEngine initialized with {type(backend).__name__} and {type(state_manager).__name__}",
-        )
+                    )
 
     def _has_playlist_manager(self) -> bool:
         """Check if playlist manager is available and has current playlist."""
@@ -82,7 +82,7 @@ class AudioEngine(AudioEngineProtocol):
             self._state_manager.set_state(state)
         else:
             logger.error(f"❌ StateManager {type(self._state_manager).__name__} lacks set_state method",
-            )
+                         )
 
     @handle_errors("_safe_get_current_state")
     def _safe_get_current_state(self) -> PlaybackState:
@@ -91,7 +91,7 @@ class AudioEngine(AudioEngineProtocol):
             return self._state_manager.get_current_state()
         else:
             logger.warning(f"⚠️ StateManager {type(self._state_manager).__name__} lacks get_current_state method",
-            )
+                           )
             return PlaybackState.STOPPED  # Safe fallback
 
     def _setup_event_subscriptions(self) -> None:
@@ -273,7 +273,7 @@ class AudioEngine(AudioEngineProtocol):
             # For legacy compatibility, we return immediately
             # The actual result will be handled asynchronously
             logger.info(f"✅ AudioEngine.set_playlist called for playlist: {playlist.name}"
-            )
+                        )
             return True
         except RuntimeError:
             # Not in an async context, handle synchronously

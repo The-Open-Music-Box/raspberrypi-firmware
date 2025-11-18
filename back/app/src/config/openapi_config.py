@@ -270,6 +270,8 @@ Real-time bidirectional communication for state synchronization.
 ]
 
 # Custom OpenAPI Schema Modifications
+
+
 def customize_openapi_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
     """
     Customize the OpenAPI schema with additional information and examples.

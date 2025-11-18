@@ -17,6 +17,7 @@ from app.src.services.error.unified_error_decorator import handle_repository_err
 
 logger = logging.getLogger(__name__)
 
+
 def _handle_repository_errors(component_name: str):
     return handle_repository_errors(component_name)
 

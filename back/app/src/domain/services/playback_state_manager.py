@@ -145,7 +145,7 @@ class PlaybackStateManager(StateManagerProtocol):
         self._current_playlist = playlist
         self._last_updated = time.time()
         logger.debug(f"Current playlist updated: {playlist.get('title', 'Unknown') if playlist else 'None'}"
-        )
+                     )
 
     def get_current_track_number(self) -> Optional[int]:
         """Get current track number in playlist.

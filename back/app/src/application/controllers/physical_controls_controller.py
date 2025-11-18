@@ -321,7 +321,7 @@ class PhysicalControlsManager:
                 logger.warning("⚠️ Volume decrease failed via AudioController")
         else:
             logger.warning(f"⚠️ Volume {direction} not supported by current controller"
-            )
+                           )
 
     @handle_errors("handle_next_track")
     def handle_next_track(self) -> None:

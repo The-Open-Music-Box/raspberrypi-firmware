@@ -48,11 +48,11 @@ class AudioDomainFactory:
         # Domain backends already implement AudioBackendProtocol via BaseAudioBackend
         if isinstance(backend, AudioBackendProtocol):
             logger.debug(f"Backend already implements AudioBackendProtocol: {type(backend).__name__}",
-            )
+                         )
             return backend
 
         logger.warning(f"Backend {type(backend).__name__} doesn't implement AudioBackendProtocol",
-        )
+                       )
         return backend
 
     # PlaylistManager removed - use data domain services
@@ -94,7 +94,7 @@ class AudioDomainFactory:
             tuple: (audio_engine, backend_adapter, playlist_manager)
         """
         logger.info(f"Creating complete audio system with {type(existing_backend).__name__}"
-        )
+                    )
 
         # Create adapted backend
         backend = AudioDomainFactory.create_backend_adapter(existing_backend)
@@ -139,7 +139,7 @@ class AudioDomainFactory:
 
             mock_backend = MockAudioBackend(playback_subject)
             logger.info(f"✅ Created mock audio backend: {type(mock_backend).__name__}"
-            )
+                        )
             return AudioDomainFactory.create_backend_adapter(mock_backend)
 
         # Platform-specific backend selection
@@ -150,16 +150,16 @@ class AudioDomainFactory:
 
                 macos_backend = MacOSAudioBackend(playback_subject)
                 logger.info(f"✅ Created macOS audio backend: {type(macos_backend).__name__}"
-                )
+                            )
                 return AudioDomainFactory.create_backend_adapter(macos_backend)
             except ImportError as e:
                 logger.warning(f"⚠️ macOS audio backend failed ({e}), falling back to mock"
-                )
+                               )
                 from .backends.implementations.mock_audio_backend import MockAudioBackend
 
                 fallback_backend = MockAudioBackend(playback_subject)
                 logger.info(f"✅ Created fallback mock backend: {type(fallback_backend).__name__}",
-                )
+                            )
                 return AudioDomainFactory.create_backend_adapter(fallback_backend)
 
         elif sys.platform == "linux":
@@ -168,15 +168,15 @@ class AudioDomainFactory:
 
             wm8960_backend = WM8960AudioBackend(playback_subject)
             logger.info(f"✅ Created WM8960 audio backend: {type(wm8960_backend).__name__}"
-            )
+                        )
             return AudioDomainFactory.create_backend_adapter(wm8960_backend)
 
         else:
             logger.warning(f"⚠️ Unsupported platform {sys.platform}, falling back to mock backend",
-            )
+                           )
             from .backends.implementations.mock_audio_backend import MockAudioBackend
 
             fallback_backend = MockAudioBackend(playback_subject)
             logger.info(f"✅ Created fallback mock backend: {type(fallback_backend).__name__}",
-            )
+                        )
             return AudioDomainFactory.create_backend_adapter(fallback_backend)
