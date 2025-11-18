@@ -104,3 +104,7 @@ ignore-setters = true
 fail-under = 80
 exclude = ["venv", "tests", "build", "dist", "__pycache__"]
 verbose = 0
+
+# Xenon complexity thresholds for CI
+# Current: max-absolute=E (lenient), target: max-absolute=C
+# Run: xenon --max-absolute E --max-modules D --max-average C app/src
