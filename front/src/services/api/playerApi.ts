@@ -6,7 +6,7 @@
 
 import { API_ROUTES } from '../../constants/apiRoutes'
 import { generateClientOpId } from '../../utils/operationUtils'
-import { ApiResponse, PlayerState } from '../../types/contracts'
+import { ApiResponse, PlayerState } from '../../types'
 import { apiClient, ApiResponseHandler } from './apiClient'
 
 /**

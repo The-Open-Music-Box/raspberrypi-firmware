@@ -162,6 +162,14 @@ def register_application_services(container: ApplicationContainer) -> None:
         # Get data application service for NFC lookups
         data_app_service = container.get("data_application_service")
 
+        # Get LED event handler for visual feedback (optional)
+        led_event_handler = None
+        try:
+            led_event_handler = infra_container.get("led_event_handler")
+            logger.debug("✅ LED event handler obtained for playback visual feedback")
+        except Exception as e:
+            logger.debug(f"LED event handler not available (optional): {e}")
+
         # Get audio backend from domain container
         if audio_domain_container.is_initialized:
             audio_backend = audio_domain_container.backend
@@ -169,7 +177,8 @@ def register_application_services(container: ApplicationContainer) -> None:
                 audio_backend,
                 playlist_service=playlist_service,
                 socketio=None,
-                data_application_service=data_app_service
+                data_application_service=data_app_service,
+                led_event_handler=led_event_handler
             )
 
         # Fallback: create with mock backend
@@ -178,7 +187,8 @@ def register_application_services(container: ApplicationContainer) -> None:
             MockAudioBackend(),
             playlist_service=playlist_service,
             socketio=None,
-            data_application_service=data_app_service
+            data_application_service=data_app_service,
+            led_event_handler=led_event_handler
         )
     container.register_factory("playback_coordinator", playback_coordinator_factory)
 

@@ -1,83 +1,74 @@
 <template>
-  <Disclosure as="nav" :class="'bg-surface'" v-slot="{ open }">
-    <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-      <div class="border-b border-border">
-        <div class="flex h-16 items-center justify-between px-4 sm:px-0">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <img class="h-10 w-10" src="@/assets/logo.jpg"
-                alt="The Music Box" />
-            </div>
-            <div class="hidden md:block">
-              <div class="ml-10 flex items-baseline space-x-8">
-                <router-link
-                  v-for="item in navigation"
-                  :key="item.name"
-                  :to="item.href"
-                  :class="[
-                    item.current && item.key === 'home'
-                      ? 'bg-background text-onBackground'
-                      : item.current
-                        ? 'bg-primary text-onPrimary'
-                        : 'text-onBackground hover:bg-primary-light hover:text-onBackground',
-                    'rounded-md px-3 py-2 text-sm font-medium',
-                  ]"
-                  :aria-current="item.current ? 'page' : undefined"
-                >
-                  {{ t(`navigation.${item.key}`) }}
-                </router-link>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center space-x-4">
-            <!-- Social links -->
-            <a href="https://theopenmusicbox.com" target="_blank" rel="noopener" aria-label="Website" class="hover:text-primary">
-              <img src="@/assets/web.svg" alt="Website" class="h-6 w-6 inline" />
-            </a>
-            <a href="https://github.com/The-Open-Music-Box" target="_blank" rel="noopener" aria-label="GitHub" class="hover:text-primary">
-              <img src="@/assets/github.svg" alt="GitHub" class="h-6 w-6 inline" />
-            </a>
-            <a href="http://facebook.com/theopenmusicbox/" target="_blank" rel="noopener" aria-label="Facebook" class="hover:text-primary">
-              <img src="@/assets/facebook.svg" alt="Facebook" class="h-6 w-6 inline" />
-            </a>
-            <a href="https://bsky.app/profile/theopenmusicbox.com" target="_blank" rel="noopener" aria-label="Bluesky" class="hover:text-primary">
-              <img src="@/assets/bsky.svg" alt="Bluesky" class="h-6 w-6 inline" />
-            </a>
-          </div>
-
-          <div class="-mr-2 flex md:hidden">
-            <DisclosureButton
-              class="relative inline-flex items-center justify-center rounded-md bg-surface p-2 text-disabled hover:bg-primary hover:text-onPrimary focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2 focus:ring-offset-background">
-              <span class="absolute -inset-0.5" />
-              <span class="sr-only">Open main menu</span>
-              <Bars3Icon v-if="!open" class="block h-6 w-6" aria-hidden="true" />
-              <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
-            </DisclosureButton>
-          </div>
+  <div class="header-modern">
+    <div class="header-content">
+      <div class="logo-modern">
+        <div class="logo-icon">
+          <img src="@/assets/logo.jpg" alt="TheOpenMusicBox" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
         </div>
+        <span>{{ t('navigation.appName') || 'Music Player' }}</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Social links (desktop) -->
+        <div class="hidden md:flex items-center gap-2">
+          <a href="https://theopenmusicbox.com" target="_blank" rel="noopener" aria-label="Website" class="hover:opacity-70 transition-opacity">
+            <img src="@/assets/web.svg" alt="Website" class="h-5 w-5" />
+          </a>
+          <a href="https://github.com/The-Open-Music-Box" target="_blank" rel="noopener" aria-label="GitHub" class="hover:opacity-70 transition-opacity">
+            <img src="@/assets/github.svg" alt="GitHub" class="h-5 w-5" />
+          </a>
+          <a href="http://facebook.com/theopenmusicbox/" target="_blank" rel="noopener" aria-label="Facebook" class="hover:opacity-70 transition-opacity">
+            <img src="@/assets/facebook.svg" alt="Facebook" class="h-5 w-5" />
+          </a>
+          <a href="https://bsky.app/profile/theopenmusicbox.com" target="_blank" rel="noopener" aria-label="Bluesky" class="hover:opacity-70 transition-opacity">
+            <img src="@/assets/bsky.svg" alt="Bluesky" class="h-5 w-5" />
+          </a>
+        </div>
+
+        <!-- Navigation (desktop) -->
+        <div class="hidden md:flex items-center gap-2">
+          <router-link
+            v-for="item in navigation"
+            :key="item.name"
+            :to="item.href"
+            :class="[
+              'btn-modern',
+              item.current ? '' : 'secondary'
+            ]"
+          >
+            {{ t(`navigation.${item.key}`) }}
+          </router-link>
+        </div>
+
+        <!-- Mobile menu button -->
+        <Disclosure v-slot="{ open }">
+          <DisclosureButton
+            class="md:hidden btn-modern secondary p-2"
+          >
+            <span class="sr-only">Open main menu</span>
+            <Bars3Icon v-if="!open" class="block h-6 w-6" aria-hidden="true" />
+            <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
+          </DisclosureButton>
+
+          <DisclosurePanel class="md:hidden absolute left-0 right-0 top-full mt-2 mx-6 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            <div class="p-4 space-y-2">
+              <router-link
+                v-for="item in navigation"
+                :key="item.name"
+                :to="item.href"
+                :class="[
+                  'block btn-modern w-full text-left',
+                  item.current ? '' : 'secondary'
+                ]"
+              >
+                {{ t(`navigation.${item.key}`) }}
+              </router-link>
+            </div>
+          </DisclosurePanel>
+        </Disclosure>
       </div>
     </div>
-
-    <DisclosurePanel class="border-b border-border md:hidden">
-      <div class="space-y-1 px-2 py-3 sm:px-3">
-        <router-link
-          v-for="item in navigation"
-          :key="item.name"
-          :to="item.href"
-          :class="[
-            item.current
-              ? 'bg-primary text-onPrimary'
-              : 'text-onBackground hover:bg-primary-light hover:text-onPrimary',
-            'block rounded-md px-3 py-2 text-base font-medium',
-          ]"
-          :aria-current="item.current ? 'page' : undefined"
-        >
-          {{ t(`navigation.${item.key}`) }}
-        </router-link>
-      </div>
-    </DisclosurePanel>
-  </Disclosure>
+  </div>
 </template>
 
 <script setup>

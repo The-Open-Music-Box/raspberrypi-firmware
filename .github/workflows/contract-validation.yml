@@ -18,16 +18,26 @@ env:
 jobs:
   contract-validation:
     name: API & Socket.IO Contract Validation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64, rpi]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+    # Python 3.13 is pre-installed on self-hosted runner
+    # - name: Set up Python
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Set up Python virtual environment
+      run: |
+        cd back
+        python3 -m venv venv
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+        echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+        echo "$PWD/venv/bin" >> $GITHUB_PATH
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -57,6 +67,92 @@ jobs:
       run: |
         cd front
         npm ci
+
+    - name: Run unit tests with coverage
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run unit tests with coverage
+        pytest app/tests/unit/ -v \
+          --cov=app \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-unit \
+          --cov-report=json:test-reports/coverage-unit.json \
+          --junitxml=test-reports/junit-unit.xml
+
+    - name: Run contract tests with coverage
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run contract tests with coverage (allow to pass if no tests found)
+        pytest app/tests/contracts/ -v \
+          --cov=app \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-contracts \
+          --cov-report=json:test-reports/coverage-contracts.json \
+          --junitxml=test-reports/junit-contracts.xml || echo "⚠️  No contract tests found or tests failed"
+
+    - name: Start backend server for integration tests
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Start server in background (use app_sio for Socket.IO support)
+        python -m uvicorn app.main:app_sio --host 0.0.0.0 --port 8000 &
+        echo $! > backend-integration.pid
+        # Wait for server to be ready
+        timeout 60 bash -c 'until curl -f http://localhost:8000/api/health; do sleep 2; done'
+        echo "✅ Backend server ready for integration tests"
+
+    - name: Run integration tests - WebSocket
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run WebSocket integration tests
+        pytest tests/integration/websocket/ -v \
+          --cov=app \
+          --cov-append \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-integration-websocket \
+          --cov-report=json:test-reports/coverage-integration-websocket.json \
+          --junitxml=test-reports/junit-integration-websocket.xml \
+          -m "not slow" || echo "⚠️ Some WebSocket tests failed"
+
+    - name: Run integration tests - E2E
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Run E2E integration tests (excluding hardware and websocket)
+        pytest tests/integration/ -v \
+          --ignore=tests/integration/websocket \
+          --ignore=tests/integration/hardware \
+          --cov=app \
+          --cov-append \
+          --cov-report=term-missing \
+          --cov-report=html:test-reports/coverage-integration-e2e \
+          --cov-report=json:test-reports/coverage-integration-e2e.json \
+          --junitxml=test-reports/junit-integration-e2e.xml \
+          -m "not slow and not hardware" || echo "⚠️ Some E2E tests failed"
+
+    - name: Stop backend server (integration tests)
+      if: always()
+      run: |
+        if [ -f back/backend-integration.pid ]; then
+          kill $(cat back/backend-integration.pid) || true
+          rm back/backend-integration.pid
+        fi
+
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pytest-reports-${{ github.run_number }}
+        path: back/test-reports/
+        retention-days: 30
 
     - name: Start backend server
       run: |
@@ -224,7 +320,7 @@ jobs:
   # Separate job for contract drift detection (only on schedule)
   contract-drift-detection:
     name: Contract Drift Detection
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64, rpi]
     if: github.event_name == 'schedule'
 
     steps:

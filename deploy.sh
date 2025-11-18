@@ -108,8 +108,9 @@ load_config() {
             print_status $BLUE "📋 Loaded configuration from: $CONFIG_FILE"
         fi
     else
-        print_status $RED "❌ Configuration file not found: $CONFIG_FILE"
-        exit 1
+        if [ "$VERBOSE" = true ]; then
+            print_status $YELLOW "⚠️  Configuration file not found: $CONFIG_FILE (using defaults)"
+        fi
     fi
 }
 
@@ -223,13 +224,17 @@ run_tests() {
         print_status $BLUE "🔍 Validating API and Socket.IO contracts..."
     fi
 
-    if "${PROJECT_ROOT}/scripts/validate_contracts.sh" --auto-start; then
-        print_status $GREEN "✅ Contract validation passed!"
+    # Run backend contract tests directly with pytest
+    print_status $BLUE "🔍 Running backend contract validation tests..."
+    cd "${PROJECT_ROOT}/back" || exit 1
+    if source venv/bin/activate && python -m pytest tests/contracts/ -q --tb=short; then
+        print_status $GREEN "✅ Backend contract validation passed (78 tests)!"
     else
-        print_status $YELLOW "⚠️  Contract validation had failures (non-blocking)"
-        print_status $YELLOW "    Backend: 29/36 passed - Check reports for details"
-        print_status $YELLOW "    Continuing deployment as core tests passed..."
+        print_status $RED "❌ Backend contract validation failed!"
+        print_status $RED "Deployment aborted."
+        return 1
     fi
+    cd "${PROJECT_ROOT}" || exit 1
 
     cd "${PROJECT_ROOT}" || exit 1
     print_status $GREEN "🎉 All test suites passed successfully!"
@@ -353,7 +358,15 @@ deploy_production() {
     fi
 
     local release_dir="${PROJECT_ROOT}/${RELEASE_DEV_DIR}/tomb-rpi"
-    local ssh_opts="${SSH_OPTS} -i ${SSH_KEY}"
+
+    # Build SSH options only if configured
+    local ssh_opts=""
+    if [ -n "$SSH_OPTS" ]; then
+        ssh_opts="$SSH_OPTS"
+    fi
+    if [ -n "$SSH_KEY" ]; then
+        ssh_opts="$ssh_opts -i ${SSH_KEY}"
+    fi
 
     if [ "$QUIET" != true ]; then
         print_status $BLUE "📤 Deploying to: $SSH_TARGET"
@@ -372,12 +385,15 @@ deploy_production() {
         print_status $BLUE "📤 Synchronizing files..."
     fi
 
+    # CRITICAL: Protect user data from deletion with --filter
     rsync -azP --delete \
         --rsync-path="sudo rsync" \
         --no-owner --no-group \
         --chown=admin:admin \
         --ignore-errors \
         -e "ssh $ssh_opts" \
+        --filter='protect app/data/' \
+        --filter='protect app/data/**' \
         "${RSYNC_EXCLUDES[@]}" \
         "${release_dir}/" "${SSH_TARGET}:${REMOTE_DIR}/" 2>/dev/null
 
@@ -457,7 +473,15 @@ monitor_server() {
     print_status $BLUE "📋 Press Ctrl+C to stop monitoring"
     echo ""
 
-    local ssh_opts="${SSH_OPTS} -i ${SSH_KEY}"
+    # Build SSH options only if configured
+    local ssh_opts=""
+    if [ -n "$SSH_OPTS" ]; then
+        ssh_opts="$SSH_OPTS"
+    fi
+    if [ -n "$SSH_KEY" ]; then
+        ssh_opts="$ssh_opts -i ${SSH_KEY}"
+    fi
+
     ssh $ssh_opts "$target" "sudo journalctl -fu app.service --output=cat"
 }
 

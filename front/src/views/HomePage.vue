@@ -29,13 +29,13 @@ import AudioPlayer from '../components/audio/AudioPlayer.vue'
 // UploadForm global supprimé car l'upload se fait directement dans les playlists
 import FileListContainer from '../components/files/FileListContainer.vue'
 // import GeneralInfo from '../components/StatsInfo.vue' // Removed - not used
-import type { Track, PlayList } from '../components/files/types'
+import type { Track, PlaylistDetailed } from '@/types'
 
 // const uploadProgress = ref(0) // Removed - not used
 const selectedTrack = ref<Track | null>(null)
-const selectedPlaylist = ref<PlayList | null>(null)
+const selectedPlaylist = ref<PlaylistDetailed | null>(null)
 
-const handleSelectTrack = (data: { track: Track, playlist: PlayList }) => {
+const handleSelectTrack = (data: { track: Track, playlist: PlaylistDetailed }) => {
   selectedTrack.value = data.track
   selectedPlaylist.value = data.playlist
 }

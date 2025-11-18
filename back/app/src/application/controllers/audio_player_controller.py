@@ -228,7 +228,7 @@ class AudioPlayer:
 
     # --- Volume Control ---
 
-    def set_volume(self, volume: int) -> bool:
+    async def set_volume(self, volume: int) -> bool:
         """
         Set playback volume.
 
@@ -244,14 +244,8 @@ class AudioPlayer:
 
         try:
             if hasattr(self._backend, 'set_volume'):
-                import asyncio
-                import inspect
-                if inspect.iscoroutinefunction(self._backend.set_volume):
-                    loop = asyncio.new_event_loop()
-                    success = loop.run_until_complete(self._backend.set_volume(volume))
-                    loop.close()
-                else:
-                    success = self._backend.set_volume(volume)
+                # Call async set_volume method directly (all backends implement this)
+                success = await self._backend.set_volume(volume)
 
                 if success:
                     self._volume = volume

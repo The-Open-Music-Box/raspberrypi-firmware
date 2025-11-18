@@ -6,7 +6,7 @@
 import { apiClient, ApiResponseHandler } from './apiClient'
 import { API_ROUTES } from '../../constants/apiRoutes'
 import { generateClientOpId } from '../../utils/operationUtils'
-import { ApiResponse } from '../../types/contracts'
+import { ApiResponse } from '../../types'
 
 /**
  * NFC API methods with standardized response handling
@@ -79,6 +79,21 @@ export const nfcApi = {
   async getNfcStatus(): Promise<{ reader_available: boolean; scanning: boolean }> {
     const response = await apiClient.get<ApiResponse<{ reader_available: boolean; scanning: boolean }>>(
       API_ROUTES.NFC_STATUS
+    )
+    return ApiResponseHandler.extractData(response)
+  },
+
+  /**
+   * Cancel an active NFC association session
+   */
+  async cancelNfcAssociation(sessionId: string, clientOpId?: string): Promise<void> {
+    const response = await apiClient.delete<ApiResponse<void>>(
+      API_ROUTES.NFC_CANCEL_SESSION(sessionId),
+      {
+        data: {
+          client_op_id: clientOpId || generateClientOpId('nfc_cancel')
+        }
+      }
     )
     return ApiResponseHandler.extractData(response)
   }

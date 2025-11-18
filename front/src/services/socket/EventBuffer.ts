@@ -159,7 +159,7 @@ export class EventBuffer {
   /**
    * Reset sequence tracking
    */
-  resetSequence(startSeq: number = 0): void {
+  resetSequence(startSeq = 0): void {
     this.nextExpectedSeq = startSeq
     this.buffer.clear()
     logger.debug(`Event buffer reset, next expected sequence: ${startSeq}`)

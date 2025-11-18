@@ -5,7 +5,8 @@ import { i18n } from './i18n'
 import './registerServiceWorker'
 import router from './router'
 import './assets/tailwind.css'
-import socketService from './services/socketService'
+import './assets/modern-theme.css'
+import { socketService } from './services/SocketServiceFactory'
 import { useServerStateStore } from './stores/serverStateStore'
 
 const app = createApp(App)

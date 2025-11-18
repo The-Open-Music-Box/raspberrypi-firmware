@@ -6,7 +6,7 @@
 import { apiClient, ApiResponseHandler } from './apiClient'
 import { API_ROUTES } from '../../constants/apiRoutes'
 import { generateClientOpId } from '../../utils/operationUtils'
-import { ApiResponse, Track, UploadStatus } from '../../types/contracts'
+import { ApiResponse, Track, UploadStatus } from '../../types'
 
 /**
  * Upload API methods with standardized response handling

@@ -102,7 +102,15 @@ class PlaylistWriteAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error creating playlist: {str(e)}", extra={"traceback": True})
+                logger.error(
+                    f"Error in create_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "create_playlist",
+                        "title": body.get("title") if isinstance(body, dict) else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to create playlist",
                     operation="create_playlist",
@@ -121,15 +129,7 @@ class PlaylistWriteAPI:
                 if not updates:
                     return UnifiedResponseService.bad_request(message="No valid updates provided")
 
-                # Handle contract testing scenarios
-                if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistWriteAPI: Contract testing detected, returning mock update response")
-                    return UnifiedResponseService.success(
-                        message="Playlist updated successfully (mock response for testing)",
-                        data={"client_op_id": client_op_id or ""}
-                    )
-
-                # Use application service (now returns None if not found)
+                # Use application service (now returns full playlist data or None if not found)
                 result = await self._playlist_service.update_playlist_use_case(playlist_id, updates)
 
                 if result is None:
@@ -140,9 +140,11 @@ class PlaylistWriteAPI:
                     # Broadcast state change
                     await self._broadcasting_service.broadcast_playlist_updated(playlist_id, updates)
 
+                    # Return full playlist object per contract v3.3.1
                     return UnifiedResponseService.success(
                         message="Playlist updated successfully",
-                        data={"client_op_id": client_op_id}
+                        data=result,
+                        client_op_id=client_op_id
                     )
                 else:
                     return UnifiedResponseService.internal_error(
@@ -153,7 +155,16 @@ class PlaylistWriteAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error updating playlist: {str(e)}")
+                logger.error(
+                    f"Error in update_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "update_playlist",
+                        "playlist_id": playlist_id,
+                        "updates": updates if 'updates' in locals() else None,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to update playlist", operation="update_playlist"
                 )
@@ -164,12 +175,6 @@ class PlaylistWriteAPI:
             """Delete a playlist."""
             try:
                 client_op_id = body.get("client_op_id")
-
-                # Handle contract testing scenarios
-                if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistWriteAPI: Contract testing detected, returning mock delete response")
-                    # Return 204 No Content for successful deletion
-                    return Response(status_code=204)
 
                 # Use application service (now returns False if not found)
                 success = await self._playlist_service.delete_playlist_use_case(playlist_id)
@@ -189,7 +194,15 @@ class PlaylistWriteAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error deleting playlist: {str(e)}")
+                logger.error(
+                    f"Error in delete_playlist: {str(e)}",
+                    extra={
+                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
+                        "operation": "delete_playlist",
+                        "playlist_id": playlist_id,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to delete playlist", operation="delete_playlist"
                 )

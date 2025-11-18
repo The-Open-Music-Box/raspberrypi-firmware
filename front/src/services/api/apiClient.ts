@@ -7,7 +7,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { logger } from '../../utils/logger'
 import { apiConfig } from '../../config/environment'
-import { ApiResponse, ApiError } from '../../types/contracts'
+import { ApiResponse, ApiError } from '../../types'
 
 // Extend axios types to include metadata
 declare module 'axios' {
@@ -114,8 +114,7 @@ export class ApiResponseHandler {
         errorData.message || 'API Error',
         errorData.error_type || 'api_error',
         response.status,
-        errorData.details,
-        errorData.request_id
+        errorData.details
       )
     }
 

@@ -55,9 +55,22 @@ class SystemRoutes:
                 logger.error(f"Failed to get playback coordinator: {e}")
                 return None
 
+        # Create LED event handler getter function
+        def get_led_event_handler(request):
+            """Get LED event handler from DI container."""
+            try:
+                container = getattr(request.app, "container", None)
+                if container:
+                    return container.get("led_event_handler")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to get LED event handler: {e}")
+                return None
+
         # Initialize API routes
         self.api_routes = SystemAPIRoutes(
-            playback_coordinator_getter=get_playback_coordinator
+            playback_coordinator_getter=get_playback_coordinator,
+            led_event_handler_getter=get_led_event_handler
         )
         logger.info("✅ System API routes initialized")
 

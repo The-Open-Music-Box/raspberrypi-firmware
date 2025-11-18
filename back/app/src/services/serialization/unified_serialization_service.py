@@ -317,6 +317,7 @@ class UnifiedSerializationService:
                             current_track, format=UnifiedSerializationService.FORMAT_WEBSOCKET
                         )
                         state["active_track_id"] = state["active_track"].get("id")
+                        state["active_track_number"] = state["active_track"].get("track_number", current_track_index + 1)
                         state["active_track_title"] = state["active_track"].get("title", "")
                         state["duration_ms"] = state["active_track"].get("duration_ms", 0)
             else:
@@ -328,6 +329,7 @@ class UnifiedSerializationService:
                         "active_playlist_title": None,
                         "active_track": None,
                         "active_track_id": None,
+                        "active_track_number": None,
                         "active_track_title": None,
                         "duration_ms": 0,
                     }

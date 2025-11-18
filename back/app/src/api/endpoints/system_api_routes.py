@@ -38,14 +38,16 @@ class SystemAPIRoutes:
     - Resource monitoring (delegated to monitoring services)
     """
 
-    def __init__(self, playback_coordinator_getter):
+    def __init__(self, playback_coordinator_getter, led_event_handler_getter=None):
         """Initialize system API routes.
 
         Args:
             playback_coordinator_getter: Callable that returns playback coordinator from request
+            led_event_handler_getter: Optional callable that returns LED event handler from request
         """
         self.router = APIRouter(prefix="/api", tags=["system"])
         self._get_coordinator = playback_coordinator_getter
+        self._get_led_handler = led_event_handler_getter
         self._register_routes()
 
     def _register_routes(self):
@@ -218,6 +220,44 @@ class SystemAPIRoutes:
                 except Exception:
                     pass  # Use default version on error
 
+                # Build capabilities for RPI
+                capabilities = {
+                    "upload_format": "multipart",  # FastAPI uses multipart/form-data
+                    "max_chunk_size": 1024 * 1024,  # 1MB chunks (RPI has more RAM)
+                    "player_monitoring": True,      # RPI can monitor playback efficiently
+                    "nfc_available": False,         # Default, detect at runtime
+                    "led_control": False,           # Default, detect at runtime
+                    # v3.3.0 fields
+                    "backend_type": "rpi",
+                    "position_update_interval_ms": 500,  # High-frequency updates
+                    "supports_websocket_position": True,
+                }
+
+                # Detect NFC service availability
+                if container:
+                    nfc_service = getattr(container, "nfc", None)
+                    if nfc_service:
+                        # Check if NFC service is actually functional
+                        try:
+                            # For now, just check if service exists
+                            capabilities["nfc_available"] = True
+                            logger.info("NFC service detected and available")
+                        except Exception as e:
+                            logger.warning(f"NFC service exists but not functional: {e}")
+                            capabilities["nfc_available"] = False
+
+                    # Detect LED service availability
+                    led_service = getattr(container, "led_hat", None)
+                    if led_service:
+                        try:
+                            capabilities["led_control"] = True
+                            logger.info("LED control service detected and available")
+                        except Exception as e:
+                            logger.warning(f"LED service exists but not functional: {e}")
+                            capabilities["led_control"] = False
+
+                logger.info(f"Capabilities detected: {capabilities}")
+
                 from fastapi.responses import JSONResponse
                 return JSONResponse(content={
                     "status": "success",
@@ -227,10 +267,11 @@ class SystemAPIRoutes:
                     "data": {
                         "system_info": system_info,
                         "version": version,
-                        "contract_version": "3.1.0",
+                        "contract_version": "3.3.0",  # Updated to 3.3.0
                         "hostname": system_info.get("hostname", "localhost"),
                         "uptime": 3600,  # System uptime in seconds
-                        "server_seq": server_seq
+                        "server_seq": server_seq,
+                        "capabilities": capabilities,  # NEW: Backend capabilities
                     }
                 })
 
@@ -334,6 +375,89 @@ class SystemAPIRoutes:
                     message="Failed to restart system",
                     operation="restart_system"
                 )
+
+        # LED control endpoints
+        if self._get_led_handler:
+            from pydantic import BaseModel, Field
+
+            class SetBrightnessRequest(BaseModel):
+                brightness: float = Field(..., ge=0.0, le=1.0, description="LED brightness level (0.0-1.0)")
+
+            @self.router.post("/system/led/brightness")
+            @handle_http_errors()
+            async def set_led_brightness(request: Request, body: SetBrightnessRequest):
+                """Set LED brightness level."""
+                try:
+                    logger.info(f"API /api/system/led/brightness: Set brightness to {body.brightness:.1%}")
+
+                    led_handler = self._get_led_handler(request)
+                    if not led_handler:
+                        return UnifiedResponseService.error(
+                            message="LED event handler not available",
+                            error_type="service_unavailable",
+                            status_code=503
+                        )
+
+                    success = await led_handler.set_brightness(body.brightness)
+
+                    if success:
+                        return UnifiedResponseService.success(
+                            message=f"LED brightness set to {body.brightness:.1%}",
+                            data={"brightness": body.brightness}
+                        )
+                    else:
+                        return UnifiedResponseService.error(
+                            message="Failed to set LED brightness",
+                            error_type="operation_failed",
+                            status_code=500
+                        )
+
+                except Exception as e:
+                    logger.error(f"Error setting LED brightness: {str(e)}")
+                    return UnifiedResponseService.internal_error(
+                        message="Failed to set LED brightness",
+                        operation="set_led_brightness"
+                    )
+
+            @self.router.post("/system/led/reload-config")
+            @handle_http_errors()
+            async def reload_led_config(request: Request):
+                """Reload LED brightness from hardware configuration."""
+                try:
+                    logger.info("API /api/system/led/reload-config: Reloading LED brightness from config")
+
+                    led_handler = self._get_led_handler(request)
+                    if not led_handler:
+                        return UnifiedResponseService.error(
+                            message="LED event handler not available",
+                            error_type="service_unavailable",
+                            status_code=503
+                        )
+
+                    success = await led_handler.reload_brightness_from_config()
+
+                    if success:
+                        # Get current brightness from LED controller status
+                        status = led_handler.get_status()
+                        brightness = status.get("led_manager_status", {}).get("brightness", 0)
+
+                        return UnifiedResponseService.success(
+                            message=f"LED brightness reloaded from config",
+                            data={"brightness": brightness}
+                        )
+                    else:
+                        return UnifiedResponseService.error(
+                            message="Failed to reload LED brightness from config",
+                            error_type="operation_failed",
+                            status_code=500
+                        )
+
+                except Exception as e:
+                    logger.error(f"Error reloading LED config: {str(e)}")
+                    return UnifiedResponseService.internal_error(
+                        message="Failed to reload LED config",
+                        operation="reload_led_config"
+                    )
 
     def get_router(self) -> APIRouter:
         """Get the configured router."""

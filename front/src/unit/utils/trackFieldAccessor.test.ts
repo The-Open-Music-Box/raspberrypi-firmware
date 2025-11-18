@@ -18,11 +18,11 @@ import {
 } from '@/utils/trackFieldAccessor'
 
 describe('trackFieldAccessor', () => {
-  const t = (over: any = {}) => ({ track_number: 1, duration_ms: 1000, title: 't', ...over }) as any
+  const t = (over: any = {}) => ({ number: 1, duration_ms: 1000, title: 't', ...over }) as any
 
   it('accessors and fallbacks work', () => {
-    expect(getTrackNumber(t({ track_number: 7 }))).toBe(7)
-    expect(getTrackNumber(t({ track_number: undefined, number: 3 }))).toBe(3)
+    expect(getTrackNumber(t({ number: 7 }))).toBe(7)
+    expect(getTrackNumber(t({ number: 3 }))).toBe(3)
     expect(getTrackNumber({} as any)).toBe(0)
     expect(getTrackNumber(null as any)).toBe(0)
 
@@ -36,12 +36,10 @@ describe('trackFieldAccessor', () => {
     expect(getTrackDurationSeconds(null as any)).toBe(0)
   })
 
-  it('normalizeTrack converts legacy fields', () => {
+  it('normalizeTrack returns track as-is (v3.3.2)', () => {
     const norm = normalizeTrack({ number: 9, duration: 3 } as any)
-    expect(norm.track_number).toBe(9)
-    expect(norm.duration_ms).toBe(3000)
-    expect(norm.number).toBeUndefined()
-    expect(norm.duration).toBeUndefined()
+    expect(norm.number).toBe(9)
+    expect(norm.duration).toBe(3)
     expect(normalizeTrack(null as any)).toBe(null)
   })
 
@@ -52,9 +50,9 @@ describe('trackFieldAccessor', () => {
   })
 
   it('find/sort/filter helpers behave as expected', () => {
-    const a = t({ track_number: 2, title: 'a' })
-    const b = t({ track_number: 1, title: 'b' })
-    const c = t({ track_number: 3, title: 'c' })
+    const a = t({ number: 2, title: 'a' })
+    const b = t({ number: 1, title: 'b' })
+    const c = t({ number: 3, title: 'c' })
     const arr = [a, b, c]
 
     expect(findTrackByNumber(arr, 1)).toBe(b)
@@ -65,14 +63,14 @@ describe('trackFieldAccessor', () => {
   })
 
   it('validation helpers work', () => {
-    expect(hasValidTrackNumber(t({ track_number: 0 }))).toBe(false)
-    expect(hasValidTrackNumber(t({ track_number: 5 }))).toBe(true)
+    expect(hasValidTrackNumber(t({ number: 0 }))).toBe(false)
+    expect(hasValidTrackNumber(t({ number: 5 }))).toBe(true)
     expect(hasValidDuration(t({ duration_ms: 0 }))).toBe(false)
     expect(hasValidDuration(t({ duration_ms: 1 }))).toBe(true)
   })
 
   it('safe find and drag validation', () => {
-    const arr = [t({ track_number: 1 }), t({ track_number: 2 }), t({ track_number: 2 })]
+    const arr = [t({ number: 1 }), t({ number: 2 }), t({ number: 2 })]
     const safe = findTrackByNumberSafe(arr, 2)
     expect(safe.track).toBeDefined()
     expect(safe.error).toBeNull()
@@ -84,32 +82,32 @@ describe('trackFieldAccessor', () => {
     expect(dup.errors.join(' ')).toMatch(/Duplicate/)
 
     // Invalid track numbers error path
-    const invalidNumbers = validateTracksForDrag([t({ track_number: 0 })])
+    const invalidNumbers = validateTracksForDrag([t({ number: 0 })])
     expect(invalidNumbers.valid).toBe(false)
     expect(invalidNumbers.errors.join(' ')).toMatch(/invalid track numbers/)
   })
 
   it('findTrackByNumberSafe catches thrown errors', () => {
     const throwingTrack = {}
-    Object.defineProperty(throwingTrack, 'track_number', { get() { throw new Error('boom') } })
+    Object.defineProperty(throwingTrack, 'number', { get() { throw new Error('boom') } })
     const res = findTrackByNumberSafe([throwingTrack as any], 1)
     expect(res.track).toBeNull()
     expect(res.error).toMatch(/Error finding track/)
   })
 
   it('createTrackIndexMap builds O(1) lookup map', () => {
-    const arr = [t({ track_number: 1 }), t({ track_number: 9 })]
+    const arr = [t({ number: 1 }), t({ number: 9 })]
     const map = createTrackIndexMap(arr)
-    expect(map.get(9)?.track_number).toBe(9)
+    expect(map.get(9)?.number).toBe(9)
   })
 
   it('getTrackDurationMs and batchUpdateTrackNumbers paths', () => {
     expect(getTrackDurationMs({} as any)).toBe(0)
 
-    const arr = [t({ track_number: 5 }), t({ track_number: 9 })]
+    const arr = [t({ number: 5 }), t({ number: 9 })]
     const updated = batchUpdateTrackNumbers(arr as any, [1, 2])
-    expect(updated[0].track_number).toBe(1)
-    expect(updated[1].track_number).toBe(2)
+    expect(updated[0].number).toBe(1)
+    expect(updated[1].number).toBe(2)
 
     expect(() => batchUpdateTrackNumbers([t({})] as any, [1,2])).toThrow(/Track count mismatch/)
   })

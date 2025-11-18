@@ -28,12 +28,11 @@ import {
   batchUpdateTrackNumbers
 } from '@/utils/trackFieldAccessor'
 
-// Mock track interface for testing
+// Mock track interface for testing (v3.3.2 uses 'number' field)
 interface MockTrack {
   id?: string
   title?: string
   artist?: string
-  track_number?: number
   number?: number
   duration_ms?: number
   duration?: number
@@ -55,17 +54,16 @@ describe('trackFieldAccessor', () => {
   })
 
   describe('getTrackNumber', () => {
-    it('should prioritize track_number over number', () => {
+    it('should return track number from number field', () => {
       const track: MockTrack = {
-        track_number: 5,
-        number: 3
+        number: 5
       }
 
       expect(getTrackNumber(track as any))
         .toBe(5)
     })
 
-    it('should fallback to number when track_number is undefined', () => {
+    it('should return track number when present', () => {
       const track: MockTrack = {
         number: 7
       }
@@ -74,7 +72,7 @@ describe('trackFieldAccessor', () => {
         .toBe(7)
     })
 
-    it('should return 0 when both fields are undefined', () => {
+    it('should return 0 when number field is undefined', () => {
       const track: MockTrack = {
         title: 'Test Track'
       }
@@ -85,18 +83,16 @@ describe('trackFieldAccessor', () => {
 
     it('should handle null values correctly', () => {
       const track: MockTrack = {
-        track_number: null as any,
-        number: 4
+        number: null as any
       }
 
       expect(getTrackNumber(track as any))
-        .toBe(4)
+        .toBe(0)
     })
 
     it('should handle zero values correctly', () => {
       const track: MockTrack = {
-        track_number: 0,
-        number: 5
+        number: 0
       }
 
       expect(getTrackNumber(track as any))
@@ -211,53 +207,46 @@ describe('trackFieldAccessor', () => {
   })
 
   describe('normalizeTrack', () => {
-    it('should normalize track with all fields', () => {
+    it('should return track as-is (v3.3.2 uses number field)', () => {
       const track: MockTrack = {
         id: '1',
         title: 'Test Track',
-        track_number: 5,
-        number: 3,
+        number: 5,
         duration_ms: 180000,
         duration: 120
       }
 
       const normalized = normalizeTrack(track as any)
 
-      expect(normalized.track_number)
+      expect(normalized.number)
         .toBe(5)
       expect(normalized.duration_ms)
         .toBe(180000)
-      expect(normalized.number)
-        .toBeUndefined()
       expect(normalized.duration)
-        .toBeUndefined()
+        .toBe(120)
       expect(normalized.id)
         .toBe('1')
       expect(normalized.title)
         .toBe('Test Track')
     })
 
-    it('should normalize track with legacy fields only', () => {
+    it('should return track with number field unchanged', () => {
       const track: MockTrack = {
         id: '2',
-        title: 'Legacy Track',
+        title: 'Track',
         number: 7,
         duration: 200
       }
 
       const normalized = normalizeTrack(track as any)
 
-      expect(normalized.track_number)
-        .toBe(7)
-      expect(normalized.duration_ms)
-        .toBe(200000)
       expect(normalized.number)
-        .toBeUndefined()
+        .toBe(7)
       expect(normalized.duration)
-        .toBeUndefined()
+        .toBe(200)
     })
 
-    it('should normalize track with missing fields', () => {
+    it('should return track with missing fields unchanged', () => {
       const track: MockTrack = {
         id: '3',
         title: 'Minimal Track'
@@ -265,24 +254,24 @@ describe('trackFieldAccessor', () => {
 
       const normalized = normalizeTrack(track as any)
 
-      expect(normalized.track_number)
-        .toBe(0)
-      expect(normalized.duration_ms)
-        .toBe(0)
       expect(normalized.number)
         .toBeUndefined()
-      expect(normalized.duration)
+      expect(normalized.duration_ms)
         .toBeUndefined()
+      expect(normalized.id)
+        .toBe('3')
+      expect(normalized.title)
+        .toBe('Minimal Track')
     })
 
-    it('should preserve other track properties', () => {
+    it('should preserve all track properties unchanged', () => {
       const track: MockTrack = {
         id: '4',
         title: 'Full Track',
         artist: 'Test Artist',
         album: 'Test Album',
         genre: 'Test Genre',
-        track_number: 1,
+        number: 1,
         duration_ms: 240000,
         custom_field: 'custom_value'
       }
@@ -299,6 +288,10 @@ describe('trackFieldAccessor', () => {
         .toBe('Test Album')
       expect(normalized.genre)
         .toBe('Test Genre')
+      expect(normalized.number)
+        .toBe(1)
+      expect(normalized.duration_ms)
+        .toBe(240000)
       expect(normalized.custom_field)
         .toBe('custom_value')
     })
@@ -371,10 +364,10 @@ describe('trackFieldAccessor', () => {
 
   describe('findTrackByNumber', () => {
     const tracks: MockTrack[] = [
-      { id: '1', track_number: 1, title: 'Track 1' },
-      { id: '2', track_number: 2, title: 'Track 2' },
-      { id: '3', number: 3, title: 'Track 3' }, // Legacy field
-      { id: '4', track_number: 5, title: 'Track 5' }
+      { id: '1', number: 1, title: 'Track 1' },
+      { id: '2', number: 2, title: 'Track 2' },
+      { id: '3', number: 3, title: 'Track 3' },
+      { id: '4', number: 5, title: 'Track 5' }
     ]
 
     it('should find track by track number', () => {
@@ -386,7 +379,7 @@ describe('trackFieldAccessor', () => {
         .toBe('2')
     })
 
-    it('should find track using legacy number field', () => {
+    it('should find track using number field', () => {
       const found = findTrackByNumber(tracks as any, 3)
 
       expect(found)
@@ -424,24 +417,24 @@ describe('trackFieldAccessor', () => {
   describe('sortTracksByNumber', () => {
     it('should sort tracks by track number in ascending order', () => {
       const unsortedTracks: MockTrack[] = [
-        { id: '1', track_number: 3, title: 'Track 3' },
-        { id: '2', track_number: 1, title: 'Track 1' },
-        { id: '3', track_number: 2, title: 'Track 2' }
+        { id: '1', number: 3, title: 'Track 3' },
+        { id: '2', number: 1, title: 'Track 1' },
+        { id: '3', number: 2, title: 'Track 2' }
       ]
 
       const sorted = sortTracksByNumber(unsortedTracks as any)
 
-      expect(sorted.map(t => t.track_number))
+      expect(sorted.map(t => t.number))
         .toEqual([1, 2, 3])
       expect(sorted.map(t => t.id))
         .toEqual(['2', '3', '1'])
     })
 
-    it('should handle mixed track_number and number fields', () => {
+    it('should handle number fields correctly', () => {
       const tracks: MockTrack[] = [
         { id: '1', number: 3, title: 'Track 3' },
-        { id: '2', track_number: 1, title: 'Track 1' },
-        { id: '3', track_number: 2, title: 'Track 2' }
+        { id: '2', number: 1, title: 'Track 1' },
+        { id: '3', number: 2, title: 'Track 2' }
       ]
 
       const sorted = sortTracksByNumber(tracks as any)
@@ -452,9 +445,9 @@ describe('trackFieldAccessor', () => {
 
     it('should not modify original array', () => {
       const originalTracks: MockTrack[] = [
-        { id: '1', track_number: 3 },
-        { id: '2', track_number: 1 },
-        { id: '3', track_number: 2 }
+        { id: '1', number: 3 },
+        { id: '2', number: 1 },
+        { id: '3', number: 2 }
       ]
 
       const originalOrder = [...originalTracks]
@@ -469,9 +462,9 @@ describe('trackFieldAccessor', () => {
 
     it('should handle tracks with no track numbers (default to 0)', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 2 },
+        { id: '1', number: 2 },
         { id: '2', title: 'No number' },
-        { id: '3', track_number: 1 }
+        { id: '3', number: 1 }
       ]
 
       const sorted = sortTracksByNumber(tracks as any)
@@ -491,10 +484,9 @@ describe('trackFieldAccessor', () => {
   describe('hasValidTrackNumber', () => {
     it('should return true for tracks with valid track numbers', () => {
       const validTracks: MockTrack[] = [
-        { track_number: 1 },
-        { track_number: 99 },
-        { number: 5 },
-        { track_number: 1, number: 2 } // track_number takes priority
+        { number: 1 },
+        { number: 99 },
+        { number: 5 }
       ]
 
       validTracks.forEach(track => {
@@ -505,9 +497,8 @@ describe('trackFieldAccessor', () => {
 
     it('should return false for tracks with invalid track numbers', () => {
       const invalidTracks: MockTrack[] = [
-        { track_number: 0 },
-        { track_number: -1 },
         { number: 0 },
+        { number: -1 },
         { number: -5 },
         { title: 'No track number' },
         {}
@@ -554,10 +545,10 @@ describe('trackFieldAccessor', () => {
 
   describe('filterTracksByNumbers', () => {
     const tracks: MockTrack[] = [
-      { id: '1', track_number: 1, title: 'Track 1' },
-      { id: '2', track_number: 2, title: 'Track 2' },
-      { id: '3', track_number: 3, title: 'Track 3' },
-      { id: '4', track_number: 4, title: 'Track 4' }
+      { id: '1', number: 1, title: 'Track 1' },
+      { id: '2', number: 2, title: 'Track 2' },
+      { id: '3', number: 3, title: 'Track 3' },
+      { id: '4', number: 4, title: 'Track 4' }
     ]
 
     it('should filter out tracks with specified numbers', () => {
@@ -593,9 +584,9 @@ describe('trackFieldAccessor', () => {
 
   describe('filterTrackByNumber', () => {
     const tracks: MockTrack[] = [
-      { id: '1', track_number: 1, title: 'Track 1' },
-      { id: '2', track_number: 2, title: 'Track 2' },
-      { id: '3', track_number: 3, title: 'Track 3' }
+      { id: '1', number: 1, title: 'Track 1' },
+      { id: '2', number: 2, title: 'Track 2' },
+      { id: '3', number: 3, title: 'Track 3' }
     ]
 
     it('should filter out single track by number', () => {
@@ -624,8 +615,8 @@ describe('trackFieldAccessor', () => {
 
   describe('findTrackByNumberSafe', () => {
     const tracks: MockTrack[] = [
-      { id: '1', track_number: 1, title: 'Track 1' },
-      { id: '2', track_number: 2, title: 'Track 2' }
+      { id: '1', number: 1, title: 'Track 1' },
+      { id: '2', number: 2, title: 'Track 2' }
     ]
 
     it('should find track successfully', () => {
@@ -664,9 +655,9 @@ describe('trackFieldAccessor', () => {
   describe('validateTracksForDrag', () => {
     it('should validate correct track array', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 1, title: 'Track 1' },
-        { id: '2', track_number: 2, title: 'Track 2' },
-        { id: '3', track_number: 3, title: 'Track 3' }
+        { id: '1', number: 1, title: 'Track 1' },
+        { id: '2', number: 2, title: 'Track 2' },
+        { id: '3', number: 3, title: 'Track 3' }
       ]
 
       const result = validateTracksForDrag(tracks as any)
@@ -688,9 +679,9 @@ describe('trackFieldAccessor', () => {
 
     it('should detect duplicate track numbers', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 1, title: 'Track 1' },
-        { id: '2', track_number: 2, title: 'Track 2' },
-        { id: '3', track_number: 1, title: 'Track 1 duplicate' }
+        { id: '1', number: 1, title: 'Track 1' },
+        { id: '2', number: 2, title: 'Track 2' },
+        { id: '3', number: 1, title: 'Track 1 duplicate' }
       ]
 
       const result = validateTracksForDrag(tracks as any)
@@ -703,8 +694,8 @@ describe('trackFieldAccessor', () => {
 
     it('should detect invalid track numbers', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 1, title: 'Track 1' },
-        { id: '2', track_number: 0, title: 'Invalid track' },
+        { id: '1', number: 1, title: 'Track 1' },
+        { id: '2', number: 0, title: 'Invalid track' },
         { id: '3', title: 'No track number' }
       ]
 
@@ -718,9 +709,9 @@ describe('trackFieldAccessor', () => {
 
     it('should detect multiple issues', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 1, title: 'Track 1' },
-        { id: '2', track_number: 1, title: 'Duplicate' },
-        { id: '3', track_number: 0, title: 'Invalid' }
+        { id: '1', number: 1, title: 'Track 1' },
+        { id: '2', number: 1, title: 'Duplicate' },
+        { id: '3', number: 0, title: 'Invalid' }
       ]
 
       const result = validateTracksForDrag(tracks as any)
@@ -739,9 +730,9 @@ describe('trackFieldAccessor', () => {
   describe('createTrackIndexMap', () => {
     it('should create correct index map', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 1, title: 'Track 1' },
-        { id: '2', track_number: 2, title: 'Track 2' },
-        { id: '3', track_number: 5, title: 'Track 5' }
+        { id: '1', number: 1, title: 'Track 1' },
+        { id: '2', number: 2, title: 'Track 2' },
+        { id: '3', number: 5, title: 'Track 5' }
       ]
 
       const map = createTrackIndexMap(tracks as any)
@@ -758,10 +749,10 @@ describe('trackFieldAccessor', () => {
         .toBe(false)
     })
 
-    it('should handle tracks with legacy number field', () => {
+    it('should handle tracks with number field', () => {
       const tracks: MockTrack[] = [
         { id: '1', number: 1, title: 'Track 1' },
-        { id: '2', track_number: 2, title: 'Track 2' }
+        { id: '2', number: 2, title: 'Track 2' }
       ]
 
       const map = createTrackIndexMap(tracks as any)
@@ -783,8 +774,8 @@ describe('trackFieldAccessor', () => {
 
     it('should handle duplicate track numbers (last one wins)', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 1, title: 'Track 1' },
-        { id: '2', track_number: 1, title: 'Track 1 duplicate' }
+        { id: '1', number: 1, title: 'Track 1' },
+        { id: '2', number: 1, title: 'Track 1 duplicate' }
       ]
 
       const map = createTrackIndexMap(tracks as any)
@@ -797,11 +788,11 @@ describe('trackFieldAccessor', () => {
   })
 
   describe('batchUpdateTrackNumbers', () => {
-    it('should update track numbers correctly', () => {
+    it('should update track numbers correctly (v3.3.2 uses number field)', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 3, title: 'Track A' },
-        { id: '2', track_number: 1, title: 'Track B' },
-        { id: '3', track_number: 2, title: 'Track C' }
+        { id: '1', number: 3, title: 'Track A' },
+        { id: '2', number: 1, title: 'Track B' },
+        { id: '3', number: 2, title: 'Track C' }
       ]
 
       const newOrder = [2, 3, 1] // Not used in current implementation
@@ -810,24 +801,18 @@ describe('trackFieldAccessor', () => {
 
       expect(updated)
         .toHaveLength(3)
-      expect(updated[0].track_number)
-        .toBe(1)
-      expect(updated[1].track_number)
-        .toBe(2)
-      expect(updated[2].track_number)
-        .toBe(3)
       expect(updated[0].number)
-        .toBeUndefined()
+        .toBe(1)
       expect(updated[1].number)
-        .toBeUndefined()
+        .toBe(2)
       expect(updated[2].number)
-        .toBeUndefined()
+        .toBe(3)
     })
 
     it('should preserve other track properties', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 3, title: 'Track A', artist: 'Artist 1' },
-        { id: '2', track_number: 1, title: 'Track B', artist: 'Artist 2' }
+        { id: '1', number: 3, title: 'Track A', artist: 'Artist 1' },
+        { id: '2', number: 1, title: 'Track B', artist: 'Artist 2' }
       ]
 
       const updated = batchUpdateTrackNumbers(tracks as any, [1, 2])
@@ -838,18 +823,22 @@ describe('trackFieldAccessor', () => {
         .toBe('Track A')
       expect(updated[0].artist)
         .toBe('Artist 1')
+      expect(updated[0].number)
+        .toBe(1)
       expect(updated[1].id)
         .toBe('2')
       expect(updated[1].title)
         .toBe('Track B')
       expect(updated[1].artist)
         .toBe('Artist 2')
+      expect(updated[1].number)
+        .toBe(2)
     })
 
     it('should throw error for mismatched array lengths', () => {
       const tracks: MockTrack[] = [
-        { id: '1', track_number: 1 },
-        { id: '2', track_number: 2 }
+        { id: '1', number: 1 },
+        { id: '2', number: 2 }
       ]
 
       expect(() => {
@@ -865,17 +854,15 @@ describe('trackFieldAccessor', () => {
         .toEqual([])
     })
 
-    it('should handle tracks with legacy number field', () => {
+    it('should handle tracks with number field', () => {
       const tracks: MockTrack[] = [
-        { id: '1', number: 5, title: 'Legacy Track' }
+        { id: '1', number: 5, title: 'Track' }
       ]
 
       const updated = batchUpdateTrackNumbers(tracks as any, [1])
 
-      expect(updated[0].track_number)
-        .toBe(1)
       expect(updated[0].number)
-        .toBeUndefined()
+        .toBe(1)
     })
   })
 
@@ -883,7 +870,7 @@ describe('trackFieldAccessor', () => {
     it('should handle large track arrays efficiently', () => {
       const largeTracks = Array.from({ length: 10000 }, (_, i) => ({
         id: `track-${i}`,
-        track_number: i + 1,
+        number: i + 1,
         title: `Track ${i + 1}`,
         duration_ms: 180000
       }))
@@ -913,8 +900,8 @@ describe('trackFieldAccessor', () => {
     it('should handle frequent normalization operations efficiently', () => {
       const tracks = Array.from({ length: 1000 }, (_, i) => ({
         id: `track-${i}`,
-        number: i + 1, // Legacy field
-        duration: 180, // Legacy field
+        number: i + 1,
+        duration: 180,
         title: `Track ${i + 1}`
       }))
 
@@ -926,9 +913,9 @@ describe('trackFieldAccessor', () => {
         .toBeLessThan(100) // Should be very fast
       expect(normalized)
         .toHaveLength(1000)
-      expect(normalized[0].track_number)
+      expect(normalized[0].number)
         .toBe(1)
-      expect(normalized[999].track_number)
+      expect(normalized[999].number)
         .toBe(1000)
     })
 
@@ -970,7 +957,7 @@ describe('trackFieldAccessor', () => {
         123,
         [],
         { someOtherField: 'value' },
-        { track_number: 'not a number' },
+        { number: 'not a number' },
         { duration_ms: 'not a number' }
       ]
 
@@ -986,8 +973,8 @@ describe('trackFieldAccessor', () => {
 
     it('should handle extreme values correctly', () => {
       const extremeTracks = [
-        { track_number: Number.MAX_SAFE_INTEGER },
-        { track_number: Number.MIN_SAFE_INTEGER },
+        { number: Number.MAX_SAFE_INTEGER },
+        { number: Number.MIN_SAFE_INTEGER },
         { duration_ms: Number.MAX_SAFE_INTEGER },
         { duration_ms: 0 },
         { duration_ms: Infinity },

@@ -146,3 +146,4 @@ wheels/
 venv/
 ENV/
 env/
+.deploy_config

@@ -190,74 +190,33 @@ class PurePlaylistRepositoryAdapter:
         return success
 
     async def _cleanup_playlist_folder_by_data(self, playlist) -> None:
-        """Clean up the filesystem folder associated with a playlist using playlist data."""
+        """Clean up the filesystem folder associated with a playlist using playlist data.
+
+        With UUID-based folder names, cleanup is straightforward - just delete the folder at playlist.path.
+        """
         try:
             from app.src.config import config as app_config
             from pathlib import Path
-            from app.src.utils.path_utils import normalize_folder_name
             import shutil
 
-            logger.info(f"🧹 Starting folder cleanup for playlist")
+            if not playlist.path:
+                logger.warning(f"📁 No path set for playlist {playlist.title}, skipping cleanup")
+                return
 
             upload_folder = Path(app_config.upload_folder)
+            folder_path = upload_folder / playlist.path
 
-            # Get playlist title and path - playlist is a domain entity
-            playlist_title = playlist.title
-            playlist_path = playlist.path
-            playlist_id = playlist.id
+            logger.info(f"🧹 Starting folder cleanup for playlist '{playlist.title}' at {folder_path}")
 
-            logger.info(f"🧹 Playlist data: title='{playlist_title}', path='{playlist_path}', id='{playlist_id}'")
-
-            # List of possible folder names to check
-            possible_folders = []
-
-            # 1. Use the stored path (new format)
-            if playlist_path:
-                folder_path = upload_folder / playlist_path
-                possible_folders.append(folder_path)
-                logger.debug(f"🧹 Added path from DB: {folder_path}")
-
-            # 2. Try normalized path based on title (in case path is missing)
-            if playlist_title:
-                normalized_path = normalize_folder_name(playlist_title)
-                folder_path = upload_folder / normalized_path
-                possible_folders.append(folder_path)
-                logger.debug(f"🧹 Added normalized path: {folder_path}")
-
-                # 3. Try original title as folder name (old format)
-                folder_path = upload_folder / playlist_title
-                possible_folders.append(folder_path)
-                logger.debug(f"🧹 Added original title path: {folder_path}")
-
-            # 4. Fallback: try playlist ID as folder name
-            if playlist_id:
-                folder_path = upload_folder / playlist_id
-                possible_folders.append(folder_path)
-                logger.debug(f"🧹 Added ID path: {folder_path}")
-
-            logger.debug(f"🧹 Total possible folders to check: {len(possible_folders)}")
-
-            # Try to remove any of the possible folders
-            removed_folders = []
-            for i, folder_path in enumerate(possible_folders):
-                logger.debug(f"🧹 Checking folder {i+1}/{len(possible_folders)}: {folder_path}")
-                logger.debug(f"🧹 Folder exists: {folder_path.exists()}, is_dir: {folder_path.is_dir() if folder_path.exists() else 'N/A'}")
-
-                if folder_path.exists() and folder_path.is_dir():
-                    logger.info(f"🧹 Removing folder: {folder_path}")
-                    shutil.rmtree(folder_path)
-                    removed_folders.append(str(folder_path))
-                    logger.info(f"🗂️ Removed playlist folder: {folder_path}")
-
-            if not removed_folders:
-                logger.warning(f"📁 No folder found to clean up for playlist: {playlist_title}")
-            elif len(removed_folders) > 1:
-                logger.info(f"🗂️ Removed multiple folders: {removed_folders}")
+            if folder_path.exists() and folder_path.is_dir():
+                logger.info(f"🗂️ Removing folder: {folder_path}")
+                shutil.rmtree(folder_path)
+                logger.info(f"✅ Removed playlist folder: {folder_path}")
             else:
-                logger.info(f"🗂️ Removed folder: {removed_folders[0]}")
+                logger.warning(f"📁 Folder not found: {folder_path}")
 
         except Exception as e:
-            logger.error(f"⚠️ Failed to clean up folder for playlist {playlist_title}: {e}")
+            logger.error(f"⚠️ Failed to clean up folder for playlist {playlist.title}: {e}")
             import traceback
             logger.error(f"⚠️ Traceback: {traceback.format_exc()}")
             # Don't fail the delete operation if folder cleanup fails

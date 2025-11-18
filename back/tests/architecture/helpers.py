@@ -236,6 +236,10 @@ def validate_ddd_layer_dependencies(graph: nx.DiGraph) -> List[str]:
         if source_layer == 'unknown' or target_layer == 'unknown':
             continue
 
+        # Special case: DI containers are composition roots and can depend on all layers
+        if 'di.container' in source or 'di/container' in source:
+            continue
+
         # Check if dependency is allowed
         if (source_layer in allowed_dependencies and
             target_layer not in allowed_dependencies.get(source_layer, [])):

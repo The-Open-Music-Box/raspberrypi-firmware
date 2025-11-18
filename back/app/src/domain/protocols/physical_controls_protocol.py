@@ -16,11 +16,22 @@ from enum import Enum
 
 class PhysicalControlEvent(Enum):
     """Types of physical control events."""
+    # Legacy named button events (for backward compatibility)
     BUTTON_NEXT_TRACK = "button_next_track"
     BUTTON_PREVIOUS_TRACK = "button_previous_track"
     BUTTON_PLAY_PAUSE = "button_play_pause"
+
+    # Generic configurable button events (button_id: 0-4)
+    BUTTON_0 = "button_0"
+    BUTTON_1 = "button_1"
+    BUTTON_2 = "button_2"
+    BUTTON_3 = "button_3"
+    BUTTON_4 = "button_4"
+
+    # Encoder events
     ENCODER_VOLUME_UP = "encoder_volume_up"
     ENCODER_VOLUME_DOWN = "encoder_volume_down"
+    ENCODER_SWITCH = "encoder_switch"  # Encoder push button (play/pause)
 
 
 class PhysicalControlsProtocol(ABC):

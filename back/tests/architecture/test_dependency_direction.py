@@ -136,6 +136,10 @@ class TestDependencyDirection:
 
         for module in self.dependency_graph.nodes():
             if get_layer_from_module(module) == 'infrastructure':
+                # Skip DI containers - they are composition roots and can depend on all layers
+                if 'di.container' in module or 'di/container' in module:
+                    continue
+
                 dependencies = list(self.dependency_graph.successors(module))
                 for dependency in dependencies:
                     dep_layer = get_layer_from_module(dependency)

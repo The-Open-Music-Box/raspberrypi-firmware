@@ -98,6 +98,17 @@ class NfcHardwareAdapter(NfcHardwareProtocol):
         Args:
             tag_data: Raw tag data from legacy handler
         """
+        # CRITICAL FIX: Check if this is a tag absence event
+        # Absence events should trigger tag_removed_callback, NOT tag_detected_callback
+        if isinstance(tag_data, dict) and tag_data.get("absence"):
+            # This is a tag removal event
+            if self._tag_removed_callback:
+                self._tag_removed_callback()
+                logger.debug(f"📤 Tag {tag_data.get('uid')} removed")
+            else:
+                logger.debug(f"📤 Tag {tag_data.get('uid')} removed (no callback registered)")
+            return  # Do NOT process as tag detection
+
         # Extract tag identifier from legacy data
         tag_uid = None
         # Try different formats for UID extraction

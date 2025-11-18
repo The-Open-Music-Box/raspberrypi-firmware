@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TheOpenMusicBox Socket.IO Contracts",
   "description": "Complete contract definitions for all Socket.IO events based on DDD implementation analysis",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "event_envelope_format": {
     "description": "All state events use standardized envelope format via StateEventCoordinator",
     "schema": {
@@ -243,6 +243,7 @@
                     "title": {"type": "string"},
                     "filename": {"type": "string"},
                     "duration": {"type": ["integer", "null"]},
+                    "duration_ms": {"type": ["integer", "null"]},
                     "artist": {"type": ["string", "null"]},
                     "album": {"type": ["string", "null"]}
                   },
@@ -250,9 +251,10 @@
                 }
               },
               "nfc_tag_id": {"type": ["string", "null"]},
-              "server_seq": {"type": "number"}
+              "server_seq": {"type": "number"},
+              "total_duration_ms": {"type": "integer"}
             },
-            "required": ["id", "title", "tracks"]
+            "required": ["id", "title", "tracks", "total_duration_ms"]
           },
           "description": "Specific playlist updates",
           "frequency": "on_demand"
@@ -267,6 +269,7 @@
               "title": {"type": "string"},
               "filename": {"type": "string"},
               "duration": {"type": ["integer", "null"]},
+              "duration_ms": {"type": ["integer", "null"]},
               "playlist_id": {"type": "string"}
             },
             "required": ["number", "title", "filename", "playlist_id"]
@@ -363,7 +366,8 @@
                   "number": {"type": "integer"},
                   "title": {"type": "string"},
                   "filename": {"type": "string"},
-                  "duration": {"type": ["integer", "null"]}
+                  "duration": {"type": ["integer", "null"]},
+                  "duration_ms": {"type": ["integer", "null"]}
                 },
                 "required": ["number", "title", "filename"]
               }
@@ -605,7 +609,8 @@
                   "number": {"type": "integer"},
                   "title": {"type": "string"},
                   "filename": {"type": "string"},
-                  "duration": {"type": ["integer", "null"]}
+                  "duration": {"type": ["integer", "null"]},
+                  "duration_ms": {"type": ["integer", "null"]}
                 }
               }
             },
@@ -658,7 +663,8 @@
                 "properties": {
                   "title": {"type": "string"},
                   "filename": {"type": "string"},
-                  "duration": {"type": ["integer", "null"]}
+                  "duration": {"type": ["integer", "null"]},
+                  "duration_ms": {"type": ["integer", "null"]}
                 }
               },
               "playlist_id": {"type": "string"}

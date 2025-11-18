@@ -6,7 +6,7 @@
 import { apiClient, ApiResponseHandler } from './apiClient'
 import { API_ROUTES } from '../../constants/apiRoutes'
 import { generateClientOpId } from '../../utils/operationUtils'
-import { ApiResponse } from '../../types/contracts'
+import { ApiResponse } from '../../types'
 
 /**
  * YouTube API methods with standardized response handling

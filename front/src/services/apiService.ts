@@ -125,6 +125,10 @@ export const apiService = {
     return playerApi.next(clientOpId)
   },
 
+  async setVolume(volume: number, clientOpId?: string) {
+    return playerApi.setVolume(volume, clientOpId)
+  },
+
   async createPlaylist(title: string, description?: string) {
     return playlistApi.createPlaylist(title, description || '')
   },
@@ -206,13 +210,12 @@ export const apiService = {
   },
 
   // NFC backward compatibility methods
-  async startNfcAssociation(playlistId: string, clientOpId?: string) {
+  async startNfcAssociation(playlistId: string, clientOpId?: string): Promise<{ scan_id: string; timeout_ms?: number }> {
     return nfcApi.startNfcAssociationScan(playlistId, 60000, clientOpId)
   },
 
-  async cancelNfcObservation(clientOpId?: string) {
-    // Cancel NFC scan - implemented via timeout or explicit cancel if available
-    return Promise.resolve({ status: 'success', message: 'NFC observation cancelled' })
+  async cancelNfcObservation(sessionId: string, clientOpId?: string) {
+    return nfcApi.cancelNfcAssociation(sessionId, clientOpId)
   },
 
   async overrideNfcAssociation(playlistId: string, clientOpId?: string) {

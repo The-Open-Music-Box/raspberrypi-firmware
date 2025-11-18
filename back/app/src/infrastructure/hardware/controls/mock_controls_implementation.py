@@ -8,7 +8,7 @@ Mock Physical Controls Implementation.
 Mock implementation for testing and development without real hardware.
 """
 
-from typing import Callable, Dict, Any
+from typing import Callable, Dict, Any, List, Optional
 import asyncio
 import logging
 
@@ -16,19 +16,22 @@ from app.src.domain.protocols.physical_controls_protocol import (
     PhysicalControlsProtocol,
     PhysicalControlEvent,
 )
+from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
 logger = logging.getLogger(__name__)
 
 
 class MockPhysicalControls(PhysicalControlsProtocol):
     """Mock implementation of physical controls for testing."""
 
-    def __init__(self, hardware_config: Any):
+    def __init__(self, hardware_config: Any, button_configs: Optional[List[ButtonActionConfig]] = None):
         """Initialize mock physical controls.
 
         Args:
             hardware_config: Hardware configuration (for compatibility)
+            button_configs: Optional button configurations (uses DEFAULT_BUTTON_CONFIGS if None)
         """
         self.config = hardware_config
+        self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
         self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
 
@@ -57,13 +60,22 @@ class MockPhysicalControls(PhysicalControlsProtocol):
 
     def get_status(self) -> dict:
         """Get current status of mock controls."""
+        # Build button configuration info
+        button_info = {}
+        for config in self._button_configs:
+            if config.enabled:
+                button_info[f"button_{config.button_id}"] = {
+                    "gpio_pin": config.gpio_pin,
+                    "action": config.action_name,
+                    "description": config.description,
+                }
+
         return {
             "initialized": self._is_initialized,
             "mock_mode": True,
             "event_handlers_count": len(self._event_handlers),
-            "mock_pin_assignments": {
-                "next_button": self.config.gpio_next_track_button,
-                "previous_button": self.config.gpio_previous_track_button,
+            "configurable_buttons": button_info,
+            "encoder": {
                 "play_pause_button": self.config.gpio_volume_encoder_sw,
                 "volume_encoder_clk": self.config.gpio_volume_encoder_clk,
                 "volume_encoder_dt": self.config.gpio_volume_encoder_dt,

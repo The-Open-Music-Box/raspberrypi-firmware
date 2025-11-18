@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TheOpenMusicBox API Contracts",
   "description": "Complete contract definitions for all API endpoints based on DDD implementation analysis",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "unified_response_format": {
     "description": "All API responses follow UnifiedResponseService format",
     "schema": {

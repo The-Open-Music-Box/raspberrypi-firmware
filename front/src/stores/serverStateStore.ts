@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, readonly, computed } from 'vue'
-import socketService from '@/services/socketService'
+import { socketService } from '@/services/SocketServiceFactory'
 import { SOCKET_EVENTS } from '@/constants/apiRoutes'
 import { logger } from '@/utils/logger'
-import type { Track } from '@/components/files/types'
+import type { Track } from '@/types'
 import { getTrackNumber, filterTracksByNumbers } from '@/utils/trackFieldAccessor'
 
 interface Playlist {
