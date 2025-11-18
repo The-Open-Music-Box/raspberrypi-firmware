@@ -30,6 +30,9 @@ types-colorama>=0.4.15
 types-jsonschema>=4.20.0
 types-requests>=2.31.0
 
+# Security scanning
+bandit>=1.7.0
+
 # FastAPI testing
 fastapi[test]>=0.100.0
 
