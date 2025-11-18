@@ -90,11 +90,13 @@ jobs:
           # Create version file
           echo "${{ github.ref_name }}" > tomb/VERSION
 
-          # Create archive
+          # Create versioned archives
           tar -czvf tomb-${{ github.ref_name }}.tar.gz tomb
-
-          # Also create zip for Windows users
           zip -r tomb-${{ github.ref_name }}.zip tomb
+
+          # Create stable-named archives for /releases/latest/download/
+          cp tomb-${{ github.ref_name }}.tar.gz tomb.tar.gz
+          cp tomb-${{ github.ref_name }}.zip tomb.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -102,19 +104,25 @@ jobs:
           files: |
             tomb-${{ github.ref_name }}.tar.gz
             tomb-${{ github.ref_name }}.zip
+            tomb.tar.gz
+            tomb.zip
           generate_release_notes: true
           body: |
             ## Installation
 
-            ### Option 1: Download and extract
+            ### Quick install (always latest)
             ```bash
-            # Download
+            wget https://github.com/${{ github.repository }}/releases/latest/download/tomb.tar.gz
+            tar -xzf tomb.tar.gz
+            cd tomb
+            sudo ./setup.sh
+            sudo reboot
+            ```
+
+            ### Specific version
+            ```bash
             wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/tomb-${{ github.ref_name }}.tar.gz
-
-            # Extract
             tar -xzf tomb-${{ github.ref_name }}.tar.gz
-
-            # Install
             cd tomb
             sudo ./setup.sh
             sudo reboot
