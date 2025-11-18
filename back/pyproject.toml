@@ -38,3 +38,9 @@ skips = ["*_test.py", "*test*.py"]
 min_confidence = 80
 paths = ["app/src"]
 exclude = ["venv", "tests", "build", "dist", "__pycache__"]
+
+[tool.radon]
+exclude = "venv,tests,build,dist,__pycache__"
+cc_min = "C"  # Report complexity C and worse
+show_complexity = true
+average = true
