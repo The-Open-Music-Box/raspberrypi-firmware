@@ -147,3 +147,4 @@ venv/
 ENV/
 env/
 .deploy_config
+coverage.json
