@@ -9,7 +9,6 @@ This module provides factory functions for creating PlaybackCoordinator instance
 using proper dependency injection patterns.
 """
 
-from typing import Optional
 from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
@@ -69,7 +68,6 @@ def set_playback_coordinator_socketio(socketio):
         socketio: Socket.IO server instance
     """
     # Import at function level to avoid circular dependency
-    from app.src.infrastructure.di.container import get_container
     from app.src.application.di.application_container import get_application_container
 
     try:

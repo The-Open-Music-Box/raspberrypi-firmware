@@ -12,7 +12,7 @@ the 600+ duplicated try/catch blocks across the application.
 import asyncio
 import functools
 import traceback
-from typing import Callable, Any, Optional, Dict, Union
+from typing import Callable, Any, Optional, Dict
 from datetime import datetime
 
 from fastapi import HTTPException

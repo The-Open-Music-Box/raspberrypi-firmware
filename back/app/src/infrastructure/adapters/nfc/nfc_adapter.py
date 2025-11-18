@@ -4,8 +4,7 @@
 
 """NFC adapter for domain-driven architecture."""
 
-import asyncio
-from typing import Optional, Callable, Protocol
+from typing import Callable, Protocol
 
 from app.src.monitoring import get_logger
 from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors

@@ -16,7 +16,6 @@ This follows the Command Pattern:
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
 import logging
 
 from app.src.domain.protocols.playback_coordinator_protocol import PlaybackCoordinatorProtocol

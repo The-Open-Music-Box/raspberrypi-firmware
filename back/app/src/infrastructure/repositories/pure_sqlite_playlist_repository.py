@@ -554,7 +554,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                     from pathlib import Path
 
                     file_path = str(Path(config.upload_folder) / playlist_folder / filename)
-                except:
+                except Exception:
                     # Fallback if config not available
                     file_path = f"./uploads/{playlist_folder}/{filename}"
 
@@ -629,7 +629,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                     from app.src.config import config
                     from pathlib import Path
                     file_path = str(Path(config.upload_folder) / "unknown" / filename)
-                except:
+                except Exception:
                     file_path = f"./uploads/unknown/{filename}"
 
             track = Track(
@@ -700,7 +700,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                 from app.src.config import config
                 from pathlib import Path
                 file_path = str(Path(config.upload_folder) / "unknown" / filename)
-            except:
+            except Exception:
                 file_path = f"./uploads/unknown/{filename}"
 
         # Build track entity and convert to dict

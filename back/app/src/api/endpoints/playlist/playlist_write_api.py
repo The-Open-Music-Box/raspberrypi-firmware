@@ -206,4 +206,3 @@ class PlaylistWriteAPI:
                 return UnifiedResponseService.internal_error(
                     message="Failed to delete playlist", operation="delete_playlist"
                 )
-

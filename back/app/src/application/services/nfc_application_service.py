@@ -14,7 +14,6 @@ from app.src.domain.nfc.protocols.nfc_hardware_protocol import (
     NfcRepositoryProtocol,
 )
 from app.src.domain.models.led import LEDState
-from app.src.services.error.unified_error_decorator import handle_service_errors
 import logging
 
 # Type checking imports to avoid circular dependencies

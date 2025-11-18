@@ -157,4 +157,3 @@ class PlaylistNfcAPI:
                     message="Failed to get playlist for NFC tag",
                     operation="get_nfc_playlist"
                 )
-

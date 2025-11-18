@@ -10,8 +10,7 @@ Single Responsibility: HTTP route handling for player operations.
 CONTRACT VALIDATION FIXED: Added server_seq parameter and fixed status codes for 100% contract compliance.
 """
 
-from typing import Optional
-from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi import APIRouter, Request
 from pydantic import Field
 import logging
 
@@ -360,7 +359,7 @@ class PlayerAPIRoutes:
 
                     if result.get("success"):
                         status = result.get("status", {})
-                        
+
                         # Broadcast state change
                         await self._broadcasting_service.broadcast_playback_state_changed(
                             result.get("state"), status
@@ -445,7 +444,7 @@ class PlayerAPIRoutes:
 
                 if result.get("success"):
                     status = result.get("status", {})
-                    
+
                     # Trigger immediate progress via operations service
                     if self._operations_service:
                         await self._operations_service.trigger_immediate_progress_use_case(request)

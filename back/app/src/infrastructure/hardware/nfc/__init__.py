@@ -10,7 +10,7 @@ from .nfc_factory import create_nfc_hardware, get_hardware_info, NFCHardwareSele
 
 # Conditional import for PN532 (only available on Raspberry Pi)
 try:
-    from .pn532_nfc_hardware import PN532NFCHardware
+    from .pn532_nfc_hardware import PN532NFCHardware  # noqa: F401
 
     __all__ = [
         "NFCHardwareInterface",

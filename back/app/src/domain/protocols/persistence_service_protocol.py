@@ -12,7 +12,7 @@ must implement this protocol.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 from contextlib import contextmanager
 
 

@@ -2,7 +2,6 @@
 # This file is part of TheOpenMusicBox and is licensed for non-commercial use only.
 # See the LICENSE file for details.
 
-import os
 from pathlib import Path
 
 # Read version from VERSION file at project root

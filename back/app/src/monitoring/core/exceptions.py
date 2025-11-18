@@ -4,7 +4,7 @@
 
 """Unified Exception Classes for TheOpenMusicBox.
 
-This module consolidates all custom exception classes used throughout 
+This module consolidates all custom exception classes used throughout
 the application for better error handling and debugging.
 """
 
