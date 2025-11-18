@@ -16,7 +16,7 @@ These decorators eliminate repetitive code in API route handlers.
 
 import functools
 import logging
-from typing import Callable, Optional, Any
+from typing import Callable, Optional
 from fastapi import Request
 
 from app.src.services.response.unified_response_service import UnifiedResponseService

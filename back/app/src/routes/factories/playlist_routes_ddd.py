@@ -9,8 +9,7 @@ Pure Domain-Driven Design implementation replacing PlaylistRoutesState.
 Single Responsibility: Route registration and dependency coordination.
 """
 
-from typing import Optional
-from fastapi import FastAPI, File
+from fastapi import FastAPI
 from socketio import AsyncServer
 
 from app.src.monitoring import get_logger

@@ -10,7 +10,7 @@ Following DDD principles:
 - Maintains business invariants and rules
 """
 
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass
 from enum import Enum
 

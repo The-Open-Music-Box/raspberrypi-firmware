@@ -9,7 +9,6 @@ Mock implementation for testing and development without real hardware.
 """
 
 from typing import Callable, Dict, Any, List, Optional
-import asyncio
 import logging
 
 from app.src.domain.protocols.physical_controls_protocol import (

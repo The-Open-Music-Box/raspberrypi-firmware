@@ -10,7 +10,7 @@ Single Responsibility: HTTP route handling for NFC operations.
 """
 
 from typing import Optional
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 import logging
 
@@ -382,11 +382,11 @@ class NFCAPIRoutes:
 
                         # Calculate expires_at timestamp for frontend countdown
                         import time
-                        from datetime import datetime, timezone
+                        from datetime import datetime
                         if timeout_at:
                             try:
                                 expires_at = datetime.fromisoformat(timeout_at.replace('Z', '+00:00')).timestamp()
-                            except:
+                            except Exception:
                                 expires_at = time.time() + (timeout_ms / 1000)
                         else:
                             expires_at = time.time() + (timeout_ms / 1000)

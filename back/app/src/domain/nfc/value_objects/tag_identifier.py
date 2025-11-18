@@ -5,7 +5,6 @@
 """NFC Tag Identifier Value Object."""
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)

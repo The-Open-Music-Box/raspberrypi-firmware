@@ -11,8 +11,6 @@ and external services, implementing audio use cases without containing business 
 
 from typing import Dict, Any
 import logging
-
-from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
 

@@ -6,7 +6,6 @@
 
 import uuid
 from typing import List, Callable, Dict, Any, Optional
-from datetime import datetime
 
 from ..events.nfc_events import (
     NfcDomainEvent,

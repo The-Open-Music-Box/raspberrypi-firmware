@@ -31,7 +31,6 @@ except ImportError:
     mutagen = None
     MutagenFile = None
 
-from app.src.config import config
 from app.src.monitoring import get_logger
 from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
 from app.src.domain.protocols.notification_protocol import PlaybackNotifierProtocol as PlaybackSubject

@@ -5,7 +5,7 @@
 """
 Unified Response Service
 
-This service centralizes all API response formatting to eliminate the 140+ 
+This service centralizes all API response formatting to eliminate the 140+
 duplicated response patterns across the application.
 """
 
@@ -13,7 +13,6 @@ from typing import Dict, Any, Optional, List, Union
 from fastapi.responses import JSONResponse
 import time
 import traceback
-import logging
 from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)

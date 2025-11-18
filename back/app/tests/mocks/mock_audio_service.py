@@ -264,14 +264,6 @@ class MockAudioService(AudioServiceProtocol):
         """
         return self._current_track
 
-    def get_track_count(self) -> int:
-        """Get the total number of tracks.
-
-        Returns:
-            Total track count
-        """
-        return self._track_count
-
     def reset(self):
         """Reset the mock service to initial state."""
         self._is_available = True

@@ -4,8 +4,7 @@
 
 """Pure audio playback controller - no data management."""
 
-import asyncio
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
 from app.src.monitoring import get_logger

@@ -95,9 +95,9 @@ def get_hardware_info() -> dict:
     }
 
     # Check if PN532 libraries are available
-    import adafruit_pn532.i2c
-    import board
-    import busio
+    import adafruit_pn532.i2c  # noqa: F401
+    import board  # noqa: F401
+    import busio  # noqa: F401
 
     info["pn532_libraries_available"] = True
     logger.debug("✅ PN532 libraries are available")

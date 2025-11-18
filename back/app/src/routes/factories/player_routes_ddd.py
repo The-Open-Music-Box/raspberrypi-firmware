@@ -9,7 +9,6 @@ Pure Domain-Driven Design implementation replacing PlayerRoutes.
 Single Responsibility: Route registration and dependency coordination.
 """
 
-from typing import Optional
 from fastapi import FastAPI
 from socketio import AsyncServer
 

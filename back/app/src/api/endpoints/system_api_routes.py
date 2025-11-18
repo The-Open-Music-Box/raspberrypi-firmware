@@ -9,7 +9,6 @@ Clean API routes following Domain-Driven Design principles.
 Single Responsibility: HTTP route handling for system operations.
 """
 
-from typing import Dict, Any
 from fastapi import APIRouter, Request
 import logging
 import platform

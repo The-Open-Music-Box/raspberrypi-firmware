@@ -5,7 +5,6 @@
 """NFC Association Domain Service."""
 
 from typing import Optional, Dict, List
-from datetime import datetime, timezone
 
 from ..entities.nfc_tag import NfcTag
 from ..entities.association_session import AssociationSession, SessionState
@@ -14,7 +13,6 @@ from ..protocols.nfc_hardware_protocol import NfcRepositoryProtocol
 import logging
 
 from typing import Any
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_service_errors
 
 logger = logging.getLogger(__name__)
 

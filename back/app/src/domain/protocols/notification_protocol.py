@@ -4,7 +4,7 @@
 
 """Protocol for notification services in domain layer."""
 
-from typing import Protocol, Dict, Any, Optional
+from typing import Protocol, Dict, Optional
 
 
 class PlaybackNotifierProtocol(Protocol):

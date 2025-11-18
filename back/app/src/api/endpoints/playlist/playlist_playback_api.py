@@ -221,4 +221,3 @@ class PlaylistPlaybackAPI:
                     message="Failed to sync playlists",
                     operation="sync_playlists"
                 )
-

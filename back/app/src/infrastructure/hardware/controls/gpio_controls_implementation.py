@@ -11,7 +11,6 @@ Real hardware implementation using gpiozero for buttons and rotary encoder.
 import os
 from typing import Callable, Dict, Optional, List
 from datetime import datetime
-import asyncio
 from threading import Lock
 
 from app.src.domain.protocols.physical_controls_protocol import (
@@ -39,7 +38,7 @@ if not USE_MOCK_HARDWARE:
 
     # First try gpiozero with native pin factory (RPi.GPIO backend)
     try:
-        from gpiozero import Button, RotaryEncoder, Device
+        from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
         from gpiozero.pins.rpigpio import RPiGPIOFactory
         Device.pin_factory = RPiGPIOFactory()
         logger.info("✅ GPIO hardware available - using RPi.GPIO backend")
@@ -53,7 +52,7 @@ if not USE_MOCK_HARDWARE:
     # If RPi.GPIO didn't work, try lgpio
     if not gpio_backend_initialized:
         try:
-            from gpiozero import Button, RotaryEncoder, Device
+            from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
             from gpiozero.pins.lgpio import LgpioFactory
             Device.pin_factory = LgpioFactory()
             logger.info("✅ GPIO hardware available - using lgpio backend")
@@ -67,7 +66,7 @@ if not USE_MOCK_HARDWARE:
     # If neither worked, try pigpio (requires pigpiod daemon)
     if not gpio_backend_initialized:
         try:
-            from gpiozero import Button, RotaryEncoder, Device
+            from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
             from gpiozero.pins.pigpio import PiGPIOFactory
             Device.pin_factory = PiGPIOFactory()
             logger.info("✅ GPIO hardware available - using pigpio backend")
@@ -180,7 +179,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
             for pin in pins_to_use:
                 try:
                     GPIO_Direct.cleanup(pin)
-                except:
+                except Exception:
                     pass  # Pin might not have been initialized
 
             logger.debug(f"GPIO pins cleaned before initialization: {pins_to_use}")
@@ -247,7 +246,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 GPIO_Direct.setmode(GPIO_Direct.BCM)
                 GPIO_Direct.setwarnings(False)
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_sw)
-            except:
+            except Exception:
                 pass
 
             # Initialize the encoder switch as a button
@@ -283,7 +282,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 GPIO_Direct.setwarnings(False)
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_clk)
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_dt)
-            except:
+            except Exception:
                 pass
 
             # Try to initialize the rotary encoder

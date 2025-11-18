@@ -4,7 +4,6 @@
 
 """Upload Factory for creating configured upload services."""
 
-from typing import Optional
 
 from app.src.domain.upload.services.upload_validation_service import UploadValidationService
 # UploadApplicationService moved to Application layer - use ApplicationContainer
