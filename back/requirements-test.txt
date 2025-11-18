@@ -48,6 +48,9 @@ interrogate>=1.5.0
 # Dependency hygiene
 deptry>=0.12.0
 
+# Comprehensive code analysis (meta-linter)
+prospector[with_everything]>=1.10.0
+
 # FastAPI testing
 fastapi[test]>=0.100.0
 
