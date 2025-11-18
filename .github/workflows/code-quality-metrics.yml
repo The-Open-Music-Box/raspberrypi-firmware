@@ -1,0 +1,79 @@
+name: Code Quality Metrics
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'back/app/src/**'
+      - 'back/pyproject.toml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'back/app/src/**'
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect-metrics:
+    name: Collect Code Quality Metrics
+    runs-on: self-hosted
+
+    defaults:
+      run:
+        working-directory: back
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Install Node.js for jscpd
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run metrics collection
+        run: |
+          ./scripts/export_metrics.sh http://localhost:9091
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Generate metrics summary
+        if: always()
+        run: |
+          echo "## Code Quality Metrics Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+
+          # Capture individual metrics for summary
+          MYPY=$(mypy app/src --no-error-summary 2>&1 | grep -c "error:" || echo "0")
+          echo "| Type Errors (mypy) | $MYPY |" >> $GITHUB_STEP_SUMMARY
+
+          BANDIT=$(bandit -r app/src -f json 2>/dev/null | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data.get('results', [])))" || echo "0")
+          echo "| Security Issues (bandit) | $BANDIT |" >> $GITHUB_STEP_SUMMARY
+
+          RUFF=$(ruff check app/src --output-format=json 2>/dev/null | python3 -c "import sys, json; print(len(json.load(sys.stdin)))" || echo "0")
+          echo "| Lint Issues (ruff) | $RUFF |" >> $GITHUB_STEP_SUMMARY
+
+          VULTURE=$(vulture app/src --min-confidence 80 2>&1 | wc -l | tr -d ' ')
+          echo "| Dead Code (vulture) | $VULTURE |" >> $GITHUB_STEP_SUMMARY
+
+          DOCSTRING=$(interrogate app/src -v 2>&1 | grep "TOTAL" | awk '{print $NF}' || echo "0%")
+          echo "| Docstring Coverage | $DOCSTRING |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed dashboard at: http://homesrv.local:3001" >> $GITHUB_STEP_SUMMARY

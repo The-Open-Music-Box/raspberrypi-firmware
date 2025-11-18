@@ -7,6 +7,14 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-latest-teal.svg)](https://fastapi.tiangolo.com/)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg)](https://vuejs.org/)
 
+<!-- Code Quality Badges -->
+[![Type Check](https://img.shields.io/badge/mypy-1176_errors-red.svg)](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues/37)
+[![Security](https://img.shields.io/badge/bandit-23_issues-yellow.svg)](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues/38)
+[![Complexity](https://img.shields.io/badge/complexity-C_avg-yellow.svg)](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues/40)
+[![Docstrings](https://img.shields.io/badge/docstrings-93.6%25-brightgreen.svg)](back/pyproject.toml)
+[![Duplication](https://img.shields.io/badge/duplication-1.04%25-brightgreen.svg)](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues/42)
+[![Dependencies](https://img.shields.io/badge/vulnerabilities-0-brightgreen.svg)](back/requirements.txt)
+
 <a href="https://www.buymeacoffee.com/rhy6j5cdpq9" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ---
