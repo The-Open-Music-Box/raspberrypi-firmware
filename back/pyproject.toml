@@ -108,3 +108,23 @@ verbose = 0
 # Xenon complexity thresholds for CI
 # Current: max-absolute=E (lenient), target: max-absolute=C
 # Run: xenon --max-absolute E --max-modules D --max-average C app/src
+
+[tool.deptry]
+extend_exclude = ["venv", "tests", "build", "dist"]
+pep621_dev_dependency_groups = ["dev", "test"]
+# Ignore runtime dependencies that are used indirectly
+[tool.deptry.per_rule_ignores]
+# DEP001: Missing dependencies
+DEP001 = [
+    "app",           # Local application package
+    "psutil",        # Optional system monitoring
+    "pygame",        # RPI audio backend (installed on target)
+    "gpiozero",      # RPI GPIO controls (installed on target)
+    "RPi",           # RPI GPIO (installed on target)
+    "adafruit_pn532", # NFC hardware (installed on target)
+    "board",         # Adafruit board (installed on target)
+    "busio",         # Adafruit I2C/SPI (installed on target)
+    "zeroconf"       # mDNS service (installed on target)
+]
+# DEP002: Unused dependencies (used indirectly)
+DEP002 = ["uvicorn", "python-multipart", "aiohttp"]
