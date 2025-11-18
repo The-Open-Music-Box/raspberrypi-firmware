@@ -44,3 +44,48 @@ exclude = "venv,tests,build,dist,__pycache__"
 cc_min = "C"  # Report complexity C and worse
 show_complexity = true
 average = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+exclude = [
+    "venv",
+    "tests",
+    "build",
+    "dist",
+    "__pycache__",
+    ".git"
+]
+
+[tool.ruff.lint]
+# Enable additional rule sets beyond flake8
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "ARG",    # flake8-unused-arguments
+    "RET",    # flake8-return
+    "PTH",    # flake8-use-pathlib
+    "PL",     # pylint
+    "RUF",    # ruff-specific
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "PLR0913", # too many arguments
+    "PLR2004", # magic value comparison
+    "PLR0911", # too many return statements
+    "PLR0912", # too many branches
+    "PLR0915", # too many statements
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # unused imports in __init__
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
