@@ -1,0 +1,131 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: front
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: front
+        run: npm run build
+
+      - name: Package release
+        run: |
+          # Create tomb directory structure
+          mkdir -p tomb/app/static
+
+          # Copy backend files (excluding dev files)
+          rsync -a \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='logs' \
+            --exclude='app.db' \
+            --exclude='venv' \
+            --exclude='.pytest_cache' \
+            --exclude='tests' \
+            back/app/ tomb/app/
+
+          # Create flattened requirements.txt
+          awk -v src_dir="back/requirements" '
+            /^-r / {
+              sub(/^-r /, "", $0);
+              file = src_dir "/" $0;
+              while ((getline line < file) > 0) print line;
+              close(file);
+              next;
+            }
+            { print }
+          ' back/requirements/prod.txt > tomb/requirements.txt
+
+          # Remove comments and blank lines from requirements
+          sed -i '/^\s*#/d;/^\s*$/d' tomb/requirements.txt
+
+          # Copy additional files
+          [ -f back/README.md ] && cp back/README.md tomb/
+          [ -f back/app.service ] && cp back/app.service tomb/
+          [ -f back/LICENSE ] && cp back/LICENSE tomb/
+          [ -f back/setup.sh ] && cp back/setup.sh tomb/ && chmod +x tomb/setup.sh
+          [ -f back/start_app.py ] && cp back/start_app.py tomb/ && chmod +x tomb/start_app.py
+
+          # Copy tools directory
+          if [ -d back/tools ]; then
+            cp -r back/tools tomb/
+            chmod +x tomb/tools/*.py 2>/dev/null || true
+          fi
+
+          # Copy .env template (without secrets)
+          if [ -f back/.env.example ]; then
+            cp back/.env.example tomb/.env
+          elif [ -f back/.env ]; then
+            cp back/.env tomb/.env
+          fi
+
+          # Copy frontend build
+          cp -r front/dist/* tomb/app/static/
+
+          # Create version file
+          echo "${{ github.ref_name }}" > tomb/VERSION
+
+          # Create archive
+          tar -czvf tomb-${{ github.ref_name }}.tar.gz tomb
+
+          # Also create zip for Windows users
+          zip -r tomb-${{ github.ref_name }}.zip tomb
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            tomb-${{ github.ref_name }}.tar.gz
+            tomb-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          body: |
+            ## Installation
+
+            ### Option 1: Download and extract
+            ```bash
+            # Download
+            wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/tomb-${{ github.ref_name }}.tar.gz
+
+            # Extract
+            tar -xzf tomb-${{ github.ref_name }}.tar.gz
+
+            # Install
+            cd tomb
+            sudo ./setup.sh
+            sudo reboot
+            ```
+
+            ### Option 2: Clone and build manually
+            ```bash
+            git clone https://github.com/${{ github.repository }}.git
+            cd raspberrypi-firmware
+            ./deploy.sh --build-only
+            ```
+
+            ---
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ github.event.repository.default_branch }}...${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
