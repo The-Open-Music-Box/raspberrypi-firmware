@@ -28,7 +28,6 @@ readonly NC='\033[0m' # No Color
 # Configuration files
 readonly PROJECT_ROOT="$(dirname "$(realpath "$0")")"
 readonly CONFIG_FILE="${PROJECT_ROOT}/sync_tmbdev.config"
-readonly DEPLOY_CONFIG_FILE="${PROJECT_ROOT}/.deploy_config"
 readonly VERSION_FILE="${PROJECT_ROOT}/VERSION"
 
 # Read app version
@@ -88,7 +87,7 @@ show_help() {
     echo "  --skip-health-check     Skip post-deployment health check"
     echo ""
     echo "EXAMPLES:"
-    echo "  $0 --prod                           # Deploy to last-used server"
+    echo "  $0 --prod tomb                      # Deploy to SSH alias 'tomb'"
     echo "  $0 --prod admin@192.168.1.100      # Deploy to specific server"
     echo "  $0 --dev                            # Local development deployment"
     echo "  $0 --test-only --verbose            # Run all tests with details"
@@ -110,29 +109,6 @@ load_config() {
     else
         if [ "$VERBOSE" = true ]; then
             print_status $YELLOW "⚠️  Configuration file not found: $CONFIG_FILE (using defaults)"
-        fi
-    fi
-}
-
-# Load last-used SSH target
-load_last_ssh_target() {
-    if [ -f "$DEPLOY_CONFIG_FILE" ]; then
-        source "$DEPLOY_CONFIG_FILE"
-        if [ -n "$LAST_SSH_TARGET" ] && [ -z "$SSH_TARGET" ]; then
-            SSH_TARGET="$LAST_SSH_TARGET"
-            if [ "$VERBOSE" = true ]; then
-                print_status $BLUE "📋 Using last SSH target: $SSH_TARGET"
-            fi
-        fi
-    fi
-}
-
-# Save SSH target for future use
-save_ssh_target() {
-    if [ -n "$SSH_TARGET" ]; then
-        echo "LAST_SSH_TARGET=\"$SSH_TARGET\"" > "$DEPLOY_CONFIG_FILE"
-        if [ "$VERBOSE" = true ]; then
-            print_status $BLUE "💾 Saved SSH target: $SSH_TARGET"
         fi
     fi
 }
@@ -353,7 +329,7 @@ deploy_production() {
 
     if [ -z "$SSH_TARGET" ]; then
         print_status $RED "❌ No SSH target specified!"
-        echo "Use: $0 --prod [user@host] or configure LAST_SSH_TARGET"
+        echo "Use: $0 --prod [user@host or ssh-alias]"
         exit 1
     fi
 
@@ -431,7 +407,6 @@ deploy_production() {
         fi
     fi
 
-    save_ssh_target
 }
 
 # Deploy for development
@@ -581,7 +556,6 @@ main() {
 
     # Load configuration
     load_config
-    load_last_ssh_target
 
     # Show configuration
     if [ "$QUIET" != true ]; then
