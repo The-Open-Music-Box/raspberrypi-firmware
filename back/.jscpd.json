@@ -1,0 +1,17 @@
+{
+  "pattern": "**/*.py",
+  "ignore": [
+    "**/venv/**",
+    "**/tests/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/__pycache__/**"
+  ],
+  "threshold": 2,
+  "reporters": ["console"],
+  "minLines": 5,
+  "minTokens": 50,
+  "mode": "strict",
+  "absolute": false,
+  "gitignore": true
+}
