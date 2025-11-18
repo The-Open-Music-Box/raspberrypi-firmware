@@ -41,6 +41,9 @@ vulture>=2.0
 # Complexity metrics
 radon>=5.0
 
+# Documentation coverage
+interrogate>=1.5.0
+
 # FastAPI testing
 fastapi[test]>=0.100.0
 
