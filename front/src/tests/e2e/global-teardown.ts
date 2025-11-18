@@ -93,8 +93,8 @@ async function generateTestSummary(): Promise<void> {
   try {
     const resultsFile = 'test-results/e2e-results.json'
 
-    if (fs.existsSync(resultsFile) {
-      const results = JSON.parse(fs.readFileSync(resultsFile, 'utf-8')
+    if (fs.existsSync(resultsFile)) {
+      const results = JSON.parse(fs.readFileSync(resultsFile, 'utf-8'))
 
       const summary = {
         totalTests: results.stats?.total || 0,
@@ -143,7 +143,7 @@ function extractBrowserResults(results: any): any {
 
   if (results.suites) {
     results.suites.forEach((suite: any) => {
-      if (suite.title && (suite.title.includes('chromium') || suite.title.includes('firefox') || suite.title.includes('webkit')) {
+      if (suite.title && (suite.title.includes('chromium') || suite.title.includes('firefox') || suite.title.includes('webkit'))) {
         browsers[suite.title] = {
           tests: suite.specs?.length || 0,
           passed: suite.specs?.filter((spec: any) => spec.ok).length || 0,
@@ -159,7 +159,7 @@ function extractBrowserResults(results: any): any {
 /**
  * Extract slowest tests
  */
-function extractSlowestTests(results: any, limit: number = 5): any[] {
+function extractSlowestTests(results: any, limit = 5): any[] {
   const allTests: any[] = []
 
   if (results.suites) {
@@ -192,7 +192,7 @@ function extractSlowestTests(results: any, limit: number = 5): any[] {
     .map(test => ({
       ...test,
       duration: Math.round(test.duration)
-    })
+    }))
 }
 
 /**
@@ -296,7 +296,7 @@ async function cleanupTemporaryFiles(): Promise<void> {
 
     // Remove temporary directories
     tempDirs.forEach(dir => {
-      if (fs.existsSync(dir) {
+      if (fs.existsSync(dir)) {
         fs.rmSync(dir, { recursive: true, force: true })
         console.log(`🗑️ Removed temporary directory: ${dir}`)
       }
@@ -304,7 +304,7 @@ async function cleanupTemporaryFiles(): Promise<void> {
 
     // Remove temporary files
     tempFiles.forEach(file => {
-      if (fs.existsSync(file) {
+      if (fs.existsSync(file)) {
         fs.unlinkSync(file)
         console.log(`🗑️ Removed temporary file: ${file}`)
       }
@@ -325,19 +325,19 @@ async function archiveTestResults(): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const archiveDir = `test-archives/e2e-${timestamp}`
 
-    if (!fs.existsSync('test-archives') {
+    if (!fs.existsSync('test-archives')) {
       fs.mkdirSync('test-archives', { recursive: true })
     }
 
     // Copy test results to archive
-    if (fs.existsSync('test-results') {
+    if (fs.existsSync('test-results')) {
       fs.cpSync('test-results', archiveDir, { recursive: true })
       console.log(`📦 Test results archived to: ${archiveDir}`)
     }
 
     // Keep only last 10 archives to save space
     const archives = fs.readdirSync('test-archives')
-      .filter(name => name.startsWith('e2e-')
+      .filter(name => name.startsWith('e2e-'))
       .sort()
 
     if (archives.length > 10) {

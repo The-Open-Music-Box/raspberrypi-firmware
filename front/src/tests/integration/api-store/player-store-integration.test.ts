@@ -206,7 +206,8 @@ describe('Player Store Integration Tests', () => {
         store.updatePlayerState(state)
         expect(store.playerState.is_playing).toBe(state.is_playing)
         expect(store.playerState.position_ms).toBe(state.position_ms)
-      })
+      }
+    })
 
     it('should handle playlist change events', async () => {
       const newPlaylist = createMockPlaylist({ 
@@ -341,6 +342,7 @@ describe('Player Store Integration Tests', () => {
         } else {
           commands.push(apiService.player.pause())
         }
+      }
 
       await Promise.all(commands)
       expect(commandCount).toBe(10)
@@ -358,7 +360,8 @@ describe('Player Store Integration Tests', () => {
           })
           mockSocket.simulate('player_state_changed', state)
           store.updatePlayerState(state)
-        })
+        }
+      })
 
       expect(duration).toBeLessThan(100) // Should complete within 100ms
     })
@@ -566,7 +569,7 @@ describe('Player Store Integration Tests', () => {
     })
 
     it('should handle concurrent command execution', async () => {
-      let commandOrder: string[] = []
+      const commandOrder: string[] = []
 
       context.server.use(
         http.post('/api/player/play', async () => {

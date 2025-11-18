@@ -42,7 +42,7 @@ test.describe('Complete User Journey E2E Tests', () => {
 
   test.afterEach(async ({ page }) => {
     // Clean up test data
-    await E2EUtils.clearBrowserData(page.context()
+    await E2EUtils.clearBrowserData(page.context())
   })
 
   test('Complete Music Listening Journey', async ({ page }) => {
@@ -58,8 +58,8 @@ test.describe('Complete User Journey E2E Tests', () => {
 
     test.step('User arrives at home page', async () => {
       // Verify home page loads correctly
-      await expect(page.locator('[data-testid="home-view"]').toBeVisible()
-      await expect(page.locator('[data-testid="welcome-message"]').toBeVisible()
+      await expect(page.locator('[data-testid="home-view"]')).toBeVisible()
+      await expect(page.locator('[data-testid="welcome-message"]')).toBeVisible()
 
       // Check for featured content
       const featuredPlaylists = page.locator('[data-testid="featured-playlists"]')
@@ -75,7 +75,7 @@ test.describe('Complete User Journey E2E Tests', () => {
     test.step('User browses available playlists', async () => {
       // Navigate to playlists
       await navigationPage.goToPlaylists()
-      await expect(page.locator('[data-testid="playlists-view"]').toBeVisible()
+      await expect(page.locator('[data-testid="playlists-view"]')).toBeVisible()
 
       // Verify playlists are loaded
       await expect(playlistPage.playlistsList).toBeVisible()
@@ -110,8 +110,8 @@ test.describe('Complete User Journey E2E Tests', () => {
       await firstPlaylist.click()
 
       // Verify playlist detail view
-      await expect(page.locator('[data-testid="playlist-detail-view"]').toBeVisible()
-      await expect(page.locator('[data-testid="playlist-title"]')
+      await expect(page.locator('[data-testid="playlist-detail-view"]')).toBeVisible()
+      await expect(page.locator('[data-testid="playlist-title"]'))
         .toContainText(playlistTitle || '')
 
       // Verify tracks are visible
@@ -142,7 +142,7 @@ test.describe('Complete User Journey E2E Tests', () => {
 
       // Navigate to player view
       await navigationPage.goToPlayer()
-      await expect(page.locator('[data-testid="player-view"]').toBeVisible()
+      await expect(page.locator('[data-testid="player-view"]')).toBeVisible()
 
       // Verify playback started
       await playerPage.expectIsPlaying()
@@ -216,7 +216,7 @@ test.describe('Complete User Journey E2E Tests', () => {
       const playlistLink = page.locator('[data-testid="view-playlist-btn"]')
       if (await playlistLink.count() > 0) {
         await playlistLink.click()
-        await expect(page.locator('[data-testid="playlist-detail-view"]').toBeVisible()
+        await expect(page.locator('[data-testid="playlist-detail-view"]')).toBeVisible()
       }
     })
   })
@@ -251,7 +251,7 @@ test.describe('Complete User Journey E2E Tests', () => {
     test.step('User adds tracks to playlist', async () => {
       // Navigate to playlist detail
       await page.locator(`[data-testid*="${testPlaylistTitle}"]`).click()
-      await expect(page.locator('[data-testid="playlist-detail-view"]').toBeVisible()
+      await expect(page.locator('[data-testid="playlist-detail-view"]')).toBeVisible()
 
       // Open track addition interface
       const addTracksBtn = page.locator('[data-testid="add-tracks-btn"]')
@@ -303,7 +303,7 @@ test.describe('Complete User Journey E2E Tests', () => {
     test.step('User edits playlist metadata', async () => {
       // Open edit mode
       await page.locator('[data-testid="edit-playlist-btn"]').click()
-      await expect(page.locator('[data-testid="playlist-edit-view"]').toBeVisible()
+      await expect(page.locator('[data-testid="playlist-edit-view"]')).toBeVisible()
 
       // Update playlist information
       const updatedTitle = `${testPlaylistTitle} - Updated`
@@ -315,10 +315,10 @@ test.describe('Complete User Journey E2E Tests', () => {
       await page.locator('[data-testid="save-btn"]').click()
 
       // Verify changes applied
-      await expect(page.locator('[data-testid="playlist-title"]')
+      await expect(page.locator('[data-testid="playlist-title"]'))
         .toContainText(updatedTitle)
 
-      await expect(page.locator('[data-testid="public-badge"]').toBeVisible()
+      await expect(page.locator('[data-testid="public-badge"]')).toBeVisible()
     })
 
     test.step('User manages playlist sharing', async () => {
@@ -464,7 +464,7 @@ test.describe('Complete User Journey E2E Tests', () => {
 
         // Test menu navigation
         await mobileMenu.locator('[data-testid="nav-playlists"]').click()
-        await expect(page.locator('[data-testid="playlists-view"]').toBeVisible()
+        await expect(page.locator('[data-testid="playlists-view"]')).toBeVisible()
       }
     })
   })
@@ -574,7 +574,7 @@ test.describe('Complete User Journey E2E Tests', () => {
         // Test recovery navigation
         const homeBtn = notFoundPage.locator('[data-testid="home-btn"]')
         await homeBtn.click()
-        await expect(page.locator('[data-testid="home-view"]').toBeVisible()
+        await expect(page.locator('[data-testid="home-view"]')).toBeVisible()
       }
     })
   })
@@ -598,15 +598,15 @@ test.describe('Cross-Device User Journey', () => {
 
         // Basic navigation should work on all devices
         await page.goto('/')
-        await expect(page.locator('[data-testid="app-root"]').toBeVisible()
+        await expect(page.locator('[data-testid="app-root"]')).toBeVisible()
 
         const nav = new NavigationPageObject(page)
         await nav.goToPlaylists()
-        await expect(page.locator('[data-testid="playlists-view"]').toBeVisible()
+        await expect(page.locator('[data-testid="playlists-view"]')).toBeVisible()
 
         // Player should be accessible
         await nav.goToPlayer()
-        await expect(page.locator('[data-testid="player-view"]').toBeVisible()
+        await expect(page.locator('[data-testid="player-view"]')).toBeVisible()
 
         // Take screenshot for visual regression testing
         await page.screenshot({

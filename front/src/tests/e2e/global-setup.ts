@@ -18,8 +18,8 @@ async function globalSetup(config: FullConfig) {
   const videosDir = path.join(testResultsDir, 'videos')
   const tracesDir = path.join(testResultsDir, 'traces')
 
-  [testResultsDir, screenshotsDir, videosDir, tracesDir].forEach(dir => {
-    if (!fs.existsSync(dir) {
+  ;[testResultsDir, screenshotsDir, videosDir, tracesDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
       console.log(`📁 Created directory: ${dir}`)
     }
@@ -77,7 +77,7 @@ async function globalSetup(config: FullConfig) {
 /**
  * Wait for a server to be ready
  */
-async function waitForServer(url: string, timeout: number = 60000): Promise<void> {
+async function waitForServer(url: string, timeout = 60000): Promise<void> {
   const start = Date.now()
 
   while (Date.now() - start < timeout) {
@@ -91,7 +91,7 @@ async function waitForServer(url: string, timeout: number = 60000): Promise<void
       // Server not ready yet, continue waiting
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000)
+    await new Promise(resolve => setTimeout(resolve, 1000))
   }
 
   throw new Error(`Server not ready after ${timeout}ms: ${url}`)
@@ -190,7 +190,7 @@ async function createTestTracks(apiURL: string, playlistId: string, count: numbe
     album: `E2E Test Album ${Math.floor(i / 5) + 1}`,
     duration_ms: 180000 + (Math.random() * 120000), // 3-5 minutes
     file_path: `/test/tracks/track_${i + 1}.mp3`
-  })
+  }))
 
   for (const track of tracks) {
     try {
@@ -235,7 +235,7 @@ async function setupAuthState(page: any, baseURL: string): Promise<void> {
       const authState = await page.context().storageState()
 
       // Save to file for other tests to use
-      fs.writeFileSync('test-results/auth-state.json', JSON.stringify(authState, null, 2)
+      fs.writeFileSync('test-results/auth-state.json', JSON.stringify(authState, null, 2))
       console.log('🔐 Authentication state saved')
     } else {
       console.log('ℹ️ No login required for this application')

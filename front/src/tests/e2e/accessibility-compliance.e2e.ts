@@ -94,7 +94,7 @@ test.describe('Accessibility Compliance', () => {
     // Test Tab navigation
     await page.keyboard.press('Tab')
     let focusedElement = await page.locator(':focus').first()
-    expect(await focusedElement.isVisible().toBe(true)
+    expect(await focusedElement.isVisible()).toBe(true)
 
     // Navigate through all focusable elements
     const focusableElements = []
@@ -111,13 +111,13 @@ test.describe('Accessibility Compliance', () => {
         ariaLabel: el.getAttribute('aria-label'),
         id: el.id,
         className: el.className
-      })
+      }))
 
       focusableElements.push(elementInfo)
       tabCount++
 
       // Check if we've looped back to the first element
-      if (tabCount > 1 && JSON.stringify(elementInfo) === JSON.stringify(focusableElements[0]) {
+      if (tabCount > 1 && JSON.stringify(elementInfo) === JSON.stringify(focusableElements[0])) {
         break
       }
     }
@@ -128,7 +128,7 @@ test.describe('Accessibility Compliance', () => {
     // Test Shift+Tab (reverse navigation)
     await page.keyboard.press('Shift+Tab')
     const reverseFocusedElement = await page.locator(':focus').first()
-    expect(await reverseFocusedElement.isVisible().toBe(true)
+    expect(await reverseFocusedElement.isVisible()).toBe(true)
 
     // Test Enter and Space activation
     const buttons = await page.locator('button, [role="button"], input[type="submit"]').all()
@@ -174,7 +174,7 @@ test.describe('Accessibility Compliance', () => {
 
     for (const heading of headings) {
       const tagName = await heading.evaluate(el => el.tagName)
-      const level = parseInt(tagName.replace('H', '')
+      const level = parseInt(tagName.replace('H', ''))
       headingLevels.push(level)
     }
 
@@ -200,7 +200,7 @@ test.describe('Accessibility Compliance', () => {
     const skipLinks = await page.locator('a[href*="#"], [role="link"][href*="#"]').all()
     for (const skipLink of skipLinks) {
       const href = await skipLink.getAttribute('href')
-      if (href?.startsWith('#') {
+      if (href?.startsWith('#')) {
         const targetId = href.slice(1)
         const target = await page.locator(`#${targetId}`).count()
         expect(target).toBeGreaterThan(0)
@@ -272,7 +272,7 @@ test.describe('Accessibility Compliance', () => {
           // Focus should return to trigger
           const focusedAfterClose = await page.locator(':focus').first()
           const triggerFocused = await trigger.evaluate((el, focused) =>
-            el === focused, await focusedAfterClose.elementHandle()
+            el === focused, await focusedAfterClose.elementHandle())
 
           // This is ideal but not always guaranteed, so we'll check if focus is reasonable
           const isFocusReasonable = await focusedAfterClose.isVisible()
@@ -388,14 +388,14 @@ test.describe('Accessibility Compliance', () => {
 
       // Check that content is still accessible
       const navigation = await page.locator('nav, [role="navigation"]').first()
-      expect(await navigation.isVisible().toBe(true)
+      expect(await navigation.isVisible()).toBe(true)
 
       const mainContent = await page.locator('main, [role="main"]').first()
-      expect(await mainContent.isVisible().toBe(true)
+      expect(await mainContent.isVisible()).toBe(true)
 
       // Check that interactive elements are still clickable
       const buttons = await page.locator('button').all()
-      for (const button of buttons.slice(0, 3) { // Test first 3 buttons
+      for (const button of buttons.slice(0, 3)) { // Test first 3 buttons
         const isVisible = await button.isVisible()
         if (isVisible) {
           const boundingBox = await button.boundingBox()
@@ -407,7 +407,7 @@ test.describe('Accessibility Compliance', () => {
 
       // Check that text is not truncated
       const textElements = await page.locator('p, span, div').all()
-      for (const element of textElements.slice(0, 5) { // Test first 5 text elements
+      for (const element of textElements.slice(0, 5)) { // Test first 5 text elements
         const isVisible = await element.isVisible()
         if (isVisible) {
           const textContent = await element.textContent()

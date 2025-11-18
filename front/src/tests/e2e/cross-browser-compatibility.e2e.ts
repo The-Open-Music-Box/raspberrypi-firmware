@@ -40,7 +40,7 @@ const browserConfigs = {
 test.describe('Cross-Browser Compatibility Tests', () => {
 
   test.describe('Core Functionality Across Browsers', () => {
-    for (const [browserName, config] of Object.entries(browserConfigs) {
+    for (const [browserName, config] of Object.entries(browserConfigs)) {
       test(`${config.name}: Basic application functionality`, async ({ page, browserName: currentBrowser }) => {
         test.skip(currentBrowser !== browserName, `Test specific to ${config.name}`)
 
@@ -50,7 +50,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
 
         await test.step('Application loads and renders correctly', async () => {
           await page.goto('/')
-          await expect(page.locator('[data-testid="app-root"]').toBeVisible()
+          await expect(page.locator('[data-testid="app-root"]')).toBeVisible()
 
           // Check CSS support
           const computedStyle = await page.evaluate(() => {
@@ -62,13 +62,13 @@ test.describe('Cross-Browser Compatibility Tests', () => {
 
         await test.step('Navigation works across all browsers', async () => {
           await navigation.goToPlaylists()
-          await expect(page.locator('[data-testid="playlists-view"]').toBeVisible()
+          await expect(page.locator('[data-testid="playlists-view"]')).toBeVisible()
 
           await navigation.goToPlayer()
-          await expect(page.locator('[data-testid="player-view"]').toBeVisible()
+          await expect(page.locator('[data-testid="player-view"]')).toBeVisible()
 
           await navigation.goToHome()
-          await expect(page.locator('[data-testid="home-view"]').toBeVisible()
+          await expect(page.locator('[data-testid="home-view"]')).toBeVisible()
         })
 
         await test.step('Playlist management works', async () => {
@@ -92,7 +92,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
           // Test basic player controls
           if (await player.playPauseButton.count() > 0) {
             // Test play/pause (considering autoplay restrictions)
-            if (!config.limitations.includes('noAutoplay') {
+            if (!config.limitations.includes('noAutoplay')) {
               await player.play()
               await player.expectIsPlaying()
 
@@ -110,7 +110,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
   })
 
   test.describe('Audio Compatibility Testing', () => {
-    for (const [browserName, config] of Object.entries(browserConfigs) {
+    for (const [browserName, config] of Object.entries(browserConfigs)) {
       test(`${config.name}: Audio format support`, async ({ page, browserName: currentBrowser }) => {
         test.skip(currentBrowser !== browserName, `Test specific to ${config.name}`)
 
@@ -133,7 +133,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
             return 'AudioContext' in window || 'webkitAudioContext' in window
           })
 
-          if (config.features.includes('webAudio') {
+          if (config.features.includes('webAudio')) {
             expect(hasWebAudio).toBe(true)
           }
         })
@@ -165,7 +165,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
       'calc'
     ]
 
-    for (const [browserName, config] of Object.entries(browserConfigs) {
+    for (const [browserName, config] of Object.entries(browserConfigs)) {
       test(`${config.name}: CSS feature support`, async ({ page, browserName: currentBrowser }) => {
         test.skip(currentBrowser !== browserName, `Test specific to ${config.name}`)
 
@@ -260,7 +260,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
       'FormData'
     ]
 
-    for (const [browserName, config] of Object.entries(browserConfigs) {
+    for (const [browserName, config] of Object.entries(browserConfigs)) {
       test(`${config.name}: JavaScript API support`, async ({ page, browserName: currentBrowser }) => {
         test.skip(currentBrowser !== browserName, `Test specific to ${config.name}`)
 
@@ -314,7 +314,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
           // Test click events
           const navigation = new NavigationPageObject(page)
           await navigation.goToPlaylists()
-          await expect(page.locator('[data-testid="playlists-view"]').toBeVisible()
+          await expect(page.locator('[data-testid="playlists-view"]')).toBeVisible()
 
           // Test keyboard events
           await page.keyboard.press('Tab')
@@ -326,7 +326,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
   })
 
   test.describe('File Upload Compatibility', () => {
-    for (const [browserName, config] of Object.entries(browserConfigs) {
+    for (const [browserName, config] of Object.entries(browserConfigs)) {
       test(`${config.name}: File upload functionality`, async ({ page, browserName: currentBrowser }) => {
         test.skip(currentBrowser !== browserName, `Test specific to ${config.name}`)
 
@@ -365,7 +365,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
   })
 
   test.describe('Performance Across Browsers', () => {
-    for (const [browserName, config] of Object.entries(browserConfigs) {
+    for (const [browserName, config] of Object.entries(browserConfigs)) {
       test(`${config.name}: Performance benchmarks`, async ({ page, browserName: currentBrowser }) => {
         test.skip(currentBrowser !== browserName, `Test specific to ${config.name}`)
 
@@ -552,7 +552,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
             await page.waitForTimeout(1000)
 
             // UI should still be functional
-            await expect(page.locator('[data-testid="player-view"]').toBeVisible()
+            await expect(page.locator('[data-testid="player-view"]')).toBeVisible()
           }
         })
 
@@ -562,7 +562,7 @@ test.describe('Cross-Browser Compatibility Tests', () => {
   })
 
   test.describe('Accessibility Across Browsers', () => {
-    for (const [browserName, config] of Object.entries(browserConfigs) {
+    for (const [browserName, config] of Object.entries(browserConfigs)) {
       test(`${config.name}: Accessibility features`, async ({ page, browserName: currentBrowser }) => {
         test.skip(currentBrowser !== browserName, `Test specific to ${config.name}`)
 

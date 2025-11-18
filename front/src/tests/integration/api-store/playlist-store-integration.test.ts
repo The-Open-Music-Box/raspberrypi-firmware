@@ -17,7 +17,7 @@ import {
   setupIntegrationTest,
   mockApiResponses,
   integrationTestData,
-  integrationAssertions
+  integrationAssertions,
   performanceHelpers,
   type IntegrationTestContext
 } from '../helpers/integration-helpers'
@@ -49,7 +49,8 @@ describe('Playlist API ↔ Store Integration', () => {
       expect(store.playlists).toEqual([])
       expect(store.isLoading).toBe(false)
 
-      await integrationAssertions
+      await integrationAssertions.expectLoadingSequence(
+        store,
         async () => {
           await store.loadPlaylists()
         }
@@ -86,7 +87,8 @@ describe('Playlist API ↔ Store Integration', () => {
               page,
               limit,
               pages: Math.ceil(25 / limit)
-            })
+            }
+          })
         })
       )
 
@@ -350,7 +352,7 @@ describe('Playlist API ↔ Store Integration', () => {
         })
       )
 
-      await integrationAssertions
+      await integrationAssertions.expectErrorPropagation(
         store,
         () => store.loadPlaylists(),
         'Internal server error'

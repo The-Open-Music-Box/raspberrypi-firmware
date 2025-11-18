@@ -78,11 +78,11 @@ class SchemaValidator {
     // Basic type validation
     if (schema.type) {
       const actualType = Array.isArray(data) ? 'array' : typeof data
-      if (Array.isArray(schema.type) {
-        if (!schema.type.includes(actualType) && !schema.type.includes('null') {
+      if (Array.isArray(schema.type)) {
+        if (!schema.type.includes(actualType) && !schema.type.includes('null')) {
           errors.push(`Expected type ${schema.type.join(' or ')}, got ${actualType}`)
         }
-      } else if (schema.type !== actualType && !(schema.type === 'null' && data === null) {
+      } else if (schema.type !== actualType && !(schema.type === 'null' && data === null)) {
         errors.push(`Expected type ${schema.type}, got ${actualType}`)
       }
     }
@@ -90,32 +90,32 @@ class SchemaValidator {
     // Required properties validation
     if (schema.required && Array.isArray(schema.required) && typeof data === 'object' && data !== null) {
       for (const prop of schema.required) {
-        if (!(prop in data) {
+        if (!(prop in data)) {
           errors.push(`Missing required property: ${prop}`)
         }
       }
     }
 
     // Properties validation
-    if (schema.properties && typeof data === 'object' && data !== null && !Array.isArray(data) {
-      for (const [propName, propSchema] of Object.entries(schema.properties) {
+    if (schema.properties && typeof data === 'object' && data !== null && !Array.isArray(data)) {
+      for (const [propName, propSchema] of Object.entries(schema.properties)) {
         if (propName in data) {
           const propResult = this.validate(data[propName], propSchema)
-          errors.push(...propResult.errors.map(err => `${propName}: ${err}`)
+          errors.push(...propResult.errors.map(err => `${propName}: ${err}`))
         }
       }
     }
 
     // Array items validation
-    if (schema.items && Array.isArray(data) {
+    if (schema.items && Array.isArray(data)) {
       data.forEach((item, index) => {
         const itemResult = this.validate(item, schema.items)
-        errors.push(...itemResult.errors.map(err => `[${index}]: ${err}`)
+        errors.push(...itemResult.errors.map(err => `[${index}]: ${err}`))
       })
     }
 
     // Enum validation
-    if (schema.enum && !schema.enum.includes(data) {
+    if (schema.enum && !schema.enum.includes(data)) {
       errors.push(`Value ${data} not in allowed values: ${schema.enum.join(', ')}`)
     }
 
@@ -140,7 +140,7 @@ export class ContractValidator {
   private apiClient: AxiosInstance
   private socket: Socket | null = null
   private socketEvents: Array<{ event: string; data: any; timestamp: number }> = []
-  private startTime: number = 0
+  private startTime = 0
 
   constructor(
     private apiBaseUrl: string = 'http://localhost:8000',
@@ -220,15 +220,15 @@ export class ContractValidator {
     try {
       let response: AxiosResponse
 
-      switch (method.toUpperCase() {
+      switch (method.toUpperCase()) {
         case 'GET':
           response = await this.apiClient.get(path)
           break
         case 'POST':
-          response = await this.apiClient.post(path, this.generateTestRequestData(path)
+          response = await this.apiClient.post(path, this.generateTestRequestData(path))
           break
         case 'PUT':
-          response = await this.apiClient.put(path, this.generateTestRequestData(path)
+          response = await this.apiClient.put(path, this.generateTestRequestData(path))
           break
         case 'DELETE':
           response = await this.apiClient.delete(path, { data: this.generateTestRequestData(path) })
@@ -264,13 +264,13 @@ export class ContractValidator {
       }
 
       // Validate response structure matches frontend expectations
-      if (!this.validateFrontendResponseExpectations(path, response.data) {
+      if (!this.validateFrontendResponseExpectations(path, response.data)) {
         validationErrors.push('Response does not match frontend expectations')
       }
 
       // Check content type
       const contentType = response.headers['content-type']
-      if (!contentType?.includes('application/json') {
+      if (!contentType?.includes('application/json')) {
         validationErrors.push(`Expected JSON content type, got: ${contentType}`)
       }
 
@@ -405,7 +405,7 @@ export class ContractValidator {
 
     // Capture all events defined in contracts
     const allEvents = Object.values(socketioContracts.contracts)
-      .flatMap((category: any) => Object.keys(category.events || {})
+      .flatMap((category: any) => Object.keys(category.events || {}))
 
     allEvents.forEach(eventName => {
       this.socket!.on(eventName, (data: any) => {
@@ -437,12 +437,12 @@ export class ContractValidator {
   private async waitForSocketConnection(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
-        reject(new Error('Socket not initialized')
+        reject(new Error('Socket not initialized'))
         return
       }
 
       const timeout = setTimeout(() => {
-        reject(new Error('Socket connection timeout')
+        reject(new Error('Socket connection timeout'))
       }, 10000)
 
       this.socket.on('connect', () => {
@@ -464,7 +464,7 @@ export class ContractValidator {
     const results: ContractTestResult[] = []
 
     // Wait a bit for connection events
-    await new Promise(resolve => setTimeout(resolve, 1000)
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     // Check for connection_status event
     const connectionEvents = this.socketEvents.filter(e => e.event === 'connection_status')
@@ -509,7 +509,7 @@ export class ContractValidator {
 
     // Test joining playlists room
     this.socket.emit('join:playlists', {})
-    await new Promise(resolve => setTimeout(resolve, 500)
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     // Check for ack:join event
     const joinAcks = this.socketEvents.filter(e => e.event === 'ack:join')
@@ -559,10 +559,10 @@ export class ContractValidator {
     }
 
     // Wait for events
-    await new Promise(resolve => setTimeout(resolve, 2000)
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
     // Validate envelope format for state events
-    const stateEvents = this.socketEvents.filter(e => e.event.startsWith('state:')
+    const stateEvents = this.socketEvents.filter(e => e.event.startsWith('state:'))
     const envelopeSchema = socketioContracts.event_envelope_format.schema
 
     if (stateEvents.length === 0) {
@@ -660,7 +660,7 @@ export class ContractValidator {
         .forEach(result => {
           console.log(`❌ ${result.contractType} ${result.endpoint} ${result.method || result.eventName}: ${result.message}`)
           if (result.errors) {
-            result.errors.forEach(error => console.log(`   • ${error}`)
+            result.errors.forEach(error => console.log(`   • ${error}`))
           }
         })
     }

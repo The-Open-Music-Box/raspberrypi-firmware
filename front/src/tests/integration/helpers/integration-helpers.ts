@@ -71,7 +71,7 @@ export function setupIntegrationTest(): IntegrationTestContext {
     http.get('/api/player/status', () => {
       return HttpResponse.json({
         status: 'success',
-        data: createMockPlayerState())
+        data: createMockPlayerState()
       })
     }),
 
@@ -154,11 +154,11 @@ export const integrationTestData = {
 
   createPlayerStateSequence: () => {
     return [
-      createMockPlayerState({ is_playing: false, position_ms: 0 })),
-      createMockPlayerState({ is_playing: true, position_ms: 0 })),
-      createMockPlayerState({ is_playing: true, position_ms: 30000 })),
-      createMockPlayerState({ is_playing: true, position_ms: 60000 })),
-      createMockPlayerState({ is_playing: false, position_ms: 60000 }))
+      createMockPlayerState({ is_playing: false, position_ms: 0 }),
+      createMockPlayerState({ is_playing: true, position_ms: 0 }),
+      createMockPlayerState({ is_playing: true, position_ms: 30000 }),
+      createMockPlayerState({ is_playing: true, position_ms: 60000 }),
+      createMockPlayerState({ is_playing: false, position_ms: 60000 })
     ]
   }
 }
@@ -266,7 +266,7 @@ export const performanceHelpers = {
   ): Promise<T[]> => {
     const start = performance.now()
 
-    const promises = Array.from({ length: count }, () => operation()
+    const promises = Array.from({ length: count }, () => operation())
     const results = await Promise.all(promises)
 
     const duration = performance.now() - start
@@ -310,7 +310,7 @@ export const websocketMocks = {
 
     return {
       on: vi.fn((event: string, handler: Function) => {
-        if (!eventHandlers.has(event) {
+        if (!eventHandlers.has(event)) {
           eventHandlers.set(event, [])
         }
         eventHandlers.get(event)!.push(handler)
@@ -330,7 +330,7 @@ export const websocketMocks = {
 
       simulate: (event: string, data: any) => {
         const handlers = eventHandlers.get(event) || []
-        handlers.forEach(handler => handler(data)
+        handlers.forEach(handler => handler(data))
       },
 
       disconnect: vi.fn(),

@@ -1624,7 +1624,7 @@ describe('SocketService', () => {
 
     it('should handle errors in post-connection sync', () => {
       // Mock socket.emit to throw an error
-      ;(mockSocket.emit as Mock).mockImplementation(() => {
+      (mockSocket.emit as Mock).mockImplementation(() => {
         throw new Error('Socket emit failed')
       })
 

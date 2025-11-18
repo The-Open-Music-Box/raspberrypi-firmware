@@ -128,6 +128,7 @@ describe('Socket Store Integration Tests', () => {
         if (progress === 100) {
           uploadStore.completeUpload('socket-upload')
         }
+      }
 
       // Verify final state
       const finalUpload = uploadStore.uploads.find(u => u.id === 'socket-upload')
@@ -201,7 +202,8 @@ describe('Socket Store Integration Tests', () => {
           } else if (event.type === 'progress_update') {
             const currentState = { ...serverStateStore.playerState, ...(event.data as any) }
             serverStateStore.updatePlayerState(currentState)
-          }, index * 5) // 5ms intervals
+          }
+        }, index * 5) // 5ms intervals
       })
 
       // Wait for all events to process
@@ -236,7 +238,8 @@ describe('Socket Store Integration Tests', () => {
       const batchSize = 50
       const events = Array.from({ length: batchSize }, (_, i) => ({
         type: 'progress_update',
-        data: { position_ms: i * 1000 }))
+        data: { position_ms: i * 1000 }
+      }))
 
       const { duration } = await performanceHelpers.measureDuration(async () => {
         // Simulate all events at once
@@ -310,7 +313,8 @@ describe('Socket Store Integration Tests', () => {
           serverStateStore.updatePlayerState(event.data)
         } else if (event.type === 'playlist_created') {
           playlistStore.addPlaylist(event.data)
-        })
+        }
+      })
 
       // Verify state after replay
       expect(serverStateStore.isConnected).toBe(true)
@@ -332,6 +336,7 @@ describe('Socket Store Integration Tests', () => {
           serverStateStore.updateConnectionState(true)
           return true
         }
+      }
 
       // Simulate connection retry logic
       let connected = false
@@ -340,6 +345,7 @@ describe('Socket Store Integration Tests', () => {
         if (!connected) {
           await new Promise(resolve => setTimeout(resolve, 10))
         }
+      }
 
       expect(connectionAttempts).toBe(3)
       expect(serverStateStore.isConnected).toBe(true)
@@ -406,7 +412,8 @@ describe('Socket Store Integration Tests', () => {
       const eventCount = 1000
       const events = Array.from({ length: eventCount }, (_, i) => ({
         type: 'progress_update',
-        data: { position_ms: i * 100 }))
+        data: { position_ms: i * 100 }
+      }))
 
       const { duration } = await performanceHelpers.measureDuration(async () => {
         events.forEach(event => {
@@ -446,6 +453,7 @@ describe('Socket Store Integration Tests', () => {
           mockSocket.simulate('playlist_created', playlist)
           playlistStore.addPlaylist(playlist)
         }
+      }
 
       // Memory usage should be reasonable
       expect(playlistStore.playlists.length).toBe(5) // 100/20 = 5 playlists
@@ -475,7 +483,8 @@ describe('Socket Store Integration Tests', () => {
           const upload = createMockUploadItem({ id: `concurrent-upload-${i}` })
           mockSocket.simulate('upload_started', upload)
           uploadStore.addUpload(upload)
-        })
+        }
+      })
 
       expect(duration).toBeLessThan(100) // Should handle concurrent updates efficiently
       expect(playlistStore.playlists.length).toBe(concurrentUpdates)

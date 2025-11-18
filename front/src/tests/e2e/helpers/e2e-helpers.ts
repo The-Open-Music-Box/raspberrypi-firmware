@@ -64,7 +64,7 @@ export class E2EMockData {
     }
   }
 
-  static createPlaylistSet(count: number = 5) {
+  static createPlaylistSet(count = 5) {
     return Array.from({ length: count }, (_, i) =>
       this.createMockPlaylist({
         title: `E2E Playlist ${i + 1}`,
@@ -73,7 +73,7 @@ export class E2EMockData {
     )
   }
 
-  static createTrackSet(playlistId: string, count: number = 10) {
+  static createTrackSet(playlistId: string, count = 10) {
     return Array.from({ length: count }, (_, i) =>
       this.createMockTrack({
         number: i + 1,
@@ -120,7 +120,7 @@ export class PlayerPageObject {
   }
 
   async setVolume(volume: number) {
-    await this.volumeSlider.fill(volume.toString()
+    await this.volumeSlider.fill(volume.toString())
   }
 
   async seekTo(percentage: number) {
@@ -157,7 +157,7 @@ export class PlayerPageObject {
   }
 
   async expectVolume(volume: number) {
-    await expect(this.volumeSlider).toHaveValue(volume.toString()
+    await expect(this.volumeSlider).toHaveValue(volume.toString())
   }
 }
 
@@ -227,19 +227,19 @@ export class PlaylistPageObject {
 
   // Assertions
   async expectPlaylistVisible(id: string) {
-    await expect(this.playlistItem(id).toBeVisible()
+    await expect(this.playlistItem(id)).toBeVisible()
   }
 
   async expectPlaylistNotVisible(id: string) {
-    await expect(this.playlistItem(id).not.toBeVisible()
+    await expect(this.playlistItem(id)).not.toBeVisible()
   }
 
   async expectPlaylistCount(count: number) {
-    await expect(this.playlistsList.locator('[data-testid^="playlist-item-"]').toHaveCount(count)
+    await expect(this.playlistsList.locator('[data-testid^="playlist-item-"]')).toHaveCount(count)
   }
 
   async expectPlaylistTitle(id: string, title: string) {
-    await expect(this.playlistTitle(id).toContainText(title)
+    await expect(this.playlistTitle(id)).toContainText(title)
   }
 }
 
@@ -276,7 +276,7 @@ export class NavigationPageObject {
 
   // Assertions
   async expectCurrentRoute(path: string) {
-    await expect(this.page).toHaveURL(new RegExp(path)
+    await expect(this.page).toHaveURL(new RegExp(path))
   }
 }
 
@@ -303,12 +303,12 @@ export class E2EAssertions {
     expect(isPaused).toBe(true)
   }
 
-  async expectProgressBarPosition(percentage: number, tolerance: number = 5) {
+  async expectProgressBarPosition(percentage: number, tolerance = 5) {
     const currentPercentage = await this.page.evaluate(() => {
       const progressFill = document.querySelector('[data-testid="progress-fill"]') as HTMLElement
       if (progressFill) {
         const width = progressFill.style.width
-        return parseFloat(width.replace('%', '')
+        return parseFloat(width.replace('%', ''))
       }
       return 0
     })
@@ -326,7 +326,7 @@ export class E2EAssertions {
       return matchesUrl && response.request().method() === method
     })
 
-    expect(response.status().toBeLessThan(400)
+    expect(response.status()).toBeLessThan(400)
   }
 
   async expectWebSocketMessage(messageType: string) {
@@ -357,12 +357,12 @@ export class E2EAssertions {
 
   async expectPerformanceMetric(metric: 'FCP' | 'LCP' | 'FID', maxValue: number) {
     const performance = await this.page.evaluate(() => {
-      return JSON.stringify(performance.getEntriesByType('navigation')
+      return JSON.stringify(performance.getEntriesByType('navigation'))
     })
 
     const entries = JSON.parse(performance)
     // Would implement specific performance metric checks here
-    expect(entries).toBeDefined())
+    expect(entries).toBeDefined()
   }
 }
 
@@ -476,7 +476,7 @@ export class E2EUtils {
       sessionStorage.clear()
       if ('caches' in window) {
         caches.keys().then(names => {
-          names.forEach(name => caches.delete(name)
+          names.forEach(name => caches.delete(name))
         })
       }
     })
@@ -520,14 +520,14 @@ export class E2EAccessibility {
       // Basic accessibility checks
       const images = document.querySelectorAll('img')
       images.forEach(img => {
-        if (!img.getAttribute('alt') {
+        if (!img.getAttribute('alt')) {
           console.warn('Image missing alt text:', img.src)
         }
       })
 
       const buttons = document.querySelectorAll('button')
       buttons.forEach(button => {
-        if (!button.textContent && !button.getAttribute('aria-label') {
+        if (!button.textContent && !button.getAttribute('aria-label')) {
           console.warn('Button missing accessible text:', button)
         }
       })
@@ -538,7 +538,7 @@ export class E2EAccessibility {
     // Test tab navigation
     await page.keyboard.press('Tab')
     const focusedElement = await page.evaluate(() => document.activeElement?.tagName)
-    expect(focusedElement).toBeDefined())
+    expect(focusedElement).toBeDefined()
   }
 
   static async testScreenReaderAnnouncements(page: Page) {

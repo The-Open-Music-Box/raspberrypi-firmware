@@ -63,7 +63,7 @@ test.describe('Performance Monitoring', () => {
       const request = response.request()
       const url = request.url()
 
-      if (!response.ok() {
+      if (!response.ok()) {
         networkMetrics.failedRequests.push(url)
       }
 
@@ -301,12 +301,12 @@ test.describe('Performance Monitoring', () => {
     while (!uploadCompleted) {
       const progressText = await page.locator('[data-testid="upload-progress"]').textContent()
 
-      if (progressText?.includes('100%') || progressText?.includes('Complete') {
+      if (progressText?.includes('100%') || progressText?.includes('Complete')) {
         uploadCompleted = true
       } else {
         const match = progressText?.match(/(\d+)%/)
         if (match) {
-          progressValues.push(parseInt(match[1])
+          progressValues.push(parseInt(match[1]))
         }
       }
 
