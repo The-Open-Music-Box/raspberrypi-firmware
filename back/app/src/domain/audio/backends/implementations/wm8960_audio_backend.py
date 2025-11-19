@@ -11,7 +11,7 @@ through the WM8960 codec using pygame for reliable audio format handling.
 
 import os
 import asyncio
-import subprocess
+import subprocess  # nosec B404 - subprocess required for ALSA audio device detection and control
 import time
 from pathlib import Path
 from typing import Optional, Any, cast
@@ -128,8 +128,8 @@ class WM8960AudioBackend(BaseAudioBackend):
             str: ALSA device identifier for WM8960
         """
         try:
-            # Try to get list of audio devices
-            result = subprocess.run(["aplay", "-l"], capture_output=True, text=True)
+            # Try to get list of audio devices (hardcoded command, not user input)
+            result = subprocess.run(["aplay", "-l"], capture_output=True, text=True)  # nosec B603 B607
         except FileNotFoundError:
             # aplay not found (e.g., on macOS), use default
             logger.info("🔊 WM8960: aplay not found, using default device")
@@ -469,7 +469,8 @@ class WM8960AudioBackend(BaseAudioBackend):
                 # Try to set system volume via ALSA (optional - pygame is the primary control)
                 try:
                     volume_percent = f"{self._volume}%"
-                    subprocess.run(
+                    # Hardcoded amixer command for volume control, not user input
+                    subprocess.run(  # nosec B603 B607
                         ["amixer", "sset", "Master", volume_percent],
                         check=True,
                         capture_output=True,

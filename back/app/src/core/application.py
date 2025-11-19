@@ -155,7 +155,7 @@ class Application:
             domain_bootstrap = container.get("domain_bootstrap")
             led_handler = domain_bootstrap.led_event_handler
         except Exception:
-            pass  # LED not available, continue without it
+            pass  # nosec B110 - LED not available, continue without it
 
         logger.info(f"🎵 Processing NFC event: {tag_data}")
         if isinstance(tag_data, dict) and tag_data.get("absence"):
@@ -195,7 +195,7 @@ class Application:
                         try:
                             await led_handler.on_nfc_scan_error()
                         except Exception:
-                            pass
+                            pass  # nosec B110 - LED feedback is optional
                     return
 
                 # Schedule async handler in event loop
@@ -208,7 +208,7 @@ class Application:
                         try:
                             await led_handler.on_nfc_scan_success()
                         except Exception:
-                            pass
+                            pass  # nosec B110 - LED feedback is optional
                 except Exception as e:
                     logger.error(f"Error scheduling NFC event handler: {e}")
                     # Show NFC error
@@ -216,7 +216,7 @@ class Application:
                         try:
                             await led_handler.on_nfc_scan_error()
                         except Exception:
-                            pass
+                            pass  # nosec B110 - LED feedback is optional
 
     # MARK: - Domain Playlist Synchronization
     @handle_errors("_sync_playlists_domain")

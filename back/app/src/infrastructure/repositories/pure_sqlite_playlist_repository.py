@@ -797,7 +797,8 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         # Add track_id to params
         params.append(track_id)
 
-        update_command = f"UPDATE tracks SET {', '.join(update_fields)} WHERE id = ?"
+        # Field names are from hardcoded allowed_fields list, not user input
+        update_command = f"UPDATE tracks SET {', '.join(update_fields)} WHERE id = ?"  # nosec B608
         affected_rows = self._db_service.execute_command(
             update_command,
             tuple(params),

@@ -180,7 +180,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 try:
                     GPIO_Direct.cleanup(pin)
                 except Exception:
-                    pass  # Pin might not have been initialized
+                    pass  # nosec B110 - GPIO cleanup, pin might not be initialized
 
             logger.debug(f"GPIO pins cleaned before initialization: {pins_to_use}")
         except Exception as e:
@@ -247,7 +247,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 GPIO_Direct.setwarnings(False)
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_sw)
             except Exception:
-                pass
+                pass  # nosec B110 - GPIO cleanup, pin might not be initialized
 
             # Initialize the encoder switch as a button
             self._devices['encoder_switch'] = Button(
@@ -283,7 +283,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_clk)
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_dt)
             except Exception:
-                pass
+                pass  # nosec B110 - GPIO cleanup, pins might not be initialized
 
             # Try to initialize the rotary encoder
             self._devices['volume_encoder'] = RotaryEncoder(

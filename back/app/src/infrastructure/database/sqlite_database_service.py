@@ -89,7 +89,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                 try:
                     connection.rollback()
                 except Exception:
-                    pass
+                    pass  # nosec B110 - rollback cleanup, best effort
             raise
         finally:
             if connection:
@@ -107,7 +107,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                 try:
                     connection.rollback()
                 except Exception:
-                    pass
+                    pass  # nosec B110 - rollback cleanup, best effort
                 raise
 
     @_handle_infrastructure_errors("database_service")
