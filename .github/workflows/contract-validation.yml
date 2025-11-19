@@ -55,6 +55,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         cd back
+        source venv/bin/activate
         python -m pip install --upgrade pip
         # Install application dependencies
         pip install -r requirements.txt
@@ -71,6 +72,7 @@ jobs:
     - name: Run unit tests with coverage
       run: |
         cd back
+        source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
         # Run unit tests with coverage
@@ -84,6 +86,7 @@ jobs:
     - name: Run contract tests with coverage
       run: |
         cd back
+        source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
         # Run contract tests with coverage (allow to pass if no tests found)
@@ -97,6 +100,7 @@ jobs:
     - name: Start backend server for integration tests
       run: |
         cd back
+        source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
         # Start server in background (use app_sio for Socket.IO support)
@@ -109,6 +113,7 @@ jobs:
     - name: Run integration tests - WebSocket
       run: |
         cd back
+        source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
         # Run WebSocket integration tests
@@ -124,6 +129,7 @@ jobs:
     - name: Run integration tests - E2E
       run: |
         cd back
+        source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
         # Run E2E integration tests (excluding hardware and websocket)
@@ -157,6 +163,7 @@ jobs:
     - name: Start backend server
       run: |
         cd back
+        source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
         # Start server in background (use app_sio for Socket.IO support)
