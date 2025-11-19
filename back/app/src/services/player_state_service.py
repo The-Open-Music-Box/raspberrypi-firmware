@@ -66,9 +66,7 @@ class PlayerStateService:
         manager = state_manager or self.state_manager
 
         if not controller:
-            raise service_unavailable_error(
-                "Audio controller", {"method": "build_current_player_state"}
-            )
+            raise service_unavailable_error("Audio controller")
 
         # Get all data sources
         status = await controller.get_playback_status()
@@ -137,6 +135,7 @@ class PlayerStateService:
             volume=volume,
             muted=muted,
             server_seq=server_seq,
+            error_message=None,
         )
         logger.debug(f"Built player state - playing={is_playing}, playlist={active_playlist_id}, "
                      f"track={active_track_id}, position={position_ms}ms",
@@ -172,12 +171,13 @@ class PlayerStateService:
             volume=100,
             muted=False,
             server_seq=server_seq,
+            error_message=None,
         )
 
     async def build_error_player_state(
         self,
         state_manager=None,
-        error_message: str = None,
+        error_message: Optional[str] = None,
         preserve_current_info: Optional[Dict[str, Any]] = None,
     ) -> PlayerStateModel:
         """

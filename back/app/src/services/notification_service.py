@@ -9,7 +9,7 @@ updates, and track progress monitoring. Includes singleton pattern implementatio
 for centralized event management and Socket.IO integration.
 """
 
-from typing import Any, Dict
+from typing import Optional, Any, Dict
 import logging
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -93,7 +93,7 @@ class PlaybackSubject:
 
     @handle_service_errors("notification")
     def notify_playback_status(
-        self, status: str, playlist_info: Dict = None, track_info: Dict = None
+        self, status: str, playlist_info: Optional[Dict] = None, track_info: Optional[Dict] = None
     ):
         """Store playback status event for internal use only.
 
@@ -120,8 +120,8 @@ class PlaybackSubject:
         elapsed: float,
         total: float,
         track_number: int,
-        track_info: dict = None,
-        playlist_info: dict = None,
+        track_info: Optional[dict] = None,
+        playlist_info: Optional[dict] = None,
         is_playing: bool = True,
     ):
         """Store track progress event for internal use only.

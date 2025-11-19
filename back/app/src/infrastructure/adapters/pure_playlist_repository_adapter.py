@@ -255,7 +255,7 @@ class PurePlaylistRepositoryAdapter:
         return True
 
     @_handle_repository_errors("playlist_adapter")
-    async def get_all_playlists(self, limit: int = None, offset: int = 0) -> List[Dict[str, Any]]:
+    async def get_all_playlists(self, limit: Optional[int] = None, offset: int = 0) -> List[Dict[str, Any]]:
         """Get all playlists using pure DDD principles."""
         playlists = await self._repo.find_all(limit=limit, offset=offset)
         return [self._domain_to_dict(p) for p in playlists]

@@ -148,7 +148,7 @@ def init_api_routes_state(app: FastAPI, socketio, config=None):
     from app.src.services.broadcasting.unified_broadcasting_service import UnifiedBroadcastingService
 
     broadcasting_service = UnifiedBroadcastingService(socketio)
-    app._broadcasting_service = broadcasting_service
+    setattr(app, '_broadcasting_service', broadcasting_service)
     logger.info("✅ UnifiedBroadcastingService created and attached to FastAPI app")
 
     # Inject into Application instance if available

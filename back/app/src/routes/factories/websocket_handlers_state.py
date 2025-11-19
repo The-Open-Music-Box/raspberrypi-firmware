@@ -17,9 +17,10 @@ This factory creates and registers handler instances following DDD principles:
 
 import socketio
 
+from typing import Any
+
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_http_errors
-from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.dependencies import (
     get_nfc_application_service,
     get_playback_coordinator,
@@ -41,7 +42,7 @@ class WebSocketStateHandlers:
     - Maintains single source of truth (state_manager)
     """
 
-    def __init__(self, sio: socketio.AsyncServer, app, state_manager: StateManager):
+    def __init__(self, sio: socketio.AsyncServer, app: Any, state_manager: Any):
         self.sio = sio
         self.app = app
         self.state_manager = state_manager

@@ -143,28 +143,30 @@ class YouTubeApplicationService:
 
             # For now, return mock search results
             # In a real implementation, this would use the YouTube API
+            results_list = [
+                {
+                    "id": "dQw4w9WgXcQ",
+                    "title": f"Mock result for '{query}' - Video 1",
+                    "description": "This is a mock search result",
+                    "duration": "3:35",
+                    "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg"
+                },
+                {
+                    "id": "9bZkp7q19f0",
+                    "title": f"Mock result for '{query}' - Video 2",
+                    "description": "Another mock search result",
+                    "duration": "4:12",
+                    "thumbnail": "https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg"
+                }
+            ]
             mock_results = {
                 "query": query,
-                "results": [
-                    {
-                        "id": "dQw4w9WgXcQ",
-                        "title": f"Mock result for '{query}' - Video 1",
-                        "description": "This is a mock search result",
-                        "duration": "3:35",
-                        "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg"
-                    },
-                    {
-                        "id": "9bZkp7q19f0",
-                        "title": f"Mock result for '{query}' - Video 2",
-                        "description": "Another mock search result",
-                        "duration": "4:12",
-                        "thumbnail": "https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg"
-                    }
-                ][:max_results],
-                "total_results": min(max_results, 2)
+                "results": results_list[:max_results],
+                "total_results": min(max_results, len(results_list))
             }
 
-            logger.info(f"YouTubeService: Found {len(mock_results['results'])} results")
+            results_in_mock = mock_results.get('results', [])
+            logger.info(f"YouTubeService: Found {len(results_in_mock) if isinstance(results_in_mock, list) else 0} results")
             return mock_results
 
         except Exception as e:

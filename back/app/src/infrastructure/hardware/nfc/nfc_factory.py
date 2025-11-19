@@ -55,6 +55,8 @@ async def create_nfc_hardware(
         or sys.platform == "win32"  # Windows development
     )
 
+    hardware: NFCHardwareInterface
+
     if use_mock:
         logger.info("🎭 Creating Mock NFC hardware for development/testing")
         hardware = MockNFCHardware()

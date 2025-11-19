@@ -8,8 +8,9 @@ import mimetypes
 from pathlib import Path
 from typing import List, Optional
 
-from mutagen import File as MutagenFile
-from mutagen.id3 import ID3NoHeaderError
+from mutagen import File as MutagenFile  # type: ignore[import-untyped]
+from mutagen.id3 import ID3NoHeaderError  # type: ignore[import-untyped]
+from typing import Any as MutagenAny
 
 from app.src.domain.upload.protocols.file_storage_protocol import MetadataExtractionProtocol
 from app.src.domain.upload.value_objects.file_metadata import FileMetadata
@@ -59,7 +60,7 @@ class MutagenMetadataExtractor(MetadataExtractionProtocol):
         return metadata
 
     def _extract_audio_metadata(
-        self, audio_file: MutagenFile, base_metadata: FileMetadata
+        self, audio_file: MutagenAny, base_metadata: FileMetadata
     ) -> FileMetadata:
         """Extract audio-specific metadata from Mutagen file.
 
@@ -109,7 +110,7 @@ class MutagenMetadataExtractor(MetadataExtractionProtocol):
             extra_attributes=extra_attributes,
         )
 
-    def _get_tag_value(self, audio_file: MutagenFile, tag_keys: List[str]) -> Optional[str]:
+    def _get_tag_value(self, audio_file: MutagenAny, tag_keys: List[str]) -> Optional[str]:
         """Get tag value trying multiple possible keys.
 
         Args:

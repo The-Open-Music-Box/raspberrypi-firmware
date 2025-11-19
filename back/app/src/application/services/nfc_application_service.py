@@ -58,7 +58,7 @@ class NfcApplicationService:
 
         # Event callbacks
         self._tag_detected_callbacks: List[Callable[[str], None]] = []
-        self._association_callbacks: List[Callable[[Dict], None]] = []
+        self._association_callbacks: List[Callable[[Dict[str, Any]], None]] = []
 
         # CRITICAL FIX: Active tag state management
         # Prevents multiple playback triggers from the same tag
@@ -262,13 +262,13 @@ class NfcApplicationService:
             # Check if association was successful by looking for the tag in the repository
             try:
                 # Try to get the association to verify it worked
-                existing_association = await self._nfc_repository.get_association_by_tag_id(tag_id)
-                if existing_association and existing_association.playlist_id == playlist_id:
+                existing_association = await self._nfc_repository.find_by_identifier(TagIdentifier(uid=tag_id))
+                if existing_association and getattr(existing_association, 'playlist_id', None) == playlist_id:
                     return {
                         "status": "success",
                         "message": "Tag associated successfully",
                         "playlist_title": "Associated Playlist",
-                        "created_at": existing_association.created_at.isoformat() if hasattr(existing_association, 'created_at') else "",
+                        "created_at": str(getattr(existing_association, 'created_at', '') or ''),
                     }
                 else:
                     return {
@@ -329,7 +329,7 @@ class NfcApplicationService:
         """
         self._tag_detected_callbacks.append(callback)
 
-    def register_association_callback(self, callback: Callable[[Dict], None]) -> None:
+    def register_association_callback(self, callback: Callable[[Dict[str, Any]], None]) -> None:
         """Register callback for association events.
 
         Args:
@@ -337,7 +337,7 @@ class NfcApplicationService:
         """
         self._association_callbacks.append(callback)
 
-    def _on_tag_detected(self, tag_data) -> None:
+    def _on_tag_detected(self, tag_data: Any) -> None:
         """Handle tag detection from hardware."""
         # Convert string or dict to TagIdentifier
         if isinstance(tag_data, str):
@@ -489,15 +489,16 @@ class NfcApplicationService:
             logger.debug(
                 f"🔔 Notifying {len(self._association_callbacks)} association callbacks with result: {result}"
             )
-            for callback in self._association_callbacks:
-                callback(result)
+            for assoc_callback in self._association_callbacks:
+                assoc_callback(result)
 
         # Notify tag detection callbacks (triggers playback)
         logger.debug(
             f"🔔 Notifying {len(self._tag_detected_callbacks)} tag detection callbacks for playback"
         )
-        for callback in self._tag_detected_callbacks:
-            callback(str(tag_identifier))
+        tag_str = str(tag_identifier)
+        for tag_callback in self._tag_detected_callbacks:
+            tag_callback(tag_str)
 
     async def _periodic_cleanup(self) -> None:
         """Periodic cleanup of expired sessions."""

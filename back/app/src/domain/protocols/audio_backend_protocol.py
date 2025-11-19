@@ -30,7 +30,7 @@ class AudioBackendProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def pause(self) -> bool:
+    def pause(self) -> bool:
         """Pause current playback.
 
         Returns:
@@ -39,7 +39,7 @@ class AudioBackendProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def resume(self) -> bool:
+    def resume(self) -> bool:
         """Resume paused playback.
 
         Returns:
@@ -48,7 +48,7 @@ class AudioBackendProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def stop(self) -> bool:
+    def stop(self) -> bool:
         """Stop current playback.
 
         Returns:
@@ -90,23 +90,24 @@ class AudioBackendProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def get_position(self) -> Optional[int]:
+    def get_position(self) -> Optional[float]:
         """Get current playback position.
 
         Returns:
-            Current position in milliseconds or None if not playing
+            Current position in seconds or None if not playing
         """
         ...
 
     @abstractmethod
-    async def get_duration(self) -> Optional[int]:
+    def get_duration(self) -> Optional[float]:
         """Get duration of current track.
 
         Returns:
-            Duration in milliseconds or None if not available
+            Duration in seconds or None if not available
         """
         ...
 
+    @property
     @abstractmethod
     def is_playing(self) -> bool:
         """Check if audio is currently playing.

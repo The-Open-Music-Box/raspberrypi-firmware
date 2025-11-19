@@ -124,7 +124,7 @@ class UnifiedStateManager(StateManagerProtocol):
         """Check if a client operation has already been processed."""
         return await self.operations.is_operation_processed(client_op_id)
 
-    async def mark_operation_processed(self, client_op_id: str, result: Any = None) -> None:
+    async def mark_operation_processed(self, client_op_id: str, result: Optional[Any] = None) -> None:
         """Mark a client operation as processed with optional result caching."""
         await self.operations.mark_operation_processed(client_op_id, result)
 

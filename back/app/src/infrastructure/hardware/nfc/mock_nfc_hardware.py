@@ -124,7 +124,7 @@ class MockNFCHardware(NFCHardwareInterface):
                 logger.info(
                     f"📡 Mock NFC: Waiting for tag... (cycle {self._simulation_cycle}, scans: {self._scan_counter})",
                 )
-                last_info_log = now
+                last_info_log = now  # type: ignore[assignment]
             # 100ms scan interval
             await asyncio.sleep(0.1)
 

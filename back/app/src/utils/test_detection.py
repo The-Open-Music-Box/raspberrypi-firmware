@@ -176,13 +176,14 @@ def create_mock_response(
     }
 
     creator = creators.get(resource_type)
-    if not creator:
+    if creator is None:
         raise ValueError(
             f"Unsupported resource_type: {resource_type}. "
             f"Supported types: {', '.join(creators.keys())}"
         )
 
-    return creator(**kwargs)
+    # Type is guaranteed to be Callable at this point
+    return creator(**kwargs)  # type: ignore[operator]
 
 
 # Legacy function names for backward compatibility

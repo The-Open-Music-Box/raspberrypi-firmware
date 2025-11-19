@@ -27,9 +27,9 @@ class ErrorContext:
 
     def __init__(
         self,
-        operation: str = None,
-        component: str = None,
-        client_op_id: str = None,
+        operation: Optional[str] = None,
+        component: Optional[str] = None,
+        client_op_id: Optional[str] = None,
         user_friendly: bool = True,
         log_level: Any = logging.ERROR,
         include_trace: bool = False,

@@ -467,7 +467,7 @@ class PlaylistService:
         """
         import shutil
 
-        stats = {
+        stats: Dict[str, Any] = {
             'folders_scanned': 0,
             'folders_removed': 0,
             'removed_paths': []
@@ -495,7 +495,7 @@ class PlaylistService:
             if not folder.is_dir():
                 continue
 
-            stats['folders_scanned'] += 1
+            stats['folders_scanned'] = int(stats['folders_scanned']) + 1
             folder_name = folder.name
 
             # Check if folder corresponds to any playlist (by path or title)
@@ -508,8 +508,10 @@ class PlaylistService:
                 # Orphaned folder - remove it
                 try:
                     shutil.rmtree(folder)
-                    stats['folders_removed'] += 1
-                    stats['removed_paths'].append(str(folder))
+                    stats['folders_removed'] = int(stats['folders_removed']) + 1
+                    removed_paths = stats['removed_paths']
+                    if isinstance(removed_paths, list):
+                        removed_paths.append(str(folder))
                     logger.info(f"🗑️ Removed orphaned folder: {folder}")
                 except Exception as e:
                     logger.error(f"Failed to remove orphaned folder {folder}: {e}")

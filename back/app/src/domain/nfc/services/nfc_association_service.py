@@ -84,7 +84,7 @@ class NfcAssociationService:
 
     async def process_tag_detection(
         self, tag_identifier: TagIdentifier, session_id: Optional[str] = None
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Process a detected NFC tag.
 
         Args:
@@ -148,7 +148,7 @@ class NfcAssociationService:
 
     async def _process_tag_for_session(
         self, tag: NfcTag, session: AssociationSession
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Process a tag detection for a specific session.
 
         DATABASE-FIRST ARCHITECTURE:

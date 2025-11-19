@@ -12,12 +12,14 @@ Implements the domain's PersistenceServiceProtocol using SQLite.
 from app.src.infrastructure.database.sqlite_database_service import SQLiteDatabaseService
 from app.src.monitoring import get_logger
 from app.src.config import config
+from typing import Optional, Any
 
 # Optional migration support - will be None if not available
+MigrationRunner: Any = None
 try:
     from app.src.data.migrations.migration_runner import MigrationRunner
 except ImportError:
-    MigrationRunner = None
+    pass  # MigrationRunner stays None
 
 logger = get_logger(__name__)
 
@@ -30,7 +32,7 @@ class DatabaseManager:
     Singleton lifecycle is managed by the DI container.
     """
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: Optional[str] = None):
         """Initialize DatabaseManager.
 
         Args:

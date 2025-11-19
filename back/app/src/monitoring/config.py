@@ -23,9 +23,10 @@ warnings.warn(
 )
 
 # Re-export from new location for backward compatibility
-from app.src.config.monitoring_config import (
-    MonitoringConfig,
-    monitoring_config,
-)
+from app.src.config.monitoring_config import MonitoringConfig
+
+# For backward compatibility, provide a default instance
+# Note: Prefer using DI container instead of this global instance
+monitoring_config = MonitoringConfig()
 
 __all__ = ["MonitoringConfig", "monitoring_config"]

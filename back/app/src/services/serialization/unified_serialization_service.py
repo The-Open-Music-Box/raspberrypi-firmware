@@ -10,7 +10,7 @@ across the application. It provides consistent formats for playlists, tracks,
 and player states across all layers (API, WebSocket, Database).
 """
 
-from typing import Dict, Any, List
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -60,7 +60,7 @@ class UnifiedSerializationService:
         # Handle different input types
         if playlist is None:
             # Handle None input
-            playlist_data = {
+            playlist_data: Dict[str, Any] = {
                 "id": None,
                 "title": "",
                 "description": "",
@@ -111,9 +111,11 @@ class UnifiedSerializationService:
                 result["tracks"] = []
             # Calculate total duration if requested
             if calculate_duration:
-                total_duration_ms = sum(track.get("duration_ms", 0) or 0 for track in result["tracks"])
-                result["total_duration_ms"] = total_duration_ms
-                result["track_count"] = len(result["tracks"])
+                tracks_list = result.get("tracks", []) or []
+                if isinstance(tracks_list, list):
+                    total_duration_ms = sum(track.get("duration_ms", 0) or 0 for track in tracks_list if isinstance(track, dict))
+                    result["total_duration_ms"] = total_duration_ms
+                    result["track_count"] = len(tracks_list)
         # Format-specific adjustments
         if format == UnifiedSerializationService.FORMAT_API:
             # API format includes additional metadata required by frontend
@@ -125,7 +127,8 @@ class UnifiedSerializationService:
             )
             # Add required frontend fields
             result["type"] = "playlist"  # Required by frontend PlayList interface
-            result["last_played"] = playlist_data.get("last_played", 0)  # Default to 0 if not set
+            last_played = playlist_data.get("last_played")
+            result["last_played"] = last_played if last_played is not None else 0  # Default to 0 if not set
         elif format == UnifiedSerializationService.FORMAT_WEBSOCKET:
             # WebSocket format is more compact
             if not include_tracks:
@@ -256,7 +259,7 @@ class UnifiedSerializationService:
     @staticmethod
     @handle_service_errors("unified_serialization")
     def serialize_player_state(
-        audio_controller: Any, state_manager: Any = None, include_playlist: bool = True
+        audio_controller: Any, state_manager: Optional[Any] = None, include_playlist: bool = True
     ) -> Dict[str, Any]:
         """
         Construit l'état player unifié.
@@ -313,13 +316,14 @@ class UnifiedSerializationService:
                 if hasattr(current_playlist, "tracks") and current_playlist.tracks:
                     if 0 <= current_track_index < len(current_playlist.tracks):
                         current_track = current_playlist.tracks[current_track_index]
-                        state["active_track"] = UnifiedSerializationService.serialize_track(
+                        active_track_data = UnifiedSerializationService.serialize_track(
                             current_track, format=UnifiedSerializationService.FORMAT_WEBSOCKET
                         )
-                        state["active_track_id"] = state["active_track"].get("id")
-                        state["active_track_number"] = state["active_track"].get("track_number", current_track_index + 1)
-                        state["active_track_title"] = state["active_track"].get("title", "")
-                        state["duration_ms"] = state["active_track"].get("duration_ms", 0)
+                        state["active_track"] = active_track_data
+                        state["active_track_id"] = active_track_data.get("id")
+                        state["active_track_number"] = active_track_data.get("track_number", current_track_index + 1)
+                        state["active_track_title"] = active_track_data.get("title", "")
+                        state["duration_ms"] = active_track_data.get("duration_ms", 0)
             else:
                 # No active playlist
                 state.update(

@@ -72,7 +72,7 @@ class ResponseUtils:
         Returns:
             JSONResponse with error format
         """
-        response_data = {"status": "error", "message": error_message}
+        response_data: Dict[str, Any] = {"status": "error", "message": error_message}
 
         if error_details:
             response_data["details"] = error_details

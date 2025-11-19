@@ -18,7 +18,7 @@ class ErrorHandlerProtocol(Protocol):
         operation_name: Optional[str] = None,
         component: Optional[str] = None,
         return_response: bool = True,
-        log_level: Any = None,
+        log_level: Optional[Any] = None,
         include_trace: bool = False,
         custom_error_map: Optional[Dict[type, str]] = None,
     ) -> Callable:

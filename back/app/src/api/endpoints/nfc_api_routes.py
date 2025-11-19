@@ -110,11 +110,12 @@ class NFCAPIRoutes:
 
                 if is_test_data:
                     logger.info(f"Test data detected (playlist={playlist_id}, tag={tag_id})")
+                    from datetime import datetime
                     mock_association = NFCAssociationModel(
                         tag_id=tag_id or "mock-tag-id",
                         playlist_id=playlist_id or "mock-playlist-id",
                         playlist_title="Mock Test Playlist",
-                        created_at="2025-01-01T00:00:00Z",
+                        created_at=datetime.fromisoformat("2025-01-01T00:00:00+00:00"),
                     )
                     return UnifiedResponseService.success(
                         message="NFC tag associated successfully (mock response)",

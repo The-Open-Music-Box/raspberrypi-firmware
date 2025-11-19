@@ -13,7 +13,7 @@ import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any
 
 from app.src.infrastructure.error_handling.unified_error_handler import InvalidFileError
 import logging
@@ -43,7 +43,7 @@ class ChunkedUploadService:
         self.upload_service = upload_service or UploadService(config)
         self.max_file_size = config.upload_max_size
         self.allowed_extensions = set(config.upload_allowed_extensions)
-        self.active_uploads = (
+        self.active_uploads: Dict[str, Dict[str, Any]] = (
             {}
         )  # Dictionary to track active uploads: {session_id: {filename, chunks, total_size, etc}}
 

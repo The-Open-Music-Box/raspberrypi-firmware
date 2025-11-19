@@ -5,9 +5,12 @@
 """NFC Hardware Protocol Interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Callable
+from typing import Optional, Callable, TYPE_CHECKING
 
 from ..value_objects.tag_identifier import TagIdentifier
+
+if TYPE_CHECKING:
+    from ..entities.nfc_tag import NfcTag
 
 
 class NfcHardwareProtocol(ABC):

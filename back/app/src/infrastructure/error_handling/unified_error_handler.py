@@ -48,11 +48,11 @@ class ErrorContext:
     operation: str
     category: ErrorCategory = ErrorCategory.GENERAL
     severity: ErrorSeverity = ErrorSeverity.MEDIUM
-    metadata: Dict[str, Any] = None
+    metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.metadata is None:
-            self.metadata = {}
+            object.__setattr__(self, 'metadata', {})
 
 
 @dataclass
@@ -441,17 +441,21 @@ class UnifiedErrorHandler:
 
     def _calculate_average_resolution_time(self) -> Optional[float]:
         """Calculate average resolution time for resolved errors."""
-        resolved_records = [r for r in self._error_records if r.resolved and r.resolution_time]
+        resolved_records = [r for r in self._error_records if r.resolved and r.resolution_time is not None]
 
         if not resolved_records:
             return None
 
-        total_time = sum(r.resolution_time - r.timestamp for r in resolved_records)
+        total_time = sum(
+            (r.resolution_time - r.timestamp)
+            for r in resolved_records
+            if r.resolution_time is not None
+        )
         return total_time / len(resolved_records)
 
     def _get_most_common_errors(self, limit: int) -> List[Dict[str, Any]]:
         """Get most common error types."""
-        error_counts = {}
+        error_counts: Dict[str, int] = {}
 
         for record in self._error_records:
             key = f"{record.error_type}:{record.context.component}"

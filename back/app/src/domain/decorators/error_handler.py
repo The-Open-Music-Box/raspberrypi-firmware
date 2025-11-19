@@ -25,7 +25,7 @@ def handle_domain_errors(
     log_level: int = logging.ERROR,
     include_trace: bool = False,
     reraise: bool = True,
-    default_return: Any = None,
+    default_return: Optional[Any] = None,
 ) -> Callable:
     """
     Pure domain layer error handler decorator.
