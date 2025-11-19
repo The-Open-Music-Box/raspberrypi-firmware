@@ -53,7 +53,7 @@ class OperationTracker:
                 return True
             return False
 
-    async def mark_operation_processed(self, client_op_id: str, result: Any = None) -> None:
+    async def mark_operation_processed(self, client_op_id: str, result: Optional[Any] = None) -> None:
         """Mark a client operation as processed with thread safety and optional result caching."""
         async with self._operations_lock:
             current_time = time.time()

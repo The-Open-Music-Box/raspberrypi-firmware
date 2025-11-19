@@ -253,7 +253,10 @@ class UploadApplicationService:
             return {"completion_status": "failed", "completion_errors": validation_result["errors"]}
         # Assemble file - use playlist_path if available, fallback to playlist_id
         playlist_folder = getattr(session, 'playlist_path', None) or session.playlist_id
-        output_path = self._upload_folder / playlist_folder / session.filename
+        if playlist_folder is None:
+            session.mark_failed("No playlist folder specified")
+            return {"completion_status": "failed", "completion_errors": ["No playlist folder specified"]}
+        output_path = self._upload_folder / str(playlist_folder) / session.filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
         assembled_path = await self._file_storage.assemble_file(session, output_path)
         # Verify file integrity

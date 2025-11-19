@@ -4,7 +4,7 @@
 
 """Factory for creating audio domain components."""
 
-from typing import Any
+from typing import Optional, Any
 
 from app.src.monitoring import get_logger
 from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
@@ -60,8 +60,8 @@ class AudioDomainFactory:
     @staticmethod
     def create_audio_engine(
         backend: AudioBackendProtocol,
-        event_bus: EventBusProtocol = None,
-        state_manager: StateManagerProtocol = None,
+        event_bus: Optional[EventBusProtocol] = None,
+        state_manager: Optional[StateManagerProtocol] = None,
     ) -> AudioEngineProtocol:
         """Create a complete audio engine.
 
@@ -125,9 +125,9 @@ class AudioDomainFactory:
         import sys
         import os
 
-        from app.src.domain.protocols.notification_protocol import PlaybackNotifierProtocol as PlaybackSubject
+        from app.src.domain.protocols.notification_protocol import MockPlaybackNotifier
 
-        playback_subject = PlaybackSubject.get_instance()
+        playback_subject = MockPlaybackNotifier.get_instance()
 
         # Check if we should use mock hardware
         use_mock_env = os.getenv("USE_MOCK_HARDWARE", "false").lower()

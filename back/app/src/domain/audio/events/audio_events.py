@@ -5,7 +5,7 @@
 """Audio domain events."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 
 from app.src.domain.protocols.event_bus_protocol import AudioEvent
 from app.src.domain.protocols.state_manager_protocol import PlaybackState
@@ -118,10 +118,10 @@ class LogEvent(AudioEvent):
         logger_name: str,
         level: str,
         message: str,
-        timestamp: float
+        log_timestamp: float
     ):
         super().__init__(source_component)
         self.logger_name = logger_name
         self.level = level
         self.message = message
-        self.timestamp = timestamp
+        self.log_timestamp = log_timestamp

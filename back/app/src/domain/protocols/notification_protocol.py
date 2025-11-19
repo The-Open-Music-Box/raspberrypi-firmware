@@ -4,7 +4,7 @@
 
 """Protocol for notification services in domain layer."""
 
-from typing import Protocol, Dict, Optional
+from typing import Protocol, Dict, Optional, Any
 
 
 class PlaybackNotifierProtocol(Protocol):
@@ -42,6 +42,14 @@ class PlaybackNotifierProtocol(Protocol):
         """
         ...
 
+    def notify(self, event_data: Dict[str, Any]) -> None:
+        """Notify observers with event data.
+
+        Args:
+            event_data: Event data dictionary
+        """
+        ...
+
 
 class MockPlaybackNotifier:
     """Mock implementation of PlaybackNotifierProtocol for testing."""
@@ -74,6 +82,10 @@ class MockPlaybackNotifier:
         """Mock notification - does nothing."""
         pass
 
+    def notify(self, event_data: Dict[str, Any]) -> None:
+        """Mock notification - does nothing."""
+        pass
 
-# Alias for backward compatibility
-PlaybackNotifierProtocol.get_instance = MockPlaybackNotifier.get_instance
+
+# Note: Use MockPlaybackNotifier.get_instance() directly for singleton access
+# PlaybackNotifierProtocol is a Protocol class and shouldn't have class methods added

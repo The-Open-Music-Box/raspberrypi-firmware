@@ -10,7 +10,7 @@ Following DDD principles:
 - Maintains business invariants and rules
 """
 
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
 
@@ -35,7 +35,7 @@ class ReorderingCommand:
     strategy: ReorderingStrategy
     track_numbers: List[int]
     target_positions: Optional[List[int]] = None
-    validation_rules: Optional[Dict[str, any]] = None
+    validation_rules: Optional[Dict[str, Any]] = None
 
 
 @dataclass

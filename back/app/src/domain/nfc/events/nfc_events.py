@@ -32,7 +32,7 @@ class TagDetectedEvent(NfcDomainEvent):
     tag_identifier: TagIdentifier
     detection_count: int
     previously_associated_playlist_id: Optional[str] = None
-    hardware_metadata: Dict[str, Any] = None
+    hardware_metadata: Optional[Dict[str, Any]] = None
 
     @classmethod
     def create(

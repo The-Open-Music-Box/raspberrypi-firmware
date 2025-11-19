@@ -106,5 +106,6 @@ class UnifiedNFCRoutes:
         if not self.api_routes:
             self.initialize()
 
-        self.app.include_router(self.api_routes.get_router(), prefix=prefix, tags=["nfc"])
+        if self.api_routes is not None:
+            self.app.include_router(self.api_routes.get_router(), prefix=prefix, tags=["nfc"])
         logger.info(f"✅ Unified NFC routes registered with prefix: {prefix}")

@@ -19,7 +19,6 @@ import socketio
 
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_http_errors
-from app.src.domain.audio.engine.state_manager import StateManager
 
 logger = get_logger(__name__)
 
@@ -37,7 +36,7 @@ class SyncHandlers:
     def __init__(
         self,
         sio: socketio.AsyncServer,
-        state_manager: StateManager,
+        state_manager: Any,
         playback_coordinator: Any,
         player_state_service: Any,
     ):

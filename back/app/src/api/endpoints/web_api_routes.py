@@ -10,6 +10,7 @@ Single Responsibility: HTTP route handling for static files and SPA routing.
 """
 
 from pathlib import Path
+from typing import Optional
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 import logging
@@ -112,7 +113,7 @@ class WebAPIRoutes:
             logger.error(f"Error registering web routes: {e}", exc_info=True)
             raise
 
-    def get_router(self) -> APIRouter:
+    def get_router(self) -> Optional[APIRouter]:
         """
         Web routes don't use a router pattern.
 

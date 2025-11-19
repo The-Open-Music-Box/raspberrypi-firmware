@@ -100,7 +100,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
         self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
         self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
-        self._devices = {}
+        self._devices: Dict[str, Any] = {}
         self._lock = Lock()
 
         # Encoder state tracking

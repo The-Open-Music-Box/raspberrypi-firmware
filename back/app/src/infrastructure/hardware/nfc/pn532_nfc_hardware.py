@@ -70,10 +70,11 @@ class PN532NFCHardware(NFCHardwareInterface):
         # Initialize PN532 with I2C
         self._pn532 = PN532_I2C(i2c, debug=False, reset=None, irq=None)
         # Configure PN532
-        ic, ver, rev, support = self._pn532.firmware_version
-        logger.info(f"✅ PN532 found - Firmware version: {ver}.{rev}, IC: 0x{ic:02x}")
-        # Configure the PN532 for NFC card detection
-        self._pn532.SAM_configuration()
+        if self._pn532:
+            ic, ver, rev, support = self._pn532.firmware_version
+            logger.info(f"✅ PN532 found - Firmware version: {ver}.{rev}, IC: 0x{ic:02x}")
+            # Configure the PN532 for NFC card detection
+            self._pn532.SAM_configuration()
         logger.info("🚀 PN532 NFC Hardware initialized successfully")
 
     async def start_nfc_reader(self) -> None:
@@ -88,7 +89,7 @@ class PN532NFCHardware(NFCHardwareInterface):
         self._stop_event.clear()
         self._running = True
         self._consecutive_errors = 0
-        self._reader_task = asyncio.create_task(self._scan_loop())
+        self._reader_task = asyncio.create_task(self._scan_loop())  # type: ignore[assignment]
 
         logger.info("🚀 PN532 NFC Reader started - scanning for tags...")
 
@@ -168,7 +169,7 @@ class PN532NFCHardware(NFCHardwareInterface):
                 logger.debug(
                     f"📡 PN532: {status} (scans: {scan_count}, errors: {self._consecutive_errors})",
                 )
-                last_status_log = now
+                last_status_log = now  # type: ignore[assignment]
             # Short delay between scans
             await asyncio.sleep(self._config.debounce_time)
 
@@ -178,7 +179,7 @@ class PN532NFCHardware(NFCHardwareInterface):
         for attempt in range(self._config.max_retries):
             async with self._bus_lock:
                 # Try to read a MIFARE Classic card
-                uid = self._pn532.read_passive_target(timeout=self._config.read_timeout)
+                uid = self._pn532.read_passive_target(timeout=self._config.read_timeout) if self._pn532 else None
                 if uid:
                     tag_uid = "".join([f"{b:02x}" for b in uid])
                     return {

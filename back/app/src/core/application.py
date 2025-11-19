@@ -12,7 +12,7 @@ playlist management, and domain-driven architecture components.
 import asyncio
 import traceback
 from pathlib import Path
-from typing import Dict
+from typing import Optional, Dict
 
 from app.src.config.nfc_config import NFCConfig
 from app.src.infrastructure.nfc.nfc_factory import NfcFactory
@@ -410,10 +410,10 @@ class Application:
     async def _broadcast_nfc_association_event(
         self,
         association_state: str,
-        playlist_id: str = None,
-        tag_id: str = None,
-        session_id: str = None,
-        event_data: Dict = None
+        playlist_id: Optional[str] = None,
+        tag_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        event_data: Optional[Dict] = None
     ) -> None:
         """Broadcast NFC association event via Socket.IO.
 

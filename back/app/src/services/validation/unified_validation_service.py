@@ -303,6 +303,8 @@ class UnifiedValidationService:
                 if not UnifiedValidationService._has_audio_signature(header, extension):
                     return False, f"File does not appear to be valid audio: {extension}"
 
+        return True, ""
+
     @staticmethod
     def validate_upload_session_data(data: Dict[str, Any]) -> Tuple[bool, List[Dict[str, str]]]:
         """

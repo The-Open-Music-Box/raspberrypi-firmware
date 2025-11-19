@@ -122,7 +122,7 @@ class AudioEngine(AudioEngineProtocol):
     def get_playback_state(self) -> Dict[str, Any]:
         """Get current playback state."""
         return {
-            "is_playing": self._backend.is_playing() if hasattr(self._backend, 'is_playing') else False,
+            "is_playing": self._backend.is_playing() if hasattr(self._backend, 'is_playing') and callable(self._backend.is_playing) else False,
             "volume": 50,  # Default volume
             "backend_type": type(self._backend).__name__
         }
@@ -197,7 +197,7 @@ class AudioEngine(AudioEngineProtocol):
 
         try:
             # Since we don't have a playlist manager, just validate the playlist
-            success = playlist and len(playlist.tracks) > 0
+            success = bool(playlist and len(playlist.tracks) > 0)
 
             if success:
                 # Update state
@@ -268,11 +268,11 @@ class AudioEngine(AudioEngineProtocol):
         try:
             loop = asyncio.get_running_loop()
             # We're in an async context, create a task
-            logger.info(f"✅ In async context, creating task to play playlist: {playlist.name}")
+            logger.info(f"✅ In async context, creating task to play playlist: {playlist.title}")
             task = loop.create_task(self.play_playlist(playlist))
             # For legacy compatibility, we return immediately
             # The actual result will be handled asynchronously
-            logger.info(f"✅ AudioEngine.set_playlist called for playlist: {playlist.name}"
+            logger.info(f"✅ AudioEngine.set_playlist called for playlist: {playlist.title}"
                         )
             return True
         except RuntimeError:
@@ -289,7 +289,7 @@ class AudioEngine(AudioEngineProtocol):
                 return False
 
             if not playlist.tracks:
-                logger.error(f"Playlist '{getattr(playlist, 'name', 'unknown')}' has no tracks")
+                logger.error(f"Playlist '{playlist.title}' has no tracks")
                 return False
 
             logger.info(f"Playlist has {len(playlist.tracks)} tracks")
@@ -300,14 +300,29 @@ class AudioEngine(AudioEngineProtocol):
                 if track and hasattr(track, 'file_path') and track.file_path:
                     logger.info(f"Playing track {idx}: {track.file_path}")
                     try:
-                        # Direct backend playback
-                        success = self._backend.play_file(track.file_path)
+                        # Direct backend playback - use play_file if available, else fall back to play
+                        if hasattr(self._backend, 'play_file'):
+                            success = self._backend.play_file(track.file_path)  # type: ignore[attr-defined]
+                        else:
+                            import asyncio
+                            # For async play method
+                            try:
+                                loop = asyncio.get_event_loop()
+                                if loop.is_running():
+                                    success = asyncio.run_coroutine_threadsafe(
+                                        self._backend.play(track.file_path), loop
+                                    ).result(timeout=5.0)
+                                else:
+                                    success = loop.run_until_complete(self._backend.play(track.file_path))
+                            except Exception as e:
+                                logger.error(f"Failed to play track: {e}")
+                                success = False
                         logger.info(f"Backend play_file returned: {success}")
                         if success:
                             self._safe_set_state(PlaybackState.PLAYING)
                             # Update state manager with playlist and track info for test compatibility
                             playlist_info = {
-                                "playlist_title": playlist.name,
+                                "playlist_title": playlist.title,
                                 "track_count": len(playlist.tracks),
                                 "current_track_index": 0
                             }
@@ -412,9 +427,10 @@ class AudioEngine(AudioEngineProtocol):
             old_state = self._safe_get_current_state()
             logger.debug(f"Current state: {old_state}")
 
-            logger.info(f"Calling backend.play_file({file_path})")
-            success = self._backend.play_file(file_path)
-            logger.info(f"Backend play_file returned: {success}")
+            logger.info(f"Calling backend.play({file_path})")
+            # Use async play method from protocol
+            success = await self._backend.play(file_path)
+            logger.info(f"Backend play returned: {success}")
 
             if success:
                 self._safe_set_state(PlaybackState.PLAYING)
@@ -513,8 +529,8 @@ class AudioEngine(AudioEngineProtocol):
             return False
 
         try:
-            old_volume = self._backend.get_volume()
-            success = self._backend.set_volume(volume)
+            old_volume = await self._backend.get_volume()
+            success = await self._backend.set_volume(volume)
 
             if success:
                 self._state_manager.update_volume(volume)

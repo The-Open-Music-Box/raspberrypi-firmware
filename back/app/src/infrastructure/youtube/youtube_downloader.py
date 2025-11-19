@@ -10,8 +10,9 @@ single videos and playlists with proper error handling and notifications.
 """
 
 import asyncio
+from asyncio import AbstractEventLoop
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Optional, Any, Callable, Dict
 
 import yt_dlp
 import logging
@@ -22,11 +23,11 @@ logger = logging.getLogger(__name__)
 class YouTubeDownloader:
     """Downloader service for handling YouTube video/audio downloads using yt-dlp."""
 
-    def __init__(self, upload_folder: str, progress_callback: Callable = None):
+    def __init__(self, upload_folder: str, progress_callback: Optional[Callable] = None):
         self.upload_folder = Path(upload_folder)
         self.progress_callback = progress_callback
         self._last_reported_percentage = -1  # Renamed and initialized for better tracking
-        self.main_loop = None  # Will store the main asyncio event loop
+        self.main_loop: Optional[AbstractEventLoop] = None  # Will store the main asyncio event loop
 
     # MARK: - Progress Handling
     def _handle_progress(self, progress: dict):

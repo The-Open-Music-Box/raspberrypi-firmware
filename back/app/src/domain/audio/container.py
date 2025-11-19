@@ -60,8 +60,8 @@ class AudioDomainContainer:
         # Store references
         self._audio_engine = audio_engine
         self._backend = backend
-        self._event_bus = audio_engine.event_bus
-        self._state_manager = audio_engine.state_manager
+        self._event_bus = audio_engine.event_bus  # type: ignore[attr-defined]
+        self._state_manager = audio_engine.state_manager  # type: ignore[attr-defined]
         self._is_initialized = True
         logger.info("AudioDomainContainer initialized successfully")
 
@@ -72,7 +72,8 @@ class AudioDomainContainer:
         if not self._is_initialized:
             raise RuntimeError("Container not initialized")
 
-        await self._audio_engine.start()
+        if self._audio_engine:
+            await self._audio_engine.start()
         logger.info("Audio domain started")
 
     async def stop(self) -> None:

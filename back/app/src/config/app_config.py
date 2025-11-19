@@ -12,7 +12,7 @@ modules.
 import logging
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import Optional, Any, List
 
 from dotenv import load_dotenv
 from app.src.config.audio_config import AudioConfig
@@ -213,7 +213,7 @@ class AppConfig:
             logger.error("Error converting value '%s': %s", value, e)
             return value
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
         """
         Get a configuration value.
 

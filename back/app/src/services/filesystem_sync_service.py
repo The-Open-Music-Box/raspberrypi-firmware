@@ -40,7 +40,7 @@ class FilesystemSyncService:
     SYNC_FOLDER_TIMEOUT = 30.0  # 30 seconds for folder scanning
     SYNC_OPERATION_TIMEOUT = 10.0  # 10 seconds per operation
 
-    def __init__(self, config_obj=None):
+    def __init__(self, config_obj: Any = None):
         """Initialize the FilesystemSyncService.
 
         Args:
@@ -54,6 +54,8 @@ class FilesystemSyncService:
         self.repository = get_playlist_repository_adapter()
         self.upload_folder = Path(self.config.upload_folder)
         self._sync_lock = threading.RLock()
+        # Type annotation for audio_files
+        self._audio_files: List[Path] = []
 
     @handle_service_errors("filesystem_sync")
     async def create_playlist_from_folder(
@@ -113,7 +115,9 @@ class FilesystemSyncService:
                 "album": metadata.get("album", "Unknown"),
                 "play_counter": 0,
             }
-            playlist_data["tracks"].append(track)
+            tracks_list = playlist_data["tracks"]
+            if isinstance(tracks_list, list):
+                tracks_list.append(track)
         # Create the playlist in the repository
         return await self.repository.create_playlist(playlist_data)
 
@@ -274,7 +278,7 @@ class FilesystemSyncService:
                                        )
                         break
                     if f.is_file() and f.suffix.lower() in self.SUPPORTED_AUDIO_EXTENSIONS:
-                        audio_files.append(f)
+                        audio_files.append(f)  # type: ignore[arg-type]
 
                 # Add to result if audio files were found
                 if audio_files:

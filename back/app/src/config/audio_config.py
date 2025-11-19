@@ -7,7 +7,7 @@ Audio configuration settings for TheOpenMusicBox.
 """
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
@@ -47,7 +47,7 @@ class AudioConfig:
     progress_update_interval: float = 0.1  # Update interval in seconds for progress tracking
 
     # File format support
-    supported_formats: List[str] = None
+    supported_formats: Optional[List[str]] = None
 
     def __post_init__(self):
         """

@@ -11,7 +11,7 @@ Extracted from StateManager for better separation of concerns.
 
 import asyncio
 import time
-from typing import List, Optional
+from typing import List, Optional, Dict
 from dataclasses import dataclass
 
 import logging
@@ -30,7 +30,7 @@ class OutboxEvent:
     payload: dict
     server_seq: int
     retry_count: int = 0
-    created_at: float = None
+    created_at: Optional[float] = None
     playlist_id: Optional[str] = None
 
     def __post_init__(self):
@@ -138,9 +138,9 @@ class EventOutbox:
             "oldest_event_age": self._get_oldest_event_age(),
         }
 
-    def _get_event_type_counts(self) -> dict:
+    def _get_event_type_counts(self) -> Dict[str, int]:
         """Get count of events by type."""
-        counts = {}
+        counts: Dict[str, int] = {}
         for event in self._outbox:
             counts[event.event_type] = counts.get(event.event_type, 0) + 1
         return counts
@@ -151,7 +151,13 @@ class EventOutbox:
             return None
 
         now = time.time()
-        oldest_time = min(event.created_at for event in self._outbox)
+        created_times = [
+            event.created_at for event in self._outbox
+            if event.created_at is not None
+        ]
+        if not created_times:
+            return None
+        oldest_time = min(created_times)
         return now - oldest_time
 
     async def clear(self) -> None:

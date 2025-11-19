@@ -14,7 +14,7 @@ import asyncio
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 try:
     import pygame
@@ -23,13 +23,11 @@ except ImportError:
     PYGAME_AVAILABLE = False
 
 try:
-    import mutagen
     from mutagen import File as MutagenFile
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
-    mutagen = None
-    MutagenFile = None
+    MutagenFile = None  # type: ignore[misc, assignment]
 
 from app.src.monitoring import get_logger
 from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
@@ -436,6 +434,9 @@ class WM8960AudioBackend(BaseAudioBackend):
                     seek_success = False
                     logger.warning(f"🔊 WM8960: Seek failed, playing from start: {e}")
 
+                return seek_success
+            return False
+
     @handle_errors("set_volume_sync")
     def set_volume_sync(self, volume: int) -> bool:
         """Set playback volume through pygame and ALSA.
@@ -535,7 +536,7 @@ class WM8960AudioBackend(BaseAudioBackend):
             return self._is_playing
 
     # Async methods required by AudioBackendProtocol
-    async def pause(self) -> bool:
+    async def pause(self) -> bool:  # type: ignore[override]
         """Async wrapper for pause method.
 
         Returns:
@@ -543,7 +544,7 @@ class WM8960AudioBackend(BaseAudioBackend):
         """
         return self.pause_sync()
 
-    async def resume(self) -> bool:
+    async def resume(self) -> bool:  # type: ignore[override]
         """Async wrapper for resume method.
 
         Returns:
@@ -551,7 +552,7 @@ class WM8960AudioBackend(BaseAudioBackend):
         """
         return self.resume_sync()
 
-    async def stop(self) -> bool:
+    async def stop(self) -> bool:  # type: ignore[override]
         """Async wrapper for stop method.
 
         Returns:
@@ -570,7 +571,7 @@ class WM8960AudioBackend(BaseAudioBackend):
         """
         return self.set_volume_sync(volume)
 
-    async def get_position(self) -> Optional[int]:
+    async def get_position(self) -> Optional[int]:  # type: ignore[override]
         """Get current playback position.
 
         Returns:

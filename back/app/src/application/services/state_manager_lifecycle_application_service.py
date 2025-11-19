@@ -41,8 +41,8 @@ class StateManagerLifecycleApplicationService:
 
     def __init__(
         self,
-        operation_tracker: OperationTracker = None,
-        event_outbox: EventOutbox = None,
+        operation_tracker: Optional[OperationTracker] = None,
+        event_outbox: Optional[EventOutbox] = None,
         cleanup_interval: int = 300,  # 5 minutes
     ):
         """Initialize state manager lifecycle service.
@@ -174,7 +174,7 @@ class StateManagerLifecycleApplicationService:
 
         except Exception as e:
             logger.error(f"Error collecting health metrics: {e}")
-            metrics["error"] = str(e)
+            metrics["error"] = str(e)  # type: ignore[assignment]
 
         return metrics
 
@@ -194,12 +194,12 @@ class StateManagerLifecycleApplicationService:
 
         try:
             await self._perform_cleanup()
-            cleanup_results["success"] = True
-            cleanup_results["message"] = "Forced cleanup completed successfully"
+            cleanup_results["success"] = True  # type: ignore[assignment]
+            cleanup_results["message"] = "Forced cleanup completed successfully"  # type: ignore[assignment]
 
         except Exception as e:
-            cleanup_results["success"] = False
-            cleanup_results["message"] = f"Forced cleanup failed: {e}"
+            cleanup_results["success"] = False  # type: ignore[assignment]
+            cleanup_results["message"] = f"Forced cleanup failed: {e}"  # type: ignore[assignment]
             logger.error(f"Forced cleanup failed: {e}")
 
         return cleanup_results

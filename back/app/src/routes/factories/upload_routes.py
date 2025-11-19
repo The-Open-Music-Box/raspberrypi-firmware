@@ -68,5 +68,6 @@ class UploadRoutes:
         if not self.api_routes:
             self.initialize()
 
-        self.app.include_router(self.api_routes.get_router(), prefix=prefix, tags=["uploads"])
+        if self.api_routes is not None:
+            self.app.include_router(self.api_routes.get_router(), prefix=prefix, tags=["uploads"])
         logger.info(f"✅ Upload routes registered with prefix: {prefix}")

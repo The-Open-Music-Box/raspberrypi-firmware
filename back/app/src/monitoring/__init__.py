@@ -8,14 +8,17 @@ Provides get_logger and stubs for event monitor without cross-layer imports.
 Uses lazy loading to avoid circular dependencies.
 """
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.src.monitoring.core.logger import ImprovedLogger
 
 # Lazy loaded references
 _ImprovedLogger = None
 _error_handler = None
 
 
-def get_logger(name: str) -> object:
+def get_logger(name: str) -> "ImprovedLogger":
     """Get a logger instance for the specified module.
 
     Args:

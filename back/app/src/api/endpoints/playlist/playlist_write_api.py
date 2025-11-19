@@ -59,8 +59,16 @@ class PlaylistWriteAPI:
                 )
 
                 if not is_valid:
+                    # Convert validation errors to expected format
+                    errors_list: list[str] = []
+                    if isinstance(validation_errors, list):
+                        for err in validation_errors:
+                            if isinstance(err, dict):
+                                errors_list.append(str(err.get("message", str(err))))
+                            else:
+                                errors_list.append(str(err))
                     return UnifiedResponseService.validation_error(
-                        errors=validation_errors, client_op_id=body.get("client_op_id")
+                        errors=errors_list, client_op_id=body.get("client_op_id")
                     )
 
                 title = body.get("title")

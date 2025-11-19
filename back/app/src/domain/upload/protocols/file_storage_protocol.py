@@ -6,10 +6,13 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 
 from ..value_objects.file_chunk import FileChunk
 from ..entities.upload_session import UploadSession
+
+if TYPE_CHECKING:
+    from ..value_objects.file_metadata import FileMetadata
 
 
 class FileStorageProtocol(ABC):

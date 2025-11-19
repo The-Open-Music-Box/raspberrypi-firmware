@@ -227,7 +227,8 @@ class UploadController:
                         )
 
             # Emit completion event
-            await self.socketio.emit(
+            if self.socketio:
+                await self.socketio.emit(
                 "upload:complete",
                 {
                     "playlist_id": playlist_id,
@@ -236,8 +237,8 @@ class UploadController:
                     "metadata": metadata_dict,
                     "track": track_entry,
                 },
-                room=f"playlist:{playlist_id}",
-            )
+                    room=f"playlist:{playlist_id}",
+                )
 
             return {"status": "success", "track": track_entry}
 

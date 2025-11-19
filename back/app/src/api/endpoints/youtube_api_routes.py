@@ -154,8 +154,8 @@ class YouTubeAPIRoutes:
                 service = self._create_youtube_service(request)
                 search_results = await service.search_videos(query, max_results)
 
-                # Serialize response
-                serialized_data = UnifiedSerializationService.serialize_response(search_results)
+                # Return search results directly
+                serialized_data = search_results
 
                 return UnifiedResponseService.success(
                     message="YouTube search completed successfully",

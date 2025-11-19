@@ -10,7 +10,7 @@ This is the Invoker in the Command Pattern.
 """
 
 import asyncio
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import logging
 
 from app.src.domain.actions.button_actions import (
@@ -205,7 +205,7 @@ class ButtonActionDispatcher:
         """
         return list(self._button_to_action.keys())
 
-    def get_status(self) -> Dict[str, any]:
+    def get_status(self) -> Dict[str, Any]:
         """
         Get dispatcher status information.
 

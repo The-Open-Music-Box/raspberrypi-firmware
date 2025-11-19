@@ -29,7 +29,10 @@ class DataTrackRepository(TrackRepositoryProtocol):
 
     async def get_by_playlist(self, playlist_id: str) -> List[Dict[str, Any]]:
         """Get all tracks for a playlist."""
-        return await self._repo.get_tracks_by_playlist(playlist_id)
+        tracks = await self._repo.get_tracks_by_playlist(playlist_id)
+        # Convert Track domain objects to dicts
+        from dataclasses import asdict
+        return [asdict(track) for track in tracks]
 
     async def get_by_id(self, track_id: str) -> Optional[Dict[str, Any]]:
         """Get a track by its ID."""

@@ -37,7 +37,7 @@ class ConnectionPool:
         self.pool_size = pool_size
         self.max_overflow = max_overflow
         self.timeout = timeout
-        self._pool = queue.Queue(maxsize=pool_size + max_overflow)
+        self._pool: queue.Queue[sqlite3.Connection] = queue.Queue(maxsize=pool_size + max_overflow)
         self._current_size = 0
         self._lock = threading.Lock()
         self._created_connections = 0

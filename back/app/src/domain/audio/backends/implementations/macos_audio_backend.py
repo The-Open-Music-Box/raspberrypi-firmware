@@ -46,13 +46,13 @@ class MacOSAudioBackend(BaseAudioBackend):
         self._mixer_initialized = False
 
         # Time tracking for position calculation
-        self._play_start_time = None
-        self._pause_time = None
+        self._play_start_time: Optional[float] = None
+        self._pause_time: Optional[float] = None
         self._is_paused = False
 
         # Track current file and its duration
-        self._current_file_path = None
-        self._current_file_duration = None  # in seconds
+        self._current_file_path: Optional[str] = None
+        self._current_file_duration: Optional[float] = None  # in seconds
 
         if not PYGAME_AVAILABLE:
             logger.error("❌ pygame not available for macOS audio backend")
@@ -278,15 +278,15 @@ class MacOSAudioBackend(BaseAudioBackend):
         """Async wrapper for play_file."""
         return await asyncio.get_running_loop().run_in_executor(None, self.play_file, file_path)
 
-    async def pause(self) -> bool:
+    async def pause(self) -> bool:  # type: ignore[override]
         """Async wrapper for pause."""
         return self._pause_impl()
 
-    async def resume(self) -> bool:
+    async def resume(self) -> bool:  # type: ignore[override]
         """Async wrapper for resume."""
         return self._resume_impl()
 
-    async def stop(self) -> bool:
+    async def stop(self) -> bool:  # type: ignore[override]
         """Async wrapper for stop."""
         return self._stop_impl()
 
@@ -304,7 +304,7 @@ class MacOSAudioBackend(BaseAudioBackend):
         logger.warning("⚠️ macOS: Seek not supported with pygame backend")
         return False
 
-    async def get_duration(self) -> Optional[int]:
+    async def get_duration(self) -> Optional[int]:  # type: ignore[override]
         """Get duration of current track.
 
         Returns:

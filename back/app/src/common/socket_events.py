@@ -268,7 +268,7 @@ class SocketEventBuilder:
     @staticmethod
     def create_connection_status_event(sid: str, server_seq: int) -> Dict[str, Any]:
         """Create connection status event."""
-        payload = ConnectionStatusPayload(sid=sid, server_seq=server_seq)
+        payload = ConnectionStatusPayload(status="connected", sid=sid, server_seq=server_seq)
         return payload.model_dump()
 
     @staticmethod
