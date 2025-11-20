@@ -124,7 +124,7 @@ class RGBLEDController(IndicatorLightsProtocol):
                         try:
                             GPIO_Direct.cleanup(pin)
                         except Exception:
-                            pass  # nosec B110 - GPIO cleanup, pin might not be initialized
+                            pass
                     logger.debug("GPIO pins cleaned before LED initialization")
                 except Exception as e:
                     logger.debug(f"GPIO cleanup attempt: {e}")
@@ -159,13 +159,10 @@ class RGBLEDController(IndicatorLightsProtocol):
                 self.stop_animation()
 
                 # Turn off LED directly (don't use await inside lock)
-                if self._red_led and self._green_led and self._blue_led:
-                    self._red_led.value = 0
-                    self._green_led.value = 0
-                    self._blue_led.value = 0
+                self._turn_off_hardware()
 
                 # Close GPIO devices
-                if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
+                if GPIO_AVAILABLE and self._red_led:
                     self._red_led.close()
                     self._green_led.close()
                     self._blue_led.close()
@@ -194,15 +191,12 @@ class RGBLEDController(IndicatorLightsProtocol):
                 self._current_color = color
                 self._current_animation = LEDAnimation.SOLID
 
-                if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                    # Apply brightness scaling
+                # Apply color to hardware
+                self._apply_color_to_hardware(color)
+
+                if GPIO_AVAILABLE:
+                    # Log the scaled values for debugging
                     scaled = color.scaled(self._brightness)
-
-                    # Set PWM values (0.0-1.0)
-                    self._red_led.value = scaled.red / 255.0
-                    self._green_led.value = scaled.green / 255.0
-                    self._blue_led.value = scaled.blue / 255.0
-
                     logger.info(f"💡 LED color: RGB({color.red}, {color.green}, {color.blue}) → scaled to RGB({scaled.red}, {scaled.green}, {scaled.blue}) at brightness={self._brightness:.2f}")
                 else:
                     logger.warning(f"⚠️ GPIO_AVAILABLE=False - LED color NOT applied to hardware")
@@ -286,11 +280,7 @@ class RGBLEDController(IndicatorLightsProtocol):
                 brightness = (math.sin((i / steps) * math.pi * 2 - math.pi / 2) + 1) / 2
                 brightness *= self._brightness
 
-                if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                    scaled = color.scaled(brightness)
-                    self._red_led.value = scaled.red / 255.0
-                    self._green_led.value = scaled.green / 255.0
-                    self._blue_led.value = scaled.blue / 255.0
+                self._apply_color_to_hardware(color, brightness)
 
                 self._animation_stop_event.wait(step_duration)
 
@@ -301,20 +291,13 @@ class RGBLEDController(IndicatorLightsProtocol):
 
         while not self._animation_stop_event.is_set():
             # Turn on
-            if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                scaled = color.scaled(self._brightness)
-                self._red_led.value = scaled.red / 255.0
-                self._green_led.value = scaled.green / 255.0
-                self._blue_led.value = scaled.blue / 255.0
+            self._apply_color_to_hardware(color)
 
             if self._animation_stop_event.wait(on_time):
                 return
 
             # Turn off
-            if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                self._red_led.value = 0
-                self._green_led.value = 0
-                self._blue_led.value = 0
+            self._turn_off_hardware()
 
             if self._animation_stop_event.wait(on_time):
                 return
@@ -324,19 +307,12 @@ class RGBLEDController(IndicatorLightsProtocol):
         flash_duration = 0.2 / speed  # 200ms flash adjusted by speed
 
         # Flash on
-        if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-            scaled = color.scaled(self._brightness)
-            self._red_led.value = scaled.red / 255.0
-            self._green_led.value = scaled.green / 255.0
-            self._blue_led.value = scaled.blue / 255.0
+        self._apply_color_to_hardware(color)
 
         self._animation_stop_event.wait(flash_duration)
 
         # Turn off
-        if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-            self._red_led.value = 0
-            self._green_led.value = 0
-            self._blue_led.value = 0
+        self._turn_off_hardware()
 
     def _animate_double_blink(self, color: LEDColor, speed: float):
         """
@@ -352,40 +328,26 @@ class RGBLEDController(IndicatorLightsProtocol):
         while not self._animation_stop_event.is_set():
             # First blink
             # Turn on
-            if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                scaled = color.scaled(self._brightness)
-                self._red_led.value = scaled.red / 255.0
-                self._green_led.value = scaled.green / 255.0
-                self._blue_led.value = scaled.blue / 255.0
+            self._apply_color_to_hardware(color)
 
             if self._animation_stop_event.wait(blink_duration):
                 return
 
             # Turn off
-            if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                self._red_led.value = 0
-                self._green_led.value = 0
-                self._blue_led.value = 0
+            self._turn_off_hardware()
 
             if self._animation_stop_event.wait(blink_duration):
                 return
 
             # Second blink
             # Turn on
-            if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                scaled = color.scaled(self._brightness)
-                self._red_led.value = scaled.red / 255.0
-                self._green_led.value = scaled.green / 255.0
-                self._blue_led.value = scaled.blue / 255.0
+            self._apply_color_to_hardware(color)
 
             if self._animation_stop_event.wait(blink_duration):
                 return
 
             # Turn off
-            if GPIO_AVAILABLE and self._red_led and self._green_led and self._blue_led:
-                self._red_led.value = 0
-                self._green_led.value = 0
-                self._blue_led.value = 0
+            self._turn_off_hardware()
 
             # Pause before repeating
             if self._animation_stop_event.wait(pause_duration):
@@ -397,6 +359,39 @@ class RGBLEDController(IndicatorLightsProtocol):
             self._animation_stop_event.set()
             self._animation_thread.join(timeout=1.0)
             self._animation_thread = None
+
+    # MARK: - Private Helper Methods (Extract duplication)
+
+    def _apply_color_to_hardware(self, color: LEDColor, brightness: float | None = None) -> None:
+        """Apply color to hardware LED with brightness scaling.
+
+        Extracted helper to eliminate duplication across animation methods.
+
+        Args:
+            color: LED color to apply
+            brightness: Optional brightness override (uses self._brightness if None)
+        """
+        if not GPIO_AVAILABLE or not self._red_led:
+            return
+
+        actual_brightness = brightness if brightness is not None else self._brightness
+        scaled = color.scaled(actual_brightness)
+
+        self._red_led.value = scaled.red / 255.0
+        self._green_led.value = scaled.green / 255.0
+        self._blue_led.value = scaled.blue / 255.0
+
+    def _turn_off_hardware(self) -> None:
+        """Turn off hardware LED (set all channels to 0).
+
+        Extracted helper to eliminate duplication across animation methods.
+        """
+        if not GPIO_AVAILABLE or not self._red_led:
+            return
+
+        self._red_led.value = 0.0
+        self._green_led.value = 0.0
+        self._blue_led.value = 0.0
 
     async def turn_off(self) -> bool:
         """Turn off LED completely."""
