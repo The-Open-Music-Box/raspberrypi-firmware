@@ -183,259 +183,273 @@ class YouTubeDownloader:
         This method is intended to be run in a separate thread.
         """
         try:
-            # Notify that we're starting the download process
-            if self.progress_callback and self.main_loop:
-                coro = self.progress_callback(
-                    {
-                        "status": "download_started",
-                        "progress": 0,
-                        "message": "Starting download process...",
-                    }
-                )
-                asyncio.run_coroutine_threadsafe(coro, self.main_loop)
+            self._notify_download_started()
+            info = self._extract_video_info(url)
+            safe_title, files_output_folder = self._prepare_output_folders(playlist_folder, info)
 
-            # Extract info first without downloading
-            with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
-                info = ydl.extract_info(url, download=False)
+            self._notify_download_preparing()
+            ydl_opts = self._create_download_options(files_output_folder)
 
-            # Create safe folder name from title
-            safe_title = "".join(
-                [c if c.isalnum() or c in " -_" else "_" for c in info.get("title", "Unknown")]
-            )
+            info = self._perform_download(url, ydl_opts)
 
-            # Define the folder where individual files will be stored
-            # Ensure playlist_folder is absolute to avoid issues with yt-dlp's path
-            # handling
-            abs_playlist_folder = playlist_folder.resolve()
-            files_output_folder = abs_playlist_folder / "files"
-            files_output_folder.mkdir(parents=True, exist_ok=True)
-            logger.debug(f"Ensured output subfolder exists: {files_output_folder}",
-                         )
+            self._notify_analyzing_chapters()
+            mp3_files = self._scan_mp3_files(files_output_folder)
+            processed_files_info = self._process_tracks_and_chapters(info, mp3_files)
 
-            # Notify that we're preparing to download
-            if self.progress_callback and self.main_loop:
-                # Reset last reported percentage for the new download operation
-                self._last_reported_percentage = -1
-                coro = self.progress_callback(
-                    {
-                        "status": "download_preparing",
-                        "progress": 0,  # Initial progress
-                        "message": "Preparing download options...",
-                    }
-                )
-                asyncio.run_coroutine_threadsafe(coro, self.main_loop)
-
-            # Create download options
-            ydl_opts = {
-                "format": "bestaudio/best",
-                "postprocessors": [
-                    {
-                        "key": "FFmpegExtractAudio",
-                        "preferredcodec": "mp3",
-                    }
-                ],
-                # Save to 'files' subdirectory
-                "outtmpl": str(files_output_folder / "%(title)s.%(ext)s"),
-                "split_chapters": True,
-                # 'paths': {'home': str(abs_playlist_folder)}, # Not strictly needed if outtmpl is absolute
-                "progress_hooks": [self._handle_progress],
-                "postprocessor_hooks": [self._handle_postprocessor_progress],
-                "force_overwrites": True,
-                "quiet": False,  # Changed to False for more detailed progress from yt-dlp
-                "no_warnings": True,
-                "logger": None,  # Can be set to `logger` for yt-dlp's internal logs if needed
-                "noprogress": False,  # CRITICAL: Changed to False to enable progress events
-                "keepvideo": False,
-                "ignoreerrors": False,  # Default is False, but good to be explicit for downloads
-            }
-
-            # Download with the options
-            # This block will trigger _handle_progress and
-            # _handle_postprocessor_progress
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # The download=True call is blocking and will run in this thread.
-                # Progress hooks are called synchronously by yt-dlp from this thread.
-                # Our hooks then use run_coroutine_threadsafe to talk to the main
-                # asyncio loop.
-                info = ydl.extract_info(url, download=True)
-
-            # Notify that we're starting custom chapter analysis / track preparation
-            # This happens AFTER yt-dlp download and its internal post-processing are
-            # complete
-            if self.progress_callback and self.main_loop:
-                coro = self.progress_callback(
-                    {
-                        "status": "analyzing_chapters",  # Renamed from 'processing_files'
-                        "message": "Analyzing chapters and preparing track list...",
-                    }
-                )
-                asyncio.run_coroutine_threadsafe(coro, self.main_loop)
-
-            # Scan the 'files' subfolder for MP3 files
-            mp3_files = list(files_output_folder.glob("*.mp3"))
-            logger.info(f"Found {len(mp3_files)} MP3 files in {files_output_folder}",
-                        )
-
-            # Get chapters or build a track list
-            chapters = info.get("chapters", [])
-            processed_files_info = []
-
-            # If we have MP3 files but no chapters info from yt-dlp, create chapters
-            # from the files
-            if not chapters and mp3_files:
-                # Check if it's a playlist
-                entries = info.get("entries", [])
-                if entries:
-                    logger.debug(f"Playlist '{info.get('title', 'Unknown')}' (ID: {info.get('id', 'Unknown')}): No explicit chapters found. Processing {len(entries)} entries as individual chapters.",
-                                 )
-
-                    # Try to match entries with files
-                    for idx, entry in enumerate(entries, 1):
-                        entry_title = entry.get("title", f"Track {idx}")
-                        # Try to find a matching file
-                        matching_file = next(
-                            (f for f in mp3_files if entry_title.lower() in f.stem.lower()),
-                            None,
-                        )
-
-                        if matching_file:
-                            processed_files_info.append(
-                                {
-                                    "title": entry_title,
-                                    "start_time": 0,
-                                    "end_time": entry.get("duration", 0),
-                                    # Add 'files/' prefix
-                                    "filename": str(Path("files") / matching_file.name),
-                                }
-                            )
-                        else:
-                            # Fallback if no match found
-                            logger.warning(f"Could not find matching file for playlist entry '{entry_title}'. Using entry title as filename basis.",
-                                           )
-                            processed_files_info.append(
-                                {
-                                    "title": entry_title,
-                                    "start_time": 0,
-                                    "end_time": entry.get("duration", 0),
-                                    # Add 'files/' prefix
-                                    "filename": str(Path("files") / f"{entry_title}.mp3"),
-                                }
-                            )
-                else:
-                    # Single file - use the actual file we found
-                    if mp3_files:
-                        processed_files_info.append(
-                            {
-                                "title": info.get("title", mp3_files[0].stem),
-                                "start_time": 0,
-                                "end_time": info.get("duration", 0),
-                                # Add 'files/' prefix
-                                "filename": str(Path("files") / mp3_files[0].name),
-                            }
-                        )
-            elif chapters:
-                # We have chapter info from yt-dlp, try to match with actual files
-                for idx, chapter in enumerate(
-                    chapters, 1
-                ):  # Added idx for better fallback filenames
-                    chapter_title = chapter.get("title", f"Chapter {idx}")
-                    # Try to find a matching file more robustly
-                    potential_filename_prefix = f"{idx:03d} - {chapter_title}"
-
-                    matching_file = next(
-                        (
-                            f
-                            for f in mp3_files
-                            if (
-                                chapter_title.lower() in f.stem.lower()
-                                or f.stem.lower().startswith(
-                                    potential_filename_prefix.lower()[: len(f.stem)]
-                                )
-                                or potential_filename_prefix.lower()[:30]
-                                in f.stem.lower()  # Match first 30 chars
-                            )
-                        ),
-                        None,
-                    )
-
-                    if matching_file:
-                        processed_files_info.append(
-                            {
-                                "title": chapter_title,
-                                "start_time": chapter.get("start_time", 0),
-                                "end_time": chapter.get("end_time", 0),
-                                # Add 'files/' prefix
-                                "filename": str(Path("files") / matching_file.name),
-                            }
-                        )
-                    else:
-                        logger.warning(f"Could not find matching file for chapter '{chapter_title}'. Using chapter title as filename basis: {str(Path('files') / f'{chapter_title}.mp3')}",
-                                       )
-                        processed_files_info.append(
-                            {
-                                "title": chapter_title,
-                                "start_time": chapter.get("start_time", 0),
-                                "end_time": chapter.get("end_time", 0),
-                                # Add 'files/' prefix
-                                "filename": str(Path("files") / f"{chapter_title}.mp3"),
-                            }
-                        )
-            else:
-                # No chapters and no files found - this shouldn't happen but handle it
-                # anyway
-                logger.warning(f"No chapters or MP3 files found for {url}")
-                processed_files_info = []
-
-            # If we still have no processed files but have MP3 files, create entries
-            # for each file
-            if not processed_files_info and mp3_files:
-                for idx, file_path in enumerate(sorted(mp3_files), 1):
-                    processed_files_info.append(
-                        {
-                            "title": file_path.stem,
-                            "start_time": 0,
-                            "end_time": 0,  # We don't know the duration
-                            # Add 'files/' prefix
-                            "filename": str(Path("files") / file_path.name),
-                        }
-                    )
-
-            # Notify that custom chapter/track processing is complete
-            if self.progress_callback and self.main_loop:
-                coro = self.progress_callback(
-                    {
-                        "status": "files_processed",
-                        "message": f"Track analysis complete. Found {len(processed_files_info)} tracks.",
-                    }
-                )
-                asyncio.run_coroutine_threadsafe(coro, self.main_loop)
+            self._notify_files_processed(processed_files_info)
 
             return {
                 "title": info.get("title", "Unknown"),
                 "id": info.get("id", "Unknown"),
-                "folder": safe_title,  # Return the relative folder name
-                "chapters": processed_files_info,  # Use our processed files info
+                "folder": safe_title,
+                "chapters": processed_files_info,
             }
         except Exception as e:
-            logger.error(f"Download failed: {str(e)}")
-            # Ensure any exception here is also reported via progress callback if
-            # possible
-            if self.progress_callback and self.main_loop:
-                error_data = {
-                    "status": "error",
-                    "message": f"An unexpected error occurred: {str(e)}",
-                    "details": str(e),  # Keep it simple for now
-                    "phase": "download_core",
-                }
-                try:
-                    # Use run_coroutine_threadsafe as this is a blocking method
-                    asyncio.run_coroutine_threadsafe(
-                        self.progress_callback(error_data), self.main_loop
-                    )
-                except Exception as cb_e:
-                    logger.error(f"Error sending final error notification: {cb_e}",
-                                 )
+            self._handle_download_error(e)
             raise
+
+    def _notify_download_started(self) -> None:
+        """Notify that download process is starting."""
+        if self.progress_callback and self.main_loop:
+            coro = self.progress_callback({
+                "status": "download_started",
+                "progress": 0,
+                "message": "Starting download process...",
+            })
+            asyncio.run_coroutine_threadsafe(coro, self.main_loop)
+
+    def _extract_video_info(self, url: str) -> Dict[str, Any]:
+        """Extract video information without downloading."""
+        with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
+            return ydl.extract_info(url, download=False)
+
+    def _prepare_output_folders(self, playlist_folder: Path, info: Dict[str, Any]) -> tuple[str, Path]:
+        """Prepare output folders for download."""
+        safe_title = "".join([
+            c if c.isalnum() or c in " -_" else "_"
+            for c in info.get("title", "Unknown")
+        ])
+
+        abs_playlist_folder = playlist_folder.resolve()
+        files_output_folder = abs_playlist_folder / "files"
+        files_output_folder.mkdir(parents=True, exist_ok=True)
+        logger.debug(f"Ensured output subfolder exists: {files_output_folder}")
+
+        return safe_title, files_output_folder
+
+    def _notify_download_preparing(self) -> None:
+        """Notify that download preparation is starting."""
+        if self.progress_callback and self.main_loop:
+            self._last_reported_percentage = -1
+            coro = self.progress_callback({
+                "status": "download_preparing",
+                "progress": 0,
+                "message": "Preparing download options...",
+            })
+            asyncio.run_coroutine_threadsafe(coro, self.main_loop)
+
+    def _create_download_options(self, files_output_folder: Path) -> Dict[str, Any]:
+        """Create yt-dlp download options."""
+        return {
+            "format": "bestaudio/best",
+            "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3"}],
+            "outtmpl": str(files_output_folder / "%(title)s.%(ext)s"),
+            "split_chapters": True,
+            "progress_hooks": [self._handle_progress],
+            "postprocessor_hooks": [self._handle_postprocessor_progress],
+            "force_overwrites": True,
+            "quiet": False,
+            "no_warnings": True,
+            "logger": None,
+            "noprogress": False,
+            "keepvideo": False,
+            "ignoreerrors": False,
+        }
+
+    def _perform_download(self, url: str, ydl_opts: Dict[str, Any]) -> Dict[str, Any]:
+        """Perform the actual download using yt-dlp."""
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            return ydl.extract_info(url, download=True)
+
+    def _notify_analyzing_chapters(self) -> None:
+        """Notify that chapter analysis is starting."""
+        if self.progress_callback and self.main_loop:
+            coro = self.progress_callback({
+                "status": "analyzing_chapters",
+                "message": "Analyzing chapters and preparing track list...",
+            })
+            asyncio.run_coroutine_threadsafe(coro, self.main_loop)
+
+    def _scan_mp3_files(self, files_output_folder: Path) -> list:
+        """Scan for MP3 files in the output folder."""
+        mp3_files = list(files_output_folder.glob("*.mp3"))
+        logger.info(f"Found {len(mp3_files)} MP3 files in {files_output_folder}")
+        return mp3_files
+
+    def _process_tracks_and_chapters(
+        self, info: Dict[str, Any], mp3_files: list
+    ) -> list[Dict[str, Any]]:
+        """Process tracks and chapters from download info."""
+        chapters = info.get("chapters", [])
+
+        if not chapters and mp3_files:
+            return self._process_without_chapters(info, mp3_files)
+        elif chapters:
+            return self._process_with_chapters(chapters, mp3_files)
+        else:
+            logger.warning(f"No chapters or MP3 files found for {info.get('id', 'Unknown')}")
+            return self._process_fallback_tracks(mp3_files)
+
+    def _process_without_chapters(
+        self, info: Dict[str, Any], mp3_files: list
+    ) -> list[Dict[str, Any]]:
+        """Process tracks when no chapter information is available."""
+        entries = info.get("entries", [])
+
+        if entries:
+            return self._process_playlist_entries(info, entries, mp3_files)
+        else:
+            return self._process_single_file(info, mp3_files)
+
+    def _process_playlist_entries(
+        self, info: Dict[str, Any], entries: list, mp3_files: list
+    ) -> list[Dict[str, Any]]:
+        """Process playlist entries and match with files."""
+        logger.debug(
+            f"Playlist '{info.get('title', 'Unknown')}' (ID: {info.get('id', 'Unknown')}): "
+            f"No explicit chapters found. Processing {len(entries)} entries as individual chapters."
+        )
+
+        processed_files_info = []
+        for idx, entry in enumerate(entries, 1):
+            entry_title = entry.get("title", f"Track {idx}")
+            matching_file = next(
+                (f for f in mp3_files if entry_title.lower() in f.stem.lower()),
+                None
+            )
+
+            if matching_file:
+                filename = str(Path("files") / matching_file.name)
+            else:
+                logger.warning(
+                    f"Could not find matching file for playlist entry '{entry_title}'. "
+                    f"Using entry title as filename basis."
+                )
+                filename = str(Path("files") / f"{entry_title}.mp3")
+
+            processed_files_info.append({
+                "title": entry_title,
+                "start_time": 0,
+                "end_time": entry.get("duration", 0),
+                "filename": filename,
+            })
+
+        return processed_files_info
+
+    def _process_single_file(
+        self, info: Dict[str, Any], mp3_files: list
+    ) -> list[Dict[str, Any]]:
+        """Process a single file download."""
+        if not mp3_files:
+            return []
+
+        return [{
+            "title": info.get("title", mp3_files[0].stem),
+            "start_time": 0,
+            "end_time": info.get("duration", 0),
+            "filename": str(Path("files") / mp3_files[0].name),
+        }]
+
+    def _process_with_chapters(
+        self, chapters: list, mp3_files: list
+    ) -> list[Dict[str, Any]]:
+        """Process download with chapter information."""
+        processed_files_info = []
+
+        for idx, chapter in enumerate(chapters, 1):
+            chapter_title = chapter.get("title", f"Chapter {idx}")
+            matching_file = self._find_matching_chapter_file(chapter_title, idx, mp3_files)
+
+            if matching_file:
+                filename = str(Path("files") / matching_file.name)
+            else:
+                logger.warning(
+                    f"Could not find matching file for chapter '{chapter_title}'. "
+                    f"Using chapter title as filename basis: "
+                    f"{str(Path('files') / f'{chapter_title}.mp3')}"
+                )
+                filename = str(Path("files") / f"{chapter_title}.mp3")
+
+            processed_files_info.append({
+                "title": chapter_title,
+                "start_time": chapter.get("start_time", 0),
+                "end_time": chapter.get("end_time", 0),
+                "filename": filename,
+            })
+
+        return processed_files_info
+
+    def _find_matching_chapter_file(
+        self, chapter_title: str, idx: int, mp3_files: list
+    ) -> Path | None:
+        """Find matching file for a chapter."""
+        potential_filename_prefix = f"{idx:03d} - {chapter_title}"
+
+        return next(
+            (
+                f for f in mp3_files
+                if (
+                    chapter_title.lower() in f.stem.lower()
+                    or f.stem.lower().startswith(
+                        potential_filename_prefix.lower()[:len(f.stem)]
+                    )
+                    or potential_filename_prefix.lower()[:30] in f.stem.lower()
+                )
+            ),
+            None
+        )
+
+    def _process_fallback_tracks(self, mp3_files: list) -> list[Dict[str, Any]]:
+        """Process tracks as fallback when no other info is available."""
+        if not mp3_files:
+            return []
+
+        return [
+            {
+                "title": file_path.stem,
+                "start_time": 0,
+                "end_time": 0,
+                "filename": str(Path("files") / file_path.name),
+            }
+            for file_path in sorted(mp3_files)
+        ]
+
+    def _notify_files_processed(self, processed_files_info: list) -> None:
+        """Notify that file processing is complete."""
+        if self.progress_callback and self.main_loop:
+            coro = self.progress_callback({
+                "status": "files_processed",
+                "message": f"Track analysis complete. Found {len(processed_files_info)} tracks.",
+            })
+            asyncio.run_coroutine_threadsafe(coro, self.main_loop)
+
+    def _handle_download_error(self, error: Exception) -> None:
+        """Handle download errors and notify via callback."""
+        logger.error(f"Download failed: {str(error)}")
+
+        if self.progress_callback and self.main_loop:
+            error_data = {
+                "status": "error",
+                "message": f"An unexpected error occurred: {str(error)}",
+                "details": str(error),
+                "phase": "download_core",
+            }
+            try:
+                asyncio.run_coroutine_threadsafe(
+                    self.progress_callback(error_data), self.main_loop
+                )
+            except Exception as cb_e:
+                logger.error(f"Error sending final error notification: {cb_e}")
 
     async def download(self, url: str) -> Dict[str, Any]:
         """Asynchronous method to download a YouTube video.

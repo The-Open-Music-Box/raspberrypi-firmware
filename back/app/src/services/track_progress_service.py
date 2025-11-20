@@ -147,130 +147,201 @@ class TrackProgressService:
     async def _emit_progress(self):
         """Emit lightweight position updates for smooth playback tracking."""
         async with self._safe_operation_context("emit_progress"):
-            # Enhanced diagnostic: Check service state
-            if not self._running:
-                logger.warning("❌ TrackProgressService not running - no position updates will be sent",
-                               )
+            if not self._validate_service_state():
                 return
 
-            if not self.state_manager:
-                logger.error("❌ No StateManager available - cannot broadcast position updates",
-                             )
-                return
-
-            if not self.audio_controller:
-                logger.debug("No audio controller available for progress emission")
-                return
-
-            # DIAGNOSTIC: Track emission attempt with periodic reset
-            if not hasattr(self, "_emission_attempt_count"):
-                self._emission_attempt_count = 0
-            self._emission_attempt_count += 1
-
-            # Reset diagnostic attributes periodically to prevent memory accumulation
-            if self._emission_attempt_count % self._diagnostic_reset_interval == 0:
-                self._reset_diagnostic_attributes(preserve_counters=True)
-                logger.info(f"🧹 Diagnostic attributes reset at iteration {self._emission_attempt_count}",
-                            )
-
-            # Handle both sync and async get_playback_status
-            if asyncio.iscoroutinefunction(self.audio_controller.get_playback_status):
-                status = await self.audio_controller.get_playback_status()
-            else:
-                # PlaybackCoordinator has sync get_playback_status
-                status = self.audio_controller.get_playback_status()
-            # DIAGNOSTIC: Log status periodically after playlist start
-            # Log first status for debugging
-            if not hasattr(self, "_first_status_logged"):
-                logger.info(f"🎵 FIRST playback status: {status}")
-                self._first_status_logged = True
+            self._update_diagnostic_counters()
+            status = await self._get_playback_status()
 
             if not status:
-                if not hasattr(self, "_no_status_logged"):
-                    logger.warning(f"⚠️️ No status returned from audio controller (attempt #{self._emission_attempt_count})",
-                                   )
-                    self._no_status_logged = True
                 return
 
-            # Get position and duration - prioritize _ms fields for consistency
-            current_time_ms = status.get("position_ms") or status.get("current_time", 0)
-            duration_ms = status.get("duration_ms") or status.get("duration", 0)
-            # Convert to seconds for internal processing (legacy compatibility)
-            current_time = current_time_ms / 1000.0 if current_time_ms else 0.0
-            duration = duration_ms / 1000.0 if duration_ms else 0.0
+            position_data = self._extract_position_data(status)
+            await self._handle_track_events(status, position_data)
+            self._log_progress_diagnostics(position_data)
 
-            # CRITICAL FIX: Use correct field names from PlaybackCoordinator status
-            is_playing = status.get("is_playing", False)  # Boolean field, not state string
-            track_id = status.get("active_track_id")  # active_track_id, not track_id
-
-            # Check for track change and emit state:track event
-            await self._check_for_track_change(status)
-
-            # Check for track end and trigger auto-advance if needed
-            await self._check_for_track_end(current_time, duration, is_playing)
-
-            # Log every 10th emission for debugging (5 seconds at 500ms interval)
-            if not hasattr(self, "_emit_counter"):
-                self._emit_counter = 0
-            self._emit_counter += 1
-
-            if self._emit_counter % 50 == 0:  # Reduce frequency: every 10s instead of 2s
-                # Reduced log frequency from every 2s to every 10s
-                logger.debug(
-                    f"📍 Progress emission #{self._emit_counter}: pos={current_time:.1f}s/{duration:.1f}s, playing={is_playing}, track_id={track_id}"
-                )
-
-            # Alert if position seems stuck
-            if hasattr(self, "_last_position_logged") and hasattr(self, "_last_position_time"):
-                if current_time == self._last_position_logged and is_playing:
-                    stuck_duration = time.time() - self._last_position_time
-                    if stuck_duration > 5.0:  # Position stuck for 5+ seconds while playing
-                        logger.warning(
-                            f"⚠️ Position seems stuck at {current_time:.1f}s for {stuck_duration:.1f}s while playing"
-                        )
-
-            self._last_position_logged = current_time
-            self._last_position_time = time.time()
-
-            # Validate basic position data
-            if not self._validate_position_data(current_time, duration, track_id):
-                if not hasattr(self, "_validation_fail_logged"):
-                    logger.warning(f"❌ VALIDATION FAILED (attempt #{self._emission_attempt_count}): time={current_time}, duration={duration}, track_id={track_id}",
-                                   )
-                    self._validation_fail_logged = True
+            if not self._validate_and_log_position(position_data):
                 return
 
-            # Log first successful validation
-            if not hasattr(self, "_first_valid_logged"):
-                logger.info(f"✅ FIRST VALID position: time={current_time:.1f}s, duration={duration:.1f}s, track_id={track_id}, playing={is_playing}",
-                            )
-                self._first_valid_logged = True
+            await self._broadcast_position(position_data)
 
-            # Use lightweight position update for smooth tracking - already in milliseconds
-            # Log first broadcast attempt
-            if not hasattr(self, "_first_broadcast_logged"):
-                logger.info(f"📡 FIRST BROADCAST attempt: pos={current_time_ms}ms, track={track_id}, playing={is_playing}",
-                            )
-                self._first_broadcast_logged = True
-            result = await self.state_manager.broadcast_position_update(
-                position_ms=current_time_ms,  # Already in milliseconds
-                track_id=str(track_id) if track_id else "unknown",
-                is_playing=is_playing,
-                duration_ms=duration_ms if duration_ms > 0 else None,  # Already in milliseconds
+    def _validate_service_state(self) -> bool:
+        """Validate service state before emitting progress."""
+        if not self._running:
+            logger.warning("❌ TrackProgressService not running - no position updates will be sent")
+            return False
+
+        if not self.state_manager:
+            logger.error("❌ No StateManager available - cannot broadcast position updates")
+            return False
+
+        if not self.audio_controller:
+            logger.debug("No audio controller available for progress emission")
+            return False
+
+        return True
+
+    def _update_diagnostic_counters(self) -> None:
+        """Update diagnostic counters and reset periodically."""
+        if not hasattr(self, "_emission_attempt_count"):
+            self._emission_attempt_count = 0
+        self._emission_attempt_count += 1
+
+        # Reset diagnostic attributes periodically to prevent memory accumulation
+        if self._emission_attempt_count % self._diagnostic_reset_interval == 0:
+            self._reset_diagnostic_attributes(preserve_counters=True)
+            logger.info(
+                f"🧹 Diagnostic attributes reset at iteration {self._emission_attempt_count}"
             )
-            # DIAGNOSTIC: Track successful broadcasts
-            if not hasattr(self, "_successful_broadcast_count"):
-                self._successful_broadcast_count = 0
-            if result is not None:
-                self._successful_broadcast_count += 1
-            # Log if broadcast was throttled
-            if result is None and not hasattr(self, "_throttle_logged"):
-                logger.warning("⚠️️ Position update THROTTLED by StateManager")
-                self._throttle_logged = True
-            elif result and not hasattr(self, "_broadcast_success_logged"):
-                logger.info(f"✅ FIRST BROADCAST SUCCESS: {result.get('event_type', 'unknown')}",
-                            )
-                self._broadcast_success_logged = True
+
+    async def _get_playback_status(self) -> Optional[dict]:
+        """Get playback status from audio controller."""
+        # Handle both sync and async get_playback_status
+        if asyncio.iscoroutinefunction(self.audio_controller.get_playback_status):
+            status = await self.audio_controller.get_playback_status()
+        else:
+            status = self.audio_controller.get_playback_status()
+
+        # Log first status for debugging
+        if not hasattr(self, "_first_status_logged"):
+            logger.info(f"🎵 FIRST playback status: {status}")
+            self._first_status_logged = True
+
+        if not status:
+            if not hasattr(self, "_no_status_logged"):
+                logger.warning(
+                    f"⚠️️ No status returned from audio controller "
+                    f"(attempt #{self._emission_attempt_count})"
+                )
+                self._no_status_logged = True
+
+        return status
+
+    def _extract_position_data(self, status: dict) -> dict:
+        """Extract position data from playback status."""
+        # Get position and duration - prioritize _ms fields for consistency
+        current_time_ms = status.get("position_ms") or status.get("current_time", 0)
+        duration_ms = status.get("duration_ms") or status.get("duration", 0)
+
+        # Convert to seconds for internal processing (legacy compatibility)
+        current_time = current_time_ms / 1000.0 if current_time_ms else 0.0
+        duration = duration_ms / 1000.0 if duration_ms else 0.0
+
+        # Use correct field names from PlaybackCoordinator status
+        is_playing = status.get("is_playing", False)
+        track_id = status.get("active_track_id")
+
+        return {
+            "current_time_ms": current_time_ms,
+            "duration_ms": duration_ms,
+            "current_time": current_time,
+            "duration": duration,
+            "is_playing": is_playing,
+            "track_id": track_id,
+        }
+
+    async def _handle_track_events(self, status: dict, position_data: dict) -> None:
+        """Handle track change and track end events."""
+        await self._check_for_track_change(status)
+        await self._check_for_track_end(
+            position_data["current_time"],
+            position_data["duration"],
+            position_data["is_playing"]
+        )
+
+    def _log_progress_diagnostics(self, position_data: dict) -> None:
+        """Log diagnostic information for progress tracking."""
+        if not hasattr(self, "_emit_counter"):
+            self._emit_counter = 0
+        self._emit_counter += 1
+
+        # Log every 50th emission
+        if self._emit_counter % 50 == 0:
+            logger.debug(
+                f"📍 Progress emission #{self._emit_counter}: "
+                f"pos={position_data['current_time']:.1f}s/{position_data['duration']:.1f}s, "
+                f"playing={position_data['is_playing']}, track_id={position_data['track_id']}"
+            )
+
+        # Check for stuck position
+        self._check_stuck_position(position_data["current_time"], position_data["is_playing"])
+
+    def _check_stuck_position(self, current_time: float, is_playing: bool) -> None:
+        """Check if playback position is stuck."""
+        if hasattr(self, "_last_position_logged") and hasattr(self, "_last_position_time"):
+            if current_time == self._last_position_logged and is_playing:
+                stuck_duration = time.time() - self._last_position_time
+                if stuck_duration > 5.0:
+                    logger.warning(
+                        f"⚠️ Position seems stuck at {current_time:.1f}s "
+                        f"for {stuck_duration:.1f}s while playing"
+                    )
+
+        self._last_position_logged = current_time
+        self._last_position_time = time.time()
+
+    def _validate_and_log_position(self, position_data: dict) -> bool:
+        """Validate position data and log validation status."""
+        if not self._validate_position_data(
+            position_data["current_time"],
+            position_data["duration"],
+            position_data["track_id"]
+        ):
+            if not hasattr(self, "_validation_fail_logged"):
+                logger.warning(
+                    f"❌ VALIDATION FAILED (attempt #{self._emission_attempt_count}): "
+                    f"time={position_data['current_time']}, "
+                    f"duration={position_data['duration']}, "
+                    f"track_id={position_data['track_id']}"
+                )
+                self._validation_fail_logged = True
+            return False
+
+        # Log first successful validation
+        if not hasattr(self, "_first_valid_logged"):
+            logger.info(
+                f"✅ FIRST VALID position: time={position_data['current_time']:.1f}s, "
+                f"duration={position_data['duration']:.1f}s, "
+                f"track_id={position_data['track_id']}, playing={position_data['is_playing']}"
+            )
+            self._first_valid_logged = True
+
+        return True
+
+    async def _broadcast_position(self, position_data: dict) -> None:
+        """Broadcast position update to clients."""
+        # Log first broadcast attempt
+        if not hasattr(self, "_first_broadcast_logged"):
+            logger.info(
+                f"📡 FIRST BROADCAST attempt: pos={position_data['current_time_ms']}ms, "
+                f"track={position_data['track_id']}, playing={position_data['is_playing']}"
+            )
+            self._first_broadcast_logged = True
+
+        result = await self.state_manager.broadcast_position_update(
+            position_ms=position_data["current_time_ms"],
+            track_id=str(position_data["track_id"]) if position_data["track_id"] else "unknown",
+            is_playing=position_data["is_playing"],
+            duration_ms=position_data["duration_ms"] if position_data["duration_ms"] > 0 else None,
+        )
+
+        self._track_broadcast_result(result)
+
+    def _track_broadcast_result(self, result) -> None:
+        """Track broadcast result for diagnostic purposes."""
+        if not hasattr(self, "_successful_broadcast_count"):
+            self._successful_broadcast_count = 0
+
+        if result is not None:
+            self._successful_broadcast_count += 1
+
+        # Log if broadcast was throttled
+        if result is None and not hasattr(self, "_throttle_logged"):
+            logger.warning("⚠️️ Position update THROTTLED by StateManager")
+            self._throttle_logged = True
+        elif result and not hasattr(self, "_broadcast_success_logged"):
+            logger.info(f"✅ FIRST BROADCAST SUCCESS: {result.get('event_type', 'unknown')}")
+            self._broadcast_success_logged = True
 
     def _validate_position_data(self, current_time: float, duration: float, track_id) -> bool:
         """Validate position data before emission."""
