@@ -73,11 +73,6 @@ async def create_nfc_hardware(
     await hardware.initialize()
     logger.info("✅ PN532 NFC hardware created successfully")
     return hardware
-    # Fallback to mock if real hardware fails
-    logger.info("🎭 Falling back to Mock NFC hardware")
-    hardware = MockNFCHardware()
-    await hardware.initialize()
-    return hardware
 
 
 @_handle_errors("get_hardware_info")

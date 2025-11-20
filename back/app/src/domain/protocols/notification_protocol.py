@@ -27,8 +27,8 @@ class PlaybackNotifierProtocol(Protocol):
 
     def notify_track_progress(
         self,
-        progress_percent: float,
-        elapsed_seconds: int,
+        _progress_percent: float,
+        _elapsed_seconds: int,
         total_seconds: int,
         track_info: Optional[Dict] = None
     ) -> None:
@@ -66,8 +66,8 @@ class MockPlaybackNotifier:
 
     def notify_track_progress(
         self,
-        progress_percent: float,
-        elapsed_seconds: int,
+        _progress_percent: float,
+        _elapsed_seconds: int,
         total_seconds: int,
         track_info: Optional[Dict] = None
     ) -> None:

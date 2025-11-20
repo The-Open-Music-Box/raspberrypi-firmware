@@ -46,7 +46,7 @@ class PlayerStateService:
 
     @handle_service_errors("player_state")
     async def build_current_player_state(
-        self, audio_controller=None, state_manager=None, include_error_info: bool = False
+        self, audio_controller=None, state_manager=None, _include_error_info: bool = False
     ) -> PlayerStateModel:
         """
         Build complete current player state from audio controller.

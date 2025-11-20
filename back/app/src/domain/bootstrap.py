@@ -67,7 +67,6 @@ class DomainBootstrap:
         if not self._is_initialized:
             logger.error("❌ DomainBootstrap not initialized")
             raise RuntimeError("DomainBootstrap not initialized")
-            return
 
         if audio_domain_container.is_initialized:
             await audio_domain_container.start()

@@ -23,12 +23,10 @@ except ImportError:
     PYGAME_AVAILABLE = False
 
 try:
-    import mutagen
     from mutagen import File as MutagenFile
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
-    mutagen = None
     MutagenFile = None
 
 from app.src.monitoring import get_logger
