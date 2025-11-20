@@ -156,11 +156,11 @@ class StateSerializationApplicationService:
     def serialize_playback_state(
         self,
         state: str,
-        track_info: dict[str, Any] = None,
-        playlist_info: dict[str, Any] = None,
+        track_info: dict[str, Any] | None = None,
+        playlist_info: dict[str, Any] | None = None,
         position: float = 0.0,
         volume: int = 50,
-        error: str = None,
+        error: str | None = None,
     ) -> dict[str, Any]:
         """
         Serialize current playback state for broadcasting.

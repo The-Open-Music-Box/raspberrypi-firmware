@@ -113,7 +113,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_query(
         self,
         query: str,
-        params: tuple | dict = None,
+        params: tuple | dict | None = None,
         operation_name: str = "query"
     ) -> list[Any]:
         """Execute a SELECT query and return results."""
@@ -142,7 +142,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_single(
         self,
         query: str,
-        params: tuple | dict = None,
+        params: tuple | dict | None = None,
         operation_name: str = "query_single"
     ) -> Any | None:
         """Execute a SELECT query and return single result."""
@@ -171,7 +171,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_command(
         self,
         query: str,
-        params: tuple | dict = None,
+        params: tuple | dict | None = None,
         operation_name: str = "command"
     ) -> int:
         """Execute an INSERT/UPDATE/DELETE command."""
@@ -199,7 +199,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_insert(
         self,
         query: str,
-        params: tuple | dict = None,
+        params: tuple | dict | None = None,
         operation_name: str = "insert"
     ) -> str:
         """Execute an INSERT command and return the new row ID."""

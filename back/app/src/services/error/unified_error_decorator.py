@@ -29,9 +29,9 @@ class ErrorContext:
 
     def __init__(
         self,
-        operation: str = None,
-        component: str = None,
-        client_op_id: str = None,
+        operation: str | None = None,
+        component: str | None = None,
+        client_op_id: str | None = None,
         user_friendly: bool = True,
         log_level: Any = logging.ERROR,
         include_trace: bool = False,
@@ -304,7 +304,7 @@ def handle_http_errors(
             except Exception as e:
                 # Convert to appropriate HTTP status
                 status_code = mappings.get(type(e), default_status)
-                raise HTTPException(status_code=status_code, detail=str(e))
+                raise HTTPException(status_code=status_code, detail=str(e)) from e
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -315,7 +315,7 @@ def handle_http_errors(
             except Exception as e:
                 # Convert to appropriate HTTP status
                 status_code = mappings.get(type(e), default_status)
-                raise HTTPException(status_code=status_code, detail=str(e))
+                raise HTTPException(status_code=status_code, detail=str(e)) from e
 
         return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
 

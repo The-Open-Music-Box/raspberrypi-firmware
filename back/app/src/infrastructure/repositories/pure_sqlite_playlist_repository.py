@@ -251,7 +251,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return self._build_playlist_from_rows(playlist_row, track_rows)
 
     @_handle_repository_errors("playlist")
-    async def find_all(self, limit: int = None, offset: int = 0) -> list[Playlist]:
+    async def find_all(self, limit: int | None = None, offset: int = 0) -> list[Playlist]:
         """Find all playlists with pagination using pure DDD principles.
 
         Args:
@@ -344,7 +344,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return result[0] if result else 0
 
     @_handle_repository_errors("playlist")
-    async def search(self, query: str, limit: int = None) -> list[Playlist]:
+    async def search(self, query: str, limit: int | None = None) -> list[Playlist]:
         """Search playlists by name or description using pure DDD principles.
 
         Args:

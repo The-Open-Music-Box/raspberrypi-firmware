@@ -240,7 +240,7 @@ class PlaylistBroadcastingService:
             logger.error(f"❌ Failed to broadcast tracks reordering: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_playlist_started(self, playlist_id: str, track_data: dict[str, Any] = None):
+    async def broadcast_playlist_started(self, playlist_id: str, track_data: dict[str, Any] | None = None):
         """Broadcast playlist playback started event.
 
         Args:

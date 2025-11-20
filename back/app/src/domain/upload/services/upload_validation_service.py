@@ -25,7 +25,7 @@ class UploadValidationService:
         self,
         max_file_size: int = 100 * 1024 * 1024,  # 100MB
         max_chunk_size: int = 1024 * 1024,  # 1MB
-        allowed_extensions: set[str] = None,
+        allowed_extensions: set[str] | None = None,
         min_audio_duration: float = 1.0,  # 1 second minimum
     ):
         """Initialize validation service with business rules.
@@ -42,7 +42,7 @@ class UploadValidationService:
         self.min_audio_duration = min_audio_duration
 
     def validate_upload_request(
-        self, filename: str, total_size: int, total_chunks: int, playlist_id: str = None
+        self, filename: str, total_size: int, total_chunks: int, playlist_id: str | None = None
     ) -> dict[str, any]:
         """Validate an upload request before creating session.
 

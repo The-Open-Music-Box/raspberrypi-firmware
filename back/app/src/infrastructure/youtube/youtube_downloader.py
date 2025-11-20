@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class YouTubeDownloader:
     """Downloader service for handling YouTube video/audio downloads using yt-dlp."""
 
-    def __init__(self, upload_folder: str, progress_callback: Callable = None):
+    def __init__(self, upload_folder: str, progress_callback: Callable | None = None):
         self.upload_folder = Path(upload_folder)
         self.progress_callback = progress_callback
         self._last_reported_percentage = -1  # Renamed and initialized for better tracking

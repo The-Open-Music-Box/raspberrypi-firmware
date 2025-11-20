@@ -70,7 +70,7 @@ class PlaylistRepositoryProtocol(ABC):
         pass
 
     @abstractmethod
-    async def find_all(self, limit: int = None, offset: int = 0) -> list[Any]:
+    async def find_all(self, limit: int | None = None, offset: int = 0) -> list[Any]:
         """Find all playlists with optional pagination.
 
         Args:
@@ -116,7 +116,7 @@ class PlaylistRepositoryProtocol(ABC):
         pass
 
     @abstractmethod
-    async def search(self, query: str, limit: int = None) -> list[Any]:
+    async def search(self, query: str, limit: int | None = None) -> list[Any]:
         """Search playlists by name or description.
 
         Args:

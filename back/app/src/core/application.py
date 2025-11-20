@@ -412,10 +412,10 @@ class Application:
     async def _broadcast_nfc_association_event(
         self,
         association_state: str,
-        playlist_id: str = None,
-        tag_id: str = None,
-        session_id: str = None,
-        event_data: dict = None
+        playlist_id: str | None = None,
+        tag_id: str | None = None,
+        session_id: str | None = None,
+        event_data: dict | None = None
     ) -> None:
         """Broadcast NFC association event via Socket.IO.
 

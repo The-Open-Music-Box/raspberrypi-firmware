@@ -320,7 +320,7 @@ class TrackProgressService:
             logger.info(f"Error count reset from {old_count} to 0")
 
     def configure_error_handling(
-        self, max_consecutive_errors: int = None, recovery_delay: float = None
+        self, max_consecutive_errors: int | None = None, recovery_delay: float | None = None
     ):
         """Configure error handling parameters."""
         if max_consecutive_errors is not None:

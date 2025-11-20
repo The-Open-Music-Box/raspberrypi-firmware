@@ -84,8 +84,8 @@ class ApplicationContainer:
         # Delegate to infrastructure container for infrastructure services
         try:
             return self._infrastructure_container.get(service_name)
-        except KeyError:
-            raise KeyError(f"Service '{service_name}' not found in application or infrastructure containers")
+        except KeyError as e:
+            raise KeyError(f"Service '{service_name}' not found in application or infrastructure containers") from e
 
 
 # Global application container instance

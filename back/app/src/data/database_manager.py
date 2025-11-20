@@ -32,7 +32,7 @@ class DatabaseManager:
     Singleton lifecycle is managed by the DI container.
     """
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str | None = None):
         """Initialize DatabaseManager.
 
         Args:

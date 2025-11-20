@@ -65,7 +65,7 @@ def normalize_folder_name(name: str) -> str:
     return normalized
 
 
-def get_playlist_folder_path(config, playlist_name: str, playlist_id: str = None) -> str:
+def get_playlist_folder_path(config, playlist_name: str, playlist_id: str | None = None) -> str:
     """Get the complete folder path for a playlist.
 
     Args:

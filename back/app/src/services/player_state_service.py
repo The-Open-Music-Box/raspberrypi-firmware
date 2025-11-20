@@ -180,7 +180,7 @@ class PlayerStateService:
     async def build_error_player_state(
         self,
         state_manager=None,
-        error_message: str = None,
+        error_message: str | None = None,
         preserve_current_info: dict[str, Any] | None = None,
     ) -> PlayerStateModel:
         """
