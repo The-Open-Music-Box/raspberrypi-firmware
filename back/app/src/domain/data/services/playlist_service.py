@@ -7,7 +7,7 @@
 import uuid
 import shutil
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from datetime import datetime
 from dataclasses import asdict
 import logging
@@ -158,7 +158,7 @@ class PlaylistService:
             raise RuntimeError(f"Failed to update playlist {playlist_id}")
 
         logger.info(f"✅ Updated playlist {playlist_id}")
-        return await self.get_playlist(playlist_id)
+        return cast(dict[str, Any], await self.get_playlist(playlist_id))
 
     @handle_domain_errors(operation_name="delete_playlist")
     async def delete_playlist(self, playlist_id: str) -> bool:
@@ -192,7 +192,7 @@ class PlaylistService:
         else:
             logger.warning(f"Failed to delete playlist {playlist_id}")
 
-        return success
+        return cast(bool, success)
 
     async def _cleanup_playlist_folder(self, playlist: Playlist) -> None:
         """Clean up the filesystem directory for a deleted playlist.
@@ -241,7 +241,7 @@ class PlaylistService:
         if success:
             logger.info(f"✅ Associated NFC tag {nfc_tag_id} with playlist {playlist_id}")
 
-        return success
+        return cast(bool, success)
 
     @handle_domain_errors(operation_name="get_playlist_by_nfc")
     async def get_playlist_by_nfc(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:

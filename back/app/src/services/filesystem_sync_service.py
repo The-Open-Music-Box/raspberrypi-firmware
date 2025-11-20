@@ -12,7 +12,7 @@ audio file metadata extraction.
 import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 from uuid import uuid4
 from datetime import datetime, timezone
 
@@ -119,7 +119,7 @@ class FilesystemSyncService:
             if isinstance(tracks_list, list):
                 tracks_list.append(track)
         # Create the playlist in the repository
-        return await self.repository.create_playlist(playlist_data)
+        return cast(str | None, await self.repository.create_playlist(playlist_data))
 
     @handle_service_errors("filesystem_sync")
     async def update_playlist_tracks(
@@ -278,7 +278,7 @@ class FilesystemSyncService:
                                        )
                         break
                     if f.is_file() and f.suffix.lower() in self.SUPPORTED_AUDIO_EXTENSIONS:
-                        audio_files.append(f)  # type: ignore[arg-type]
+                        audio_files.append(f)
 
                 # Add to result if audio files were found
                 if audio_files:

@@ -11,7 +11,7 @@ Refactored to use standardized data models and error handling.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, cast
 from datetime import datetime
 
 from ..common.data_models import PlayerStateModel, TrackModel, PlaybackState
@@ -282,7 +282,7 @@ class PlayerStateService:
                 await self.state_manager.send_acknowledgment(client_op_id, True, player_state_dict)
         logger.info(f"Player state broadcasted: {playlist_data.get('title')} (source: {source})",
                     )
-        return player_state_dict
+        return cast(dict[str, Any], player_state_dict)
 
     def _parse_playback_state(self, raw_state: str) -> PlaybackState:
         """Convert raw state string to PlaybackState enum."""

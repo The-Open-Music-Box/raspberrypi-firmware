@@ -302,7 +302,7 @@ class AudioEngine(AudioEngineProtocol):
                     try:
                         # Direct backend playback - use play_file if available, else fall back to play
                         if hasattr(self._backend, 'play_file'):
-                            success = self._backend.play_file(track.file_path)  # type: ignore[attr-defined]
+                            success = self._backend.play_file(track.file_path)
                         else:
                             import asyncio
                             # For async play method

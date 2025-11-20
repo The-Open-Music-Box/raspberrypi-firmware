@@ -4,7 +4,7 @@
 
 """Factory for creating audio domain components."""
 
-from typing import Optional, Any
+from typing import Optional, Any, cast
 
 from app.src.monitoring import get_logger
 from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
@@ -53,7 +53,7 @@ class AudioDomainFactory:
 
         logger.warning(f"Backend {type(backend).__name__} doesn't implement AudioBackendProtocol",
                        )
-        return backend
+        return cast(AudioBackendProtocol, backend)
 
     # PlaylistManager removed - use data domain services
 

@@ -9,7 +9,7 @@ Centralized logic for detecting test/mock data in API requests.
 This eliminates duplication across nfc_api_routes.py and other endpoints.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, cast, Callable
 import logging
 import uuid
 
@@ -170,7 +170,8 @@ def create_mock_response(
         >>> mock["timeout_ms"]
         30000
     """
-    creators = {
+    # Explicitly type the creators dict so mypy knows the return type
+    creators: Dict[str, Callable[..., Dict[str, Any]]] = {
         "association": create_mock_nfc_association,
         "scan": create_mock_scan_response,
     }
@@ -182,8 +183,8 @@ def create_mock_response(
             f"Supported types: {', '.join(creators.keys())}"
         )
 
-    # Type is guaranteed to be Callable at this point
-    return creator(**kwargs)  # type: ignore[operator]
+    # Type is guaranteed to be Callable[..., Dict[str, Any]] at this point
+    return creator(**kwargs)
 
 
 # Legacy function names for backward compatibility

@@ -15,6 +15,7 @@ from app.src.domain.data.services.track_service import TrackService
 from app.src.infrastructure.repositories.data_playlist_repository import DataPlaylistRepository
 from app.src.infrastructure.repositories.data_track_repository import DataTrackRepository
 from app.src.infrastructure.adapters.pure_playlist_repository_adapter import PurePlaylistRepositoryAdapter
+from typing import cast
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ def get_data_playlist_service() -> PlaylistService:
     Returns:
         PlaylistService instance
     """
-    return get_container().get("data_playlist_service")
+    return cast(PlaylistService, get_container().get("data_playlist_service"))
 
 
 def get_data_track_service() -> TrackService:
@@ -90,7 +91,7 @@ def get_data_track_service() -> TrackService:
     Returns:
         TrackService instance
     """
-    return get_container().get("data_track_service")
+    return cast(TrackService, get_container().get("data_track_service"))
 
 
 # get_data_application_service moved to dependencies.py using ApplicationContainer

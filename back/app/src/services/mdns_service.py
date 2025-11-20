@@ -12,7 +12,7 @@ Returns: None
 """
 
 import socket
-from typing import Optional
+from typing import Optional, cast
 
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
 
@@ -117,7 +117,7 @@ class MDNSService:
                 # Connecting to an arbitrary public IP (doesn't actually send packets)
                 s.connect(("8.8.8.8", 80))
                 local_ip = s.getsockname()[0]
-                return local_ip
+                return cast(str | None, local_ip)
             finally:
                 s.close()
         except Exception as e:

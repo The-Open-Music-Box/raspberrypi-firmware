@@ -10,6 +10,7 @@ Single Responsibility: Initialize and register web API routes with dependencies.
 """
 
 from pathlib import Path
+from typing import Optional
 from fastapi import FastAPI
 
 from app.src.monitoring import get_logger
@@ -41,7 +42,7 @@ class WebRoutes:
             app: FastAPI application instance
         """
         self.app = app
-        self.api_routes = None
+        self.api_routes: Optional[WebAPIRoutes] = None
         self.static_dir = Path("app/static")
 
     @handle_errors("web_routes_init", return_response=False)
@@ -57,5 +58,6 @@ class WebRoutes:
             self.initialize()
 
         # Register routes directly with app (web routes use direct mounting, not router)
-        self.api_routes.register_with_app(self.app)
+        if self.api_routes is not None:
+            self.api_routes.register_with_app(self.app)
         logger.info("✅ Web routes registered successfully")

@@ -16,7 +16,7 @@ These decorators eliminate repetitive code in API route handlers.
 
 import functools
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict, Any
 from fastapi import Request
 
 from app.src.services.response.unified_response_service import UnifiedResponseService
@@ -224,7 +224,7 @@ def with_request_logging(
 
             # Log request
             if log_request and request_obj:
-                log_data = {
+                log_data: Dict[str, Any] = {
                     "endpoint": func.__name__,
                     "method": request_obj.method,
                     "path": str(request_obj.url.path),

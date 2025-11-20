@@ -10,7 +10,7 @@ and mock implementations for testing.
 """
 
 import sys
-from typing import Optional
+from typing import Optional, cast
 
 from app.src.config import config
 from app.src.domain.protocols.notification_protocol import PlaybackNotifierProtocol as PlaybackSubject
@@ -35,7 +35,7 @@ def get_audio_backend(
     Returns:
         AudioBackendProtocol: Platform-appropriate audio backend
     """
-    return _create_audio_backend(playback_subject)
+    return cast(AudioBackendProtocol, _create_audio_backend(playback_subject))
 
 
 @handle_errors("_create_audio_backend")
@@ -63,7 +63,7 @@ def _create_audio_backend(
         logger.info("🍎 Creating MacOSAudioBackend...")
         backend = MacOSAudioBackend(playback_subject)
         logger.info("✅ macOS Audio Backend initialized successfully")
-        return backend
+        return cast(AudioBackendProtocol, backend)
 
     else:
         # Try to initialize hardware audio backend (WM8960 for Raspberry Pi/Linux)

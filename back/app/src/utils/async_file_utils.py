@@ -12,7 +12,7 @@ to execute synchronous operations in a non-blocking manner.
 import asyncio
 import os
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union, List, cast
 from concurrent.futures import ThreadPoolExecutor
 import functools
 
@@ -82,7 +82,7 @@ class AsyncFileUtils:
         def _exists(p):
             return Path(p).exists()
 
-        return await _exists(path)
+        return cast(bool, await _exists(path))
 
     @staticmethod
     async def is_file(path: Union[str, Path]) -> bool:
@@ -99,7 +99,7 @@ class AsyncFileUtils:
         def _is_file(p):
             return Path(p).is_file()
 
-        return await _is_file(path)
+        return cast(bool, await _is_file(path))
 
     @staticmethod
     async def is_dir(path: Union[str, Path]) -> bool:
@@ -116,7 +116,7 @@ class AsyncFileUtils:
         def _is_dir(p):
             return Path(p).is_dir()
 
-        return await _is_dir(path)
+        return cast(bool, await _is_dir(path))
 
     @staticmethod
     async def mkdir(path: Union[str, Path], parents: bool = False, exist_ok: bool = False) -> None:
@@ -169,7 +169,7 @@ class AsyncFileUtils:
         def _read_text(p, encoding):
             return Path(p).read_text(encoding=encoding)
 
-        return await _read_text(path, encoding)
+        return cast(str, await _read_text(path, encoding))
 
     @staticmethod
     async def write_text(path: Union[str, Path], content: str, encoding: str = "utf-8") -> None:
@@ -202,7 +202,7 @@ class AsyncFileUtils:
         def _read_bytes(p):
             return Path(p).read_bytes()
 
-        return await _read_bytes(path)
+        return cast(bytes, await _read_bytes(path))
 
     @staticmethod
     async def write_bytes(path: Union[str, Path], content: bytes) -> None:
@@ -234,7 +234,7 @@ class AsyncFileUtils:
         def _stat(p):
             return Path(p).stat()
 
-        return await _stat(path)
+        return cast(os.stat_result, await _stat(path))
 
     @staticmethod
     async def listdir(path: Union[str, Path]) -> List[str]:
@@ -251,7 +251,7 @@ class AsyncFileUtils:
         def _listdir(p):
             return [item.name for item in Path(p).iterdir()]
 
-        return await _listdir(path)
+        return cast(list[str], await _listdir(path))
 
     @staticmethod
     async def glob(path: Union[str, Path], pattern: str) -> List[Path]:
@@ -269,7 +269,7 @@ class AsyncFileUtils:
         def _glob(p, pattern):
             return list(Path(p).glob(pattern))
 
-        return await _glob(path, pattern)
+        return cast(list[Path], await _glob(path, pattern))
 
     @staticmethod
     async def copy_file(src: Union[str, Path], dst: Union[str, Path]) -> None:
@@ -320,7 +320,7 @@ class AsyncFileUtils:
         def _get_size(p):
             return Path(p).stat().st_size
 
-        return await _get_size(path)
+        return cast(int, await _get_size(path))
 
     @staticmethod
     @handle_errors("safe_delete")

@@ -12,7 +12,7 @@ the 600+ duplicated try/catch blocks across the application.
 import asyncio
 import functools
 import traceback
-from typing import Callable, Any, Optional, Dict
+from typing import Callable, Any, Optional, Dict, cast
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -71,7 +71,7 @@ def handle_errors(
 
     def decorator(func: Callable) -> Callable:
         # Determine component from module if not provided
-        func_component = component or getattr(func, "__module__", "unknown")
+        func_component = component or cast(str, getattr(func, "__module__", "unknown"))
         func_operation = operation_name or func.__name__
 
         # Build custom error mapping
@@ -343,7 +343,7 @@ def handle_validation_errors(validation_context: str = "api") -> Callable:
             except ValueError as e:
                 # Return validation error response
                 return UnifiedResponseService.validation_error(
-                    errors=[{"message": str(e)}],
+                    errors=[str(e)],
                     message=f"Validation failed in {validation_context}",
                 )
             except Exception as e:
@@ -351,7 +351,7 @@ def handle_validation_errors(validation_context: str = "api") -> Callable:
                     f"Unexpected validation error in {validation_context}: {str(e)}"
                 )
                 return UnifiedResponseService.validation_error(
-                    errors=[{"message": "Validation error occurred"}],
+                    errors=["Validation error occurred"],
                     message=f"Validation failed in {validation_context}",
                 )
 
@@ -375,7 +375,7 @@ def handle_repository_errors(entity_name: str = "entity") -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
-        return handle_errors(
+        return cast(Callable[..., Any], handle_errors(
             component=f"repository_{entity_name}",
             operation_name=func.__name__,
             log_level=logging.ERROR,
@@ -388,7 +388,7 @@ def handle_repository_errors(entity_name: str = "entity") -> Callable:
                 KeyError: f"{entity_name} key not found",
                 TypeError: f"Invalid {entity_name} type",
             },
-        )(func)
+        )(func))
 
     return decorator
 
@@ -408,7 +408,7 @@ def handle_infrastructure_errors(component_name: str = "infrastructure") -> Call
     """
 
     def decorator(func: Callable) -> Callable:
-        return handle_errors(
+        return cast(Callable[..., Any], handle_errors(
             component=f"infrastructure_{component_name}",
             operation_name=func.__name__,
             log_level=logging.ERROR,
@@ -421,7 +421,7 @@ def handle_infrastructure_errors(component_name: str = "infrastructure") -> Call
                 FileNotFoundError: f"Resource not found in {component_name}",
                 ValueError: f"Invalid value in {component_name}",
             },
-        )(func)
+        )(func))
 
     return decorator
 

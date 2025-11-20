@@ -9,7 +9,7 @@ Provides connection pooling with overflow handling and optimized SQLite settings
 """
 
 import sqlite3
-from typing import Optional
+from typing import Optional, cast
 import threading
 import queue
 
@@ -92,7 +92,7 @@ class ConnectionPool:
                 if self._current_size < self.pool_size + self.max_overflow:
                     conn = self._create_connection()
                     if conn:
-                        return conn
+                        return cast(sqlite3.Connection, conn)
 
             try:
                 return self._pool.get(timeout=self.timeout)

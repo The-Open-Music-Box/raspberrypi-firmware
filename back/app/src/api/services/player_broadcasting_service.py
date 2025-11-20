@@ -8,7 +8,7 @@ Player Broadcasting Service (DDD Architecture)
 Single Responsibility: Real-time state broadcasting for player operations.
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 import logging
 from app.src.common.socket_events import StateEventType
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -217,4 +217,4 @@ class PlayerBroadcastingService:
         Returns:
             Current global sequence number
         """
-        return self._state_manager.get_global_sequence()
+        return cast(int, self._state_manager.get_global_sequence())

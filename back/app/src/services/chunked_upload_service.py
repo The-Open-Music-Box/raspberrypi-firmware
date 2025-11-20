@@ -13,7 +13,7 @@ import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, cast
 
 from app.src.infrastructure.error_handling.unified_error_handler import InvalidFileError
 import logging
@@ -57,7 +57,7 @@ class ChunkedUploadService:
         """
         Return True if the file size is within the allowed maximum.
         """
-        return (current_size + chunk_size) <= self.max_file_size
+        return cast(bool, (current_size + chunk_size) <= self.max_file_size)
 
     def create_session(
         self, filename: str, total_chunks: int, total_size: int, playlist_id: str

@@ -186,7 +186,7 @@ class StateManagerLifecycleApplicationService:
         """
         logger.info("Forcing immediate cleanup of state management components")
 
-        cleanup_results = {
+        cleanup_results: Dict[str, Any] = {
             "timestamp": time.time(),
             "operations_cleaned": 0,
             "outbox_processed": False,
@@ -194,12 +194,12 @@ class StateManagerLifecycleApplicationService:
 
         try:
             await self._perform_cleanup()
-            cleanup_results["success"] = True  # type: ignore[assignment]
-            cleanup_results["message"] = "Forced cleanup completed successfully"  # type: ignore[assignment]
+            cleanup_results["success"] = True
+            cleanup_results["message"] = "Forced cleanup completed successfully"
 
         except Exception as e:
-            cleanup_results["success"] = False  # type: ignore[assignment]
-            cleanup_results["message"] = f"Forced cleanup failed: {e}"  # type: ignore[assignment]
+            cleanup_results["success"] = False
+            cleanup_results["message"] = f"Forced cleanup failed: {e}"
             logger.error(f"Forced cleanup failed: {e}")
 
         return cleanup_results

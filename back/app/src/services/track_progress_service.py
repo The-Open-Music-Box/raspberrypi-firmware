@@ -56,6 +56,10 @@ class TrackProgressService:
         self._diagnostic_reset_interval = 100  # Reset every 100 iterations (100 seconds at 1000ms)
         self._last_diagnostic_reset: float = 0.0
 
+        # Position tracking for stuck detection
+        self._last_position_logged: float = 0.0
+        self._last_position_time: float = 0.0
+
         logger.info(f"TrackProgressService initialized with {self._controller_type}")
 
     def _detect_controller_type(self) -> str:
@@ -389,7 +393,7 @@ class TrackProgressService:
                         )
             # Get full track info from audio controller
             if self.audio_controller and hasattr(self.audio_controller, "_audio_service"):
-                track_info = self.audio_controller._audio_service.get_current_track_info()  # type: ignore[union-attr]
+                track_info = self.audio_controller._audio_service.get_current_track_info()
                 # Get playlist_id from audio controller
                 playlist_id = getattr(self.audio_controller, "_current_playlist_id", None)
                 # Broadcast state:track event via StateManager
@@ -438,7 +442,7 @@ class TrackProgressService:
                     # PlaybackCoordinator uses next_track for auto-advance
                     if self.audio_controller and hasattr(self.audio_controller, "next_track"):
                         success = await asyncio.get_running_loop().run_in_executor(
-                            None, self.audio_controller.next_track  # type: ignore[union-attr]
+                            None, self.audio_controller.next_track
                         )
                         if success:
                             logger.info("✅ Auto-advance to next track successful via PlaybackCoordinator")
@@ -451,7 +455,7 @@ class TrackProgressService:
                 elif self.audio_controller and hasattr(self.audio_controller, "auto_advance_to_next"):
                     # AudioController has dedicated auto_advance_to_next method
                     success = await asyncio.get_event_loop().run_in_executor(
-                        None, self.audio_controller.auto_advance_to_next  # type: ignore[union-attr]
+                        None, self.audio_controller.auto_advance_to_next
                     )
                     if success:
                         logger.info("✅ Auto-advance to next track successful via AudioController")
@@ -475,6 +479,10 @@ class TrackProgressService:
         """
         try:
             # Get current playback status with new track info
+            if not self.audio_controller:
+                logger.warning("⚠️ No audio controller available after auto-advance")
+                return
+
             if asyncio.iscoroutinefunction(self.audio_controller.get_playback_status):
                 status = await self.audio_controller.get_playback_status()
             else:

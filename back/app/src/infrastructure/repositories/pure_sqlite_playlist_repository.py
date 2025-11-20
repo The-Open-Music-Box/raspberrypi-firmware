@@ -10,7 +10,7 @@ Uses DatabaseManager for connection management and focuses only on data access.
 """
 
 import uuid
-from typing import List, Optional
+from typing import List, Optional, cast
 import logging
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
@@ -305,7 +305,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             Updated playlist entity
         """
         # For this implementation, update is same as save with REPLACE
-        return await self.save(playlist)
+        return cast(Playlist, await self.save(playlist))
 
     @_handle_repository_errors("playlist")
     async def delete(self, playlist_id: str) -> bool:
@@ -328,7 +328,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         if deleted:
             logger.info(f"✅ Deleted playlist: {playlist_id}")
 
-        return deleted
+        return cast(bool, deleted)
 
     @_handle_repository_errors("playlist")
     async def count(self) -> int:
@@ -520,7 +520,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                 logger.error(f"❌ Failed to update track numbers for playlist {playlist_id}"
                              )
 
-            return result
+            return cast(bool, result)
 
         except Exception as e:
             logger.error(f"❌ Error updating track numbers for playlist {playlist_id}: {e}"
@@ -761,7 +761,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         )
 
         logger.info(f"✅ Added track {track_data.get('title')} to playlist {playlist_id}")
-        return track_id
+        return cast(str, track_id)
 
     @_handle_repository_errors("track")
     async def update_track(self, track_id: str, track_data: dict) -> bool:
@@ -837,7 +837,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         else:
             logger.warning(f"❌ Track {track_id} not found for deletion")
 
-        return deleted
+        return cast(bool, deleted)
 
     @_handle_repository_errors("tracks")
     async def reorder_tracks(self, playlist_id: str, track_orders: list) -> bool:

@@ -10,7 +10,7 @@ across the application. It provides consistent formats for playlists, tracks,
 and player states across all layers (API, WebSocket, Database).
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, cast
 from datetime import datetime
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -389,7 +389,7 @@ class UnifiedSerializationService:
             return dt
 
         if hasattr(dt, "isoformat"):
-            return dt.isoformat()
+            return cast(str, dt.isoformat())
 
         return str(dt)
 
