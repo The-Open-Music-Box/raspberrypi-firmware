@@ -7,9 +7,15 @@ vi.mock('@/utils/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 }))
 
-// Mock socket service
-vi.mock('@/services/socketService', () => ({
-  default: {
+// Mock drag error handler
+vi.mock('@/utils/dragOperationErrorHandler', () => ({
+  handleDragError: vi.fn((err) => err),
+  DragContext: class {}
+}))
+
+// Mock socket service via SocketServiceFactory (matches store import)
+vi.mock('@/services/SocketServiceFactory', () => ({
+  socketService: {
     on: vi.fn(), off: vi.fn(), emit: vi.fn()
   }
 }))
@@ -34,7 +40,7 @@ describe('unifiedPlaylistStore', () => {
     vi.restoreAllMocks()
   })
 
-  const sample = () => ({ id: 'p1', title: 'T', tracks: [{ track_number: 1, title: 'a' }] })
+  const sample = () => ({ id: 'p1', title: 'T', tracks: [{ number: 1, title: 'a', filename: 'a.mp3' }] })
 
   it('initialize loads playlists and sets initialized', async () => {
     const store = useUnifiedPlaylistStore()
@@ -49,7 +55,7 @@ describe('unifiedPlaylistStore', () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
     api.getPlaylists.mockResolvedValue([
-      { id: 'p1', title: 'A', tracks: [{ track_number: 1 }] },
+      { id: 'p1', title: 'A', tracks: [{ number: 1, filename: 'track1.mp3' }] },
       { id: 'p2', title: 'B', tracks: [] }
     ])
     await store.loadAllPlaylists()
@@ -63,7 +69,7 @@ describe('unifiedPlaylistStore', () => {
     api.getPlaylists.mockResolvedValue([sample()])
     await store.loadAllPlaylists()
     // Should fetch fresh because getTracksForPlaylist('p1') already has 1
-    api.getPlaylist.mockResolvedValue({ ...sample(), tracks: [{ track_number: 1 }, { track_number: 2 }] })
+    api.getPlaylist.mockResolvedValue({ ...sample(), tracks: [{ number: 1, filename: 'track1.mp3' }, { number: 2, filename: 'track2.mp3' }] })
     const list = await store.loadPlaylistTracks('p1')
     expect(list.length).toBeGreaterThan(0)
   })
@@ -71,7 +77,14 @@ describe('unifiedPlaylistStore', () => {
   it('create/update/delete playlist and delete track and reorder', async () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
-    api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: [{ track_number: 1 }, { track_number: 2 }] }])
+    api.getPlaylists.mockResolvedValue([{
+      id: 'p1',
+      title: 'A',
+      tracks: [
+        { number: 1, filename: 'track1.mp3' },
+        { number: 2, filename: 'track2.mp3' }
+      ]
+    }])
     await store.loadAllPlaylists()
 
     // createPlaylist
@@ -90,26 +103,26 @@ describe('unifiedPlaylistStore', () => {
     // deleteTrack updates track_count
     api.deleteTrack.mockResolvedValue({})
     await store.deleteTrack('p1', 1)
-    expect(store.getTracksForPlaylist('p1').some(t => t.track_number === 1)).toBe(false)
+    expect(store.getTracksForPlaylist('p1').some(t => t.number === 1)).toBe(false)
 
-    // reorderTracks
+    // reorderTracks - store uses 'number' field for optimistic update
     api.reorderTracks.mockResolvedValue({})
     await store.reorderTracks('p1', [2])
-    expect(store.getTracksForPlaylist('p1')[0].track_number).toBe(1)
+    expect(store.getTracksForPlaylist('p1')[0].number).toBe(1)
   })
 
   it('websocket handlers cover branches', async () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
-    const sock = (await import('@/services/socketService') as any).default
+    const { socketService: sock } = await import('@/services/SocketServiceFactory') as any
 
     // seed data - tracks now need IDs for reordering
     api.getPlaylists.mockResolvedValue([{
       id: 'p1',
       title: 'A',
       tracks: [
-        { id: 'track-2', track_number: 2, title: 'Track 2' },
-        { id: 'track-1', track_number: 1, title: 'Track 1' }
+        { id: 'track-2', number: 2, title: 'Track 2', filename: 'track2.mp3' },
+        { id: 'track-1', number: 1, title: 'Track 1', filename: 'track1.mp3' }
       ]
     }])
     await store.initialize()
@@ -135,45 +148,45 @@ describe('unifiedPlaylistStore', () => {
     // handlePlaylistStateUpdate with and without tracks
     hPlaylist({ data: { id: 'p1', title: 'Ax' } })
     expect(store.getPlaylistById('p1')!.title).toBe('Ax')
-    hPlaylist({ data: { id: 'p1', title: 'Ay', tracks: [{ track_number: 3 }] } })
-    expect(store.getTracksForPlaylist('p1').some(t => t.track_number === 3)).toBe(true)
+    hPlaylist({ data: { id: 'p1', title: 'Ay', tracks: [{ number: 3, filename: 'track3.mp3' }] } })
+    expect(store.getTracksForPlaylist('p1').some(t => t.number === 3)).toBe(true)
 
     // handlePlaylistsStateUpdate normal
-    hPlaylists({ data: { playlists: [{ id: 'p1', title: 'Az', tracks: [{ track_number: 1 }, { number: 2 }] }] } })
+    hPlaylists({ data: { playlists: [{ id: 'p1', title: 'Az', tracks: [{ number: 1, filename: 'track1.mp3' }, { number: 2, filename: 'track2.mp3' }] }] } })
     expect(store.getPlaylistById('p1')!.title).toBe('Az')
     // playlists update without tracks field
     hPlaylists({ data: { playlists: [{ id: 'p1', title: 'NoTracks' }] } })
     expect(store.getPlaylistById('p1')!.title).toBe('NoTracks')
     // playlists update with track missing both number fields to hit fallback 0
-    hPlaylists({ data: { playlists: [{ id: 'p1', title: 'Fallback0', tracks: [{}] }] } })
+    hPlaylists({ data: { playlists: [{ id: 'p1', title: 'Fallback0', tracks: [{ filename: 'track0.mp3' }] }] } })
     expect(store.getPlaylistById('p1')!.title).toBe('Fallback0')
     // skip branch via ongoing drag: restore valid tracks first, then start reorder without awaiting
     hPlaylists({ data: { playlists: [{
       id: 'p1',
       title: 'BeforeReorder',
       tracks: [
-        { id: 'track-2', track_number: 2, title: 'Track 2' },
-        { id: 'track-1', track_number: 1, title: 'Track 1' }
+        { id: 'track-2', number: 2, title: 'Track 2', filename: 'track2.mp3' },
+        { id: 'track-1', number: 1, title: 'Track 1', filename: 'track1.mp3' }
       ]
     }] } })
     const deferred: any = {}
     api.reorderTracks.mockImplementation(() => new Promise(resolve => (deferred.resolve = resolve)))
     store.reorderTracks('p1', [2, 1]) // don't await so ongoing flag stays
-    hPlaylists({ data: { playlists: [{ id: 'p1', title: 'Skip', tracks: [{ track_number: 9 }] }] } })
+    hPlaylists({ data: { playlists: [{ id: 'p1', title: 'Skip', tracks: [{ number: 9, filename: 'track9.mp3' }] }] } })
     expect(store.getPlaylistById('p1')!.title).not.toBe('Skip')
     deferred.resolve({})
 
     // handleTrackAdded new and duplicate paths
-    hTrackAdded({ playlist_id: 'p1', track: { track_number: 10 } })
+    hTrackAdded({ playlist_id: 'p1', track: { number: 10, filename: 'track10.mp3' } })
     const countAfterAdd = store.getTracksForPlaylist('p1').length
-    hTrackAdded({ playlist_id: 'p1', track: { track_number: 10 } }) // duplicate, no change
+    hTrackAdded({ playlist_id: 'p1', track: { number: 10, filename: 'track10.mp3' } }) // duplicate, no change
     expect(store.getTracksForPlaylist('p1').length).toBe(countAfterAdd)
     // add track with no number fields to hit fallback
-    hTrackAdded({ playlist_id: 'p1', track: {} })
+    hTrackAdded({ playlist_id: 'p1', track: { filename: 'track0.mp3' } })
 
     // handleTrack update found and not found
-    hTrack({ id: 'tX', track_number: 10 })
-    hTrack({ id: 'nope', track_number: 999 }) // no effect
+    hTrack({ id: 'tX', number: 10 })
+    hTrack({ id: 'nope', number: 999 }) // no effect
 
     // handleTrackDeleted present and absent playlist
     hTrackDeleted({ playlist_id: 'p1', track_numbers: [10] })
@@ -182,7 +195,7 @@ describe('unifiedPlaylistStore', () => {
     // playlist created/updated/deleted with/without tracks
     hCreated({ data: { playlist: { id: 'p2', title: 'B' } } })
     expect(store.getPlaylistById('p2')!.title).toBe('B')
-    hUpdated({ data: { playlist: { id: 'p2', title: 'B2', tracks: [{ track_number: 1 }] } } })
+    hUpdated({ data: { playlist: { id: 'p2', title: 'B2', tracks: [{ number: 1, filename: 'track1.mp3' }] } } })
     expect(store.getTracksForPlaylist('p2').length).toBe(1)
     // updated without tracks
     hUpdated({ data: { playlist: { id: 'p2', title: 'B3' } } })
@@ -190,7 +203,7 @@ describe('unifiedPlaylistStore', () => {
     hDeleted({ data: { playlist_id: 'p2' } })
     expect(store.getPlaylistById('p2')).toBeUndefined()
     // created with tracks
-    hCreated({ data: { playlist: { id: 'p3', title: 'C', tracks: [{ track_number: 1 }] } } })
+    hCreated({ data: { playlist: { id: 'p3', title: 'C', tracks: [{ number: 1, filename: 'track1.mp3' }] } } })
     expect(store.getTracksForPlaylist('p3').length).toBe(1)
 
     // NFC association success/removal branches
@@ -225,8 +238,8 @@ describe('unifiedPlaylistStore', () => {
     expect((store.getPlaylistWithTracks as any)('missing')).toBeUndefined()
 
     // Fallback path for getTrackByNumberOptimized (no index map yet)
-    store.setTracksOptimistic('p1', [{ track_number: 7 } as any])
-    expect(store.getTrackByNumberOptimized('p1', 7)!.track_number).toBe(7)
+    store.setTracksOptimistic('p1', [{ number: 7, filename: 'track7.mp3' } as any])
+    expect(store.getTrackByNumberOptimized('p1', 7)!.number).toBe(7)
   })
 
   it('initialize and load error paths set error and throw', async () => {
@@ -242,16 +255,16 @@ describe('unifiedPlaylistStore', () => {
   it('loadPlaylistTracks branches and error', async () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
-    api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: [{ track_number: 1 }] }])
+    api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: [{ number: 1, filename: 'track1.mp3' }] }])
     await store.loadAllPlaylists()
     // hasTracksData true: returns current
     const t1 = await store.loadPlaylistTracks('p1')
     expect(t1.length).toBe(1)
     // clear and fetch from api path
     store.clearPlaylistTracks('p1')
-    api.getPlaylist.mockResolvedValue({ id: 'p1', title: 'A', tracks: [{ track_number: 2 }] })
+    api.getPlaylist.mockResolvedValue({ id: 'p1', title: 'A', tracks: [{ number: 2, filename: 'track2.mp3' }] })
     const t2 = await store.loadPlaylistTracks('p1')
-    expect(t2[0].track_number).toBe(2)
+    expect(t2[0].number).toBe(2)
     // error path
     store.clearPlaylistTracks('p1')
     api.getPlaylist.mockRejectedValueOnce(new Error('x'))
@@ -267,7 +280,11 @@ describe('unifiedPlaylistStore', () => {
     vi.useFakeTimers()
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
-    api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: [{ track_number: 1 }] }])
+    api.getPlaylists.mockResolvedValue([{
+      id: 'p1',
+      title: 'A',
+      tracks: [{ number: 1, filename: 'track1.mp3' }]
+    }])
     await store.loadAllPlaylists()
     api.reorderTracks.mockRejectedValueOnce({ response: { status: 404 } })
     // make the scheduled resync fail once to hit the logger.error catch path
@@ -309,7 +326,11 @@ describe('unifiedPlaylistStore', () => {
   it('reorderTracks generic error path (non-404)', async () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
-    api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: [{ track_number: 1 }] }])
+    api.getPlaylists.mockResolvedValue([{
+      id: 'p1',
+      title: 'A',
+      tracks: [{ number: 1, filename: 'track1.mp3' }]
+    }])
     await store.loadAllPlaylists()
     api.reorderTracks.mockRejectedValueOnce(new Error('generic'))
     await expect(store.reorderTracks('p1', [1])).rejects.toThrow()
@@ -318,7 +339,11 @@ describe('unifiedPlaylistStore', () => {
   it('reorderTracks 404 via status property (not response)', async () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
-    api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: [{ track_number: 1 }] }])
+    api.getPlaylists.mockResolvedValue([{
+      id: 'p1',
+      title: 'A',
+      tracks: [{ number: 1, filename: 'track1.mp3' }]
+    }])
     await store.loadAllPlaylists()
     api.reorderTracks.mockRejectedValueOnce({ status: 404 })
     await expect(store.reorderTracks('p1', [1])).rejects.toThrow()
@@ -327,11 +352,15 @@ describe('unifiedPlaylistStore', () => {
   it('hasTracksData true and getTrackByNumber getter', async () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
-    api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: [{ track_number: 7 }] }])
+    api.getPlaylists.mockResolvedValue([{
+      id: 'p1',
+      title: 'A',
+      tracks: [{ number: 7, filename: 'track7.mp3' }]
+    }])
     await store.loadAllPlaylists()
     expect(store.hasTracksData('p1')).toBe(true)
     const getByNum = (store.getTrackByNumber as any)('p1', 7)
-    expect(getByNum.track_number).toBe(7)
+    expect(getByNum.number).toBe(7)
   })
 
   it('getter edges: unknown playlist and legacy number field', async () => {
@@ -349,20 +378,20 @@ describe('unifiedPlaylistStore', () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
     const tracksData = [
-      { id: 'track-1', track_number: 1, title: 'Track 1' },
-      { id: 'track-2', track_number: 2, title: 'Track 2' }
+      { id: 'track-1', number: 1, title: 'Track 1', filename: 'track1.mp3' },
+      { id: 'track-2', number: 2, title: 'Track 2', filename: 'track2.mp3' }
     ]
     api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: tracksData }])
     await store.loadAllPlaylists()
     // build index map via loadPlaylistTracks path
     api.getPlaylist.mockResolvedValue({ id: 'p1', title: 'A', tracks: tracksData })
     await store.loadPlaylistTracks('p1')
-    expect(store.getTrackByNumberOptimized('p1', 2)!.track_number).toBe(2)
+    expect(store.getTrackByNumberOptimized('p1', 2)!.number).toBe(2)
 
-    // reorder success
+    // reorder success - store uses 'number' field for optimistic update
     api.reorderTracks.mockResolvedValueOnce({})
     await store.reorderTracks('p1', [2, 1])
-    expect(store.getTracksForPlaylist('p1')[0].track_number).toBe(1)
+    expect(store.getTracksForPlaylist('p1')[0].number).toBe(1)
 
     // reorder with unknown track number (filters undefined entries)
     api.reorderTracks.mockResolvedValueOnce({})
@@ -395,7 +424,10 @@ describe('unifiedPlaylistStore', () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
     api.deleteTrack.mockResolvedValueOnce({})
-    store.setTracksOptimistic('px', [{ track_number: 1 } as any, { track_number: 2 } as any])
+    store.setTracksOptimistic('px', [
+      { number: 1, filename: 'track1.mp3' } as any,
+      { number: 2, filename: 'track2.mp3' } as any
+    ])
     await expect(store.deleteTrack('px', 1)).resolves.toBeUndefined()
   })
 
@@ -409,8 +441,12 @@ describe('unifiedPlaylistStore', () => {
 
   it('cleanup unsubscribes listeners', async () => {
     const store = useUnifiedPlaylistStore()
+    // Need to initialize first to setup listeners
+    const api = (await import('@/services/apiService')).default as any
+    api.getPlaylists.mockResolvedValue([])
+    await store.initialize()
     store.cleanup()
-    const sock = (await import('@/services/socketService') as any).default
+    const { socketService: sock } = await import('@/services/SocketServiceFactory') as any
     expect(sock.off).toHaveBeenCalled()
   })
 })

@@ -13,9 +13,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useUnifiedPlaylistStore } from '@/stores/unifiedPlaylistStore'
 
-// Mock socketService
-vi.mock('@/services/socketService', () => ({
-  default: {
+// Mock socketService via SocketServiceFactory (matches store import)
+vi.mock('@/services/SocketServiceFactory', () => ({
+  socketService: {
     on: vi.fn(),
     off: vi.fn(),
     emit: vi.fn(),
@@ -324,8 +324,8 @@ describe('unifiedPlaylistStore', () => {
       // Store expects newOrder as an array of track numbers
       await store.reorderTracks('pl1', [2, 1])
 
-      // API is called with track IDs, not numbers
-      expect(mockApiService.reorderTracks).toHaveBeenCalledWith('pl1', ['t2', 't1'])
+      // API is called with filenames (used as track IDs in v3.3.2), not track IDs
+      expect(mockApiService.reorderTracks).toHaveBeenCalledWith('pl1', ['track2.mp3', 'track1.mp3'])
     })
 
     it('should correctly reorder tracks with proper state updates', async () => {
@@ -352,30 +352,30 @@ describe('unifiedPlaylistStore', () => {
       // Track numbers from visual order: [5, 1, 2, 3, 4]
       await store.reorderTracks('pl1', [5, 1, 2, 3, 4])
 
-      // Verify API was called with correct track IDs in correct order
-      expect(mockApiService.reorderTracks).toHaveBeenCalledWith('pl1', ['t5', 't1', 't2', 't3', 't4'])
+      // Verify API was called with filenames (used as track IDs in v3.3.2) in correct order
+      expect(mockApiService.reorderTracks).toHaveBeenCalledWith('pl1', ['track5.mp3', 'track1.mp3', 'track2.mp3', 'track3.mp3', 'track4.mp3'])
 
-      // Verify optimistic update applied correct track_numbers
+      // Verify optimistic update applied correct numbers
       const updatedTracks = store.getTracksForPlaylist('pl1')
       expect(updatedTracks).toHaveLength(5)
 
-      // Track 5 should now be first with track_number = 1
+      // Track 5 should now be first with number = 1
       expect(updatedTracks[0].id).toBe('t5')
-      expect(updatedTracks[0].track_number).toBe(1)
+      expect(updatedTracks[0].number).toBe(1)
       expect(updatedTracks[0].title).toBe('Track 5')
 
-      // Track 1 should now be second with track_number = 2
+      // Track 1 should now be second with number = 2
       expect(updatedTracks[1].id).toBe('t1')
-      expect(updatedTracks[1].track_number).toBe(2)
+      expect(updatedTracks[1].number).toBe(2)
       expect(updatedTracks[1].title).toBe('Track 1')
 
       // Verify all tracks are in correct order
       expect(updatedTracks[2].id).toBe('t2')
-      expect(updatedTracks[2].track_number).toBe(3)
+      expect(updatedTracks[2].number).toBe(3)
       expect(updatedTracks[3].id).toBe('t3')
-      expect(updatedTracks[3].track_number).toBe(4)
+      expect(updatedTracks[3].number).toBe(4)
       expect(updatedTracks[4].id).toBe('t4')
-      expect(updatedTracks[4].track_number).toBe(5)
+      expect(updatedTracks[4].number).toBe(5)
     })
 
     it('should move track between playlists', async () => {
@@ -545,7 +545,7 @@ describe('unifiedPlaylistStore', () => {
       // cleanup() only removes WebSocket listeners, it doesn't clear state
       // This is intentional - state persists for potential reuse
 
-      const socketService = (await import('@/services/socketService')).default
+      const { socketService } = await import('@/services/SocketServiceFactory')
 
       store.cleanup()
 
