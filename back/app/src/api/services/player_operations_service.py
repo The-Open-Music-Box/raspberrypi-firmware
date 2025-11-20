@@ -49,7 +49,7 @@ class PlayerOperationsService:
             player_service: Application service for basic player operations
         """
         self._player_service = player_service
-        self._rate_limit_store = defaultdict(lambda: {"count": 0, "window_start": 0})
+        self._rate_limit_store: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"count": 0, "window_start": 0.0})
 
     @handle_service_errors("player_operations")
     async def check_rate_limit_use_case(self, request: Request) -> Dict[str, Any]:

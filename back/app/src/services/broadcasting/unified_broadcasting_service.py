@@ -9,7 +9,7 @@ This service centralizes all Socket.IO broadcasting patterns to eliminate
 the 15+ duplicated broadcasting patterns across route handlers.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, cast
 import logging
 
 from app.src.common.socket_events import StateEventType
@@ -127,7 +127,7 @@ class UnifiedBroadcastingService:
                 event_type, broadcast_data, room=f"playlist:{playlist_id}"
             )
 
-        return success
+        return cast(bool, success)
 
     async def broadcast_player_state(
         self,
@@ -155,12 +155,12 @@ class UnifiedBroadcastingService:
             state_data = state_data.copy()
             state_data.pop("position_ms", None)
 
-        return await self.broadcast_with_acknowledgment(
+        return cast(bool, await self.broadcast_with_acknowledgment(
             event_type=StateEventType.PLAYER_STATE,
             data=state_data,
             client_op_id=client_op_id,
             room="player",
-        )
+        ))
 
     @handle_service_errors("unified_broadcasting")
     async def broadcast_track_progress(

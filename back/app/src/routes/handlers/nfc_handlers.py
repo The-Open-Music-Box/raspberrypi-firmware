@@ -12,7 +12,7 @@ This module handles NFC association operations:
 """
 
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from datetime import datetime
 
 import socketio
@@ -325,7 +325,7 @@ class NFCHandlers:
                 },
             )
 
-        return session_id
+        return cast(str, session_id)
 
     def _calculate_expires_at(self, timeout_at: Optional[str]) -> float:
         """Calculate expiration timestamp for frontend countdown.

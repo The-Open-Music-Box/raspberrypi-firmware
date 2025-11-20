@@ -12,10 +12,11 @@ playlist management, and domain-driven architecture components.
 import asyncio
 import traceback
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, cast
 
 from app.src.config.nfc_config import NFCConfig
 from app.src.infrastructure.nfc.nfc_factory import NfcFactory
+from app.src.domain.nfc.protocols.nfc_hardware_protocol import NfcHardwareProtocol
 
 # Application imports
 from app.src.monitoring import get_logger
@@ -260,7 +261,7 @@ class Application:
             logger.info("✅ Domain playlist synchronization completed", extra=combined_stats)
 
         except Exception as e:
-            logger.error(f"❌ Domain sync failed: {e}", exc_info=True)
+            logger.error(f"❌ Domain sync failed: {e}", exc_info=e)
             # Don't raise - allow app to continue even if sync fails
             logger.warning("⚠️ Application will continue despite sync failure")
 
@@ -322,7 +323,7 @@ class Application:
             logger.debug(f"LED event handler not available (optional): {e}")
 
         self._nfc_app_service = NfcApplicationService(
-            nfc_hardware=self._nfc_handler,
+            nfc_hardware=cast(NfcHardwareProtocol, self._nfc_handler),
             nfc_repository=nfc_repository,
             playlist_repository=playlist_repository,  # Enable cross-repository synchronization
             led_event_handler=led_event_handler,  # LED visual feedback
@@ -492,7 +493,7 @@ class Application:
         """Start and run the application asynchronously."""
         logger.info("Starting application")
         # Start the playlist controller
-        if hasattr(self._playlist_controller, "start"):
+        if self._playlist_controller and hasattr(self._playlist_controller, "start"):
             await self._playlist_controller.start()
         # Keep the application running
         while True:

@@ -13,7 +13,7 @@ import os
 import asyncio
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 try:
     import pygame
@@ -252,7 +252,7 @@ class MacOSAudioBackend(BaseAudioBackend):
                 self._is_playing = False
                 logger.debug("macOS: Track ended, backend no longer busy")
 
-            return pygame_busy
+            return cast(bool, pygame_busy)
 
     @handle_errors("cleanup")
     def cleanup(self) -> None:
@@ -280,15 +280,15 @@ class MacOSAudioBackend(BaseAudioBackend):
 
     async def pause(self) -> bool:  # type: ignore[override]
         """Async wrapper for pause."""
-        return self._pause_impl()
+        return cast(bool, self._pause_impl())
 
     async def resume(self) -> bool:  # type: ignore[override]
         """Async wrapper for resume."""
-        return self._resume_impl()
+        return cast(bool, self._resume_impl())
 
     async def stop(self) -> bool:  # type: ignore[override]
         """Async wrapper for stop."""
-        return self._stop_impl()
+        return cast(bool, self._stop_impl())
 
     async def get_volume(self) -> int:
         """Get current volume level."""
@@ -297,7 +297,7 @@ class MacOSAudioBackend(BaseAudioBackend):
 
     async def set_volume(self, volume: int) -> bool:
         """Async wrapper for set_volume (protocol requirement)."""
-        return self._set_volume_sync(volume)
+        return cast(bool, self._set_volume_sync(volume))
 
     async def seek(self, position_ms: int) -> bool:
         """Seek to a specific position (not implemented for pygame)."""

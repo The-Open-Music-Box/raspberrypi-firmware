@@ -11,7 +11,7 @@ emitting progress/completion events and updating playlists upon finalization.
 
 from math import ceil
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, cast, Any
 
 from socketio import AsyncServer
 
@@ -151,7 +151,7 @@ class UploadController:
         """
         result = await self.upload_app_service.get_upload_status_use_case(session_id)
         if result.get("status") == "success":
-            return result.get("session", {})
+            return cast(dict[Any, Any], result.get("session", {}))
         else:
             return {"error": result.get("message", "Session not found")}
 

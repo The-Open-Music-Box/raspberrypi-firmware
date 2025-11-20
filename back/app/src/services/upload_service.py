@@ -10,7 +10,7 @@ upload workflows for integration with playlist systems.
 """
 
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, cast
 
 from mutagen import File as MutagenFile
 from mutagen.easyid3 import EasyID3
@@ -55,7 +55,7 @@ class UploadService:
         size = len(content)
         # Reset the file pointer for further processing
         await file.seek(0)
-        return size <= self.max_file_size
+        return cast(bool, size <= self.max_file_size)
 
     @handle_service_errors("upload")
     def extract_metadata(self, file_path: Path) -> Dict:

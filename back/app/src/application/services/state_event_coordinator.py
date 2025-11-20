@@ -12,7 +12,7 @@ Clean separation of concerns following DDD principles.
 import json
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 import logging
 
 from app.src.common.socket_events import SocketEventType, get_event_room, SocketEventBuilder, StateEventType
@@ -178,9 +178,9 @@ class StateEventCoordinator:
             data["duration_ms"] = duration_ms
 
         # Broadcast with immediate processing for real-time updates
-        return await self.broadcast_state_change(
+        return cast(dict[Any, Any] | None, await self.broadcast_state_change(
             StateEventType.TRACK_POSITION, data, immediate=True
-        )
+        ))
 
     async def emit_playlists_index_update(self, updates: list) -> dict:
         """
@@ -195,9 +195,9 @@ class StateEventCoordinator:
         """
         data = {"updates": updates}
 
-        return await self.broadcast_state_change(
+        return cast(dict[Any, Any], await self.broadcast_state_change(
             StateEventType.PLAYLISTS_INDEX_UPDATE, data, immediate=True
-        )
+        ))
 
     @handle_service_errors("state_event_coordinator")
     async def send_acknowledgment(

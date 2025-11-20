@@ -9,7 +9,7 @@ This controller ONLY handles audio playback operations.
 NO playlist logic, NO state management beyond current playback status.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, cast
 from enum import Enum
 import logging
 
@@ -203,7 +203,7 @@ class AudioPlayer:
             self._state = PlaybackState.STOPPED
             self._current_file = None
             logger.info("⏹️ Playback stopped")
-            return success
+            return cast(bool, success)
 
         except Exception as e:
             logger.error(f"Error stopping: {e}")
@@ -296,7 +296,7 @@ class AudioPlayer:
                 else:
                     position_ms = self._backend.get_position()
                     if position_ms is not None:
-                        return position_ms / 1000.0  # Convert to seconds
+                        return cast(float, position_ms / 1000.0)  # Convert to seconds
 
             return 0.0
 

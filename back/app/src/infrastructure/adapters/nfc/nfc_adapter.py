@@ -66,7 +66,10 @@ class NFCHandlerAdapter:
     @property
     def tag_subject(self):
         """Get the RxPy Subject for tag detection events."""
-        return self._hardware.tag_subject
+        # Access tag_subject if available (not in Protocol but used by implementations)
+        if hasattr(self._hardware, "tag_subject"):
+            return getattr(self._hardware, "tag_subject")
+        return None
 
     def is_running(self) -> bool:
         """Check if NFC handler is running."""

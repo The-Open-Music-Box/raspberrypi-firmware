@@ -4,7 +4,7 @@
 
 """Backend adapter to use existing audio backends with new protocols."""
 
-from typing import Optional, Any
+from typing import Optional, Any, cast
 
 from app.src.monitoring import get_logger
 from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
@@ -29,47 +29,47 @@ class BackendAdapter(AudioBackendProtocol):
     @handle_errors("play")
     async def play(self, file_path: str) -> bool:
         """Play an audio file (async interface)."""
-        return self.play_file(file_path)
+        return cast(bool, self.play_file(file_path))
 
     @handle_errors("pause")
     async def pause(self) -> bool:
         """Pause current playback (async interface)."""
-        return self.pause_playback()
+        return cast(bool, self.pause_playback())
 
     @handle_errors("resume")
     async def resume(self) -> bool:
         """Resume paused playback (async interface)."""
-        return self.resume_playback()
+        return cast(bool, self.resume_playback())
 
     @handle_errors("stop")
     async def stop(self) -> bool:
         """Stop current playback (async interface)."""
-        return self.stop_playback()
+        return cast(bool, self.stop_playback())
 
     @handle_errors("set_volume")
     async def set_volume(self, volume: int) -> bool:
         """Set playback volume (async interface)."""
-        return self.set_volume_sync(volume)
+        return cast(bool, self.set_volume_sync(volume))
 
     @handle_errors("get_volume")
     async def get_volume(self) -> int:
         """Get current volume level (async interface)."""
-        return self.get_volume_sync()
+        return cast(int, self.get_volume_sync())
 
     @handle_errors("seek")
     async def seek(self, position_ms: int) -> bool:
         """Seek to a specific position (async interface)."""
-        return self.seek_to_position(position_ms)
+        return cast(bool, self.seek_to_position(position_ms))
 
     @handle_errors("get_position")
     async def get_position(self) -> Optional[int]:
         """Get current playback position (async interface)."""
-        return self.get_position_sync()
+        return cast(int | None, self.get_position_sync())
 
     @handle_errors("get_duration")
     async def get_duration(self) -> Optional[int]:
         """Get duration of current track (async interface)."""
-        return self.get_duration_sync()
+        return cast(int | None, self.get_duration_sync())
 
     @property
     @handle_errors("is_playing")
@@ -97,7 +97,7 @@ class BackendAdapter(AudioBackendProtocol):
             attr = getattr(self._backend, "is_busy")
             return attr() if callable(attr) else bool(attr)
         # Fallback: consider busy if playing
-        return self.is_playing
+        return cast(bool, self.is_playing)
 
     @handle_errors("play_file")
     def play_file(self, file_path: str) -> bool:

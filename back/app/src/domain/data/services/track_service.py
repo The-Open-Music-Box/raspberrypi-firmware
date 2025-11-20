@@ -5,7 +5,7 @@
 """Track service for data domain."""
 
 import uuid
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, cast
 import logging
 from datetime import datetime
 
@@ -90,7 +90,7 @@ class TrackService:
         await self._track_repo.add_to_playlist(playlist_id, full_track_data)
         logger.info(f"✅ Added track {track_data.get('title')} to playlist {playlist_id}")
 
-        return await self._track_repo.get_by_id(track_id)
+        return cast(dict[str, Any], await self._track_repo.get_by_id(track_id))
 
     @handle_domain_errors(operation_name="update_track")
     async def update_track(self, track_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
@@ -116,7 +116,7 @@ class TrackService:
             raise RuntimeError(f"Failed to update track {track_id}")
 
         logger.info(f"✅ Updated track {track_id}")
-        return await self._track_repo.get_by_id(track_id)
+        return cast(dict[str, Any], await self._track_repo.get_by_id(track_id))
 
     @handle_domain_errors(operation_name="delete_track")
     async def delete_track(self, track_id: str) -> bool:
@@ -143,7 +143,7 @@ class TrackService:
         else:
             logger.warning(f"Failed to delete track {track_id}")
 
-        return success
+        return cast(bool, success)
 
     async def _cleanup_track_file(self, track: Dict[str, Any]) -> None:
         """Clean up the filesystem file for a deleted track.
@@ -205,7 +205,7 @@ class TrackService:
         if success:
             logger.info(f"✅ Reordered {len(track_ids)} tracks in playlist {playlist_id}")
 
-        return success
+        return cast(bool, success)
 
     @handle_domain_errors(operation_name="get_next_track")
     async def get_next_track(
@@ -228,7 +228,7 @@ class TrackService:
 
         if current_track_id is None:
             # Return first track
-            return tracks[0]
+            return cast(dict[str, Any] | None, tracks[0])
 
         # Find current track index
         current_index = None
@@ -240,12 +240,12 @@ class TrackService:
 
         if current_index is None:
             # Current track not found, return first track
-            return tracks[0]
+            return cast(dict[str, Any] | None, tracks[0])
 
         # Return next track or None if at end
         next_index = current_index + 1
         if next_index < len(tracks):
-            return tracks[next_index]
+            return cast(dict[str, Any] | None, tracks[next_index])
 
         return None
 
@@ -270,7 +270,7 @@ class TrackService:
 
         if current_track_id is None:
             # Return last track
-            return tracks[-1]
+            return cast(dict[str, Any] | None, tracks[-1])
 
         # Find current track index
         current_index = None
@@ -282,10 +282,10 @@ class TrackService:
 
         if current_index is None:
             # Current track not found, return last track
-            return tracks[-1]
+            return cast(dict[str, Any] | None, tracks[-1])
 
         # Return previous track or None if at beginning
         if current_index > 0:
-            return tracks[current_index - 1]
+            return cast(dict[str, Any] | None, tracks[current_index - 1])
 
         return None

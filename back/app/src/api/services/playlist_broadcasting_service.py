@@ -8,7 +8,7 @@ Playlist Broadcasting Service (DDD Architecture)
 Single Responsibility: Real-time state broadcasting for playlist operations.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, cast
 import logging
 from app.src.application.services.unified_state_manager import UnifiedStateManager
 from app.src.common.socket_events import StateEventType
@@ -355,7 +355,7 @@ class PlaylistBroadcastingService:
                 return None
 
             # Ensure playlist has all required fields
-            return playlist_dict
+            return cast(dict[str, Any] | None, playlist_dict)
 
         except Exception as e:
             logger.error(f"Failed to fetch full playlist data for {playlist_id}: {str(e)}")

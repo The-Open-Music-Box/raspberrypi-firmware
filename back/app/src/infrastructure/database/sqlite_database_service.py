@@ -11,7 +11,7 @@ Handles all SQLite-specific connection management, transactions, and operations.
 
 import sqlite3
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -44,7 +44,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
         """
         self.database_path = database_path
         self.pool_size = pool_size
-        self._connection_pool = None
+        self._connection_pool: Optional[ConnectionPool] = None
         self._setup_database()
 
     def _setup_database(self):
@@ -71,6 +71,9 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     @contextmanager
     def get_connection(self):
         """Get a database connection with proper lifecycle management."""
+        if self._connection_pool is None:
+            raise RuntimeError("Connection pool not initialized")
+
         connection = None
         try:
             connection = self._connection_pool.get_connection()
@@ -134,7 +137,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                     f"⚠️ Slow query: {operation_name} took {execution_time:.2f}ms"
                 )
 
-            return results
+            return cast(list[Any], results)
 
     @_handle_infrastructure_errors("database_service")
     def execute_single(
@@ -191,7 +194,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                     f"⚠️ Slow command: {operation_name} took {execution_time:.2f}ms"
                 )
 
-            return rowcount
+            return cast(int, rowcount)
 
     @_handle_infrastructure_errors("database_service")
     def execute_insert(

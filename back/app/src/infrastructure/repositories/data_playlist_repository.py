@@ -4,7 +4,7 @@
 
 """Data domain playlist repository implementation."""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, cast
 
 from app.src.monitoring import get_logger
 from app.src.domain.data.protocols.repository_protocol import PlaylistRepositoryProtocol
@@ -61,7 +61,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
             tracks=[]
         )
         saved_playlist = await self._repo.save(playlist)
-        return saved_playlist.id
+        return cast(str, saved_playlist.id)
 
     async def update(self, playlist_id: str, playlist_data: Dict[str, Any]) -> bool:
         """Update an existing playlist."""
@@ -84,7 +84,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
 
     async def delete(self, playlist_id: str) -> bool:
         """Delete a playlist."""
-        return await self._repo.delete(playlist_id)
+        return cast(bool, await self._repo.delete(playlist_id))
 
     async def exists(self, playlist_id: str) -> bool:
         """Check if a playlist exists."""
@@ -93,7 +93,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
 
     async def count(self) -> int:
         """Count total playlists."""
-        return await self._repo.count()
+        return cast(int, await self._repo.count())
 
     def _playlist_to_dict(self, playlist) -> Optional[Dict[str, Any]]:
         """Convert Playlist domain object to dictionary."""

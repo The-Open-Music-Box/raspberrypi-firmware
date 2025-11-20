@@ -8,8 +8,8 @@ import mimetypes
 from pathlib import Path
 from typing import List, Optional
 
-from mutagen import File as MutagenFile  # type: ignore[import-untyped]
-from mutagen.id3 import ID3NoHeaderError  # type: ignore[import-untyped]
+from mutagen import File as MutagenFile
+from mutagen.id3 import ID3NoHeaderError
 from typing import Any as MutagenAny
 
 from app.src.domain.upload.protocols.file_storage_protocol import MetadataExtractionProtocol

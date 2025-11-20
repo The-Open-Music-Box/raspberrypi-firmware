@@ -4,7 +4,7 @@
 
 """Data application service for playlist and track operations."""
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, cast
 
 from app.src.monitoring import get_logger
 from app.src.domain.data.services.playlist_service import PlaylistService
@@ -48,7 +48,7 @@ class DataApplicationService:
             Paginated playlist data
         """
         try:
-            return await self._playlist_service.get_playlists(page, page_size)
+            return cast(dict[str, Any], await self._playlist_service.get_playlists(page, page_size))
         except Exception as e:
             logger.error(f"Failed to get playlists: {e}")
             raise BusinessLogicError(f"Failed to retrieve playlists: {str(e)}")
@@ -64,7 +64,8 @@ class DataApplicationService:
         """
         try:
             playlist = await self._playlist_service.get_playlist(playlist_id)
-            return playlist  # Return None if not found (handled gracefully by API routes)
+            # Return None if not found (handled gracefully by API routes)
+            return cast(dict[str, Any] | None, playlist)
         except Exception as e:
             logger.error(f"Failed to get playlist {playlist_id}: {e}")
             raise BusinessLogicError(f"Failed to retrieve playlist: {str(e)}")
@@ -83,7 +84,7 @@ class DataApplicationService:
             if not name or not name.strip():
                 raise BusinessLogicError("Playlist name is required")
 
-            return await self._playlist_service.create_playlist(name.strip(), description)
+            return cast(dict[str, Any], await self._playlist_service.create_playlist(name.strip(), description))
         except BusinessLogicError:
             raise
         except Exception as e:
@@ -110,7 +111,7 @@ class DataApplicationService:
             if not existing:
                 return None  # Playlist not found - return None instead of raising exception
 
-            return await self._playlist_service.update_playlist(playlist_id, updates)
+            return cast(dict[str, Any] | None, await self._playlist_service.update_playlist(playlist_id, updates))
         except BusinessLogicError:
             raise
         except Exception as e:
@@ -130,7 +131,7 @@ class DataApplicationService:
             # Call delete directly - it will return False if playlist doesn't exist
             # No need to check existence first, as delete_playlist already does that
             success = await self._playlist_service.delete_playlist(playlist_id)
-            return success
+            return cast(bool, success)
         except Exception as e:
             logger.error(f"Failed to delete playlist {playlist_id}: {e}")
             raise BusinessLogicError(f"Failed to delete playlist: {str(e)}")
@@ -146,7 +147,7 @@ class DataApplicationService:
             True if successful
         """
         try:
-            return await self._playlist_service.associate_nfc_tag(playlist_id, nfc_tag_id)
+            return cast(bool, await self._playlist_service.associate_nfc_tag(playlist_id, nfc_tag_id))
         except Exception as e:
             logger.error(f"Failed to associate NFC tag {nfc_tag_id} with playlist {playlist_id}: {e}")
             raise BusinessLogicError(f"Failed to associate NFC tag: {str(e)}")
@@ -161,7 +162,7 @@ class DataApplicationService:
             Playlist data or None
         """
         try:
-            return await self._playlist_service.get_playlist_by_nfc(nfc_tag_id)
+            return cast(dict[str, Any] | None, await self._playlist_service.get_playlist_by_nfc(nfc_tag_id))
         except Exception as e:
             logger.error(f"Failed to get playlist by NFC tag {nfc_tag_id}: {e}")
             raise BusinessLogicError(f"Failed to get playlist by NFC tag: {str(e)}")
@@ -176,7 +177,7 @@ class DataApplicationService:
             Sync statistics
         """
         try:
-            return await self._playlist_service.sync_with_filesystem(upload_folder)
+            return cast(dict[str, Any], await self._playlist_service.sync_with_filesystem(upload_folder))
         except Exception as e:
             logger.error(f"Failed to sync filesystem: {e}")
             raise BusinessLogicError(f"Failed to sync filesystem: {str(e)}")
@@ -192,7 +193,7 @@ class DataApplicationService:
             List of tracks
         """
         try:
-            return await self._track_service.get_tracks(playlist_id)
+            return cast(list[dict[str, Any]], await self._track_service.get_tracks(playlist_id))
         except Exception as e:
             logger.error(f"Failed to get tracks for playlist {playlist_id}: {e}")
             raise BusinessLogicError(f"Failed to get tracks: {str(e)}")
@@ -211,7 +212,7 @@ class DataApplicationService:
             if not track_data.get('title'):
                 raise BusinessLogicError("Track title is required")
 
-            return await self._track_service.add_track(playlist_id, track_data)
+            return cast(dict[str, Any], await self._track_service.add_track(playlist_id, track_data))
         except BusinessLogicError:
             raise
         except Exception as e:
@@ -232,7 +233,7 @@ class DataApplicationService:
             if 'title' in updates and not updates['title'].strip():
                 raise BusinessLogicError("Track title cannot be empty")
 
-            return await self._track_service.update_track(track_id, updates)
+            return cast(dict[str, Any], await self._track_service.update_track(track_id, updates))
         except BusinessLogicError:
             raise
         except Exception as e:
@@ -249,7 +250,7 @@ class DataApplicationService:
             True if successful
         """
         try:
-            return await self._track_service.delete_track(track_id)
+            return cast(bool, await self._track_service.delete_track(track_id))
         except Exception as e:
             logger.error(f"Failed to delete track {track_id}: {e}")
             raise BusinessLogicError(f"Failed to delete track: {str(e)}")
@@ -350,7 +351,7 @@ class DataApplicationService:
             Next track data or None
         """
         try:
-            return await self._track_service.get_next_track(playlist_id, current_track_id)
+            return cast(dict[str, Any] | None, await self._track_service.get_next_track(playlist_id, current_track_id))
         except Exception as e:
             logger.error(f"Failed to get next track for playlist {playlist_id}: {e}")
             raise BusinessLogicError(f"Failed to get next track: {str(e)}")
@@ -370,7 +371,7 @@ class DataApplicationService:
             Previous track data or None
         """
         try:
-            return await self._track_service.get_previous_track(playlist_id, current_track_id)
+            return cast(dict[str, Any] | None, await self._track_service.get_previous_track(playlist_id, current_track_id))
         except Exception as e:
             logger.error(f"Failed to get previous track for playlist {playlist_id}: {e}")
             raise BusinessLogicError(f"Failed to get previous track: {str(e)}")
