@@ -1,0 +1,2 @@
+- to validate the tests in this repo use: `./deploy.sh --test-only`
+- Always investigate the code first to have a full understanding of the task asked

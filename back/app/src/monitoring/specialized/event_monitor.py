@@ -14,7 +14,7 @@ _logging = _il.import_module('logging')
 class EventMonitor:
     """Minimal stub for event monitoring (no cross-layer imports)."""
 
-    def __init__(self, max_trace_history: int = 1000, enable_file_logging: bool = False):
+    def __init__(self, _max_trace_history: int = 1000, _enable_file_logging: bool = False):
         self._is_active = False
         _logging.getLogger(__name__).info("📊 EventMonitor initialized (stub)")
 

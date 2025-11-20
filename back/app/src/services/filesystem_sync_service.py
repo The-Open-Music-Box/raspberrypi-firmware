@@ -358,15 +358,14 @@ class FilesystemSyncService:
                 continue
 
             # If the playlist doesn't exist in the database, create it
-            if True:  # Keep the same indentation level for the rest of the code
-                try:
-                    folder_path = Path(self.upload_folder.parent / path)
-                    playlist_id = await self.create_playlist_from_folder(folder_path)
-                    if playlist_id:
-                        stats["playlists_added"] += 1
-                        stats["tracks_added"] += len(audio_files)
-                        logger.info(f"Created new playlist from folder: {path} (ID: {playlist_id})",
-                                    )
-                except (OSError, IOError, PermissionError, ValueError) as e:
-                    logger.error(f"Error creating playlist from folder {path}: {str(e)}",
-                                 )
+            try:
+                folder_path = Path(self.upload_folder.parent / path)
+                playlist_id = await self.create_playlist_from_folder(folder_path)
+                if playlist_id:
+                    stats["playlists_added"] += 1
+                    stats["tracks_added"] += len(audio_files)
+                    logger.info(f"Created new playlist from folder: {path} (ID: {playlist_id})",
+                                )
+            except (OSError, IOError, PermissionError, ValueError) as e:
+                logger.error(f"Error creating playlist from folder {path}: {str(e)}",
+                             )
