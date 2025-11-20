@@ -92,43 +92,21 @@ grep -q "^dtoverlay=wm8960-soundcard" "$CONFIG_FILE" || echo "dtoverlay=wm8960-s
 mkdir -p /etc/wm8960-soundcard
 cp "$WM8960_DRIVER_DIR"/*.state /etc/wm8960-soundcard/ 2>/dev/null || true
 
-# Install ALSA configuration
-cat > /etc/asound.conf << 'EOF'
+# Install ALSA configuration in /etc/wm8960-soundcard/
+# This file will be symlinked by the wm8960-soundcard service
+cat > /etc/wm8960-soundcard/asound.conf << 'EOF'
 # WM8960 Audio HAT Configuration
-# The IPC key of dmix or dsnoop plugin must be unique
-
-# use samplerate to resample as speexdsp resample is bad
-defaults.pcm.rate_converter "samplerate"
+# Simple configuration for pygame/SDL compatibility
 
 pcm.!default {
     type asym
-    playback.pcm "playback"
-    capture.pcm "capture"
+    playback.pcm "plughw:wm8960soundcard"
+    capture.pcm "plughw:wm8960soundcard"
 }
 
-pcm.playback {
-    type plug
-    slave.pcm "dmixed"
-}
-
-pcm.capture {
-    type plug
-    slave.pcm "array"
-}
-
-pcm.dmixed {
-    type dmix
-    slave.pcm "hw:wm8960soundcard"
-    ipc_key 555555
-}
-
-pcm.array {
-    type dsnoop
-    slave {
-        pcm "hw:wm8960soundcard"
-        channels 2
-    }
-    ipc_key 666666
+ctl.!default {
+    type hw
+    card wm8960soundcard
 }
 EOF
 
