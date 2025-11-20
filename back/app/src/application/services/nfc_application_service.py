@@ -374,127 +374,161 @@ class NfcApplicationService:
         when user is trying to associate a tag.
         """
         logger.info(f"🔄 NfcApplicationService processing tag detection: {tag_identifier}")
-        tag_uid = str(tag_identifier)
 
         # Check if ANY association session is active
         active_sessions = self._association_service.get_active_sessions()
 
         if active_sessions:
-            # ASSOCIATION MODE: Block playback, process association only
-            logger.info(f"🔒 Association mode active ({len(active_sessions)} sessions), blocking playback for tag {tag_identifier}")
+            await self._handle_association_mode_tag(tag_identifier, active_sessions)
+        else:
+            await self._handle_normal_mode_tag(tag_identifier)
 
-            # Process through association service
-            result = await self._association_service.process_tag_detection(tag_identifier)
+    async def _handle_association_mode_tag(
+        self, tag_identifier: TagIdentifier, active_sessions: List
+    ) -> None:
+        """Handle tag detection when in association mode."""
+        logger.info(
+            f"🔒 Association mode active ({len(active_sessions)} sessions), "
+            f"blocking playback for tag {tag_identifier}"
+        )
 
-            # Show LED based on association result
-            # Events (priority 95) automatically show over status (priority 85) then auto-revert
-            if self._led_event_handler and isinstance(result, dict) and "action" in result:
-                try:
-                    if result.get("action") == "association_success":
-                        # EVENT: Green flash (priority 95) shows over blue pulse (priority 85)
-                        # After timeout, auto-reverts to association mode (blue pulse continues)
-                        await self._led_event_handler.on_nfc_scan_success()
-                        logger.info(f"✅ Association successful - green flash event over blue pulse status")
+        # Process through association service
+        result = await self._association_service.process_tag_detection(tag_identifier)
 
-                        # CRITICAL FIX: Clear association mode LED after successful association
-                        # This ensures we exit the blue pulse mode and return to normal state
-                        # Schedule the cleanup to happen after the green flash event completes
-                        import asyncio
+        # Show LED feedback for association result
+        await self._handle_association_led_feedback(result)
 
-                        async def cleanup_association_mode_led():
-                            await asyncio.sleep(2.5)  # Wait for green flash to complete (2s event + 0.5s buffer)
-                            if self._led_event_handler:
-                                await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
-                                logger.info(f"💡 Association completed, cleared blue pulse LED (reverting to previous state)")
-                        asyncio.create_task(cleanup_association_mode_led())
+        # Notify association callbacks only (for Socket.IO broadcasting)
+        self._notify_association_callbacks(result)
 
-                    elif result.get("action") == "duplicate_association":
-                        # EVENT: Orange double blink (priority 95) shows over blue pulse (priority 85)
-                        # After timeout, auto-reverts to association mode (blue pulse continues)
-                        await self._led_event_handler.on_nfc_tag_unassociated()
-                        logger.warning(f"⚠️ Duplicate association - orange blink event over blue pulse status")
-                except Exception as led_error:
-                    logger.warning(f"LED event failed (non-critical): {led_error}")
+        # Do NOT notify tag detection callbacks - prevents playback trigger
+        logger.debug(f"🔒 Skipping tag detection callbacks to prevent playback during association mode")
 
-            # Notify association callbacks only (for Socket.IO broadcasting)
-            if isinstance(result, dict) and "action" in result:
-                # This is a single association result
-                logger.debug(
-                    f"🔔 Notifying {len(self._association_callbacks)} association callbacks with result: {result}"
-                )
-                for callback in self._association_callbacks:
-                    callback(result)
-            elif isinstance(result, dict) and "multiple_sessions" in result:
-                # Multiple association results wrapped in a dict
-                for single_result in result["multiple_sessions"]:
-                    if isinstance(single_result, dict) and "action" in single_result:
-                        logger.debug(
-                            f"🔔 Notifying {len(self._association_callbacks)} association callbacks with result: {single_result}"
-                        )
-                        for callback in self._association_callbacks:
-                            callback(single_result)
-            elif isinstance(result, list):
-                # Multiple association results as a direct list (backup handling)
-                for single_result in result:
-                    if isinstance(single_result, dict) and "action" in single_result:
-                        logger.debug(
-                            f"🔔 Notifying {len(self._association_callbacks)} association callbacks with result: {single_result}"
-                        )
-                        for callback in self._association_callbacks:
-                            callback(single_result)
-
-            # Do NOT notify tag detection callbacks - prevents playback trigger
-            logger.debug(f"🔒 Skipping tag detection callbacks to prevent playback during association mode")
-            return  # Exit early, do not trigger playback
-
-        # NORMAL MODE: No active association sessions, proceed with normal tag detection
+    async def _handle_normal_mode_tag(self, tag_identifier: TagIdentifier) -> None:
+        """Handle tag detection in normal playback mode."""
         logger.info(f"▶️ Normal mode, processing tag detection for playback: {tag_identifier}")
+        tag_uid = str(tag_identifier)
 
-        # CRITICAL FIX: Check if this is the same tag already active
-        if self._current_active_tag == tag_uid:
-            if self._tag_triggered_playback:
-                logger.debug(f"🔒 Tag {tag_uid} already active and playback already triggered, ignoring duplicate detection")
-                return  # Ignore repeated detections of the same tag
+        # Check if this is a duplicate tag detection
+        if self._is_duplicate_tag_detection(tag_uid):
+            return
 
-        # CRITICAL FIX: New tag or tag re-inserted after removal
+        # Mark tag as active and track trigger
+        self._mark_tag_as_active(tag_uid)
+
+        # Process through association service (for tag_detected action)
+        result = await self._association_service.process_tag_detection(tag_identifier)
+
+        # Show LED feedback for normal mode
+        await self._handle_normal_mode_led_feedback(result, tag_identifier)
+
+        # Notify association callbacks
+        if isinstance(result, dict) and "action" in result:
+            self._notify_single_association_result(result)
+
+        # Notify tag detection callbacks (triggers playback)
+        self._notify_tag_detection_callbacks(tag_identifier)
+
+    def _is_duplicate_tag_detection(self, tag_uid: str) -> bool:
+        """Check if tag is already active and playback triggered."""
+        if self._current_active_tag == tag_uid and self._tag_triggered_playback:
+            logger.debug(
+                f"🔒 Tag {tag_uid} already active and playback already triggered, "
+                f"ignoring duplicate detection"
+            )
+            return True
+        return False
+
+    def _mark_tag_as_active(self, tag_uid: str) -> None:
+        """Mark tag as active and record trigger time."""
         logger.info(f"✨ New tag detected or tag re-inserted: {tag_uid}")
         import time
         self._current_active_tag = tag_uid
         self._tag_triggered_playback = True
         self._last_trigger_time = time.time()
 
-        # Process through association service (for tag_detected action)
-        result = await self._association_service.process_tag_detection(tag_identifier)
+    async def _handle_association_led_feedback(self, result: Any) -> None:
+        """Handle LED feedback for association mode results."""
+        if not self._led_event_handler or not isinstance(result, dict) or "action" not in result:
+            return
 
-        # Show LED based on result
-        # Events (priority 95) automatically show over status (priority 50 for PLAYING, 10 for IDLE)
-        if self._led_event_handler and isinstance(result, dict) and "action" in result:
-            try:
-                if result.get("action") == "tag_detected":
-                    if result.get("associated_playlist") or result.get("playlist_id"):
-                        # EVENT: Green flash (priority 95) shows over current status (IDLE/PLAYING)
-                        # After timeout, auto-reverts to PLAYING (solid green) or previous status
-                        await self._led_event_handler.on_nfc_scan_success()
-                        logger.info(f"✅ Associated tag detected - green flash event over current status")
-                    else:
-                        # EVENT: Orange double blink (priority 95) shows over current status (IDLE)
-                        # After timeout, auto-reverts to previous status (IDLE solid white)
-                        await self._led_event_handler.on_nfc_tag_unassociated()
-                        logger.info(f"⚠️ Unassociated tag detected - orange blink event over current status: {tag_identifier}")
-            except Exception as led_error:
-                logger.warning(f"LED event failed (non-critical): {led_error}")
+        try:
+            action = result.get("action")
+            if action == "association_success":
+                await self._show_association_success_led()
+            elif action == "duplicate_association":
+                await self._show_duplicate_association_led()
+        except Exception as led_error:
+            logger.warning(f"LED event failed (non-critical): {led_error}")
 
-        # Notify association callbacks if any (should be "tag_detected" action)
+    async def _show_association_success_led(self) -> None:
+        """Show LED feedback for successful association."""
+        # EVENT: Green flash (priority 95) shows over blue pulse (priority 85)
+        await self._led_event_handler.on_nfc_scan_success()
+        logger.info(f"✅ Association successful - green flash event over blue pulse status")
+
+        # CRITICAL FIX: Clear association mode LED after successful association
+        async def cleanup_association_mode_led():
+            await asyncio.sleep(2.5)  # Wait for green flash to complete
+            if self._led_event_handler:
+                await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
+                logger.info(f"💡 Association completed, cleared blue pulse LED")
+        asyncio.create_task(cleanup_association_mode_led())
+
+    async def _show_duplicate_association_led(self) -> None:
+        """Show LED feedback for duplicate association."""
+        # EVENT: Orange double blink (priority 95) shows over blue pulse (priority 85)
+        await self._led_event_handler.on_nfc_tag_unassociated()
+        logger.warning(f"⚠️ Duplicate association - orange blink event over blue pulse status")
+
+    async def _handle_normal_mode_led_feedback(
+        self, result: Any, tag_identifier: TagIdentifier
+    ) -> None:
+        """Handle LED feedback for normal mode tag detection."""
+        if not self._led_event_handler or not isinstance(result, dict) or "action" not in result:
+            return
+
+        try:
+            if result.get("action") == "tag_detected":
+                if result.get("associated_playlist") or result.get("playlist_id"):
+                    await self._led_event_handler.on_nfc_scan_success()
+                    logger.info(f"✅ Associated tag detected - green flash event over current status")
+                else:
+                    await self._led_event_handler.on_nfc_tag_unassociated()
+                    logger.info(
+                        f"⚠️ Unassociated tag detected - orange blink event over current status: "
+                        f"{tag_identifier}"
+                    )
+        except Exception as led_error:
+            logger.warning(f"LED event failed (non-critical): {led_error}")
+
+    def _notify_association_callbacks(self, result: Any) -> None:
+        """Notify association callbacks with result(s)."""
         if isinstance(result, dict) and "action" in result:
-            logger.debug(
-                f"🔔 Notifying {len(self._association_callbacks)} association callbacks with result: {result}"
-            )
-            for assoc_callback in self._association_callbacks:
-                assoc_callback(result)
+            self._notify_single_association_result(result)
+        elif isinstance(result, dict) and "multiple_sessions" in result:
+            for single_result in result["multiple_sessions"]:
+                if isinstance(single_result, dict) and "action" in single_result:
+                    self._notify_single_association_result(single_result)
+        elif isinstance(result, list):
+            for single_result in result:
+                if isinstance(single_result, dict) and "action" in single_result:
+                    self._notify_single_association_result(single_result)
 
-        # Notify tag detection callbacks (triggers playback)
+    def _notify_single_association_result(self, result: Dict) -> None:
+        """Notify callbacks with a single association result."""
         logger.debug(
-            f"🔔 Notifying {len(self._tag_detected_callbacks)} tag detection callbacks for playback"
+            f"🔔 Notifying {len(self._association_callbacks)} association callbacks "
+            f"with result: {result}"
+        )
+        for callback in self._association_callbacks:
+            callback(result)
+
+    def _notify_tag_detection_callbacks(self, tag_identifier: TagIdentifier) -> None:
+        """Notify tag detection callbacks to trigger playback."""
+        logger.debug(
+            f"🔔 Notifying {len(self._tag_detected_callbacks)} tag detection callbacks "
+            f"for playback"
         )
         tag_str = str(tag_identifier)
         for tag_callback in self._tag_detected_callbacks:
