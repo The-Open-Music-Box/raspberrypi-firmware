@@ -12,15 +12,14 @@ playlist management, and domain-driven architecture components.
 import asyncio
 import traceback
 from pathlib import Path
-from typing import Dict
 
+from app.src.application.services.nfc_application_service import NfcApplicationService
 from app.src.config.nfc_config import NFCConfig
 from app.src.infrastructure.nfc.nfc_factory import NfcFactory
 
 # Application imports
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.application.services.nfc_application_service import NfcApplicationService
 
 # MARK: - Constants
 PROGRESS_LOG_INTERVAL = 10  # Log track progress every 10%
@@ -94,12 +93,16 @@ class Application:
         logger.info("🚀 Initializing PURE domain-driven architecture...")
 
         # Register core infrastructure services first
-        from app.src.infrastructure.di.container import register_core_infrastructure_services
+        from app.src.infrastructure.di.container import (
+            register_core_infrastructure_services,
+        )
         register_core_infrastructure_services()
         logger.info("✅ Core infrastructure services registered")
 
         # Register data domain services
-        from app.src.infrastructure.di.data_container import register_data_domain_services
+        from app.src.infrastructure.di.data_container import (
+            register_data_domain_services,
+        )
         register_data_domain_services()
         logger.info("✅ Data domain services registered")
 
@@ -356,7 +359,7 @@ class Application:
         asyncio.create_task(self.handle_nfc_event(tag_id))
 
     @handle_errors("_on_nfc_association_event")
-    def _on_nfc_association_event(self, event_data: Dict) -> None:
+    def _on_nfc_association_event(self, event_data: dict) -> None:
         """Handle NFC association events from application service.
 
         Args:
@@ -396,16 +399,15 @@ class Application:
         """
         if action == "association_success":
             return "success"  # Frontend expects 'success', not 'completed'
-        elif action == "duplicate_association":
+        if action == "duplicate_association":
             return "duplicate"  # Frontend expects 'duplicate', not 'error'
-        elif session_state == "TIMEOUT":
+        if session_state == "TIMEOUT":
             return "timeout"
-        elif session_state == "LISTENING":
+        if session_state == "LISTENING":
             return "waiting"
-        elif session_state == "CANCELLED":
+        if session_state == "CANCELLED":
             return "cancelled"
-        else:
-            return "error"
+        return "error"
 
     async def _broadcast_nfc_association_event(
         self,
@@ -413,7 +415,7 @@ class Application:
         playlist_id: str = None,
         tag_id: str = None,
         session_id: str = None,
-        event_data: Dict = None
+        event_data: dict = None
     ) -> None:
         """Broadcast NFC association event via Socket.IO.
 
@@ -514,7 +516,7 @@ class Application:
             if hasattr(self, "_playlist_controller") and self._playlist_controller and hasattr(
                 self._playlist_controller, "cleanup"
             ):
-                cleanup_method = getattr(self._playlist_controller, "cleanup")
+                cleanup_method = self._playlist_controller.cleanup
                 if cleanup_method:
                     # Check if it's a coroutine function
                     import inspect

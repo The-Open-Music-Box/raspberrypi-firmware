@@ -4,7 +4,6 @@
 
 """Configuration for the unified monitoring system."""
 
-from typing import Optional
 
 
 class MonitoringConfig:
@@ -70,7 +69,7 @@ class MonitoringConfig:
         return self._get_config().log_format
 
     @property
-    def log_file_path(self) -> Optional[str]:
+    def log_file_path(self) -> str | None:
         """Get the log file path."""
         return self._get_config().log_file
 

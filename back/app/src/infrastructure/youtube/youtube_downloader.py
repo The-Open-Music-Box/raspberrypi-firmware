@@ -10,11 +10,12 @@ single videos and playlists with proper error handling and notifications.
 """
 
 import asyncio
+import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any
 
 import yt_dlp
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +178,7 @@ class YouTubeDownloader:
                 logger.error(f"Error sending post-processing notification: {e}")
 
     # MARK: - Download Core Logic
-    def _perform_download_blocking(self, url: str, playlist_folder: Path) -> Dict[str, Any]:
+    def _perform_download_blocking(self, url: str, playlist_folder: Path) -> dict[str, Any]:
         """Perform the actual blocking download operation.
 
         This method is intended to be run in a separate thread.
@@ -321,18 +322,17 @@ class YouTubeDownloader:
                                     "filename": str(Path("files") / f"{entry_title}.mp3"),
                                 }
                             )
-                else:
-                    # Single file - use the actual file we found
-                    if mp3_files:
-                        processed_files_info.append(
-                            {
-                                "title": info.get("title", mp3_files[0].stem),
-                                "start_time": 0,
-                                "end_time": info.get("duration", 0),
-                                # Add 'files/' prefix
-                                "filename": str(Path("files") / mp3_files[0].name),
-                            }
-                        )
+                # Single file - use the actual file we found
+                elif mp3_files:
+                    processed_files_info.append(
+                        {
+                            "title": info.get("title", mp3_files[0].stem),
+                            "start_time": 0,
+                            "end_time": info.get("duration", 0),
+                            # Add 'files/' prefix
+                            "filename": str(Path("files") / mp3_files[0].name),
+                        }
+                    )
             elif chapters:
                 # We have chapter info from yt-dlp, try to match with actual files
                 for idx, chapter in enumerate(
@@ -369,7 +369,7 @@ class YouTubeDownloader:
                             }
                         )
                     else:
-                        logger.warning(f"Could not find matching file for chapter '{chapter_title}'. Using chapter title as filename basis: {str(Path('files') / f'{chapter_title}.mp3')}",
+                        logger.warning(f"Could not find matching file for chapter '{chapter_title}'. Using chapter title as filename basis: {Path('files') / f'{chapter_title}.mp3'!s}",
                                        )
                         processed_files_info.append(
                             {
@@ -417,13 +417,13 @@ class YouTubeDownloader:
                 "chapters": processed_files_info,  # Use our processed files info
             }
         except Exception as e:
-            logger.error(f"Download failed: {str(e)}")
+            logger.error(f"Download failed: {e!s}")
             # Ensure any exception here is also reported via progress callback if
             # possible
             if self.progress_callback and self.main_loop:
                 error_data = {
                     "status": "error",
-                    "message": f"An unexpected error occurred: {str(e)}",
+                    "message": f"An unexpected error occurred: {e!s}",
                     "details": str(e),  # Keep it simple for now
                     "phase": "download_core",
                 }
@@ -437,7 +437,7 @@ class YouTubeDownloader:
                                  )
             raise
 
-    async def download(self, url: str) -> Dict[str, Any]:
+    async def download(self, url: str) -> dict[str, Any]:
         """Asynchronous method to download a YouTube video.
 
         This method captures the current event loop and runs the
@@ -474,7 +474,7 @@ class YouTubeDownloader:
             return result
 
         except Exception as e:
-            logger.error(f"Async download failed: {str(e)}")
+            logger.error(f"Async download failed: {e!s}")
             # Ensure any exception here is also reported via progress callback if possible
             # This is tricky if main_loop or progress_callback isn't set up yet or if
             # the error is in setup
@@ -486,7 +486,7 @@ class YouTubeDownloader:
             ):
                 error_data = {
                     "status": "error",
-                    "message": f"An unexpected error occurred in async download: {str(e)}",
+                    "message": f"An unexpected error occurred in async download: {e!s}",
                     "details": str(e),
                     "phase": "async_setup",
                 }

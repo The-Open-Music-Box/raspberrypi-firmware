@@ -5,9 +5,8 @@
 """Association Session Domain Entity."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 from uuid import uuid4
 
 from ..value_objects.tag_identifier import TagIdentifier
@@ -36,11 +35,11 @@ class AssociationSession:
     playlist_id: str
     session_id: str = field(default_factory=lambda: str(uuid4()))
     state: SessionState = SessionState.LISTENING
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     timeout_seconds: int = 60
-    detected_tag: Optional[TagIdentifier] = None
-    conflict_playlist_id: Optional[str] = None
-    error_message: Optional[str] = None
+    detected_tag: TagIdentifier | None = None
+    conflict_playlist_id: str | None = None
+    error_message: str | None = None
     override_mode: bool = False  # If True, force association even if tag is already associated
 
     def __post_init__(self):
@@ -52,12 +51,12 @@ class AssociationSession:
     def timeout_at(self) -> datetime:
         """Calculate when this session times out."""
         return datetime.fromtimestamp(
-            self.started_at.timestamp() + self.timeout_seconds, tz=timezone.utc
+            self.started_at.timestamp() + self.timeout_seconds, tz=UTC
         )
 
     def is_expired(self) -> bool:
         """Check if this session has expired."""
-        return datetime.now(timezone.utc) > self.timeout_at
+        return datetime.now(UTC) > self.timeout_at
 
     def is_active(self) -> bool:
         """Check if this session is active.
@@ -133,7 +132,7 @@ class AssociationSession:
         if self.is_expired():
             return 0
 
-        remaining = self.timeout_at - datetime.now(timezone.utc)
+        remaining = self.timeout_at - datetime.now(UTC)
         return max(0, int(remaining.total_seconds()))
 
     def to_dict(self) -> dict:

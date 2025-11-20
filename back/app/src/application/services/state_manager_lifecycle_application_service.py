@@ -10,13 +10,13 @@ Clean separation following Domain-Driven Design principles.
 """
 
 import asyncio
-import time
-from typing import Any, Dict, Optional
 import logging
+import time
+from typing import Any
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
-from app.src.services.operation_tracker import OperationTracker
 from app.src.services.event_outbox import EventOutbox
+from app.src.services.operation_tracker import OperationTracker
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class StateManagerLifecycleApplicationService:
         self.cleanup_interval = cleanup_interval
 
         # Task management
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
         self._is_running = False
 
         logger.info(
@@ -149,7 +149,7 @@ class StateManagerLifecycleApplicationService:
         except Exception as e:
             logger.error(f"Error during cleanup operations: {e}")
 
-    async def get_health_metrics(self) -> Dict[str, Any]:
+    async def get_health_metrics(self) -> dict[str, Any]:
         """Get health metrics from managed components.
 
         Returns:
@@ -178,7 +178,7 @@ class StateManagerLifecycleApplicationService:
 
         return metrics
 
-    async def force_cleanup(self) -> Dict[str, Any]:
+    async def force_cleanup(self) -> dict[str, Any]:
         """Force immediate cleanup of all managed components.
 
         Returns:
@@ -208,7 +208,7 @@ class StateManagerLifecycleApplicationService:
         """Check if lifecycle management is currently running."""
         return self._is_running
 
-    async def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> dict[str, Any]:
         """Get current status of lifecycle service.
 
         Returns:

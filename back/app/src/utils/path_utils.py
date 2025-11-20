@@ -96,8 +96,8 @@ def migrate_existing_folder(old_path: str, new_path: str) -> bool:
     Returns:
         True if migration successful, False otherwise
     """
-    from pathlib import Path
     import shutil
+    from pathlib import Path
 
     old_folder = Path(old_path)
     new_folder = Path(new_path)
@@ -111,7 +111,7 @@ def migrate_existing_folder(old_path: str, new_path: str) -> bool:
             # Move the folder
             shutil.move(str(old_folder), str(new_folder))
             return True
-        elif old_folder.exists() and new_folder.exists():
+        if old_folder.exists() and new_folder.exists():
             # Both exist - merge contents
             for item in old_folder.iterdir():
                 target = new_folder / item.name

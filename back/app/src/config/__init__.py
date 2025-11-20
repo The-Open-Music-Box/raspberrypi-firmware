@@ -11,7 +11,7 @@ Provides a unified configuration system with environment variable support.
 from app.src.config.app_config import AppConfig, config
 
 # Export public symbols
-__all__ = ["AppConfig", "config", "Config"]
+__all__ = ["AppConfig", "Config", "config"]
 
 # Backward compatibility alias
 Config = AppConfig

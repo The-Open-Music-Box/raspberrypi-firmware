@@ -9,6 +9,7 @@ Single Responsibility: Handle HTTP requests for playlist playback control.
 """
 
 import logging
+
 from fastapi import APIRouter, Body, Request
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
@@ -125,7 +126,9 @@ class PlaylistPlaybackAPI:
                 # CRITICAL FIX: Broadcast complete PLAYER_STATE just like play/pause/next/previous endpoints
                 # This ensures all UI elements update (play/pause button, track info, progress bar)
                 try:
-                    from app.src.application.services.unified_state_manager import UnifiedStateManager
+                    from app.src.application.services.unified_state_manager import (
+                        UnifiedStateManager,
+                    )
                     from app.src.common.socket_events import StateEventType
 
                     # Get the socketio instance from request
@@ -159,7 +162,7 @@ class PlaylistPlaybackAPI:
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in start_playlist: {str(e)}",
+                    f"Error in start_playlist: {e!s}",
                     extra={
                         "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
                         "request_id": request.headers.get("X-Request-ID") if request else None,
@@ -201,17 +204,16 @@ class PlaylistPlaybackAPI:
                             "playlists_count": len(result.get("playlists", []))
                         }
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to sync playlists")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to sync playlists")
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in sync_playlists: {str(e)}",
+                    f"Error in sync_playlists: {e!s}",
                     extra={
                         "operation": "sync_playlists",
                     },

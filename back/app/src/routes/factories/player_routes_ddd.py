@@ -12,17 +12,18 @@ Single Responsibility: Route registration and dependency coordination.
 from fastapi import FastAPI
 from socketio import AsyncServer
 
-from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.application.services.unified_state_manager import UnifiedStateManager
-
 # DDD Components
 from app.src.api.endpoints.player_api_routes import PlayerAPIRoutes
 from app.src.api.services.player_broadcasting_service import PlayerBroadcastingService
 from app.src.api.services.player_operations_service import PlayerOperationsService
 
 # Application Services
-from app.src.application.services.player_application_service import PlayerApplicationService
+from app.src.application.services.player_application_service import (
+    PlayerApplicationService,
+)
+from app.src.application.services.unified_state_manager import UnifiedStateManager
+from app.src.monitoring import get_logger
+from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = get_logger(__name__)
 
@@ -149,4 +150,4 @@ class PlayerRoutesDDD:
             # Add any cleanup logic if needed
             logger.info("✅ Player routes cleanup completed")
         except Exception as e:
-            logger.error(f"❌ Error during player routes cleanup: {str(e)}")
+            logger.error(f"❌ Error during player routes cleanup: {e!s}")

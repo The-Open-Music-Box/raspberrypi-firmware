@@ -8,23 +8,26 @@ GPIO Physical Controls Implementation.
 Real hardware implementation using gpiozero for buttons and rotary encoder.
 """
 
+import logging
 import os
-from typing import Callable, Dict, Optional, List
+from collections.abc import Callable
 from datetime import datetime
 from threading import Lock
+from typing import Any
 
-from app.src.domain.protocols.physical_controls_protocol import (
-    PhysicalControlsProtocol,
-    PhysicalControlEvent,
+from app.src.config.button_actions_config import (
+    DEFAULT_BUTTON_CONFIGS,
+    ButtonActionConfig,
 )
 from app.src.domain.events.physical_control_events import (
     ButtonPressedEvent,
     EncoderRotatedEvent,
     PhysicalControlErrorEvent,
 )
-from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
-from typing import Any
-import logging
+from app.src.domain.protocols.physical_controls_protocol import (
+    PhysicalControlEvent,
+    PhysicalControlsProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +41,7 @@ if not USE_MOCK_HARDWARE:
 
     # First try gpiozero with native pin factory (RPi.GPIO backend)
     try:
-        from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
+        from gpiozero import Button, Device, RotaryEncoder
         from gpiozero.pins.rpigpio import RPiGPIOFactory
         Device.pin_factory = RPiGPIOFactory()
         logger.info("✅ GPIO hardware available - using RPi.GPIO backend")
@@ -52,7 +55,7 @@ if not USE_MOCK_HARDWARE:
     # If RPi.GPIO didn't work, try lgpio
     if not gpio_backend_initialized:
         try:
-            from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
+            from gpiozero import Button, Device, RotaryEncoder
             from gpiozero.pins.lgpio import LgpioFactory
             Device.pin_factory = LgpioFactory()
             logger.info("✅ GPIO hardware available - using lgpio backend")
@@ -66,7 +69,7 @@ if not USE_MOCK_HARDWARE:
     # If neither worked, try pigpio (requires pigpiod daemon)
     if not gpio_backend_initialized:
         try:
-            from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
+            from gpiozero import Button, Device, RotaryEncoder
             from gpiozero.pins.pigpio import PiGPIOFactory
             Device.pin_factory = PiGPIOFactory()
             logger.info("✅ GPIO hardware available - using pigpio backend")
@@ -89,7 +92,7 @@ else:
 class GPIOPhysicalControls(PhysicalControlsProtocol):
     """GPIO-based implementation of physical controls with configurable buttons."""
 
-    def __init__(self, hardware_config: Any, button_configs: Optional[List[ButtonActionConfig]] = None):
+    def __init__(self, hardware_config: Any, button_configs: list[ButtonActionConfig] | None = None):
         """Initialize GPIO physical controls.
 
         Args:
@@ -99,7 +102,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
         self.config = hardware_config
         self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
-        self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
+        self._event_handlers: dict[PhysicalControlEvent, Callable[[], None]] = {}
         self._devices = {}
         self._lock = Lock()
 
@@ -154,9 +157,8 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                         f"({final_device_count - initial_device_count} devices)"
                     )
                     return True
-                else:
-                    logger.warning("⚠️ No GPIO devices could be initialized")
-                    return False
+                logger.warning("⚠️ No GPIO devices could be initialized")
+                return False
 
         except Exception as e:
             logger.error(f"❌ Failed to initialize GPIO controls: {e}")
@@ -343,7 +345,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
         """Handle encoder switch press (play/pause button)."""
         logger.info(f"🎮 [GPIO] Encoder switch pressed - HARDWARE EVENT DETECTED (GPIO {self.config.gpio_volume_encoder_sw})")
         self._emit_button_event("encoder_switch", self.config.gpio_volume_encoder_sw)
-        logger.info(f"🎮 [GPIO] Triggering ENCODER_SWITCH event for play/pause")
+        logger.info("🎮 [GPIO] Triggering ENCODER_SWITCH event for play/pause")
         self._trigger_event(PhysicalControlEvent.ENCODER_SWITCH)
 
     def _on_volume_up(self) -> None:

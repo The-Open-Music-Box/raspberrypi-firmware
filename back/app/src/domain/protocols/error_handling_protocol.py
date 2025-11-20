@@ -7,7 +7,8 @@
 Defines the interface for error handling decorators and services.
 """
 
-from typing import Protocol, Callable, Dict, Optional, Any
+from collections.abc import Callable
+from typing import Any, Protocol
 
 
 class ErrorHandlerProtocol(Protocol):
@@ -15,12 +16,12 @@ class ErrorHandlerProtocol(Protocol):
 
     def __call__(
         self,
-        operation_name: Optional[str] = None,
-        component: Optional[str] = None,
+        operation_name: str | None = None,
+        component: str | None = None,
         return_response: bool = True,
         log_level: Any = None,
         include_trace: bool = False,
-        custom_error_map: Optional[Dict[type, str]] = None,
+        custom_error_map: dict[type, str] | None = None,
     ) -> Callable:
         """Decorator for automatic error handling.
 
@@ -44,7 +45,7 @@ class HTTPErrorHandlerProtocol(Protocol):
     def __call__(
         self,
         default_status: int = 500,
-        error_mappings: Optional[Dict[type, int]] = None,
+        error_mappings: dict[type, int] | None = None,
     ) -> Callable:
         """Decorator for HTTP endpoint error handling.
 

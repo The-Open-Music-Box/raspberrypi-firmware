@@ -9,6 +9,7 @@ Single Responsibility: Handle HTTP requests for playlist track operations.
 """
 
 import logging
+
 from fastapi import APIRouter, Body
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
@@ -73,17 +74,16 @@ class PlaylistTrackAPI:
                         message="Tracks reordered successfully",
                         data={"playlist_id": playlist_id, "client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to reorder tracks")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to reorder tracks")
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in reorder_tracks: {str(e)}",
+                    f"Error in reorder_tracks: {e!s}",
                     extra={
                         "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
                         "operation": "reorder_tracks",
@@ -127,17 +127,16 @@ class PlaylistTrackAPI:
                         message=f"Deleted {len(track_numbers)} tracks successfully",
                         data={"client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to delete tracks")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to delete tracks")
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in delete_tracks: {str(e)}",
+                    f"Error in delete_tracks: {e!s}",
                     extra={
                         "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
                         "operation": "delete_tracks",
@@ -183,17 +182,16 @@ class PlaylistTrackAPI:
                         message=result.get("message", "Track moved successfully"),
                         data={"client_op_id": client_op_id or ""}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to move track")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to move track")
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in move_track_between_playlists: {str(e)}",
+                    f"Error in move_track_between_playlists: {e!s}",
                     extra={
                         "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
                         "operation": "move_track_between_playlists",

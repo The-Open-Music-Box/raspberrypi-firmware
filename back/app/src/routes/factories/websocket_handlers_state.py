@@ -17,17 +17,17 @@ This factory creates and registers handler instances following DDD principles:
 
 import socketio
 
-from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_http_errors
-from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.dependencies import (
     get_nfc_application_service,
     get_playback_coordinator,
     get_player_state_service,
 )
+from app.src.domain.audio.engine.state_manager import StateManager
+from app.src.monitoring import get_logger
 from app.src.routes.handlers.nfc_handlers import NFCHandlers
 from app.src.routes.handlers.subscription_handlers import SubscriptionHandlers
 from app.src.routes.handlers.sync_handlers import SyncHandlers
+from app.src.services.error.unified_error_decorator import handle_http_errors
 
 logger = get_logger(__name__)
 

@@ -9,13 +9,15 @@ Clean implementation of playlist repository following DDD principles.
 Uses DatabaseManager for connection management and focuses only on data access.
 """
 
-import uuid
-from typing import List, Optional
 import logging
+import uuid
+
+from app.src.dependencies import get_database_manager
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
-from app.src.domain.repositories.playlist_repository_interface import PlaylistRepositoryProtocol
-from app.src.dependencies import get_database_manager
+from app.src.domain.repositories.playlist_repository_interface import (
+    PlaylistRepositoryProtocol,
+)
 from app.src.services.error.unified_error_decorator import handle_repository_errors
 
 logger = logging.getLogger(__name__)
@@ -122,7 +124,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         logger.info(f"✅ Saved playlist: {playlist.title}")
         return playlist
 
-    async def find_by_id(self, playlist_id: str) -> Optional[Playlist]:
+    async def find_by_id(self, playlist_id: str) -> Playlist | None:
         """Find playlist by ID using pure DDD principles.
 
         Args:
@@ -181,7 +183,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return result is not None
 
     @_handle_repository_errors("playlist")
-    async def find_by_name(self, name: str) -> Optional[Playlist]:
+    async def find_by_name(self, name: str) -> Playlist | None:
         """Find playlist by name using pure DDD principles.
 
         Args:
@@ -215,7 +217,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return self._build_playlist_from_rows(playlist_row, track_rows)
 
     @_handle_repository_errors("playlist")
-    async def find_by_nfc_tag(self, nfc_tag_id: str) -> Optional[Playlist]:
+    async def find_by_nfc_tag(self, nfc_tag_id: str) -> Playlist | None:
         """Find playlist by NFC tag using pure DDD principles.
 
         Args:
@@ -249,7 +251,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return self._build_playlist_from_rows(playlist_row, track_rows)
 
     @_handle_repository_errors("playlist")
-    async def find_all(self, limit: int = None, offset: int = 0) -> List[Playlist]:
+    async def find_all(self, limit: int = None, offset: int = 0) -> list[Playlist]:
         """Find all playlists with pagination using pure DDD principles.
 
         Args:
@@ -342,7 +344,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return result[0] if result else 0
 
     @_handle_repository_errors("playlist")
-    async def search(self, query: str, limit: int = None) -> List[Playlist]:
+    async def search(self, query: str, limit: int = None) -> list[Playlist]:
         """Search playlists by name or description using pure DDD principles.
 
         Args:
@@ -551,8 +553,9 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                     else "Unknown"
                 )
                 try:
-                    from app.src.config import config
                     from pathlib import Path
+
+                    from app.src.config import config
 
                     file_path = str(Path(config.upload_folder) / playlist_folder / filename)
                 except Exception:
@@ -584,7 +587,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return playlist
 
     @_handle_repository_errors("tracks")
-    async def get_by_playlist(self, playlist_id: str) -> List[Track]:
+    async def get_by_playlist(self, playlist_id: str) -> list[Track]:
         """Alias for get_tracks_by_playlist - used by TrackService.
 
         Args:
@@ -595,7 +598,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         """
         return await self.get_tracks_by_playlist(playlist_id)
 
-    async def get_tracks_by_playlist(self, playlist_id: str) -> List[Track]:
+    async def get_tracks_by_playlist(self, playlist_id: str) -> list[Track]:
         """Get all tracks for a specific playlist.
 
         Args:
@@ -627,8 +630,9 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             if not file_path and filename:
                 # Fallback path generation
                 try:
-                    from app.src.config import config
                     from pathlib import Path
+
+                    from app.src.config import config
                     file_path = str(Path(config.upload_folder) / "unknown" / filename)
                 except Exception:
                     file_path = f"./uploads/unknown/{filename}"
@@ -669,7 +673,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         return True
 
     @_handle_repository_errors("track")
-    async def get_track_by_id(self, track_id: str) -> Optional[dict]:
+    async def get_track_by_id(self, track_id: str) -> dict | None:
         """Get a single track by its ID.
 
         Args:
@@ -698,8 +702,9 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         if not file_path and filename:
             # Fallback for tracks without playlist path
             try:
-                from app.src.config import config
                 from pathlib import Path
+
+                from app.src.config import config
                 file_path = str(Path(config.upload_folder) / "unknown" / filename)
             except Exception:
                 file_path = f"./uploads/unknown/{filename}"
@@ -807,9 +812,8 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         if affected_rows > 0:
             logger.info(f"✅ Updated track {track_id}")
             return True
-        else:
-            logger.warning(f"❌ Track {track_id} not found for update")
-            return False
+        logger.warning(f"❌ Track {track_id} not found for update")
+        return False
 
     @_handle_repository_errors("track")
     async def delete_track(self, track_id: str) -> bool:

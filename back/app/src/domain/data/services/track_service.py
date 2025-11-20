@@ -4,10 +4,10 @@
 
 """Track service for data domain."""
 
-import uuid
-from typing import Dict, Any, List, Optional
 import logging
+import uuid
 from datetime import datetime
+from typing import Any
 
 from app.src.domain.decorators.error_handler import handle_domain_errors
 
@@ -33,7 +33,7 @@ class TrackService:
         logger.info("✅ TrackService initialized in data domain")
 
     @handle_domain_errors(operation_name="get_tracks")
-    async def get_tracks(self, playlist_id: str) -> List[Dict[str, Any]]:
+    async def get_tracks(self, playlist_id: str) -> list[dict[str, Any]]:
         """Get all tracks for a playlist.
 
         Args:
@@ -51,7 +51,7 @@ class TrackService:
         return sorted(tracks, key=lambda t: t.track_number if hasattr(t, 'track_number') else t.get('track_number', 0))
 
     @handle_domain_errors(operation_name="add_track")
-    async def add_track(self, playlist_id: str, track_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def add_track(self, playlist_id: str, track_data: dict[str, Any]) -> dict[str, Any]:
         """Add a track to a playlist.
 
         Args:
@@ -93,7 +93,7 @@ class TrackService:
         return await self._track_repo.get_by_id(track_id)
 
     @handle_domain_errors(operation_name="update_track")
-    async def update_track(self, track_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_track(self, track_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update track metadata.
 
         Args:
@@ -145,15 +145,15 @@ class TrackService:
 
         return success
 
-    async def _cleanup_track_file(self, track: Dict[str, Any]) -> None:
+    async def _cleanup_track_file(self, track: dict[str, Any]) -> None:
         """Clean up the filesystem file for a deleted track.
 
         Args:
             track: Track data dictionary
         """
         try:
-            from pathlib import Path
             import os
+            from pathlib import Path
 
             file_path = track.get('file_path')
             if not file_path:
@@ -173,7 +173,7 @@ class TrackService:
             # Don't fail the delete operation if file cleanup fails
 
     @handle_domain_errors(operation_name="reorder_tracks")
-    async def reorder_tracks(self, playlist_id: str, track_ids: List[str]) -> bool:
+    async def reorder_tracks(self, playlist_id: str, track_ids: list[str]) -> bool:
         """Reorder tracks in a playlist.
 
         Args:
@@ -211,8 +211,8 @@ class TrackService:
     async def get_next_track(
         self,
         playlist_id: str,
-        current_track_id: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        current_track_id: str | None = None
+    ) -> dict[str, Any] | None:
         """Get the next track in a playlist.
 
         Args:
@@ -253,8 +253,8 @@ class TrackService:
     async def get_previous_track(
         self,
         playlist_id: str,
-        current_track_id: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        current_track_id: str | None = None
+    ) -> dict[str, Any] | None:
         """Get the previous track in a playlist.
 
         Args:

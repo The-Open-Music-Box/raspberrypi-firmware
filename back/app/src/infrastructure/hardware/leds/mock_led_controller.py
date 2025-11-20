@@ -9,11 +9,11 @@ Mock implementation for testing and development without hardware.
 """
 
 import logging
-from typing import Dict, Any
 from threading import Lock
+from typing import Any
 
+from app.src.domain.models.led import LEDAnimation, LEDColor, LEDColors
 from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
-from app.src.domain.models.led import LEDColor, LEDAnimation, LEDColors
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ class MockLEDController(IndicatorLightsProtocol):
         """Check if mock LED is initialized."""
         return self._is_initialized
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current mock LED status."""
         with self._lock:
             return {

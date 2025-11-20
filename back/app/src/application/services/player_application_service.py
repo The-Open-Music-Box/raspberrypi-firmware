@@ -9,7 +9,8 @@ This service coordinates player operations and provides use cases for the API la
 Single Responsibility: Player operation orchestration via application services.
 """
 
-from typing import Dict, Any
+from typing import Any
+
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -35,7 +36,7 @@ class PlayerApplicationService:
         self._coordinator = playback_coordinator
         self._state_manager = state_manager
 
-    def _ensure_complete_player_state(self, status: Dict[str, Any]) -> Dict[str, Any]:
+    def _ensure_complete_player_state(self, status: dict[str, Any]) -> dict[str, Any]:
         """Ensure PlayerState includes all required contract fields.
 
         Args:
@@ -92,7 +93,7 @@ class PlayerApplicationService:
         return complete_status
 
     @handle_service_errors("player_application")
-    async def play_use_case(self) -> Dict[str, Any]:
+    async def play_use_case(self) -> dict[str, Any]:
         """Use case: Start/resume playback.
 
         Returns:
@@ -118,7 +119,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in play_use_case: {str(e)}")
+            logger.error(f"❌ Error in play_use_case: {e!s}")
             # Even on error, return valid PlayerState
             status = self._coordinator.get_playback_status()
             complete_status = self._ensure_complete_player_state(status)
@@ -129,7 +130,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def pause_use_case(self) -> Dict[str, Any]:
+    async def pause_use_case(self) -> dict[str, Any]:
         """Use case: Pause playback.
 
         Returns:
@@ -155,7 +156,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in pause_use_case: {str(e)}")
+            logger.error(f"❌ Error in pause_use_case: {e!s}")
             # Even on error, return valid PlayerState
             status = self._coordinator.get_playback_status()
             complete_status = self._ensure_complete_player_state(status)
@@ -166,7 +167,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def stop_use_case(self) -> Dict[str, Any]:
+    async def stop_use_case(self) -> dict[str, Any]:
         """Use case: Stop playback.
 
         Returns:
@@ -192,7 +193,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in stop_use_case: {str(e)}")
+            logger.error(f"❌ Error in stop_use_case: {e!s}")
             # Even on error, return valid PlayerState
             status = self._coordinator.get_playback_status()
             complete_status = self._ensure_complete_player_state(status)
@@ -203,7 +204,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def next_track_use_case(self) -> Dict[str, Any]:
+    async def next_track_use_case(self) -> dict[str, Any]:
         """Use case: Skip to next track.
 
         Returns:
@@ -232,7 +233,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in next_track_use_case: {str(e)}")
+            logger.error(f"❌ Error in next_track_use_case: {e!s}")
             # Even on error, return valid PlayerState
             status = self._coordinator.get_playback_status()
             complete_status = self._ensure_complete_player_state(status)
@@ -243,7 +244,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def previous_track_use_case(self) -> Dict[str, Any]:
+    async def previous_track_use_case(self) -> dict[str, Any]:
         """Use case: Skip to previous track.
 
         Returns:
@@ -272,7 +273,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in previous_track_use_case: {str(e)}")
+            logger.error(f"❌ Error in previous_track_use_case: {e!s}")
             # Even on error, return valid PlayerState
             status = self._coordinator.get_playback_status()
             complete_status = self._ensure_complete_player_state(status)
@@ -283,7 +284,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def seek_use_case(self, position_ms: int) -> Dict[str, Any]:
+    async def seek_use_case(self, position_ms: int) -> dict[str, Any]:
         """Use case: Seek to specific position.
 
         Args:
@@ -324,7 +325,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in seek_use_case: {str(e)}")
+            logger.error(f"❌ Error in seek_use_case: {e!s}")
             # Even on error, return valid PlayerState
             status = self._coordinator.get_playback_status()
             complete_status = self._ensure_complete_player_state(status)
@@ -335,7 +336,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def set_volume_use_case(self, volume: int) -> Dict[str, Any]:
+    async def set_volume_use_case(self, volume: int) -> dict[str, Any]:
         """Use case: Set player volume.
 
         Args:
@@ -372,7 +373,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in set_volume_use_case: {str(e)}")
+            logger.error(f"❌ Error in set_volume_use_case: {e!s}")
             # Even on error, return success for contract compliance
             return {
                 "success": True,
@@ -381,7 +382,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def get_status_use_case(self) -> Dict[str, Any]:
+    async def get_status_use_case(self) -> dict[str, Any]:
         """Use case: Get current player status.
 
         Returns:
@@ -398,7 +399,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in get_status_use_case: {str(e)}")
+            logger.error(f"❌ Error in get_status_use_case: {e!s}")
             # Even on error, return valid default PlayerState
             complete_status = self._ensure_complete_player_state({})
             return {

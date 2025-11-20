@@ -12,9 +12,10 @@ modules.
 import logging
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 from dotenv import load_dotenv
+
 from app.src.config.audio_config import AudioConfig
 from app.src.config.hardware_config import HardwareConfig
 from app.src.config.nfc_config import NFCConfig
@@ -301,7 +302,7 @@ class AppConfig:
         return str(path)
 
     @property
-    def upload_allowed_extensions(self) -> List[str]:
+    def upload_allowed_extensions(self) -> list[str]:
         """
         List of allowed upload extensions.
         """
@@ -321,7 +322,7 @@ class AppConfig:
         return int(value)
 
     @property
-    def cors_allowed_origins(self) -> List[str]:
+    def cors_allowed_origins(self) -> list[str]:
         """
         List of allowed CORS origins.
         """

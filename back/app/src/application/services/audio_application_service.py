@@ -9,8 +9,9 @@ This service coordinates audio operations between the domain layer
 and external services, implementing audio use cases without containing business logic.
 """
 
-from typing import Dict, Any
 import logging
+from typing import Any
+
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
 
@@ -40,7 +41,7 @@ class AudioApplicationService:
         self._playlist_service = playlist_application_service
         self._state_manager = state_manager
 
-    async def play_playlist_use_case(self, playlist_id: str) -> Dict[str, Any]:
+    async def play_playlist_use_case(self, playlist_id: str) -> dict[str, Any]:
         """Use case: Start playing a playlist.
 
         Args:
@@ -98,20 +99,18 @@ class AudioApplicationService:
                     "playlist_id": playlist_id,
                     "track_count": len(tracks),
                 }
-            else:
-                return {
-                    "status": "error",
-                    "message": "Failed to start playlist in audio engine",
-                    "error_type": "audio_error",
-                }
-        else:
             return {
                 "status": "error",
-                "message": "Audio domain container not initialized",
-                "error_type": "service_unavailable",
+                "message": "Failed to start playlist in audio engine",
+                "error_type": "audio_error",
             }
+        return {
+            "status": "error",
+            "message": "Audio domain container not initialized",
+            "error_type": "service_unavailable",
+        }
 
-    async def control_playback_use_case(self, action: str) -> Dict[str, Any]:
+    async def control_playback_use_case(self, action: str) -> dict[str, Any]:
         """Use case: Control audio playback.
 
         Args:
@@ -150,20 +149,18 @@ class AudioApplicationService:
                     "message": f"Playback {action} executed successfully",
                     "action": action,
                 }
-            else:
-                return {
-                    "status": "error",
-                    "message": f"Failed to execute playback {action}",
-                    "error_type": "audio_error",
-                }
-        else:
             return {
                 "status": "error",
-                "message": "Audio domain container not initialized",
-                "error_type": "service_unavailable",
+                "message": f"Failed to execute playback {action}",
+                "error_type": "audio_error",
             }
+        return {
+            "status": "error",
+            "message": "Audio domain container not initialized",
+            "error_type": "service_unavailable",
+        }
 
-    def get_playback_status_use_case(self) -> Dict[str, Any]:
+    def get_playback_status_use_case(self) -> dict[str, Any]:
         """Use case: Get current playback status.
 
         Returns:
@@ -178,14 +175,13 @@ class AudioApplicationService:
                 "message": "Playback status retrieved successfully",
                 "playback_status": state,
             }
-        else:
-            return {
-                "status": "error",
-                "message": "Audio domain container not initialized",
-                "error_type": "service_unavailable",
-            }
+        return {
+            "status": "error",
+            "message": "Audio domain container not initialized",
+            "error_type": "service_unavailable",
+        }
 
-    async def set_volume_use_case(self, volume: int) -> Dict[str, Any]:
+    async def set_volume_use_case(self, volume: int) -> dict[str, Any]:
         """Use case: Set audio volume.
 
         Args:
@@ -220,23 +216,21 @@ class AudioApplicationService:
                         "message": f"Volume set to {volume}",
                         "volume": volume,
                     }
-                else:
-                    return {
-                        "status": "error",
-                        "message": "Failed to set volume",
-                        "error_type": "audio_error",
-                    }
-            else:
                 return {
                     "status": "error",
-                    "message": "Audio domain container not initialized",
-                    "error_type": "service_unavailable",
+                    "message": "Failed to set volume",
+                    "error_type": "audio_error",
                 }
+            return {
+                "status": "error",
+                "message": "Audio domain container not initialized",
+                "error_type": "service_unavailable",
+            }
 
         except Exception as e:
             logger.error(f"❌ Failed to set volume {volume}: {e}")
             return {
                 "status": "error",
-                "message": f"Volume control failed: {str(e)}",
+                "message": f"Volume control failed: {e!s}",
                 "error_type": "application_error",
             }

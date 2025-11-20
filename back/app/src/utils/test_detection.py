@@ -9,17 +9,17 @@ Centralized logic for detecting test/mock data in API requests.
 This eliminates duplication across nfc_api_routes.py and other endpoints.
 """
 
-from typing import Optional, Dict, Any
 import logging
 import uuid
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 def is_test_request(
-    playlist_id: Optional[str] = None,
-    tag_id: Optional[str] = None,
-    client_op_id: Optional[str] = None,
+    playlist_id: str | None = None,
+    tag_id: str | None = None,
+    client_op_id: str | None = None,
 ) -> bool:
     """
     Detect if a request contains test/mock data.
@@ -84,10 +84,10 @@ def is_test_request(
 
 
 def create_mock_nfc_association(
-    tag_id: Optional[str] = None,
-    playlist_id: Optional[str] = None,
-    playlist_title: Optional[str] = None,
-) -> Dict[str, Any]:
+    tag_id: str | None = None,
+    playlist_id: str | None = None,
+    playlist_title: str | None = None,
+) -> dict[str, Any]:
     """
     Create a mock NFC association response for testing.
 
@@ -116,9 +116,9 @@ def create_mock_nfc_association(
 
 
 def create_mock_scan_response(
-    scan_id: Optional[str] = None,
+    scan_id: str | None = None,
     timeout_ms: int = 60000,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a mock NFC scan session response for testing.
 
@@ -145,7 +145,7 @@ def create_mock_scan_response(
 def create_mock_response(
     resource_type: str,
     **kwargs: Any
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a mock response for various resource types.
 
@@ -188,9 +188,9 @@ def create_mock_response(
 # Legacy function names for backward compatibility
 # These can be removed once all callers are updated
 def is_test_data(
-    playlist_id: Optional[str] = None,
-    tag_id: Optional[str] = None,
-    client_op_id: Optional[str] = None,
+    playlist_id: str | None = None,
+    tag_id: str | None = None,
+    client_op_id: str | None = None,
 ) -> bool:
     """
     Deprecated: Use is_test_request() instead.

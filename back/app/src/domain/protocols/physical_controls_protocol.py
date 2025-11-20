@@ -10,7 +10,7 @@ that can trigger audio control actions.
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from collections.abc import Callable
 from enum import Enum
 
 

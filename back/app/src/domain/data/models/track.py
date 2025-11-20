@@ -6,7 +6,6 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -31,10 +30,10 @@ class Track:
     title: str
     filename: str
     file_path: str  # Changed from Path to string to align with frontend
-    duration_ms: Optional[int] = None  # Duration in milliseconds
-    artist: Optional[str] = None
-    album: Optional[str] = None
-    id: Optional[str] = None
+    duration_ms: int | None = None  # Duration in milliseconds
+    artist: str | None = None
+    album: str | None = None
+    id: str | None = None
 
     # Domain property aliases for API compatibility
     @property
@@ -54,7 +53,7 @@ class Track:
         return Path(self.file_path)
 
     @property
-    def duration(self) -> Optional[float]:
+    def duration(self) -> float | None:
         """Duration in seconds - converted from duration_ms field which contains milliseconds."""
         return self.duration_ms / 1000.0 if self.duration_ms is not None else None
 

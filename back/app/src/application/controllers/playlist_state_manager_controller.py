@@ -9,9 +9,9 @@ This manager is responsible for maintaining the current state of playlists
 and tracks, ensuring consistency across the application.
 """
 
-from typing import Optional, Dict, Any, List
-from dataclasses import dataclass, field
 import logging
+from dataclasses import dataclass, field
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +22,10 @@ class Track:
     id: str
     title: str
     filename: str
-    duration_ms: Optional[int] = None
-    file_path: Optional[str] = None
+    duration_ms: int | None = None
+    file_path: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert track to dictionary."""
         return {
             "id": self.id,
@@ -41,9 +41,9 @@ class Playlist:
     """Represents a playlist."""
     id: str
     title: str
-    tracks: List[Track] = field(default_factory=list)
+    tracks: list[Track] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert playlist to dictionary."""
         return {
             "id": self.id,
@@ -63,11 +63,11 @@ class PlaylistStateManager:
 
     def __init__(self):
         """Initialize the playlist state manager."""
-        self._current_playlist: Optional[Playlist] = None
+        self._current_playlist: Playlist | None = None
         self._current_track_index: int = 0
         self._repeat_mode: str = "none"  # none, one, all
         self._shuffle_enabled: bool = False
-        self._shuffle_order: List[int] = []
+        self._shuffle_order: list[int] = []
 
         logger.info("✅ PlaylistStateManager initialized")
 
@@ -109,7 +109,7 @@ class PlaylistStateManager:
 
     # --- Track Navigation ---
 
-    def get_current_track(self) -> Optional[Track]:
+    def get_current_track(self) -> Track | None:
         """
         Get the current track.
 
@@ -124,7 +124,7 @@ class PlaylistStateManager:
 
         return None
 
-    def move_to_next(self) -> Optional[Track]:
+    def move_to_next(self) -> Track | None:
         """
         Move to the next track.
 
@@ -167,7 +167,7 @@ class PlaylistStateManager:
 
         return track
 
-    def move_to_previous(self) -> Optional[Track]:
+    def move_to_previous(self) -> Track | None:
         """
         Move to the previous track.
 
@@ -210,7 +210,7 @@ class PlaylistStateManager:
 
         return track
 
-    def move_to_track(self, track_index: int) -> Optional[Track]:
+    def move_to_track(self, track_index: int) -> Track | None:
         """
         Move to a specific track by index.
 
@@ -235,7 +235,7 @@ class PlaylistStateManager:
 
     # --- State Queries ---
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Get the complete playlist state.
 

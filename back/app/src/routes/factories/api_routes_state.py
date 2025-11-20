@@ -12,7 +12,6 @@ management system, replacing the original api_routes.py with state broadcasting.
 from fastapi import FastAPI
 
 from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_errors
 from app.src.routes.factories.nfc_unified_routes import UnifiedNFCRoutes
 from app.src.routes.factories.player_routes_ddd import PlayerRoutesDDD
 from app.src.routes.factories.playlist_routes_ddd import PlaylistRoutesDDD
@@ -20,6 +19,7 @@ from app.src.routes.factories.system_routes import SystemRoutes
 from app.src.routes.factories.upload_routes import UploadRoutes
 from app.src.routes.factories.web_routes import WebRoutes
 from app.src.routes.factories.youtube_routes import YouTubeRoutes
+from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = get_logger(__name__)
 
@@ -52,8 +52,10 @@ class APIRoutesState:
         self.playlist_routes = PlaylistRoutesDDD(app, socketio, config)
 
         # Initialize DDD player routes
-        from app.src.utils.playback_coordinator_utils import set_playback_coordinator_socketio
         from app.src.dependencies import get_playback_coordinator
+        from app.src.utils.playback_coordinator_utils import (
+            set_playback_coordinator_socketio,
+        )
 
         # CRITICAL FIX: Set Socket.IO instance on coordinator for NFC event broadcasting
         # This ensures NFC-triggered playlist starts broadcast state to the frontend
@@ -145,7 +147,9 @@ def init_api_routes_state(app: FastAPI, socketio, config=None):
     """Entry point for server-authoritative API route initialization with domain architecture."""
     # CRITICAL FIX: Initialize and inject broadcasting service for Socket.IO events
     # This enables frontend communication for NFC association, state changes, etc.
-    from app.src.services.broadcasting.unified_broadcasting_service import UnifiedBroadcastingService
+    from app.src.services.broadcasting.unified_broadcasting_service import (
+        UnifiedBroadcastingService,
+    )
 
     broadcasting_service = UnifiedBroadcastingService(socketio)
     app._broadcasting_service = broadcasting_service

@@ -6,11 +6,14 @@
 
 import asyncio
 from collections import defaultdict
-from typing import Dict, List, Callable, Any, Type, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
+from app.src.domain.protocols.event_bus_protocol import AudioEvent, EventBusProtocol
 from app.src.monitoring import get_logger
-from app.src.domain.protocols.event_bus_protocol import EventBusProtocol, AudioEvent
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
 
 EventType = TypeVar("EventType", bound=AudioEvent)
 logger = get_logger(__name__)
@@ -20,15 +23,15 @@ class EventBus(EventBusProtocol):
     """Simple event bus implementation for audio events."""
 
     def __init__(self):
-        self._subscribers: Dict[Type, List[Callable]] = defaultdict(list)
+        self._subscribers: dict[type, list[Callable]] = defaultdict(list)
         self._stats = {"events_published": 0, "events_handled": 0, "errors": 0}
 
-    def subscribe(self, event_type: Type[EventType], handler: Callable[[EventType], Any]) -> None:
+    def subscribe(self, event_type: type[EventType], handler: Callable[[EventType], Any]) -> None:
         """Subscribe to an event type."""
         self._subscribers[event_type].append(handler)
         logger.debug(f"Subscribed to {event_type.__name__}: {handler.__name__}")
 
-    def unsubscribe(self, event_type: Type[EventType], handler: Callable[[EventType], Any]) -> None:
+    def unsubscribe(self, event_type: type[EventType], handler: Callable[[EventType], Any]) -> None:
         """Unsubscribe from an event type."""
         if handler in self._subscribers[event_type]:
             self._subscribers[event_type].remove(handler)
@@ -57,11 +60,11 @@ class EventBus(EventBusProtocol):
         logger.debug(f"Published {event_type.__name__} to {len(subscribers)} subscribers"
                      )
 
-    def get_subscriber_count(self, event_type: Type[EventType]) -> int:
+    def get_subscriber_count(self, event_type: type[EventType]) -> int:
         """Get number of subscribers for an event type."""
         return len(self._subscribers.get(event_type, []))
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get event bus statistics."""
         return {
             **self._stats,

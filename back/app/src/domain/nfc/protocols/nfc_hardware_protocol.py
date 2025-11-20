@@ -5,7 +5,8 @@
 """NFC Hardware Protocol Interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Callable
+from collections.abc import Callable
+from typing import Optional
 
 from ..value_objects.tag_identifier import TagIdentifier
 

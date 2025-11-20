@@ -4,17 +4,17 @@
 
 """Playlist service for data domain."""
 
-import uuid
-import shutil
-from pathlib import Path
-from typing import Dict, Any, Optional
-from datetime import datetime
-from dataclasses import asdict
 import logging
+import shutil
+import uuid
+from dataclasses import asdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
-from app.src.domain.decorators.error_handler import handle_domain_errors
-from app.src.domain.data.models.playlist import Playlist
 from app.src.config import config as app_config
+from app.src.domain.data.models.playlist import Playlist
+from app.src.domain.decorators.error_handler import handle_domain_errors
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class PlaylistService:
         logger.info("✅ PlaylistService initialized in data domain")
 
     @handle_domain_errors(operation_name="get_playlists")
-    async def get_playlists(self, page: int = 1, page_size: int = 50) -> Dict[str, Any]:
+    async def get_playlists(self, page: int = 1, page_size: int = 50) -> dict[str, Any]:
         """Get paginated playlists.
 
         Args:
@@ -76,7 +76,7 @@ class PlaylistService:
         }
 
     @handle_domain_errors(operation_name="get_playlist")
-    async def get_playlist(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist(self, playlist_id: str) -> dict[str, Any] | None:
         """Get a single playlist with its tracks.
 
         Args:
@@ -100,7 +100,7 @@ class PlaylistService:
         return playlist_dict
 
     @handle_domain_errors(operation_name="create_playlist")
-    async def create_playlist(self, name: str, description: Optional[str] = None) -> Dict[str, Any]:
+    async def create_playlist(self, name: str, description: str | None = None) -> dict[str, Any]:
         """Create a new playlist.
 
         Args:
@@ -131,7 +131,7 @@ class PlaylistService:
         return playlist_dict
 
     @handle_domain_errors(operation_name="update_playlist")
-    async def update_playlist(self, playlist_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_playlist(self, playlist_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update playlist metadata.
 
         With UUID-based folder names, no filesystem operations are needed when title changes.
@@ -188,7 +188,7 @@ class PlaylistService:
             if playlist is not None:
                 await self._cleanup_playlist_folder(playlist)
             else:
-                logger.warning(f"⚠️ Skipping filesystem cleanup - playlist entity not found")
+                logger.warning("⚠️ Skipping filesystem cleanup - playlist entity not found")
         else:
             logger.warning(f"Failed to delete playlist {playlist_id}")
 
@@ -244,7 +244,7 @@ class PlaylistService:
         return success
 
     @handle_domain_errors(operation_name="get_playlist_by_nfc")
-    async def get_playlist_by_nfc(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist_by_nfc(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Get playlist associated with an NFC tag.
 
         Args:
@@ -269,7 +269,7 @@ class PlaylistService:
         return playlist_dict
 
     @handle_domain_errors(operation_name="sync_with_filesystem")
-    async def sync_with_filesystem(self, upload_folder: str) -> Dict[str, Any]:
+    async def sync_with_filesystem(self, upload_folder: str) -> dict[str, Any]:
         """Synchronize playlists with filesystem, migrating old folder names to UUID.
 
         This method handles both:
@@ -390,7 +390,7 @@ class PlaylistService:
 
                 playlist = await self.create_playlist(
                     name=playlist_title,
-                    description=f"Auto-imported from filesystem"
+                    description="Auto-imported from filesystem"
                 )
                 stats['playlists_added'] += 1
 
@@ -410,7 +410,7 @@ class PlaylistService:
         logger.info(f"✅ Filesystem sync completed: {stats}")
         return stats
 
-    async def _sync_playlist_tracks(self, playlist_id: str, playlist_dir: Path, stats: Dict[str, Any]):
+    async def _sync_playlist_tracks(self, playlist_id: str, playlist_dir: Path, stats: dict[str, Any]):
         """Synchronize tracks for a playlist.
 
         Args:
@@ -452,7 +452,7 @@ class PlaylistService:
                 stats['tracks_removed'] += 1
 
     @handle_domain_errors(operation_name="cleanup_orphaned_folders")
-    async def cleanup_orphaned_folders(self, upload_folder: str) -> Dict[str, Any]:
+    async def cleanup_orphaned_folders(self, upload_folder: str) -> dict[str, Any]:
         """Remove folders in upload directory that have no corresponding playlist in database.
 
         This is the inverse operation of sync_with_filesystem():

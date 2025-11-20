@@ -11,14 +11,14 @@ This module handles client subscription management for:
 - NFC association session rooms
 """
 
-from typing import Dict, Any
+from typing import Any
 
 import socketio
 
+from app.src.common.socket_rooms import SocketRooms
+from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_http_errors
-from app.src.domain.audio.engine.state_manager import StateManager
-from app.src.common.socket_rooms import SocketRooms
 
 logger = get_logger(__name__)
 
@@ -65,7 +65,7 @@ class SubscriptionHandlers:
 
         @self.sio.on("join:playlists")
         @handle_http_errors()
-        async def handle_join_playlists(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_join_playlists(sid: str, data: dict[str, Any]) -> None:
             """Subscribe client to global playlists state updates.
 
             When a client joins the 'playlists' room, they receive:
@@ -103,7 +103,7 @@ class SubscriptionHandlers:
 
         @self.sio.on("join:playlist")
         @handle_http_errors()
-        async def handle_join_playlist(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_join_playlist(sid: str, data: dict[str, Any]) -> None:
             """Subscribe client to specific playlist state updates.
 
             When a client joins a playlist-specific room, they receive:
@@ -148,7 +148,7 @@ class SubscriptionHandlers:
 
         @self.sio.on("leave:playlists")
         @handle_http_errors()
-        async def handle_leave_playlists(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_leave_playlists(sid: str, data: dict[str, Any]) -> None:
             """Unsubscribe client from global playlists updates.
 
             Args:
@@ -168,7 +168,7 @@ class SubscriptionHandlers:
 
         @self.sio.on("leave:playlist")
         @handle_http_errors()
-        async def handle_leave_playlist(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_leave_playlist(sid: str, data: dict[str, Any]) -> None:
             """Unsubscribe client from specific playlist updates.
 
             Args:
@@ -198,7 +198,7 @@ class SubscriptionHandlers:
 
         @self.sio.on("join:nfc")
         @handle_http_errors()
-        async def handle_join_nfc(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_join_nfc(sid: str, data: dict[str, Any]) -> None:
             """Subscribe client to NFC association session room and send snapshot.
 
             When a client joins an NFC association session room, they receive:

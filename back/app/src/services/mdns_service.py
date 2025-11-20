@@ -11,12 +11,10 @@ Args: None
 Returns: None
 """
 
+import logging
 import socket
-from typing import Optional
 
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
-
-import logging
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -34,8 +32,8 @@ class MDNSService:
         from app.src.config import config
 
         self.config = config
-        self.zeroconf_instance: Optional[Zeroconf] = None
-        self.service_info: Optional[ServiceInfo] = None
+        self.zeroconf_instance: Zeroconf | None = None
+        self.service_info: ServiceInfo | None = None
         self._is_registered = False
 
     @handle_service_errors("mdns")
@@ -104,7 +102,7 @@ class MDNSService:
         if self.zeroconf_instance:
             self.zeroconf_instance.close()
 
-    def _get_local_ip(self) -> Optional[str]:
+    def _get_local_ip(self) -> str | None:
         """Get the local non-loopback IP address of this device.
 
         Returns:
@@ -121,5 +119,5 @@ class MDNSService:
             finally:
                 s.close()
         except Exception as e:
-            logger.warning(f"Error getting local IP: {str(e)}")
+            logger.warning(f"Error getting local IP: {e!s}")
         return None

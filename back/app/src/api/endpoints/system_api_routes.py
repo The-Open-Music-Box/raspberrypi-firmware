@@ -9,10 +9,11 @@ Clean API routes following Domain-Driven Design principles.
 Single Responsibility: HTTP route handling for system operations.
 """
 
-from fastapi import APIRouter, Request
 import logging
 import platform
 import time
+
+from fastapi import APIRouter, Request
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
@@ -77,7 +78,7 @@ class SystemAPIRoutes:
                 return response
 
             except Exception as e:
-                logger.error(f"Error getting playback status: {str(e)}")
+                logger.error(f"Error getting playback status: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to get playback status",
                     operation="get_playback_status"
@@ -158,7 +159,7 @@ class SystemAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error during health check: {str(e)}")
+                logger.error(f"Error during health check: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Health check failed",
                     operation="health_check"
@@ -214,7 +215,7 @@ class SystemAPIRoutes:
                 version_file = os.path.join(os.path.dirname(__file__), "../../../../../VERSION")
                 try:
                     if os.path.exists(version_file):
-                        with open(version_file, 'r') as f:
+                        with open(version_file) as f:
                             version = f.read().strip()
                 except Exception:
                     pass  # Use default version on error
@@ -275,7 +276,7 @@ class SystemAPIRoutes:
                 })
 
             except Exception as e:
-                logger.error(f"Error getting system info: {str(e)}")
+                logger.error(f"Error getting system info: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to get system information",
                     operation="get_system_info"
@@ -305,14 +306,14 @@ class SystemAPIRoutes:
                         logs_data["log_files_available"].append(log_file)
                         # Read last 100 lines
                         try:
-                            with open(log_file, "r") as f:
+                            with open(log_file) as f:
                                 lines = f.readlines()
                                 last_lines = lines[-100:] if len(lines) > 100 else lines
                                 logs_data["logs"].extend([
                                     {"file": log_file, "line": line.strip()}
                                     for line in last_lines if line.strip()
                                 ])
-                        except (IOError, OSError):
+                        except OSError:
                             pass
 
                 from fastapi.responses import JSONResponse
@@ -324,7 +325,7 @@ class SystemAPIRoutes:
                 })
 
             except Exception as e:
-                logger.error(f"Error getting system logs: {str(e)}")
+                logger.error(f"Error getting system logs: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to get system logs",
                     operation="get_system_logs"
@@ -355,8 +356,9 @@ class SystemAPIRoutes:
                     "message": "Application restart scheduled in 2 seconds",
                 }
 
-                from app.src.common.response_models import create_success_response
                 from fastapi.responses import JSONResponse
+
+                from app.src.common.response_models import create_success_response
 
                 standardized_response = create_success_response(
                     message="System restart scheduled successfully",
@@ -369,7 +371,7 @@ class SystemAPIRoutes:
                 return response
 
             except Exception as e:
-                logger.error(f"Error restarting system: {str(e)}")
+                logger.error(f"Error restarting system: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to restart system",
                     operation="restart_system"
@@ -404,15 +406,14 @@ class SystemAPIRoutes:
                             message=f"LED brightness set to {body.brightness:.1%}",
                             data={"brightness": body.brightness}
                         )
-                    else:
-                        return UnifiedResponseService.error(
-                            message="Failed to set LED brightness",
-                            error_type="operation_failed",
-                            status_code=500
-                        )
+                    return UnifiedResponseService.error(
+                        message="Failed to set LED brightness",
+                        error_type="operation_failed",
+                        status_code=500
+                    )
 
                 except Exception as e:
-                    logger.error(f"Error setting LED brightness: {str(e)}")
+                    logger.error(f"Error setting LED brightness: {e!s}")
                     return UnifiedResponseService.internal_error(
                         message="Failed to set LED brightness",
                         operation="set_led_brightness"
@@ -441,18 +442,17 @@ class SystemAPIRoutes:
                         brightness = status.get("led_manager_status", {}).get("brightness", 0)
 
                         return UnifiedResponseService.success(
-                            message=f"LED brightness reloaded from config",
+                            message="LED brightness reloaded from config",
                             data={"brightness": brightness}
                         )
-                    else:
-                        return UnifiedResponseService.error(
-                            message="Failed to reload LED brightness from config",
-                            error_type="operation_failed",
-                            status_code=500
-                        )
+                    return UnifiedResponseService.error(
+                        message="Failed to reload LED brightness from config",
+                        error_type="operation_failed",
+                        status_code=500
+                    )
 
                 except Exception as e:
-                    logger.error(f"Error reloading LED config: {str(e)}")
+                    logger.error(f"Error reloading LED config: {e!s}")
                     return UnifiedResponseService.internal_error(
                         message="Failed to reload LED config",
                         operation="reload_led_config"

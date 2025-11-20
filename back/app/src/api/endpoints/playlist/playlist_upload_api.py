@@ -9,6 +9,7 @@ Single Responsibility: Handle HTTP requests for file uploads to playlists.
 """
 
 import logging
+
 from fastapi import APIRouter, Body, File
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
@@ -79,7 +80,7 @@ class PlaylistUploadAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error initializing upload session: {str(e)}")
+                logger.error(f"Error initializing upload session: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to initialize upload session",
                     operation="init_upload_session"
@@ -112,7 +113,7 @@ class PlaylistUploadAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error uploading chunk: {str(e)}")
+                logger.error(f"Error uploading chunk: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to upload chunk",
                     operation="upload_chunk"
@@ -195,7 +196,7 @@ class PlaylistUploadAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error finalizing upload: {str(e)}")
+                logger.error(f"Error finalizing upload: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to finalize upload",
                     operation="finalize_upload"
@@ -223,7 +224,7 @@ class PlaylistUploadAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error getting upload status: {str(e)}")
+                logger.error(f"Error getting upload status: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to get upload status",
                     operation="get_upload_status"

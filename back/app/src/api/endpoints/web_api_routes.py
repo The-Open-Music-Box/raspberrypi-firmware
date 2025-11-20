@@ -9,10 +9,11 @@ Clean API routes following Domain-Driven Design principles.
 Single Responsibility: HTTP route handling for static files and SPA routing.
 """
 
+import logging
 from pathlib import Path
+
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -73,10 +74,9 @@ class WebAPIRoutes:
                 index_path = self.static_dir / "index.html"
                 if index_path.exists():
                     return FileResponse(str(index_path))
-                else:
-                    logger.error("index.html not found in static directory")
-                    from fastapi import HTTPException
-                    raise HTTPException(status_code=404, detail="Frontend not available")
+                logger.error("index.html not found in static directory")
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404, detail="Frontend not available")
 
             # Catch-all route for SPA client-side routing
             @app.get("/{full_path:path}", include_in_schema=False)
@@ -101,10 +101,9 @@ class WebAPIRoutes:
                 index_path = self.static_dir / "index.html"
                 if index_path.exists():
                     return FileResponse(str(index_path))
-                else:
-                    logger.error("index.html not found in static directory")
-                    from fastapi import HTTPException
-                    raise HTTPException(status_code=404, detail="Frontend not available")
+                logger.error("index.html not found in static directory")
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404, detail="Frontend not available")
 
             logger.info("SPA routing configured successfully")
 

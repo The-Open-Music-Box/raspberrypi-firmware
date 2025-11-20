@@ -5,9 +5,9 @@
 """Upload Session Domain Entity."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Set, Optional, Dict, Any
+from typing import Any
 from uuid import uuid4
 
 from ..value_objects.file_chunk import FileChunk
@@ -35,19 +35,19 @@ class UploadSession:
 
     session_id: str = field(default_factory=lambda: str(uuid4()))
     filename: str = ""
-    playlist_id: Optional[str] = None
-    playlist_path: Optional[str] = None
+    playlist_id: str | None = None
+    playlist_path: str | None = None
     total_chunks: int = 0
     total_size_bytes: int = 0
     status: UploadStatus = UploadStatus.CREATED
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    completed_at: Optional[datetime] = None
-    received_chunks: Set[int] = field(default_factory=set)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = None
+    received_chunks: set[int] = field(default_factory=set)
     current_size_bytes: int = 0
-    file_metadata: Optional[FileMetadata] = None
-    error_message: Optional[str] = None
+    file_metadata: FileMetadata | None = None
+    error_message: str | None = None
     timeout_seconds: int = 3600  # 1 hour default
-    completion_data: Optional[Dict[str, Any]] = None
+    completion_data: dict[str, Any] | None = None
 
     def __post_init__(self):
         """Validate session on creation."""
@@ -62,7 +62,7 @@ class UploadSession:
     def timeout_at(self) -> datetime:
         """Calculate when this session expires."""
         return datetime.fromtimestamp(
-            self.created_at.timestamp() + self.timeout_seconds, tz=timezone.utc
+            self.created_at.timestamp() + self.timeout_seconds, tz=UTC
         )
 
     @property
@@ -81,7 +81,7 @@ class UploadSession:
 
     def is_expired(self) -> bool:
         """Check if this session has expired."""
-        return datetime.now(timezone.utc) > self.timeout_at
+        return datetime.now(UTC) > self.timeout_at
 
     def is_active(self) -> bool:
         """Check if this session is active (not completed/failed/expired)."""
@@ -130,7 +130,7 @@ class UploadSession:
             raise ValueError("Cannot mark incomplete session as completed")
 
         self.status = UploadStatus.COMPLETED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def mark_failed(self, error_message: str) -> None:
         """Mark this session as failed.
@@ -140,17 +140,17 @@ class UploadSession:
         """
         self.status = UploadStatus.FAILED
         self.error_message = error_message
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def mark_cancelled(self) -> None:
         """Mark this session as cancelled."""
         self.status = UploadStatus.CANCELLED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def mark_expired(self) -> None:
         """Mark this session as expired."""
         self.status = UploadStatus.EXPIRED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def set_metadata(self, metadata: FileMetadata) -> None:
         """Set file metadata for this session.
@@ -160,7 +160,7 @@ class UploadSession:
         """
         self.file_metadata = metadata
 
-    def get_missing_chunks(self) -> Set[int]:
+    def get_missing_chunks(self) -> set[int]:
         """Get set of missing chunk indices."""
         all_chunks = set(range(self.total_chunks))
         return all_chunks - self.received_chunks
@@ -170,7 +170,7 @@ class UploadSession:
         if self.is_expired():
             return 0
 
-        remaining = self.timeout_at - datetime.now(timezone.utc)
+        remaining = self.timeout_at - datetime.now(UTC)
         return max(0, int(remaining.total_seconds()))
 
     def validate_chunk_size_consistency(self, expected_size: int) -> bool:
@@ -184,7 +184,7 @@ class UploadSession:
         """
         return self.current_size_bytes == expected_size
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert session to dictionary for serialization."""
         return {
             "session_id": self.session_id,

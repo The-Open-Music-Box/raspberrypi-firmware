@@ -9,11 +9,14 @@ Single Responsibility: Handle HTTP GET requests for playlist retrieval.
 """
 
 import logging
+
 from fastapi import APIRouter, Query
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
-from app.src.services.serialization.unified_serialization_service import UnifiedSerializationService
+from app.src.services.serialization.unified_serialization_service import (
+    UnifiedSerializationService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +93,7 @@ class PlaylistReadAPI:
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in list_playlists: {str(e)}",
+                    f"Error in list_playlists: {e!s}",
                     extra={
                         "operation": "list_playlists",
                         "page": page,
@@ -155,7 +158,7 @@ class PlaylistReadAPI:
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in get_playlist: {str(e)}",
+                    f"Error in get_playlist: {e!s}",
                     extra={
                         "operation": "get_playlist",
                         "playlist_id": playlist_id,

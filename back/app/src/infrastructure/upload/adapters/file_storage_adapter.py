@@ -6,11 +6,11 @@
 
 import shutil
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any
 
+from app.src.domain.upload.entities.upload_session import UploadSession
 from app.src.domain.upload.protocols.file_storage_protocol import FileStorageProtocol
 from app.src.domain.upload.value_objects.file_chunk import FileChunk
-from app.src.domain.upload.entities.upload_session import UploadSession
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
 
@@ -110,7 +110,7 @@ class LocalFileStorageAdapter(FileStorageProtocol):
             logger.debug(f"🧹 Cleaned up session directory: {session_dir}")
 
     @handle_errors("get_chunk_info")
-    async def get_chunk_info(self, session_id: str, chunk_index: int) -> Optional[Dict[str, Any]]:
+    async def get_chunk_info(self, session_id: str, chunk_index: int) -> dict[str, Any] | None:
         """Get information about a stored chunk.
 
         Args:

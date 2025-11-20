@@ -5,17 +5,19 @@
 """Upload Application Service - Use Cases Orchestration."""
 
 import asyncio
+import logging
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Any
 
 from app.src.domain.upload.entities.upload_session import UploadSession, UploadStatus
-from app.src.domain.upload.value_objects.file_chunk import FileChunk
-from app.src.domain.upload.services.upload_validation_service import UploadValidationService
 from app.src.domain.upload.protocols.file_storage_protocol import (
     FileStorageProtocol,
     MetadataExtractionProtocol,
 )
-import logging
+from app.src.domain.upload.services.upload_validation_service import (
+    UploadValidationService,
+)
+from app.src.domain.upload.value_objects.file_chunk import FileChunk
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ class UploadApplicationService:
         self,
         file_storage: FileStorageProtocol,
         metadata_extractor: MetadataExtractionProtocol,
-        validation_service: Optional[UploadValidationService] = None,
+        validation_service: UploadValidationService | None = None,
         upload_folder: str = "uploads",
     ):
         """Initialize upload application service.
@@ -48,12 +50,12 @@ class UploadApplicationService:
         self._upload_folder = Path(upload_folder)
 
         # Session management
-        self._active_sessions: Dict[str, UploadSession] = {}
+        self._active_sessions: dict[str, UploadSession] = {}
 
         # Cleanup task
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
 
-    async def start_upload_service(self) -> Dict[str, Any]:
+    async def start_upload_service(self) -> dict[str, Any]:
         """Start the upload service.
 
         Returns:
@@ -73,8 +75,8 @@ class UploadApplicationService:
         }
 
     async def create_upload_session_use_case(
-        self, filename: str, total_size: int, total_chunks: int, playlist_id: Optional[str] = None, playlist_path: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, filename: str, total_size: int, total_chunks: int, playlist_id: str | None = None, playlist_path: str | None = None
+    ) -> dict[str, Any]:
         """Use case: Create a new upload session.
 
         Args:
@@ -123,7 +125,7 @@ class UploadApplicationService:
 
     async def upload_chunk_use_case(
         self, session_id: str, chunk_index: int, chunk_data: bytes
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Use case: Upload a file chunk.
 
         Args:
@@ -177,7 +179,7 @@ class UploadApplicationService:
             result.update(completion_result)
         return result
 
-    async def get_upload_status_use_case(self, session_id: str) -> Dict[str, Any]:
+    async def get_upload_status_use_case(self, session_id: str) -> dict[str, Any]:
         """Use case: Get upload session status.
 
         Args:
@@ -195,7 +197,7 @@ class UploadApplicationService:
             }
         return {"status": "success", "session": session.to_dict()}
 
-    async def cancel_upload_use_case(self, session_id: str) -> Dict[str, Any]:
+    async def cancel_upload_use_case(self, session_id: str) -> dict[str, Any]:
         """Use case: Cancel an upload session.
 
         Args:
@@ -222,7 +224,7 @@ class UploadApplicationService:
             "session_id": session_id,
         }
 
-    async def list_active_uploads_use_case(self) -> Dict[str, Any]:
+    async def list_active_uploads_use_case(self) -> dict[str, Any]:
         """Use case: List all active upload sessions.
 
         Returns:
@@ -237,7 +239,7 @@ class UploadApplicationService:
             "count": len(active_sessions),
         }
 
-    async def _handle_upload_completion(self, session: UploadSession) -> Dict[str, Any]:
+    async def _handle_upload_completion(self, session: UploadSession) -> dict[str, Any]:
         """Handle completion of an upload session.
 
         Args:

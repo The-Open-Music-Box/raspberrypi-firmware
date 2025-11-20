@@ -4,12 +4,12 @@
 
 """Data application service for playlist and track operations."""
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 
-from app.src.monitoring import get_logger
+from app.src.common.exceptions import BusinessLogicError
 from app.src.domain.data.services.playlist_service import PlaylistService
 from app.src.domain.data.services.track_service import TrackService
-from app.src.common.exceptions import BusinessLogicError
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ class DataApplicationService:
         logger.info("✅ DataApplicationService initialized")
 
     # Playlist operations
-    async def get_playlists_use_case(self, page: int = 1, page_size: int = 50) -> Dict[str, Any]:
+    async def get_playlists_use_case(self, page: int = 1, page_size: int = 50) -> dict[str, Any]:
         """Get paginated playlists.
 
         Args:
@@ -51,9 +51,9 @@ class DataApplicationService:
             return await self._playlist_service.get_playlists(page, page_size)
         except Exception as e:
             logger.error(f"Failed to get playlists: {e}")
-            raise BusinessLogicError(f"Failed to retrieve playlists: {str(e)}")
+            raise BusinessLogicError(f"Failed to retrieve playlists: {e!s}")
 
-    async def get_playlist_use_case(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist_use_case(self, playlist_id: str) -> dict[str, Any] | None:
         """Get a single playlist with tracks.
 
         Args:
@@ -67,9 +67,9 @@ class DataApplicationService:
             return playlist  # Return None if not found (handled gracefully by API routes)
         except Exception as e:
             logger.error(f"Failed to get playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to retrieve playlist: {str(e)}")
+            raise BusinessLogicError(f"Failed to retrieve playlist: {e!s}")
 
-    async def create_playlist_use_case(self, name: str, description: Optional[str] = None) -> Dict[str, Any]:
+    async def create_playlist_use_case(self, name: str, description: str | None = None) -> dict[str, Any]:
         """Create a new playlist.
 
         Args:
@@ -88,9 +88,9 @@ class DataApplicationService:
             raise
         except Exception as e:
             logger.error(f"Failed to create playlist {name}: {e}")
-            raise BusinessLogicError(f"Failed to create playlist: {str(e)}")
+            raise BusinessLogicError(f"Failed to create playlist: {e!s}")
 
-    async def update_playlist_use_case(self, playlist_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def update_playlist_use_case(self, playlist_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         """Update playlist metadata.
 
         Args:
@@ -115,7 +115,7 @@ class DataApplicationService:
             raise
         except Exception as e:
             logger.error(f"Failed to update playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to update playlist: {str(e)}")
+            raise BusinessLogicError(f"Failed to update playlist: {e!s}")
 
     async def delete_playlist_use_case(self, playlist_id: str) -> bool:
         """Delete a playlist.
@@ -133,7 +133,7 @@ class DataApplicationService:
             return success
         except Exception as e:
             logger.error(f"Failed to delete playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to delete playlist: {str(e)}")
+            raise BusinessLogicError(f"Failed to delete playlist: {e!s}")
 
     async def associate_nfc_tag_use_case(self, playlist_id: str, nfc_tag_id: str) -> bool:
         """Associate an NFC tag with a playlist.
@@ -149,9 +149,9 @@ class DataApplicationService:
             return await self._playlist_service.associate_nfc_tag(playlist_id, nfc_tag_id)
         except Exception as e:
             logger.error(f"Failed to associate NFC tag {nfc_tag_id} with playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to associate NFC tag: {str(e)}")
+            raise BusinessLogicError(f"Failed to associate NFC tag: {e!s}")
 
-    async def get_playlist_by_nfc_use_case(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist_by_nfc_use_case(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Get playlist by NFC tag.
 
         Args:
@@ -164,9 +164,9 @@ class DataApplicationService:
             return await self._playlist_service.get_playlist_by_nfc(nfc_tag_id)
         except Exception as e:
             logger.error(f"Failed to get playlist by NFC tag {nfc_tag_id}: {e}")
-            raise BusinessLogicError(f"Failed to get playlist by NFC tag: {str(e)}")
+            raise BusinessLogicError(f"Failed to get playlist by NFC tag: {e!s}")
 
-    async def sync_filesystem_use_case(self, upload_folder: str) -> Dict[str, Any]:
+    async def sync_filesystem_use_case(self, upload_folder: str) -> dict[str, Any]:
         """Synchronize playlists with filesystem.
 
         Args:
@@ -179,10 +179,10 @@ class DataApplicationService:
             return await self._playlist_service.sync_with_filesystem(upload_folder)
         except Exception as e:
             logger.error(f"Failed to sync filesystem: {e}")
-            raise BusinessLogicError(f"Failed to sync filesystem: {str(e)}")
+            raise BusinessLogicError(f"Failed to sync filesystem: {e!s}")
 
     # Track operations
-    async def get_tracks_use_case(self, playlist_id: str) -> List[Dict[str, Any]]:
+    async def get_tracks_use_case(self, playlist_id: str) -> list[dict[str, Any]]:
         """Get tracks for a playlist.
 
         Args:
@@ -195,9 +195,9 @@ class DataApplicationService:
             return await self._track_service.get_tracks(playlist_id)
         except Exception as e:
             logger.error(f"Failed to get tracks for playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to get tracks: {str(e)}")
+            raise BusinessLogicError(f"Failed to get tracks: {e!s}")
 
-    async def add_track_use_case(self, playlist_id: str, track_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def add_track_use_case(self, playlist_id: str, track_data: dict[str, Any]) -> dict[str, Any]:
         """Add a track to a playlist.
 
         Args:
@@ -216,9 +216,9 @@ class DataApplicationService:
             raise
         except Exception as e:
             logger.error(f"Failed to add track to playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to add track: {str(e)}")
+            raise BusinessLogicError(f"Failed to add track: {e!s}")
 
-    async def update_track_use_case(self, track_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_track_use_case(self, track_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update track metadata.
 
         Args:
@@ -237,7 +237,7 @@ class DataApplicationService:
             raise
         except Exception as e:
             logger.error(f"Failed to update track {track_id}: {e}")
-            raise BusinessLogicError(f"Failed to update track: {str(e)}")
+            raise BusinessLogicError(f"Failed to update track: {e!s}")
 
     async def delete_track_use_case(self, track_id: str) -> bool:
         """Delete a track.
@@ -252,9 +252,9 @@ class DataApplicationService:
             return await self._track_service.delete_track(track_id)
         except Exception as e:
             logger.error(f"Failed to delete track {track_id}: {e}")
-            raise BusinessLogicError(f"Failed to delete track: {str(e)}")
+            raise BusinessLogicError(f"Failed to delete track: {e!s}")
 
-    async def reorder_tracks_use_case(self, playlist_id: str, track_ids: List[str]) -> Dict[str, Any]:
+    async def reorder_tracks_use_case(self, playlist_id: str, track_ids: list[str]) -> dict[str, Any]:
         """Reorder tracks in a playlist.
 
         Args:
@@ -275,18 +275,17 @@ class DataApplicationService:
                     "status": "success",
                     "message": f"Reordered {len(track_ids)} tracks successfully"
                 }
-            else:
-                return {
-                    "status": "error",
-                    "message": "Failed to reorder tracks"
-                }
+            return {
+                "status": "error",
+                "message": "Failed to reorder tracks"
+            }
         except BusinessLogicError:
             raise
         except Exception as e:
             logger.error(f"Failed to reorder tracks in playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to reorder tracks: {str(e)}")
+            raise BusinessLogicError(f"Failed to reorder tracks: {e!s}")
 
-    async def delete_tracks_use_case(self, playlist_id: str, track_numbers: List[int]) -> Dict[str, Any]:
+    async def delete_tracks_use_case(self, playlist_id: str, track_numbers: list[int]) -> dict[str, Any]:
         """Delete tracks from a playlist by track numbers.
 
         Args:
@@ -332,14 +331,14 @@ class DataApplicationService:
             logger.error(f"Failed to delete tracks from playlist {playlist_id}: {e}")
             return {
                 "status": "error",
-                "message": f"Failed to delete tracks: {str(e)}"
+                "message": f"Failed to delete tracks: {e!s}"
             }
 
     async def get_next_track_use_case(
         self,
         playlist_id: str,
-        current_track_id: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        current_track_id: str | None = None
+    ) -> dict[str, Any] | None:
         """Get the next track in a playlist.
 
         Args:
@@ -353,13 +352,13 @@ class DataApplicationService:
             return await self._track_service.get_next_track(playlist_id, current_track_id)
         except Exception as e:
             logger.error(f"Failed to get next track for playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to get next track: {str(e)}")
+            raise BusinessLogicError(f"Failed to get next track: {e!s}")
 
     async def get_previous_track_use_case(
         self,
         playlist_id: str,
-        current_track_id: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        current_track_id: str | None = None
+    ) -> dict[str, Any] | None:
         """Get the previous track in a playlist.
 
         Args:
@@ -373,4 +372,4 @@ class DataApplicationService:
             return await self._track_service.get_previous_track(playlist_id, current_track_id)
         except Exception as e:
             logger.error(f"Failed to get previous track for playlist {playlist_id}: {e}")
-            raise BusinessLogicError(f"Failed to get previous track: {str(e)}")
+            raise BusinessLogicError(f"Failed to get previous track: {e!s}")

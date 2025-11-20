@@ -5,20 +5,23 @@
 """NFC Application Service - Use Cases Orchestration."""
 
 import asyncio
-from typing import Dict, List, Optional, Callable, Any, TYPE_CHECKING
+import logging
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional
 
-from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
-from app.src.domain.nfc.services.nfc_association_service import NfcAssociationService
+from app.src.domain.models.led import LEDState
 from app.src.domain.nfc.protocols.nfc_hardware_protocol import (
     NfcHardwareProtocol,
     NfcRepositoryProtocol,
 )
-from app.src.domain.models.led import LEDState
-import logging
+from app.src.domain.nfc.services.nfc_association_service import NfcAssociationService
+from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
 
 # Type checking imports to avoid circular dependencies
 if TYPE_CHECKING:
-    from app.src.domain.repositories.playlist_repository_interface import PlaylistRepositoryProtocol
+    from app.src.domain.repositories.playlist_repository_interface import (
+        PlaylistRepositoryProtocol,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +37,9 @@ class NfcApplicationService:
         self,
         nfc_hardware: NfcHardwareProtocol,
         nfc_repository: NfcRepositoryProtocol,
-        nfc_association_service: Optional[NfcAssociationService] = None,
+        nfc_association_service: NfcAssociationService | None = None,
         playlist_repository: Optional["PlaylistRepositoryProtocol"] = None,
-        led_event_handler: Optional[Any] = None,
+        led_event_handler: Any | None = None,
     ):
         """Initialize NFC application service.
 
@@ -57,23 +60,23 @@ class NfcApplicationService:
         )
 
         # Event callbacks
-        self._tag_detected_callbacks: List[Callable[[str], None]] = []
-        self._association_callbacks: List[Callable[[Dict], None]] = []
+        self._tag_detected_callbacks: list[Callable[[str], None]] = []
+        self._association_callbacks: list[Callable[[dict], None]] = []
 
         # CRITICAL FIX: Active tag state management
         # Prevents multiple playback triggers from the same tag
-        self._current_active_tag: Optional[str] = None
+        self._current_active_tag: str | None = None
         self._tag_triggered_playback: bool = False
-        self._last_trigger_time: Optional[float] = None
+        self._last_trigger_time: float | None = None
 
         # Setup hardware callbacks
         self._nfc_hardware.set_tag_detected_callback(self._on_tag_detected)
         self._nfc_hardware.set_tag_removed_callback(self._on_tag_removed)
 
         # Cleanup task
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
 
-    async def start_nfc_system(self) -> Dict[str, Any]:
+    async def start_nfc_system(self) -> dict[str, Any]:
         """Start the NFC system.
 
         Returns:
@@ -102,11 +105,11 @@ class NfcApplicationService:
 
             return {
                 "status": "error",
-                "message": f"Failed to start NFC system: {str(e)}",
+                "message": f"Failed to start NFC system: {e!s}",
                 "error_type": "hardware_error",
             }
 
-    async def stop_nfc_system(self) -> Dict[str, Any]:
+    async def stop_nfc_system(self) -> dict[str, Any]:
         """Stop the NFC system.
 
         Returns:
@@ -128,13 +131,13 @@ class NfcApplicationService:
             logger.error(f"Failed to stop NFC system: {e}")
             return {
                 "status": "error",
-                "message": f"Failed to stop NFC system: {str(e)}",
+                "message": f"Failed to stop NFC system: {e!s}",
                 "error_type": "hardware_error",
             }
 
     async def start_association_use_case(
         self, playlist_id: str, timeout_seconds: int = 60, override_mode: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Use case: Start associating a playlist with an NFC tag.
 
         Args:
@@ -161,7 +164,7 @@ class NfcApplicationService:
             "session": session.to_dict(),
         }
 
-    async def stop_association_use_case(self, session_id: str) -> Dict[str, Any]:
+    async def stop_association_use_case(self, session_id: str) -> dict[str, Any]:
         """Use case: Stop an association session.
 
         Args:
@@ -178,7 +181,7 @@ class NfcApplicationService:
         if self._led_event_handler:
             try:
                 await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
-                logger.info(f"💡 Association mode stopped, cleared blue pulse LED (will revert to previous state)")
+                logger.info("💡 Association mode stopped, cleared blue pulse LED (will revert to previous state)")
             except Exception as led_error:
                 logger.warning(f"LED event failed (non-critical): {led_error}")
 
@@ -188,14 +191,13 @@ class NfcApplicationService:
                 "message": "Association session stopped",
                 "session_id": session_id,
             }
-        else:
-            return {
-                "status": "error",
-                "message": "Association session not found",
-                "error_type": "not_found",
-            }
+        return {
+            "status": "error",
+            "message": "Association session not found",
+            "error_type": "not_found",
+        }
 
-    async def get_nfc_status_use_case(self) -> Dict[str, Any]:
+    async def get_nfc_status_use_case(self) -> dict[str, Any]:
         """Use case: Get comprehensive NFC system status.
 
         Returns:
@@ -212,7 +214,7 @@ class NfcApplicationService:
             "session_count": len(active_sessions),
         }
 
-    async def dissociate_tag_use_case(self, tag_id: str) -> Dict[str, Any]:
+    async def dissociate_tag_use_case(self, tag_id: str) -> dict[str, Any]:
         """Use case: Dissociate a tag from its playlist.
 
         Args:
@@ -229,10 +231,9 @@ class NfcApplicationService:
                 "message": f"Tag {tag_id} dissociated successfully",
                 "tag_id": tag_id,
             }
-        else:
-            return {"status": "not_found", "message": "Tag not found", "error_type": "not_found"}
+        return {"status": "not_found", "message": "Tag not found", "error_type": "not_found"}
 
-    async def associate_tag(self, tag_id: str, playlist_id: str) -> Dict[str, Any]:
+    async def associate_tag(self, tag_id: str, playlist_id: str) -> dict[str, Any]:
         """Associate a tag with a playlist directly by simulating tag detection.
 
         Args:
@@ -270,11 +271,10 @@ class NfcApplicationService:
                         "playlist_title": "Associated Playlist",
                         "created_at": existing_association.created_at.isoformat() if hasattr(existing_association, 'created_at') else "",
                     }
-                else:
-                    return {
-                        "status": "error",
-                        "message": "Association failed - tag not found in repository",
-                    }
+                return {
+                    "status": "error",
+                    "message": "Association failed - tag not found in repository",
+                }
             except Exception as check_error:
                 logger.warning(f"Could not verify association: {check_error}")
                 # Assume success if we can't verify (optimistic approach)
@@ -289,10 +289,10 @@ class NfcApplicationService:
             logger.error(f"Error in associate_tag: {e}")
             return {
                 "status": "error",
-                "message": f"Association failed: {str(e)}",
+                "message": f"Association failed: {e!s}",
             }
 
-    async def start_scan_session(self, timeout_ms: int = 60000) -> Dict[str, Any]:
+    async def start_scan_session(self, timeout_ms: int = 60000) -> dict[str, Any]:
         """Start a generic scan session (without association).
 
         Args:
@@ -318,7 +318,7 @@ class NfcApplicationService:
             logger.error(f"Error starting scan session: {e}")
             return {
                 "status": "error",
-                "message": f"Failed to start scan session: {str(e)}",
+                "message": f"Failed to start scan session: {e!s}",
             }
 
     def register_tag_detected_callback(self, callback: Callable[[str], None]) -> None:
@@ -329,7 +329,7 @@ class NfcApplicationService:
         """
         self._tag_detected_callbacks.append(callback)
 
-    def register_association_callback(self, callback: Callable[[Dict], None]) -> None:
+    def register_association_callback(self, callback: Callable[[dict], None]) -> None:
         """Register callback for association events.
 
         Args:
@@ -394,7 +394,7 @@ class NfcApplicationService:
                         # EVENT: Green flash (priority 95) shows over blue pulse (priority 85)
                         # After timeout, auto-reverts to association mode (blue pulse continues)
                         await self._led_event_handler.on_nfc_scan_success()
-                        logger.info(f"✅ Association successful - green flash event over blue pulse status")
+                        logger.info("✅ Association successful - green flash event over blue pulse status")
 
                         # CRITICAL FIX: Clear association mode LED after successful association
                         # This ensures we exit the blue pulse mode and return to normal state
@@ -405,14 +405,14 @@ class NfcApplicationService:
                             await asyncio.sleep(2.5)  # Wait for green flash to complete (2s event + 0.5s buffer)
                             if self._led_event_handler:
                                 await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
-                                logger.info(f"💡 Association completed, cleared blue pulse LED (reverting to previous state)")
+                                logger.info("💡 Association completed, cleared blue pulse LED (reverting to previous state)")
                         asyncio.create_task(cleanup_association_mode_led())
 
                     elif result.get("action") == "duplicate_association":
                         # EVENT: Orange double blink (priority 95) shows over blue pulse (priority 85)
                         # After timeout, auto-reverts to association mode (blue pulse continues)
                         await self._led_event_handler.on_nfc_tag_unassociated()
-                        logger.warning(f"⚠️ Duplicate association - orange blink event over blue pulse status")
+                        logger.warning("⚠️ Duplicate association - orange blink event over blue pulse status")
                 except Exception as led_error:
                     logger.warning(f"LED event failed (non-critical): {led_error}")
 
@@ -444,7 +444,7 @@ class NfcApplicationService:
                             callback(single_result)
 
             # Do NOT notify tag detection callbacks - prevents playback trigger
-            logger.debug(f"🔒 Skipping tag detection callbacks to prevent playback during association mode")
+            logger.debug("🔒 Skipping tag detection callbacks to prevent playback during association mode")
             return  # Exit early, do not trigger playback
 
         # NORMAL MODE: No active association sessions, proceed with normal tag detection
@@ -475,7 +475,7 @@ class NfcApplicationService:
                         # EVENT: Green flash (priority 95) shows over current status (IDLE/PLAYING)
                         # After timeout, auto-reverts to PLAYING (solid green) or previous status
                         await self._led_event_handler.on_nfc_scan_success()
-                        logger.info(f"✅ Associated tag detected - green flash event over current status")
+                        logger.info("✅ Associated tag detected - green flash event over current status")
                     else:
                         # EVENT: Orange double blink (priority 95) shows over current status (IDLE)
                         # After timeout, auto-reverts to previous status (IDLE solid white)
@@ -512,7 +512,7 @@ class NfcApplicationService:
                     if len(active_sessions) == 0 and self._led_event_handler:
                         try:
                             await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
-                            logger.info(f"💡 No more active sessions, cleared blue pulse LED")
+                            logger.info("💡 No more active sessions, cleared blue pulse LED")
                         except Exception as led_error:
                             logger.warning(f"LED event failed (non-critical): {led_error}")
             except asyncio.CancelledError:

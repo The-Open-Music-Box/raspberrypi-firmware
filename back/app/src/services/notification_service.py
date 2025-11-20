@@ -9,8 +9,8 @@ updates, and track progress monitoring. Includes singleton pattern implementatio
 for centralized event management and Socket.IO integration.
 """
 
-from typing import Any, Dict
 import logging
+from typing import Any
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -52,7 +52,7 @@ class DownloadNotifier:
 class PlaybackEvent:
     """Event representing playback status or progress."""
 
-    def __init__(self, event_type: str, data: Dict[str, Any]):
+    def __init__(self, event_type: str, data: dict[str, Any]):
         self.event_type = event_type
         self.data = data
 
@@ -93,7 +93,7 @@ class PlaybackSubject:
 
     @handle_service_errors("notification")
     def notify_playback_status(
-        self, status: str, playlist_info: Dict = None, track_info: Dict = None
+        self, status: str, playlist_info: dict = None, track_info: dict = None
     ):
         """Store playback status event for internal use only.
 

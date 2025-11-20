@@ -10,11 +10,12 @@ Single Responsibility: Initialize and register web API routes with dependencies.
 """
 
 from pathlib import Path
+
 from fastapi import FastAPI
 
+from app.src.api.endpoints.web_api_routes import WebAPIRoutes
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.api.endpoints.web_api_routes import WebAPIRoutes
 
 logger = get_logger(__name__)
 

@@ -10,7 +10,6 @@ Extracted from StateManager for better separation of concerns.
 """
 
 import asyncio
-from typing import Dict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ class SequenceGenerator:
 
     def __init__(self):
         self._global_seq = 0
-        self._playlist_sequences: Dict[str, int] = {}
+        self._playlist_sequences: dict[str, int] = {}
 
         # Thread safety locks
         self._global_lock = asyncio.Lock()
@@ -66,7 +65,7 @@ class SequenceGenerator:
         self._playlist_sequences[playlist_id] = value
         logger.info(f"Playlist {playlist_id} sequence reset to {value}")
 
-    def get_all_playlist_sequences(self) -> Dict[str, int]:
+    def get_all_playlist_sequences(self) -> dict[str, int]:
         """Get all playlist sequences (read-only copy)."""
         return self._playlist_sequences.copy()
 

@@ -4,11 +4,13 @@
 
 """Backend adapter to use existing audio backends with new protocols."""
 
-from typing import Optional, Any
+from typing import Any
 
-from app.src.monitoring import get_logger
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
 from app.src.domain.protocols.audio_backend_protocol import AudioBackendProtocol
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -62,12 +64,12 @@ class BackendAdapter(AudioBackendProtocol):
         return self.seek_to_position(position_ms)
 
     @handle_errors("get_position")
-    async def get_position(self) -> Optional[int]:
+    async def get_position(self) -> int | None:
         """Get current playback position (async interface)."""
         return self.get_position_sync()
 
     @handle_errors("get_duration")
-    async def get_duration(self) -> Optional[int]:
+    async def get_duration(self) -> int | None:
         """Get duration of current track (async interface)."""
         return self.get_duration_sync()
 
@@ -76,7 +78,7 @@ class BackendAdapter(AudioBackendProtocol):
     def is_playing(self) -> bool:
         """Check if audio is currently playing."""
         if hasattr(self._backend, "is_playing"):
-            attr = getattr(self._backend, "is_playing")
+            attr = self._backend.is_playing
             return attr() if callable(attr) else bool(attr)
         return False
 
@@ -85,7 +87,7 @@ class BackendAdapter(AudioBackendProtocol):
     def is_paused(self) -> bool:
         """Check if audio is currently paused."""
         if hasattr(self._backend, "is_paused"):
-            attr = getattr(self._backend, "is_paused")
+            attr = self._backend.is_paused
             return attr() if callable(attr) else bool(attr)
         return False
 
@@ -94,7 +96,7 @@ class BackendAdapter(AudioBackendProtocol):
     def is_busy(self) -> bool:
         """Check if backend is busy processing."""
         if hasattr(self._backend, "is_busy"):
-            attr = getattr(self._backend, "is_busy")
+            attr = self._backend.is_busy
             return attr() if callable(attr) else bool(attr)
         # Fallback: consider busy if playing
         return self.is_playing
@@ -105,12 +107,11 @@ class BackendAdapter(AudioBackendProtocol):
         if hasattr(self._backend, "play_file"):
             result = self._backend.play_file(file_path)
             return bool(result) if result is not None else True
-        elif hasattr(self._backend, "play"):
+        if hasattr(self._backend, "play"):
             self._backend.play(file_path)
             return True
-        else:
-            logger.error("Backend does not support play_file")
-            return False
+        logger.error("Backend does not support play_file")
+        return False
 
     @handle_errors("pause_playback")
     def pause_playback(self) -> bool:
@@ -118,9 +119,8 @@ class BackendAdapter(AudioBackendProtocol):
         if hasattr(self._backend, "pause"):
             result = self._backend.pause()
             return bool(result) if result is not None else True
-        else:
-            logger.warning("Backend does not support pause")
-            return False
+        logger.warning("Backend does not support pause")
+        return False
 
     @handle_errors("resume_playback")
     def resume_playback(self) -> bool:
@@ -128,9 +128,8 @@ class BackendAdapter(AudioBackendProtocol):
         if hasattr(self._backend, "resume"):
             result = self._backend.resume()
             return bool(result) if result is not None else True
-        else:
-            logger.warning("Backend does not support resume")
-            return False
+        logger.warning("Backend does not support resume")
+        return False
 
     @handle_errors("stop_playback")
     def stop_playback(self) -> bool:
@@ -138,9 +137,8 @@ class BackendAdapter(AudioBackendProtocol):
         if hasattr(self._backend, "stop"):
             result = self._backend.stop()
             return bool(result) if result is not None else True
-        else:
-            logger.warning("Backend does not support stop")
-            return False
+        logger.warning("Backend does not support stop")
+        return False
 
     @handle_errors("set_volume_sync")
     def set_volume_sync(self, volume: int) -> bool:
@@ -148,9 +146,8 @@ class BackendAdapter(AudioBackendProtocol):
         if hasattr(self._backend, "set_volume"):
             result = self._backend.set_volume(volume)
             return bool(result) if result is not None else True
-        else:
-            logger.warning("Backend does not support set_volume")
-            return False
+        logger.warning("Backend does not support set_volume")
+        return False
 
     @handle_errors("get_volume_sync")
     def get_volume_sync(self) -> int:
@@ -158,11 +155,10 @@ class BackendAdapter(AudioBackendProtocol):
         if hasattr(self._backend, "get_volume"):
             volume = self._backend.get_volume()
             return int(volume) if volume is not None else 50
-        else:
-            return 50  # Default volume
+        return 50  # Default volume
 
     @handle_errors("get_position_sync")
-    def get_position_sync(self) -> Optional[int]:
+    def get_position_sync(self) -> int | None:
         """Get current playback position in milliseconds."""
         if hasattr(self._backend, "get_position"):
             position = self._backend.get_position()
@@ -180,12 +176,11 @@ class BackendAdapter(AudioBackendProtocol):
             position_seconds = position_ms / 1000.0
             result = self._backend.set_position(position_seconds)
             return bool(result) if result is not None else True
-        else:
-            logger.warning("Backend does not support set_position")
-            return False
+        logger.warning("Backend does not support set_position")
+        return False
 
     @handle_errors("get_duration_sync")
-    def get_duration_sync(self) -> Optional[int]:
+    def get_duration_sync(self) -> int | None:
         """Get duration of current track in milliseconds."""
         if hasattr(self._backend, "get_duration"):
             duration = self._backend.get_duration()
@@ -196,13 +191,12 @@ class BackendAdapter(AudioBackendProtocol):
         return None
 
     @handle_errors("get_duration_seconds")
-    def get_duration_seconds(self) -> Optional[float]:
+    def get_duration_seconds(self) -> float | None:
         """Get duration of current track in seconds."""
         if hasattr(self._backend, "get_duration"):
             duration = self._backend.get_duration()
             return float(duration) if duration is not None else None
-        else:
-            return None
+        return None
 
     def cleanup(self) -> None:
         """Clean up backend resources."""

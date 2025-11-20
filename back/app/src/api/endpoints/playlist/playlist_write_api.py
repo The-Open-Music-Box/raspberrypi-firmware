@@ -9,12 +9,15 @@ Single Responsibility: Handle HTTP POST/PUT/DELETE requests for playlist mutatio
 """
 
 import logging
+
 from fastapi import APIRouter, Body
 from fastapi.responses import Response
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
-from app.src.services.validation.unified_validation_service import UnifiedValidationService
+from app.src.services.validation.unified_validation_service import (
+    UnifiedValidationService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,21 +92,20 @@ class PlaylistWriteAPI:
                         data=playlist_data,  # Return playlist data directly per contract
                         client_op_id=client_op_id,
                     )
-                else:
-                    # Log the specific issue for debugging
-                    logger.error(f"Playlist creation failed - received data: {playlist_data}")
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to create playlist",
-                        operation="create_playlist",
-                        client_op_id=client_op_id,
-                    )
+                # Log the specific issue for debugging
+                logger.error(f"Playlist creation failed - received data: {playlist_data}")
+                return UnifiedResponseService.internal_error(
+                    message="Failed to create playlist",
+                    operation="create_playlist",
+                    client_op_id=client_op_id,
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in create_playlist: {str(e)}",
+                    f"Error in create_playlist: {e!s}",
                     extra={
                         "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
                         "operation": "create_playlist",
@@ -136,7 +138,7 @@ class PlaylistWriteAPI:
                     return UnifiedResponseService.not_found(
                         resource="Playlist", resource_id=playlist_id
                     )
-                elif result is not False:
+                if result is not False:
                     # Broadcast state change
                     await self._broadcasting_service.broadcast_playlist_updated(playlist_id, updates)
 
@@ -146,17 +148,16 @@ class PlaylistWriteAPI:
                         data=result,
                         client_op_id=client_op_id
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to update playlist"
-                    )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to update playlist"
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in update_playlist: {str(e)}",
+                    f"Error in update_playlist: {e!s}",
                     extra={
                         "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
                         "operation": "update_playlist",
@@ -184,18 +185,17 @@ class PlaylistWriteAPI:
                     await self._broadcasting_service.broadcast_playlist_deleted(playlist_id)
                     # Return 204 No Content for successful deletion
                     return Response(status_code=204)
-                else:
-                    # Playlist not found - return 404 instead of 500
-                    return UnifiedResponseService.not_found(
-                        resource="Playlist", resource_id=playlist_id
-                    )
+                # Playlist not found - return 404 instead of 500
+                return UnifiedResponseService.not_found(
+                    resource="Playlist", resource_id=playlist_id
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
                 logger.error(
-                    f"Error in delete_playlist: {str(e)}",
+                    f"Error in delete_playlist: {e!s}",
                     extra={
                         "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
                         "operation": "delete_playlist",

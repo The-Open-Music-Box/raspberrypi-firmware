@@ -5,10 +5,13 @@
 """Upload Factory for creating configured upload services."""
 
 
-from app.src.domain.upload.services.upload_validation_service import UploadValidationService
+from app.src.domain.upload.services.upload_validation_service import (
+    UploadValidationService,
+)
+
 # UploadApplicationService moved to Application layer - use ApplicationContainer
 from .adapters.file_storage_adapter import LocalFileStorageAdapter
-from .adapters.metadata_extractor import MutagenMetadataExtractor, MockMetadataExtractor
+from .adapters.metadata_extractor import MockMetadataExtractor, MutagenMetadataExtractor
 
 
 class UploadFactory:

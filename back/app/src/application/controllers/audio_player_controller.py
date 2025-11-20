@@ -9,9 +9,9 @@ This controller ONLY handles audio playback operations.
 NO playlist logic, NO state management beyond current playback status.
 """
 
-from typing import Optional, Dict, Any
-from enum import Enum
 import logging
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +48,14 @@ class AudioPlayer:
         """
         self._backend = audio_backend
         self._state = PlaybackState.STOPPED
-        self._current_file: Optional[str] = None
+        self._current_file: str | None = None
         self._volume: int = 50  # Default volume 0-100
 
         logger.info(f"✅ AudioPlayer initialized with backend: {type(audio_backend).__name__}")
 
     # --- Core Playback Controls ---
 
-    def play_file(self, file_path: str, duration_ms: Optional[int] = None) -> bool:
+    def play_file(self, file_path: str, duration_ms: int | None = None) -> bool:
         """
         Play an audio file.
 
@@ -94,9 +94,8 @@ class AudioPlayer:
                 self._state = PlaybackState.PLAYING
                 logger.info(f"▶️ Playing: {file_path}")
                 return True
-            else:
-                logger.error(f"Failed to play: {file_path}")
-                return False
+            logger.error(f"Failed to play: {file_path}")
+            return False
 
         except Exception as e:
             logger.error(f"Error playing file: {e}")
@@ -131,9 +130,8 @@ class AudioPlayer:
                 self._state = PlaybackState.PAUSED
                 logger.info("⏸️ Playback paused")
                 return True
-            else:
-                logger.warning("Failed to pause playback")
-                return False
+            logger.warning("Failed to pause playback")
+            return False
 
         except Exception as e:
             logger.error(f"Error pausing: {e}")
@@ -168,9 +166,8 @@ class AudioPlayer:
                 self._state = PlaybackState.PLAYING
                 logger.info("▶️ Playback resumed")
                 return True
-            else:
-                logger.warning("Failed to resume playback")
-                return False
+            logger.warning("Failed to resume playback")
+            return False
 
         except Exception as e:
             logger.error(f"Error resuming: {e}")
@@ -220,11 +217,10 @@ class AudioPlayer:
         """
         if self._state == PlaybackState.PLAYING:
             return self.pause()
-        elif self._state == PlaybackState.PAUSED:
+        if self._state == PlaybackState.PAUSED:
             return self.resume()
-        else:
-            logger.warning("Cannot toggle - playback stopped")
-            return False
+        logger.warning("Cannot toggle - playback stopped")
+        return False
 
     # --- Volume Control ---
 
@@ -293,10 +289,9 @@ class AudioPlayer:
                     # NEVER create new event loop - must be called from async context
                     logger.warning("get_position is async but called from sync context")
                     return 0.0
-                else:
-                    position_ms = self._backend.get_position()
-                    if position_ms is not None:
-                        return position_ms / 1000.0  # Convert to seconds
+                position_ms = self._backend.get_position()
+                if position_ms is not None:
+                    return position_ms / 1000.0  # Convert to seconds
 
             return 0.0
 
@@ -379,7 +374,7 @@ class AudioPlayer:
 
     # --- Status Queries ---
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Get current player state.
 

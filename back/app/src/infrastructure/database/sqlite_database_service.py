@@ -9,15 +9,17 @@ Pure infrastructure implementation of PersistenceServiceProtocol.
 Handles all SQLite-specific connection management, transactions, and operations.
 """
 
+import logging
 import sqlite3
 import time
-from typing import Any, Dict, List, Optional, Union
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
-import logging
-from app.src.domain.protocols.persistence_service_protocol import PersistenceServiceProtocol
 from app.src.data.connection_pool import ConnectionPool
+from app.src.domain.protocols.persistence_service_protocol import (
+    PersistenceServiceProtocol,
+)
 from app.src.services.error.unified_error_decorator import handle_infrastructure_errors
 
 
@@ -81,7 +83,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
             connection.execute("PRAGMA cache_size = 10000")
 
             yield connection
-        except Exception as e:
+        except Exception:
             if connection:
                 try:
                     connection.rollback()
@@ -100,7 +102,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                 connection.execute("BEGIN")
                 yield connection
                 connection.commit()
-            except Exception as e:
+            except Exception:
                 try:
                     connection.rollback()
                 except Exception:
@@ -111,9 +113,9 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_query(
         self,
         query: str,
-        params: Union[tuple, dict] = None,
+        params: tuple | dict = None,
         operation_name: str = "query"
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Execute a SELECT query and return results."""
         start_time = time.time()
 
@@ -140,9 +142,9 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_single(
         self,
         query: str,
-        params: Union[tuple, dict] = None,
+        params: tuple | dict = None,
         operation_name: str = "query_single"
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """Execute a SELECT query and return single result."""
         start_time = time.time()
 
@@ -169,7 +171,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_command(
         self,
         query: str,
-        params: Union[tuple, dict] = None,
+        params: tuple | dict = None,
         operation_name: str = "command"
     ) -> int:
         """Execute an INSERT/UPDATE/DELETE command."""
@@ -197,7 +199,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_insert(
         self,
         query: str,
-        params: Union[tuple, dict] = None,
+        params: tuple | dict = None,
         operation_name: str = "insert"
     ) -> str:
         """Execute an INSERT command and return the new row ID."""
@@ -224,9 +226,9 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     @_handle_infrastructure_errors("database_service")
     def execute_batch(
         self,
-        operations: List[Dict[str, Any]],
+        operations: list[dict[str, Any]],
         operation_name: str = "batch"
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Execute multiple operations in a single transaction."""
         start_time = time.time()
 
@@ -261,7 +263,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
 
             return results
 
-    def get_health_info(self) -> Dict[str, Any]:
+    def get_health_info(self) -> dict[str, Any]:
         """Get database health information."""
         try:
             with self.get_connection() as connection:

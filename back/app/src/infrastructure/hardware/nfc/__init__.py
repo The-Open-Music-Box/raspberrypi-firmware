@@ -4,28 +4,28 @@
 
 """NFC Hardware Infrastructure for Domain-Driven Architecture."""
 
-from .nfc_hardware_interface import NFCHardwareInterface
 from .mock_nfc_hardware import MockNFCHardware
-from .nfc_factory import create_nfc_hardware, get_hardware_info, NFCHardwareSelector
+from .nfc_factory import NFCHardwareSelector, create_nfc_hardware, get_hardware_info
+from .nfc_hardware_interface import NFCHardwareInterface
 
 # Conditional import for PN532 (only available on Raspberry Pi)
 try:
-    from .pn532_nfc_hardware import PN532NFCHardware  # noqa: F401
+    from .pn532_nfc_hardware import PN532NFCHardware
 
     __all__ = [
-        "NFCHardwareInterface",
         "MockNFCHardware",
+        "NFCHardwareInterface",
+        "NFCHardwareSelector",
         "PN532NFCHardware",
         "create_nfc_hardware",
         "get_hardware_info",
-        "NFCHardwareSelector",
     ]
 except ImportError:
     # PN532 libraries not available (development environment)
     __all__ = [
-        "NFCHardwareInterface",
         "MockNFCHardware",
+        "NFCHardwareInterface",
+        "NFCHardwareSelector",
         "create_nfc_hardware",
         "get_hardware_info",
-        "NFCHardwareSelector",
     ]

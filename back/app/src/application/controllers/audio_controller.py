@@ -9,10 +9,13 @@ This controller provides audio control functionality using clean DDD AudioPlayer
 Maintains full AudioController API while following proper DDD architecture patterns.
 """
 
-from typing import Dict, Any, Optional
 import logging
+from typing import Any
 
-from app.src.application.controllers.audio_player_controller import AudioPlayer, PlaybackState
+from app.src.application.controllers.audio_player_controller import (
+    AudioPlayer,
+    PlaybackState,
+)
 from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = logging.getLogger(__name__)
@@ -117,11 +120,10 @@ class AudioController:
         current_state = self._audio_player.get_state()
         if current_state == PlaybackState.PLAYING:
             return self.pause()
-        elif current_state == PlaybackState.PAUSED:
+        if current_state == PlaybackState.PAUSED:
             return self.resume()
-        else:
-            logger.warning("Cannot toggle: no audio currently loaded")
-            return False
+        logger.warning("Cannot toggle: no audio currently loaded")
+        return False
 
     def toggle_playback(self) -> bool:
         """Alias for toggle_play_pause for backward compatibility."""
@@ -214,7 +216,7 @@ class AudioController:
 
         return self._audio_player.get_duration()
 
-    async def get_playback_status(self) -> Dict[str, Any]:
+    async def get_playback_status(self) -> dict[str, Any]:
         """Get comprehensive playback status for API responses."""
         try:
             current_position = self.get_current_position()
@@ -255,7 +257,7 @@ class AudioController:
             return PlaybackState.STOPPED
         return self._audio_player.get_state()
 
-    def get_current_file(self) -> Optional[str]:
+    def get_current_file(self) -> str | None:
         """Get currently loaded file path."""
         if not self._audio_player:
             return None

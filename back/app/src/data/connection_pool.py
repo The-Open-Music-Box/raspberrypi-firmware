@@ -8,10 +8,9 @@ Thread-safe SQLite connection pool for efficient database connection management.
 Provides connection pooling with overflow handling and optimized SQLite settings.
 """
 
-import sqlite3
-from typing import Optional
-import threading
 import queue
+import sqlite3
+import threading
 
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
@@ -53,7 +52,7 @@ class ConnectionPool:
                 self._pool.put(conn)
 
     @handle_errors("_create_connection")
-    def _create_connection(self) -> Optional[sqlite3.Connection]:
+    def _create_connection(self) -> sqlite3.Connection | None:
         """Create a new database connection with optimal settings."""
         conn = sqlite3.connect(
             self.db_path,

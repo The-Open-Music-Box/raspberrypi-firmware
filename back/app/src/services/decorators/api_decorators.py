@@ -16,7 +16,8 @@ These decorators eliminate repetitive code in API route handlers.
 
 import functools
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
+
 from fastapi import Request
 
 from app.src.services.response.unified_response_service import UnifiedResponseService
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 def with_rate_limiting(
     service_attr: str = "_operations_service",
-    enabled_check: Optional[Callable] = None
+    enabled_check: Callable | None = None
 ) -> Callable:
     """
     Decorator to handle rate limiting checks for API endpoints.
@@ -103,7 +104,7 @@ def with_rate_limiting(
                         )
                 except Exception as e:
                     # Log but don't block on rate limiting errors
-                    logger.error(f"Rate limiting check failed for {func.__name__}: {str(e)}")
+                    logger.error(f"Rate limiting check failed for {func.__name__}: {e!s}")
                     # Continue to execute the function
 
             # Execute the wrapped function
@@ -115,8 +116,8 @@ def with_rate_limiting(
 
 
 def with_operation_tracking(
-    extract_client_op_id: Optional[Callable] = None,
-    extract_server_seq: Optional[Callable] = None,
+    extract_client_op_id: Callable | None = None,
+    extract_server_seq: Callable | None = None,
 ) -> Callable:
     """
     Decorator to track operations with client_op_id and server_seq.
@@ -145,14 +146,13 @@ def with_operation_tracking(
             client_op_id = None
             if extract_client_op_id:
                 client_op_id = extract_client_op_id(args, kwargs)
-            else:
-                # Try to extract from body parameter
-                if "body" in kwargs:
-                    body = kwargs["body"]
-                    if hasattr(body, "client_op_id"):
-                        client_op_id = body.client_op_id
-                    elif isinstance(body, dict):
-                        client_op_id = body.get("client_op_id")
+            # Try to extract from body parameter
+            elif "body" in kwargs:
+                body = kwargs["body"]
+                if hasattr(body, "client_op_id"):
+                    client_op_id = body.client_op_id
+                elif isinstance(body, dict):
+                    client_op_id = body.get("client_op_id")
 
             # Log operation start
             if client_op_id:

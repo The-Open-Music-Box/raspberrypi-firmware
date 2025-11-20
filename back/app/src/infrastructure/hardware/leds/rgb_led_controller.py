@@ -8,14 +8,14 @@ RGB LED Controller (Infrastructure Layer).
 Real hardware implementation using gpiozero PWMLED for RGB LED control.
 """
 
-import os
-import math
-from threading import Thread, Event, Lock
-from typing import Optional, Dict, Any
 import logging
+import math
+import os
+from threading import Event, Lock, Thread
+from typing import Any
 
+from app.src.domain.models.led import LEDAnimation, LEDColor, LEDColors
 from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
-from app.src.domain.models.led import LEDColor, LEDAnimation, LEDColors
 
 logger = logging.getLogger(__name__)
 
@@ -89,12 +89,12 @@ class RGBLEDController(IndicatorLightsProtocol):
         self._lock = Lock()
 
         # GPIO devices
-        self._red_led: Optional['PWMLED'] = None
-        self._green_led: Optional['PWMLED'] = None
-        self._blue_led: Optional['PWMLED'] = None
+        self._red_led: PWMLED | None = None
+        self._green_led: PWMLED | None = None
+        self._blue_led: PWMLED | None = None
 
         # Animation control
-        self._animation_thread: Optional[Thread] = None
+        self._animation_thread: Thread | None = None
         self._animation_stop_event = Event()
         self._current_color = LEDColors.OFF
         self._current_animation = LEDAnimation.SOLID
@@ -139,7 +139,7 @@ class RGBLEDController(IndicatorLightsProtocol):
                 await self.turn_off()
 
                 self._is_initialized = True
-                logger.info(f"✅ RGB LED initialized successfully")
+                logger.info("✅ RGB LED initialized successfully")
                 return True
 
         except Exception as e:
@@ -205,7 +205,7 @@ class RGBLEDController(IndicatorLightsProtocol):
 
                     logger.info(f"💡 LED color: RGB({color.red}, {color.green}, {color.blue}) → scaled to RGB({scaled.red}, {scaled.green}, {scaled.blue}) at brightness={self._brightness:.2f}")
                 else:
-                    logger.warning(f"⚠️ GPIO_AVAILABLE=False - LED color NOT applied to hardware")
+                    logger.warning("⚠️ GPIO_AVAILABLE=False - LED color NOT applied to hardware")
 
                 logger.debug(f"LED color set to RGB({color.red}, {color.green}, {color.blue})")
                 return True
@@ -427,7 +427,7 @@ class RGBLEDController(IndicatorLightsProtocol):
         if self._current_animation == LEDAnimation.SOLID:
             # For solid color, just reapply
             return await self.set_color(self._current_color)
-        elif self._current_animation != LEDAnimation.SOLID:
+        if self._current_animation != LEDAnimation.SOLID:
             # For animations, restart the animation with new brightness
             logger.info(f"Restarting animation {self._current_animation.value} with new brightness")
             return await self.set_animation(
@@ -442,7 +442,7 @@ class RGBLEDController(IndicatorLightsProtocol):
         """Check if LED is initialized."""
         return self._is_initialized
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current LED status."""
         return {
             "initialized": self._is_initialized,

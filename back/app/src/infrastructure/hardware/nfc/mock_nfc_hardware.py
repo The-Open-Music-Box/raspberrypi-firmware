@@ -5,13 +5,15 @@
 """Mock NFC Hardware Implementation for Testing and Development."""
 
 import asyncio
-import time
-from typing import Optional, Dict, Any
-from rx.subject import Subject
 import logging
+import time
+from typing import Any
+
+from rx.subject import Subject
+
+from app.src.services.error.unified_error_decorator import handle_errors
 
 from .nfc_hardware_interface import NFCHardwareInterface
-from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +72,7 @@ class MockNFCHardware(NFCHardwareInterface):
         if self._reader_task and not self._reader_task.done():
             try:
                 await asyncio.wait_for(self._reader_task, timeout=1.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self._reader_task.cancel()
                 try:
                     await self._reader_task
@@ -83,7 +85,7 @@ class MockNFCHardware(NFCHardwareInterface):
         """Check if the mock reader is running."""
         return self._running
 
-    async def read_nfc(self) -> Optional[Dict[str, Any]]:
+    async def read_nfc(self) -> dict[str, Any] | None:
         """Simulate reading an NFC tag directly.
 
         This method simulates finding a tag occasionally for direct reads.
@@ -140,7 +142,7 @@ class MockNFCHardware(NFCHardwareInterface):
         self._tag_subject.on_next(tag_data)
         logger.debug("📤 Tag detection event emitted successfully")
 
-    def _generate_mock_tag(self) -> Dict[str, Any]:
+    def _generate_mock_tag(self) -> dict[str, Any]:
         """Generate mock NFC tag data."""
         # Cycle through different mock tag IDs (hexadecimal UIDs)
         mock_tags = [

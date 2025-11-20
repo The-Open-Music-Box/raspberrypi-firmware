@@ -9,6 +9,7 @@ Single Responsibility: Handle HTTP requests for NFC tag association with playlis
 """
 
 import logging
+
 from fastapi import APIRouter, Body
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
@@ -68,16 +69,15 @@ class PlaylistNfcAPI:
                         message="NFC tag associated successfully",
                         data={"client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to associate NFC tag"
-                    )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to associate NFC tag"
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error associating NFC tag: {str(e)}")
+                logger.error(f"Error associating NFC tag: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to associate NFC tag",
                     operation="associate_nfc_tag"
@@ -108,16 +108,15 @@ class PlaylistNfcAPI:
                         message="NFC association removed successfully",
                         data={"client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to remove NFC association"
-                    )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to remove NFC association"
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error removing NFC association: {str(e)}")
+                logger.error(f"Error removing NFC association: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to remove NFC association",
                     operation="remove_nfc_association"
@@ -142,17 +141,16 @@ class PlaylistNfcAPI:
                         message="Playlist found for NFC tag",
                         data={"playlist": playlist}
                     )
-                else:
-                    return UnifiedResponseService.not_found(
-                        resource="playlist",
-                        message="No playlist found for NFC tag"
-                    )
+                return UnifiedResponseService.not_found(
+                    resource="playlist",
+                    message="No playlist found for NFC tag"
+                )
 
             except Exception as e:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error getting NFC playlist: {str(e)}")
+                logger.error(f"Error getting NFC playlist: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to get playlist for NFC tag",
                     operation="get_nfc_playlist"

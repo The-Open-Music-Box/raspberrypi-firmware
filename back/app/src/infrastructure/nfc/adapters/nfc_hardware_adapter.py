@@ -4,7 +4,8 @@
 
 """NFC Hardware Adapter Implementation."""
 
-from typing import Optional, Callable, Any, Dict
+from collections.abc import Callable
+from typing import Any
 
 from app.src.domain.nfc.protocols.nfc_hardware_protocol import NfcHardwareProtocol
 from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
@@ -21,7 +22,7 @@ class NfcHardwareAdapter(NfcHardwareProtocol):
     Handles the translation between hardware events and domain concepts.
     """
 
-    def __init__(self, legacy_nfc_handler: Optional[Any] = None):
+    def __init__(self, legacy_nfc_handler: Any | None = None):
         """Initialize NFC hardware adapter.
 
         Args:
@@ -29,8 +30,8 @@ class NfcHardwareAdapter(NfcHardwareProtocol):
         """
         self._legacy_handler = legacy_nfc_handler
         self._detecting = False
-        self._tag_detected_callback: Optional[Callable[[TagIdentifier], None]] = None
-        self._tag_removed_callback: Optional[Callable[[], None]] = None
+        self._tag_detected_callback: Callable[[TagIdentifier], None] | None = None
+        self._tag_removed_callback: Callable[[], None] | None = None
 
         # Setup legacy handler integration if available
         if self._legacy_handler and hasattr(self._legacy_handler, "tag_subject"):
@@ -73,7 +74,7 @@ class NfcHardwareAdapter(NfcHardwareProtocol):
         self._tag_removed_callback = callback
 
     @handle_errors("get_hardware_status")
-    async def get_hardware_status(self) -> Dict[str, Any]:
+    async def get_hardware_status(self) -> dict[str, Any]:
         """Get current hardware status."""
         status = {
             "detecting": self._detecting,
@@ -91,7 +92,7 @@ class NfcHardwareAdapter(NfcHardwareProtocol):
         return status
 
     @handle_errors("_on_legacy_tag_event")
-    def _on_legacy_tag_event(self, tag_data: Dict[str, Any]) -> None:
+    def _on_legacy_tag_event(self, tag_data: dict[str, Any]) -> None:
         """Handle tag events from legacy NFC handler.
 
         Args:
@@ -151,8 +152,8 @@ class MockNfcHardwareAdapter(NfcHardwareProtocol):
     def __init__(self):
         """Initialize mock adapter."""
         self._detecting = False
-        self._tag_detected_callback: Optional[Callable[[TagIdentifier], None]] = None
-        self._tag_removed_callback: Optional[Callable[[], None]] = None
+        self._tag_detected_callback: Callable[[TagIdentifier], None] | None = None
+        self._tag_removed_callback: Callable[[], None] | None = None
 
     async def start_detection(self) -> None:
         """Start mock detection."""
@@ -186,7 +187,7 @@ class MockNfcHardwareAdapter(NfcHardwareProtocol):
         """Set mock tag removed callback."""
         self._tag_removed_callback = callback
 
-    async def get_hardware_status(self) -> Dict[str, Any]:
+    async def get_hardware_status(self) -> dict[str, Any]:
         """Get mock hardware status."""
         return {
             "detecting": self._detecting,

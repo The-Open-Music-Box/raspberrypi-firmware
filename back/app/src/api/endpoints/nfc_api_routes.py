@@ -9,15 +9,15 @@ Clean API routes following Domain-Driven Design principles.
 Single Responsibility: HTTP route handling for NFC operations.
 """
 
-from typing import Optional
-from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
 import logging
 
+from fastapi import APIRouter, Request
+from pydantic import BaseModel, Field
+
+from app.src.common.data_models import NFCAssociationModel
+from app.src.common.response_models import ClientOperationRequest
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
-from app.src.common.response_models import ClientOperationRequest
-from app.src.common.data_models import NFCAssociationModel
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,10 @@ class NFCAssociateRequest(ClientOperationRequest):
 
 class NFCScanRequest(ClientOperationRequest):
     """Request model for NFC scan operations."""
-    timeout_ms: Optional[int] = Field(
+    timeout_ms: int | None = Field(
         60000, ge=1000, le=300000, description="Scan timeout in milliseconds"
     )
-    playlist_id: Optional[str] = Field(
+    playlist_id: str | None = Field(
         None, description="Playlist ID for association mode scanning"
     )
 
@@ -45,7 +45,7 @@ class NFCStatusResponse(BaseModel):
     reader_available: bool = Field(..., description="Whether NFC reader is available")
     scanning: bool = Field(..., description="Whether currently scanning")
     association_active: bool = Field(False, description="Whether association session is active")
-    current_session_id: Optional[str] = Field(None, description="Current association session ID")
+    current_session_id: str | None = Field(None, description="Current association session ID")
 
 
 class NFCScanResponse(BaseModel):
@@ -158,7 +158,7 @@ class NFCAPIRoutes:
                         message="NFC tag associated successfully",
                         data={"association": association_data.model_dump(mode="json")}
                     )
-                elif association_result.get("status") == "conflict":
+                if association_result.get("status") == "conflict":
                     conflict_data = association_result.get("conflict_info", {})
                     if state_manager and client_op_id:
                         await state_manager.send_acknowledgment(client_op_id, False, conflict_data)
@@ -166,20 +166,19 @@ class NFCAPIRoutes:
                         message="Tag already associated with another playlist",
                         client_op_id=client_op_id
                     )
-                else:
-                    error_msg = association_result.get("message", "Association failed")
-                    if state_manager and client_op_id:
-                        await state_manager.send_acknowledgment(
-                            client_op_id, False, {"message": error_msg}
-                        )
-                    return UnifiedResponseService.bad_request(
-                        message=error_msg,
-                        client_op_id=client_op_id
+                error_msg = association_result.get("message", "Association failed")
+                if state_manager and client_op_id:
+                    await state_manager.send_acknowledgment(
+                        client_op_id, False, {"message": error_msg}
                     )
+                return UnifiedResponseService.bad_request(
+                    message=error_msg,
+                    client_op_id=client_op_id
+                )
 
             except Exception as e:
                 logger.error(
-                    f"Error in associate_tag_with_playlist: {str(e)}",
+                    f"Error in associate_tag_with_playlist: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
                         "request_id": request.headers.get("X-Request-ID") if request else None,
@@ -222,7 +221,7 @@ class NFCAPIRoutes:
                     nfc_service = self._get_nfc_service(request)
                     state_manager = self._get_state_manager(request)
                 except Exception as e:
-                    logger.error(f"Failed to get NFC service: {str(e)}")
+                    logger.error(f"Failed to get NFC service: {e!s}")
                     return UnifiedResponseService.service_unavailable(
                         service="NFC",
                         message="NFC service is not available",
@@ -242,7 +241,7 @@ class NFCAPIRoutes:
                         message="NFC tag association removed successfully",
                         client_op_id=client_op_id
                     )
-                elif result.get("status") == "not_found":
+                if result.get("status") == "not_found":
                     if state_manager and client_op_id:
                         await state_manager.send_acknowledgment(client_op_id, False, {"tag_id": tag_id})
                     return UnifiedResponseService.not_found(
@@ -250,20 +249,19 @@ class NFCAPIRoutes:
                         resource_id=tag_id,
                         client_op_id=client_op_id
                     )
-                else:
-                    error_msg = result.get("message", "Failed to remove association")
-                    if state_manager and client_op_id:
-                        await state_manager.send_acknowledgment(
-                            client_op_id, False, {"message": error_msg}
-                        )
-                    return UnifiedResponseService.internal_error(
-                        message=error_msg,
-                        client_op_id=client_op_id
+                error_msg = result.get("message", "Failed to remove association")
+                if state_manager and client_op_id:
+                    await state_manager.send_acknowledgment(
+                        client_op_id, False, {"message": error_msg}
                     )
+                return UnifiedResponseService.internal_error(
+                    message=error_msg,
+                    client_op_id=client_op_id
+                )
 
             except Exception as e:
                 logger.error(
-                    f"Error in remove_tag_association: {str(e)}",
+                    f"Error in remove_tag_association: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
                         "request_id": request.headers.get("X-Request-ID") if request else None,
@@ -305,7 +303,7 @@ class NFCAPIRoutes:
 
             except Exception as e:
                 logger.error(
-                    f"Error in get_nfc_status: {str(e)}",
+                    f"Error in get_nfc_status: {e!s}",
                     extra={
                         "request_id": request.headers.get("X-Request-ID") if request else None,
                         "operation": "get_nfc_status",
@@ -356,7 +354,7 @@ class NFCAPIRoutes:
                     nfc_service = self._get_nfc_service(request)
                     state_manager = self._get_state_manager(request)
                 except Exception as e:
-                    logger.error(f"Failed to get NFC service: {str(e)}")
+                    logger.error(f"Failed to get NFC service: {e!s}")
                     return UnifiedResponseService.service_unavailable(
                         service="NFC",
                         message="NFC service is not available",
@@ -413,49 +411,46 @@ class NFCAPIRoutes:
                             data=scan_response.model_dump(),
                             client_op_id=client_op_id
                         )
-                    else:
-                        error_msg = result.get("message", "Failed to start association session")
-                        if state_manager and client_op_id:
-                            await state_manager.send_acknowledgment(
-                                client_op_id, False, {"message": error_msg}
-                            )
-                        return UnifiedResponseService.bad_request(
-                            message=error_msg,
-                            client_op_id=client_op_id
+                    error_msg = result.get("message", "Failed to start association session")
+                    if state_manager and client_op_id:
+                        await state_manager.send_acknowledgment(
+                            client_op_id, False, {"message": error_msg}
                         )
-                else:
-                    # Generic scan session
-                    result = await nfc_service.start_scan_session(timeout_ms)
+                    return UnifiedResponseService.bad_request(
+                        message=error_msg,
+                        client_op_id=client_op_id
+                    )
+                # Generic scan session
+                result = await nfc_service.start_scan_session(timeout_ms)
 
-                    if result.get("status") == "success":
-                        scan_response = NFCScanResponse(
-                            scan_id=result["scan_id"],
-                            timeout_ms=timeout_ms
+                if result.get("status") == "success":
+                    scan_response = NFCScanResponse(
+                        scan_id=result["scan_id"],
+                        timeout_ms=timeout_ms
+                    )
+                    if state_manager and client_op_id:
+                        await state_manager.send_acknowledgment(
+                            client_op_id, True, scan_response.model_dump()
                         )
-                        if state_manager and client_op_id:
-                            await state_manager.send_acknowledgment(
-                                client_op_id, True, scan_response.model_dump()
-                            )
-                        logger.info(f"NFC scan session started with ID {result['scan_id']}")
-                        return UnifiedResponseService.success(
-                            message="NFC scan session started",
-                            data=scan_response.model_dump(),
-                            client_op_id=client_op_id
-                        )
-                    else:
-                        error_msg = result.get("message", "Failed to start scan session")
-                        if state_manager and client_op_id:
-                            await state_manager.send_acknowledgment(
-                                client_op_id, False, {"message": error_msg}
-                            )
-                        return UnifiedResponseService.bad_request(
-                            message=error_msg,
-                            client_op_id=client_op_id
-                        )
+                    logger.info(f"NFC scan session started with ID {result['scan_id']}")
+                    return UnifiedResponseService.success(
+                        message="NFC scan session started",
+                        data=scan_response.model_dump(),
+                        client_op_id=client_op_id
+                    )
+                error_msg = result.get("message", "Failed to start scan session")
+                if state_manager and client_op_id:
+                    await state_manager.send_acknowledgment(
+                        client_op_id, False, {"message": error_msg}
+                    )
+                return UnifiedResponseService.bad_request(
+                    message=error_msg,
+                    client_op_id=client_op_id
+                )
 
             except Exception as e:
                 logger.error(
-                    f"Error in start_nfc_scan: {str(e)}",
+                    f"Error in start_nfc_scan: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
                         "request_id": request.headers.get("X-Request-ID") if request else None,
@@ -491,7 +486,7 @@ class NFCAPIRoutes:
                     nfc_service = self._get_nfc_service(request)
                     state_manager = self._get_state_manager(request)
                 except Exception as e:
-                    logger.error(f"Failed to get NFC service: {str(e)}")
+                    logger.error(f"Failed to get NFC service: {e!s}")
                     return UnifiedResponseService.service_unavailable(
                         service="NFC",
                         message="NFC service is not available",
@@ -529,24 +524,23 @@ class NFCAPIRoutes:
                         data={"session_id": session_id},
                         client_op_id=client_op_id
                     )
-                else:
-                    # Session not found
-                    error_msg = result.get("message", "Session not found")
-                    if state_manager and client_op_id:
-                        await state_manager.send_acknowledgment(
-                            client_op_id,
-                            False,
-                            {"message": error_msg}
-                        )
-                    return UnifiedResponseService.not_found(
-                        resource="NFC association session",
-                        resource_id=session_id,
-                        client_op_id=client_op_id
+                # Session not found
+                error_msg = result.get("message", "Session not found")
+                if state_manager and client_op_id:
+                    await state_manager.send_acknowledgment(
+                        client_op_id,
+                        False,
+                        {"message": error_msg}
                     )
+                return UnifiedResponseService.not_found(
+                    resource="NFC association session",
+                    resource_id=session_id,
+                    client_op_id=client_op_id
+                )
 
             except Exception as e:
                 logger.error(
-                    f"Error in cancel_association_session: {str(e)}",
+                    f"Error in cancel_association_session: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
                         "request_id": request.headers.get("X-Request-ID") if request else None,

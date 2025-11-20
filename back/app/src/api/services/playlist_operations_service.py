@@ -9,17 +9,17 @@ Extended playlist operations that combine multiple application services.
 Single Responsibility: Complex playlist workflows and orchestration.
 """
 
-from typing import Dict, Any, List, Optional
 import logging
+from typing import Any
 
-from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.dependencies import get_playlist_repository_adapter
 from app.src.domain.data.models.track import Track
 from app.src.domain.services.track_reordering_service import (
-    TrackReorderingService,
-    ReorderingStrategy,
     ReorderingCommand,
+    ReorderingStrategy,
+    TrackReorderingService,
 )
+from app.src.services.error.unified_error_decorator import handle_service_errors
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class PlaylistOperationsService:
         self._repository_adapter = repository_adapter or get_playlist_repository_adapter()
 
     @handle_service_errors("playlist_operations")
-    async def reorder_tracks_use_case(self, playlist_id: str, track_order: List[int]) -> Dict[str, Any]:
+    async def reorder_tracks_use_case(self, playlist_id: str, track_order: list[int]) -> dict[str, Any]:
         """Use case: Reorder tracks in a playlist using domain services.
 
         Args:
@@ -111,21 +111,19 @@ class PlaylistOperationsService:
                         "message": "Tracks reordered successfully",
                         "playlist_id": playlist_id,
                     }
-                else:
-                    return {"status": "error", "message": "Repository update failed"}
-            else:
-                error_messages = reorder_result.validation_errors + reorder_result.business_rule_violations
-                return {
-                    "status": "error",
-                    "message": f"Reordering validation failed: {'; '.join(error_messages)}"
-                }
+                return {"status": "error", "message": "Repository update failed"}
+            error_messages = reorder_result.validation_errors + reorder_result.business_rule_violations
+            return {
+                "status": "error",
+                "message": f"Reordering validation failed: {'; '.join(error_messages)}"
+            }
 
         except Exception as e:
-            logger.error(f"Error in reorder_tracks_use_case: {str(e)}")
-            return {"status": "error", "message": f"Failed to reorder tracks: {str(e)}"}
+            logger.error(f"Error in reorder_tracks_use_case: {e!s}")
+            return {"status": "error", "message": f"Failed to reorder tracks: {e!s}"}
 
     @handle_service_errors("playlist_operations")
-    async def delete_tracks_use_case(self, playlist_id: str, track_numbers: List[int]) -> Dict[str, Any]:
+    async def delete_tracks_use_case(self, playlist_id: str, track_numbers: list[int]) -> dict[str, Any]:
         """Use case: Delete tracks from a playlist with cleanup.
 
         Args:
@@ -155,15 +153,14 @@ class PlaylistOperationsService:
                     "status": "success",
                     "message": f"Deleted {len(track_numbers)} tracks successfully",
                 }
-            else:
-                return {"status": "error", "message": "Failed to delete tracks"}
+            return {"status": "error", "message": "Failed to delete tracks"}
 
         except Exception as e:
-            logger.error(f"Error in delete_tracks_use_case: {str(e)}")
-            return {"status": "error", "message": f"Failed to delete tracks: {str(e)}"}
+            logger.error(f"Error in delete_tracks_use_case: {e!s}")
+            return {"status": "error", "message": f"Failed to delete tracks: {e!s}"}
 
     @handle_service_errors("playlist_operations")
-    async def update_playlist_use_case(self, playlist_id: str, updates: Dict[str, Any]) -> bool:
+    async def update_playlist_use_case(self, playlist_id: str, updates: dict[str, Any]) -> bool:
         """Use case: Update playlist with validation.
 
         Args:
@@ -177,7 +174,7 @@ class PlaylistOperationsService:
             return await self._repository_adapter.update_playlist(playlist_id, updates)
 
         except Exception as e:
-            logger.error(f"Error in update_playlist_use_case: {str(e)}")
+            logger.error(f"Error in update_playlist_use_case: {e!s}")
             return False
 
     @handle_service_errors("playlist_operations")
@@ -194,7 +191,7 @@ class PlaylistOperationsService:
             return await self._repository_adapter.delete_playlist(playlist_id)
 
         except Exception as e:
-            logger.error(f"Error in delete_playlist_use_case: {str(e)}")
+            logger.error(f"Error in delete_playlist_use_case: {e!s}")
             return False
 
     @handle_service_errors("playlist_operations")
@@ -212,7 +209,7 @@ class PlaylistOperationsService:
             return await self._repository_adapter.update_playlist(playlist_id, {"nfc_tag_id": nfc_tag_id})
 
         except Exception as e:
-            logger.error(f"Error in associate_nfc_tag_use_case: {str(e)}")
+            logger.error(f"Error in associate_nfc_tag_use_case: {e!s}")
             return False
 
     @handle_service_errors("playlist_operations")
@@ -229,11 +226,11 @@ class PlaylistOperationsService:
             return await self._repository_adapter.update_playlist(playlist_id, {"nfc_tag_id": None})
 
         except Exception as e:
-            logger.error(f"Error in disassociate_nfc_tag_use_case: {str(e)}")
+            logger.error(f"Error in disassociate_nfc_tag_use_case: {e!s}")
             return False
 
     @handle_service_errors("playlist_operations")
-    async def find_playlist_by_nfc_tag_use_case(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def find_playlist_by_nfc_tag_use_case(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Use case: Find playlist by NFC tag.
 
         Args:
@@ -254,11 +251,11 @@ class PlaylistOperationsService:
             return None
 
         except Exception as e:
-            logger.error(f"Error in find_playlist_by_nfc_tag_use_case: {str(e)}")
+            logger.error(f"Error in find_playlist_by_nfc_tag_use_case: {e!s}")
             return None
 
     @handle_service_errors("playlist_operations")
-    async def sync_playlists_use_case(self) -> Dict[str, Any]:
+    async def sync_playlists_use_case(self) -> dict[str, Any]:
         """Use case: Synchronize playlists and return current state.
 
         Returns:
@@ -276,10 +273,10 @@ class PlaylistOperationsService:
             }
 
         except Exception as e:
-            logger.error(f"Error in sync_playlists_use_case: {str(e)}")
+            logger.error(f"Error in sync_playlists_use_case: {e!s}")
             return {
                 "status": "error",
-                "message": f"Failed to sync playlists: {str(e)}",
+                "message": f"Failed to sync playlists: {e!s}",
                 "playlists": []
             }
 
@@ -289,8 +286,8 @@ class PlaylistOperationsService:
         source_playlist_id: str,
         target_playlist_id: str,
         track_number: int,
-        target_position: Optional[int] = None
-    ) -> Dict[str, Any]:
+        target_position: int | None = None
+    ) -> dict[str, Any]:
         """Use case: Move track between playlists.
 
         Args:
@@ -316,11 +313,11 @@ class PlaylistOperationsService:
             }
 
         except Exception as e:
-            logger.error(f"Error in move_track_between_playlists_use_case: {str(e)}")
-            return {"status": "error", "message": f"Failed to move track: {str(e)}"}
+            logger.error(f"Error in move_track_between_playlists_use_case: {e!s}")
+            return {"status": "error", "message": f"Failed to move track: {e!s}"}
 
     @handle_service_errors("playlist_operations")
-    async def validate_playlist_integrity(self, playlist_id: str) -> Dict[str, Any]:
+    async def validate_playlist_integrity(self, playlist_id: str) -> dict[str, Any]:
         """Validate playlist data integrity.
 
         Args:
@@ -364,9 +361,9 @@ class PlaylistOperationsService:
             }
 
         except Exception as e:
-            logger.error(f"Error in validate_playlist_integrity: {str(e)}")
+            logger.error(f"Error in validate_playlist_integrity: {e!s}")
             return {
                 "status": "error",
-                "message": f"Validation failed: {str(e)}",
+                "message": f"Validation failed: {e!s}",
                 "valid": False
             }

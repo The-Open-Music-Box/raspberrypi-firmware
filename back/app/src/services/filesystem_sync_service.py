@@ -9,15 +9,14 @@ including scanning for new playlists, updating existing ones, and managing
 audio file metadata extraction.
 """
 
-import threading
-import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-from uuid import uuid4
-from datetime import datetime, timezone
-
 # Direct imports following DDD principles
 import logging
+import threading
+import time
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.services.upload_service import UploadService
@@ -57,8 +56,8 @@ class FilesystemSyncService:
 
     @handle_service_errors("filesystem_sync")
     async def create_playlist_from_folder(
-        self, folder_path: Path, title: Optional[str] = None
-    ) -> Optional[str]:
+        self, folder_path: Path, title: str | None = None
+    ) -> str | None:
         """Create a playlist from a folder of audio files.
 
         This scans the specified folder for supported audio files and creates a new
@@ -94,7 +93,7 @@ class FilesystemSyncService:
             "type": "playlist",
             "title": title or folder_path.name,
             "path": str(rel_path),
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "tracks": [],
         }
         # Use UploadService to extract metadata for each audio file
@@ -120,7 +119,7 @@ class FilesystemSyncService:
     @handle_service_errors("filesystem_sync")
     async def update_playlist_tracks(
         self, playlist_id: str, folder_path: Path
-    ) -> Tuple[bool, Dict[str, int]]:
+    ) -> tuple[bool, dict[str, int]]:
         """Update the tracks of a playlist from the contents of a folder.
 
         This method compares the current tracks in the playlist with the audio files
@@ -188,7 +187,7 @@ class FilesystemSyncService:
         return False, stats
 
     @handle_service_errors("filesystem_sync")
-    async def sync_with_filesystem(self) -> Dict[str, int]:
+    async def sync_with_filesystem(self) -> dict[str, int]:
         """Synchronize playlists in the database with the filesystem.
 
         Returns:
@@ -247,7 +246,7 @@ class FilesystemSyncService:
             return stats
 
     @handle_service_errors("filesystem_sync")
-    def _scan_filesystem_with_timeout(self) -> Dict[str, List[Path]]:
+    def _scan_filesystem_with_timeout(self) -> dict[str, list[Path]]:
         """Scan the filesystem with protection against timeouts.
 
         Returns:
@@ -284,9 +283,9 @@ class FilesystemSyncService:
     @handle_service_errors("filesystem_sync")
     async def _update_existing_playlists(
         self,
-        db_playlists: List[Dict[str, Any]],
-        disk_playlists: Dict[str, List[Path]],
-        stats: Dict[str, int],
+        db_playlists: list[dict[str, Any]],
+        disk_playlists: dict[str, list[Path]],
+        stats: dict[str, int],
     ) -> None:
         """Update existing playlists with files from disk.
 
@@ -322,10 +321,10 @@ class FilesystemSyncService:
 
     async def _add_new_playlists(
         self,
-        disk_playlists: Dict[str, List[Path]],
-        db_playlists_by_path: Dict[str, Dict[str, Any]],
-        db_playlists_by_title: Dict[str, Dict[str, Any]],
-        stats: Dict[str, int],
+        disk_playlists: dict[str, list[Path]],
+        db_playlists_by_path: dict[str, dict[str, Any]],
+        db_playlists_by_title: dict[str, dict[str, Any]],
+        stats: dict[str, int],
     ) -> None:
         """Add new playlists found on disk.
 
@@ -367,6 +366,6 @@ class FilesystemSyncService:
                         stats["tracks_added"] += len(audio_files)
                         logger.info(f"Created new playlist from folder: {path} (ID: {playlist_id})",
                                     )
-                except (OSError, IOError, PermissionError, ValueError) as e:
-                    logger.error(f"Error creating playlist from folder {path}: {str(e)}",
+                except (OSError, PermissionError, ValueError) as e:
+                    logger.error(f"Error creating playlist from folder {path}: {e!s}",
                                  )

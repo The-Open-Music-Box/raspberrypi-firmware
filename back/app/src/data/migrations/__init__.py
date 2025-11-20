@@ -4,6 +4,6 @@
 
 """Database migrations module."""
 
-from .migration_runner import MigrationRunner, Migration
+from .migration_runner import Migration, MigrationRunner
 
-__all__ = ["MigrationRunner", "Migration"]
+__all__ = ["Migration", "MigrationRunner"]

@@ -12,15 +12,15 @@ This module handles NFC association operations:
 """
 
 import time
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any
 
 import socketio
 
-from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
+from app.src.monitoring import get_logger
+from app.src.services.error.unified_error_decorator import handle_http_errors
 
 logger = get_logger(__name__)
 
@@ -62,7 +62,7 @@ class NFCHandlers:
 
         @self.sio.on("start_nfc_link")
         @handle_http_errors()
-        async def handle_start_nfc_link(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_start_nfc_link(sid: str, data: dict[str, Any]) -> None:
             """Handle NFC association start via WebSocket.
 
             Initiates a new NFC association session for a playlist. The client
@@ -122,7 +122,7 @@ class NFCHandlers:
                 )
             except Exception as e:
                 logger.error(
-                    f"Error in handle_start_nfc_link: {str(e)}",
+                    f"Error in handle_start_nfc_link: {e!s}",
                     extra={
                         "sid": sid,
                         "client_op_id": data.get("client_op_id") if isinstance(data, dict) else None,
@@ -135,7 +135,7 @@ class NFCHandlers:
 
         @self.sio.on("stop_nfc_link")
         @handle_http_errors()
-        async def handle_stop_nfc_link(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_stop_nfc_link(sid: str, data: dict[str, Any]) -> None:
             """Handle NFC association cancellation via WebSocket.
 
             Cancels an active NFC association session for a playlist.
@@ -193,7 +193,7 @@ class NFCHandlers:
                 logger.info(f"NFC association cancelled for playlist {playlist_id}")
             except Exception as e:
                 logger.error(
-                    f"Error in handle_stop_nfc_link: {str(e)}",
+                    f"Error in handle_stop_nfc_link: {e!s}",
                     extra={
                         "sid": sid,
                         "client_op_id": data.get("client_op_id") if isinstance(data, dict) else None,
@@ -206,7 +206,7 @@ class NFCHandlers:
 
         @self.sio.on("override_nfc_tag")
         @handle_http_errors()
-        async def handle_override_nfc_tag(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_override_nfc_tag(sid: str, data: dict[str, Any]) -> None:
             """Handle NFC tag override via WebSocket.
 
             Starts a new association session in override mode and immediately processes
@@ -252,7 +252,7 @@ class NFCHandlers:
                 )
             except Exception as e:
                 logger.error(
-                    f"Error in handle_override_nfc_tag: {str(e)}",
+                    f"Error in handle_override_nfc_tag: {e!s}",
                     extra={
                         "sid": sid,
                         "client_op_id": data.get("client_op_id") if isinstance(data, dict) else None,
@@ -267,9 +267,9 @@ class NFCHandlers:
     async def _start_override_session(
         self,
         playlist_id: str,
-        tag_id: Optional[str],
+        tag_id: str | None,
         sid: str,
-        client_op_id: Optional[str],
+        client_op_id: str | None,
     ) -> str:
         """Start an NFC override session and optionally process a tag immediately.
 
@@ -328,7 +328,7 @@ class NFCHandlers:
 
         return session_id
 
-    def _calculate_expires_at(self, timeout_at: Optional[str]) -> float:
+    def _calculate_expires_at(self, timeout_at: str | None) -> float:
         """Calculate expiration timestamp for frontend countdown.
 
         Args:
@@ -341,8 +341,7 @@ class NFCHandlers:
             return datetime.fromisoformat(
                 timeout_at.replace("Z", "+00:00")
             ).timestamp()
-        else:
-            return time.time() + 60
+        return time.time() + 60
 
     async def _process_tag_override(
         self, tag_id: str, sid: str

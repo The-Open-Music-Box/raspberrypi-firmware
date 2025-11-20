@@ -13,9 +13,10 @@ This controller manages ONLY playlist operations:
 NO audio control, NO file path resolution.
 """
 
-from typing import Optional, Dict, Any, List
 import logging
-from .playlist_state_manager_controller import PlaylistStateManager, Playlist, Track
+from typing import Any
+
+from .playlist_state_manager_controller import Playlist, PlaylistStateManager, Track
 from .track_resolver_controller import TrackResolver
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ class PlaylistController:
             logger.error(f"Error loading playlist {playlist_id}: {e}")
             return False
 
-    async def _get_playlist_data(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def _get_playlist_data(self, playlist_id: str) -> dict[str, Any] | None:
         """
         Get playlist data from domain service (async).
 
@@ -127,7 +128,7 @@ class PlaylistController:
             logger.error(f"Error getting playlist data from domain service: {e}")
             return None
 
-    def _convert_to_domain_playlist(self, playlist_data: Dict[str, Any]) -> Optional[Playlist]:
+    def _convert_to_domain_playlist(self, playlist_data: dict[str, Any]) -> Playlist | None:
         """
         Convert playlist data to domain object.
 
@@ -164,7 +165,7 @@ class PlaylistController:
             logger.error(f"Error converting playlist data: {e}")
             return None
 
-    def _convert_to_domain_track(self, track_data: Dict[str, Any]) -> Optional[Track]:
+    def _convert_to_domain_track(self, track_data: dict[str, Any]) -> Track | None:
         """
         Convert track data to domain object.
 
@@ -197,7 +198,7 @@ class PlaylistController:
             logger.error(f"Error converting track data: {e}")
             return None
 
-    def _validate_tracks(self, tracks: List[Track]) -> List[Track]:
+    def _validate_tracks(self, tracks: list[Track]) -> list[Track]:
         """
         Validate tracks and return only valid ones.
 
@@ -220,19 +221,19 @@ class PlaylistController:
 
     # --- Current Playlist Operations ---
 
-    def get_current_track(self) -> Optional[Track]:
+    def get_current_track(self) -> Track | None:
         """Get the current track."""
         return self._state_manager.get_current_track()
 
-    def next_track(self) -> Optional[Track]:
+    def next_track(self) -> Track | None:
         """Move to next track."""
         return self._state_manager.move_to_next()
 
-    def previous_track(self) -> Optional[Track]:
+    def previous_track(self) -> Track | None:
         """Move to previous track."""
         return self._state_manager.move_to_previous()
 
-    def goto_track(self, track_number: int) -> Optional[Track]:
+    def goto_track(self, track_number: int) -> Track | None:
         """
         Go to specific track by number (1-based).
 
@@ -281,7 +282,7 @@ class PlaylistController:
 
     # --- State Queries ---
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Get complete playlist state.
 
@@ -290,7 +291,7 @@ class PlaylistController:
         """
         return self._state_manager.get_state()
 
-    def get_playlist_info(self) -> Dict[str, Any]:
+    def get_playlist_info(self) -> dict[str, Any]:
         """
         Get current playlist information for API responses.
 

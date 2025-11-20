@@ -4,10 +4,11 @@
 
 """Event bus protocol for domain events."""
 
-from typing import Protocol, Any, Callable
 from abc import abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Protocol
 
 
 @dataclass

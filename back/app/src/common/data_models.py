@@ -9,10 +9,11 @@ This module defines all data models used across the backend and frontend,
 ensuring consistent field names, types, and serialization formats.
 """
 
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, field_validator, ConfigDict, model_serializer
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 
 
 class PlaybackState(str, Enum):
@@ -43,20 +44,20 @@ class TrackModel(BaseModel):
     filename: str = Field(..., description="Original filename")
     duration_ms: int = Field(..., description="Track duration in milliseconds")
     file_path: str = Field(..., description="Server file path")
-    file_hash: Optional[str] = Field(None, description="File content hash")
-    file_size: Optional[int] = Field(None, description="File size in bytes")
+    file_hash: str | None = Field(None, description="File content hash")
+    file_size: int | None = Field(None, description="File size in bytes")
 
     # Metadata fields
-    artist: Optional[str] = Field(None, description="Track artist")
-    album: Optional[str] = Field(None, description="Track album")
-    track_number: Optional[int] = Field(None, description="Track number in album")
+    artist: str | None = Field(None, description="Track artist")
+    album: str | None = Field(None, description="Track album")
+    track_number: int | None = Field(None, description="Track number in album")
 
     # Statistics
     play_count: int = Field(0, description="Number of times played")
 
     # Timestamps
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
 
     # State synchronization
     server_seq: int = Field(..., description="Server sequence number")
@@ -73,9 +74,9 @@ class TrackModel(BaseModel):
     def serialize_model(self):
         """Custom serializer for datetime fields."""
         data = self.__dict__.copy()
-        if "created_at" in data and data["created_at"]:
+        if data.get("created_at"):
             data["created_at"] = data["created_at"].isoformat()
-        if "updated_at" in data and data["updated_at"]:
+        if data.get("updated_at"):
             data["updated_at"] = data["updated_at"].isoformat()
         return data
 
@@ -90,15 +91,15 @@ class PlaylistModel(BaseModel):
     description: str = Field("", description="Playlist description")
 
     # NFC integration
-    nfc_tag_id: Optional[str] = Field(None, description="Associated NFC tag ID")
+    nfc_tag_id: str | None = Field(None, description="Associated NFC tag ID")
 
     # Tracks
-    tracks: List[TrackModel] = Field(default_factory=list, description="Playlist tracks")
+    tracks: list[TrackModel] = Field(default_factory=list, description="Playlist tracks")
     track_count: int = Field(0, description="Number of tracks in playlist")
 
     # Timestamps
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
 
     # State synchronization
     server_seq: int = Field(..., description="Global server sequence")
@@ -117,9 +118,9 @@ class PlaylistModel(BaseModel):
     def serialize_model(self):
         """Custom serializer for datetime fields."""
         data = self.__dict__.copy()
-        if "created_at" in data and data["created_at"]:
+        if data.get("created_at"):
             data["created_at"] = data["created_at"].isoformat()
-        if "updated_at" in data and data["updated_at"]:
+        if data.get("updated_at"):
             data["updated_at"] = data["updated_at"].isoformat()
         return data
 
@@ -132,19 +133,19 @@ class PlaylistLiteModel(BaseModel):
     id: str = Field(..., description="Unique playlist identifier")
     title: str = Field(..., description="Playlist title")
     description: str = Field("", description="Playlist description")
-    nfc_tag_id: Optional[str] = Field(None, description="Associated NFC tag ID")
+    nfc_tag_id: str | None = Field(None, description="Associated NFC tag ID")
     track_count: int = Field(0, description="Number of tracks in playlist")
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
     server_seq: int = Field(..., description="Global server sequence")
 
     @model_serializer
     def serialize_model(self):
         """Custom serializer for datetime fields."""
         data = self.__dict__.copy()
-        if "created_at" in data and data["created_at"]:
+        if data.get("created_at"):
             data["created_at"] = data["created_at"].isoformat()
-        if "updated_at" in data and data["updated_at"]:
+        if data.get("updated_at"):
             data["updated_at"] = data["updated_at"].isoformat()
         return data
 
@@ -159,12 +160,12 @@ class PlayerStateModel(BaseModel):
     state: PlaybackState = Field(..., description="Detailed playback state")
 
     # Current playlist/track
-    active_playlist_id: Optional[str] = Field(None, description="Currently active playlist ID")
-    active_playlist_title: Optional[str] = Field(
+    active_playlist_id: str | None = Field(None, description="Currently active playlist ID")
+    active_playlist_title: str | None = Field(
         None, description="Currently active playlist title"
     )
-    active_track_id: Optional[str] = Field(None, description="Currently active track ID")
-    active_track: Optional[TrackModel] = Field(None, description="Currently active track")
+    active_track_id: str | None = Field(None, description="Currently active track ID")
+    active_track: TrackModel | None = Field(None, description="Currently active track")
 
     # Playback position
     position_ms: int = Field(0, description="Current playback position in milliseconds")
@@ -184,7 +185,7 @@ class PlayerStateModel(BaseModel):
     server_seq: int = Field(..., description="Server sequence number")
 
     # Optional error information
-    error_message: Optional[str] = Field(None, description="Error message if in error state")
+    error_message: str | None = Field(None, description="Error message if in error state")
 
     @field_validator("position_ms", "duration_ms")
     @classmethod
@@ -211,7 +212,7 @@ class TrackProgressModel(BaseModel):
     position_ms: int = Field(..., description="Current playback position in milliseconds")
     duration_ms: int = Field(..., description="Total track duration in milliseconds")
     is_playing: bool = Field(..., description="Whether audio is currently playing")
-    active_track_id: Optional[str] = Field(None, description="Currently active track ID")
+    active_track_id: str | None = Field(None, description="Currently active track ID")
     server_seq: int = Field(..., description="Server sequence number")
     timestamp: int = Field(..., description="Progress timestamp in milliseconds")
 
@@ -235,7 +236,7 @@ class UploadStatusModel(BaseModel):
     chunks_total: int = Field(..., description="Total number of chunks")
     chunks_uploaded: int = Field(0, description="Number of chunks uploaded")
     status: UploadStatus = Field(..., description="Upload status")
-    error_message: Optional[str] = Field(None, description="Error message if upload failed")
+    error_message: str | None = Field(None, description="Error message if upload failed")
     created_at: datetime = Field(..., description="Upload session creation time")
     updated_at: datetime = Field(..., description="Last update time")
 
@@ -243,9 +244,9 @@ class UploadStatusModel(BaseModel):
     def serialize_model(self):
         """Custom serializer for datetime fields."""
         data = self.__dict__.copy()
-        if "created_at" in data and data["created_at"]:
+        if data.get("created_at"):
             data["created_at"] = data["created_at"].isoformat()
-        if "updated_at" in data and data["updated_at"]:
+        if data.get("updated_at"):
             data["updated_at"] = data["updated_at"].isoformat()
         return data
 
@@ -279,7 +280,7 @@ class NFCAssociationModel(BaseModel):
     def serialize_model(self):
         """Custom serializer for datetime fields."""
         data = self.__dict__.copy()
-        if "created_at" in data and data["created_at"]:
+        if data.get("created_at"):
             data["created_at"] = data["created_at"].isoformat()
         return data
 
@@ -295,11 +296,11 @@ class YouTubeProgressModel(BaseModel):
         0.0, ge=0.0, le=100.0, description="Download progress percentage"
     )
     current_step: str = Field("", description="Current processing step")
-    estimated_time_remaining: Optional[int] = Field(
+    estimated_time_remaining: int | None = Field(
         None, description="Estimated time remaining in seconds"
     )
-    error_message: Optional[str] = Field(None, description="Error message if download failed")
-    result: Optional[Dict[str, Any]] = Field(None, description="Download result data")
+    error_message: str | None = Field(None, description="Error message if download failed")
+    result: dict[str, Any] | None = Field(None, description="Download result data")
 
 
 class YouTubeResultModel(BaseModel):

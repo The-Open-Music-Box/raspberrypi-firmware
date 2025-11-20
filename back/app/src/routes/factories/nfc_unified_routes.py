@@ -12,13 +12,13 @@ Single Responsibility: Initialize and register NFC API routes with dependencies.
 from fastapi import FastAPI
 from socketio import AsyncServer
 
-from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_errors
 from app.src.api.endpoints.nfc_api_routes import NFCAPIRoutes
 from app.src.infrastructure.error_handling.unified_error_handler import (
-    unified_error_handler,
     service_unavailable_error,
+    unified_error_handler,
 )
+from app.src.monitoring import get_logger
+from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = get_logger(__name__)
 

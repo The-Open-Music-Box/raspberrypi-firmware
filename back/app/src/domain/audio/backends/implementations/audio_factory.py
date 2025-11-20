@@ -10,20 +10,22 @@ and mock implementations for testing.
 """
 
 import sys
-from typing import Optional
 
 from app.src.config import config
-from app.src.domain.protocols.notification_protocol import PlaybackNotifierProtocol as PlaybackSubject
-from app.src.monitoring import get_logger
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
-
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
 from app.src.domain.protocols.audio_backend_protocol import AudioBackendProtocol
+from app.src.domain.protocols.notification_protocol import (
+    PlaybackNotifierProtocol as PlaybackSubject,
+)
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
 
 def get_audio_backend(
-    playback_subject: Optional[PlaybackSubject] = None,
+    playback_subject: PlaybackSubject | None = None,
 ) -> AudioBackendProtocol:
     """Create just the audio backend without unified player wrapper.
 
@@ -40,7 +42,7 @@ def get_audio_backend(
 
 @handle_errors("_create_audio_backend")
 def _create_audio_backend(
-    playback_subject: Optional[PlaybackSubject] = None,
+    playback_subject: PlaybackSubject | None = None,
 ) -> AudioBackendProtocol:
     """Create the appropriate audio backend based on platform and configuration.
 
@@ -56,7 +58,7 @@ def _create_audio_backend(
         logger.info("🧪 Creating MockAudioBackend (mock hardware mode)")
         return MockAudioBackend(playback_subject)
 
-    elif sys.platform == "darwin":
+    if sys.platform == "darwin":
         # Use macOS-specific audio backend with Core Audio
         from .macos_audio_backend import MacOSAudioBackend
 
@@ -65,19 +67,18 @@ def _create_audio_backend(
         logger.info("✅ macOS Audio Backend initialized successfully")
         return backend
 
-    else:
-        # Try to initialize hardware audio backend (WM8960 for Raspberry Pi/Linux)
-        try:
-            from .wm8960_audio_backend import WM8960AudioBackend
+    # Try to initialize hardware audio backend (WM8960 for Raspberry Pi/Linux)
+    try:
+        from .wm8960_audio_backend import WM8960AudioBackend
 
-            logger.info("🔊 Creating WM8960AudioBackend...")
-            backend = WM8960AudioBackend(playback_subject)
-            logger.info("✅ WM8960 Audio Backend initialized successfully")
-            return backend
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize WM8960 audio: {e}")
-            logger.warning("⚠️️ Falling back to MockAudioBackend")
+        logger.info("🔊 Creating WM8960AudioBackend...")
+        backend = WM8960AudioBackend(playback_subject)
+        logger.info("✅ WM8960 Audio Backend initialized successfully")
+        return backend
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize WM8960 audio: {e}")
+        logger.warning("⚠️️ Falling back to MockAudioBackend")
 
-            from .mock_audio_backend import MockAudioBackend
+        from .mock_audio_backend import MockAudioBackend
 
-            return MockAudioBackend(playback_subject)
+        return MockAudioBackend(playback_subject)

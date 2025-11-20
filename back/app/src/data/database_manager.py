@@ -9,9 +9,11 @@ Infrastructure service that provides database connectivity following DDD princip
 Implements the domain's PersistenceServiceProtocol using SQLite.
 """
 
-from app.src.infrastructure.database.sqlite_database_service import SQLiteDatabaseService
-from app.src.monitoring import get_logger
 from app.src.config import config
+from app.src.infrastructure.database.sqlite_database_service import (
+    SQLiteDatabaseService,
+)
+from app.src.monitoring import get_logger
 
 # Optional migration support - will be None if not available
 try:

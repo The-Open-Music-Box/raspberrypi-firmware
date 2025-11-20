@@ -10,17 +10,17 @@ This eliminates the 20+ duplications of conditional acknowledgment sending
 found in nfc_api_routes.py and other API endpoints.
 """
 
-from typing import Optional, Dict, Any
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 async def send_ack_if_needed(
-    state_manager: Optional[Any],
-    client_op_id: Optional[str],
+    state_manager: Any | None,
+    client_op_id: str | None,
     success: bool,
-    data: Optional[Any] = None,
+    data: Any | None = None,
 ) -> bool:
     """
     Send WebSocket acknowledgment to client if conditions are met.
@@ -93,16 +93,16 @@ async def send_ack_if_needed(
     except Exception as e:
         # Log but don't raise - acknowledgment failures shouldn't break the main operation
         logger.error(
-            f"Failed to send acknowledgment for operation {client_op_id}: {str(e)}",
+            f"Failed to send acknowledgment for operation {client_op_id}: {e!s}",
             exc_info=True
         )
         return False
 
 
 async def send_success_ack(
-    state_manager: Optional[Any],
-    client_op_id: Optional[str],
-    data: Optional[Any] = None,
+    state_manager: Any | None,
+    client_op_id: str | None,
+    data: Any | None = None,
 ) -> bool:
     """
     Convenience function to send a success acknowledgment.
@@ -127,10 +127,10 @@ async def send_success_ack(
 
 
 async def send_error_ack(
-    state_manager: Optional[Any],
-    client_op_id: Optional[str],
+    state_manager: Any | None,
+    client_op_id: str | None,
     error_message: str,
-    error_data: Optional[Dict[str, Any]] = None,
+    error_data: dict[str, Any] | None = None,
 ) -> bool:
     """
     Convenience function to send an error acknowledgment.
@@ -180,8 +180,8 @@ class AcknowledgmentContext:
 
     def __init__(
         self,
-        state_manager: Optional[Any],
-        client_op_id: Optional[str],
+        state_manager: Any | None,
+        client_op_id: str | None,
     ):
         """
         Initialize acknowledgment context.
@@ -196,7 +196,7 @@ class AcknowledgmentContext:
         self.data = None
         self._completed = False
 
-    def set_success(self, data: Optional[Any] = None):
+    def set_success(self, data: Any | None = None):
         """
         Mark operation as successful and set data.
 
@@ -207,7 +207,7 @@ class AcknowledgmentContext:
         self.data = data
         self._completed = True
 
-    def set_error(self, error_message: str, error_data: Optional[Dict[str, Any]] = None):
+    def set_error(self, error_message: str, error_data: dict[str, Any] | None = None):
         """
         Mark operation as failed and set error data.
 
@@ -235,7 +235,7 @@ class AcknowledgmentContext:
         if exc_type is not None and not self._completed:
             # Exception occurred and no explicit status was set
             self.set_error(
-                error_message=f"Operation failed: {str(exc_val)}",
+                error_message=f"Operation failed: {exc_val!s}",
                 error_data={"exception_type": exc_type.__name__}
             )
 

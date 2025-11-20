@@ -10,7 +10,7 @@ Optimized for smooth local playback with minimal delay.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Any
 
 
 @dataclass
@@ -47,7 +47,7 @@ class SocketConfig:
     LOG_ERROR_EVENTS: bool = True  # Always log errors
 
     @classmethod
-    def get_position_update_config(cls) -> Dict[str, Any]:
+    def get_position_update_config(cls) -> dict[str, Any]:
         """Get configuration specifically for position updates."""
         return {
             "interval_ms": cls.POSITION_UPDATE_INTERVAL_MS,
@@ -56,7 +56,7 @@ class SocketConfig:
         }
 
     @classmethod
-    def get_outbox_config(cls) -> Dict[str, Any]:
+    def get_outbox_config(cls) -> dict[str, Any]:
         """Get configuration for outbox processing."""
         return {
             "retry_max": cls.OUTBOX_RETRY_MAX,
@@ -65,7 +65,7 @@ class SocketConfig:
         }
 
     @classmethod
-    def get_dedup_config(cls) -> Dict[str, Any]:
+    def get_dedup_config(cls) -> dict[str, Any]:
         """Get configuration for operation deduplication."""
         return {
             "window_sec": cls.OPERATION_DEDUP_WINDOW_SEC,

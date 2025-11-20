@@ -11,12 +11,14 @@ the 600+ duplicated try/catch blocks across the application.
 
 import asyncio
 import functools
+import logging
 import traceback
-from typing import Callable, Any, Optional, Dict
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 
 from fastapi import HTTPException
-import logging
+
 from app.src.services.response.unified_response_service import UnifiedResponseService
 
 logger = logging.getLogger(__name__)
@@ -44,12 +46,12 @@ class ErrorContext:
 
 
 def handle_errors(
-    operation_name: Optional[str] = None,
-    component: Optional[str] = None,
+    operation_name: str | None = None,
+    component: str | None = None,
     return_response: bool = True,
     log_level: Any = logging.ERROR,
     include_trace: bool = False,
-    custom_error_map: Optional[Dict[type, str]] = None,
+    custom_error_map: dict[type, str] | None = None,
 ) -> Callable:
     """
     Décorateur pour gestion automatique des erreurs.
@@ -103,23 +105,22 @@ def handle_errors(
                 )
 
             return async_wrapper
-        else:
 
-            @functools.wraps(func)
-            def sync_wrapper(*args, **kwargs):
-                return _execute_sync_with_error_handling(
-                    func,
-                    args,
-                    kwargs,
-                    func_operation,
-                    func_component,
-                    return_response,
-                    log_level,
-                    include_trace,
-                    error_map,
-                )
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            return _execute_sync_with_error_handling(
+                func,
+                args,
+                kwargs,
+                func_operation,
+                func_component,
+                return_response,
+                log_level,
+                include_trace,
+                error_map,
+            )
 
-            return sync_wrapper
+        return sync_wrapper
 
     return decorator
 
@@ -154,7 +155,7 @@ async def _execute_with_error_handling(
     return_response: bool,
     log_level: Any,
     include_trace: bool,
-    error_map: Dict[type, str],
+    error_map: dict[type, str],
 ) -> Any:
     """Execute async function with error handling."""
     try:
@@ -167,11 +168,10 @@ async def _execute_with_error_handling(
             return _handle_caught_exception(
                 e, operation, component, return_response, log_level, include_trace, error_map, kwargs
             )
-        else:
-            # Log and re-raise for domain/repository layers
-            _handle_caught_exception(
-                e, operation, component, return_response, log_level, include_trace, error_map, kwargs
-            )
+        # Log and re-raise for domain/repository layers
+        _handle_caught_exception(
+            e, operation, component, return_response, log_level, include_trace, error_map, kwargs
+        )
             # _handle_caught_exception will raise the exception when return_response=False
 
 
@@ -184,7 +184,7 @@ def _execute_sync_with_error_handling(
     return_response: bool,
     log_level: Any,
     include_trace: bool,
-    error_map: Dict[type, str],
+    error_map: dict[type, str],
 ) -> Any:
     """Execute sync function with error handling."""
     try:
@@ -197,11 +197,10 @@ def _execute_sync_with_error_handling(
             return _handle_caught_exception(
                 e, operation, component, return_response, log_level, include_trace, error_map, kwargs
             )
-        else:
-            # Log and re-raise for domain/repository layers
-            _handle_caught_exception(
-                e, operation, component, return_response, log_level, include_trace, error_map, kwargs
-            )
+        # Log and re-raise for domain/repository layers
+        _handle_caught_exception(
+            e, operation, component, return_response, log_level, include_trace, error_map, kwargs
+        )
             # _handle_caught_exception will raise the exception when return_response=False
 
 
@@ -212,7 +211,7 @@ def _handle_caught_exception(
     return_response: bool,
     log_level: Any,
     include_trace: bool,
-    error_map: Dict[type, str],
+    error_map: dict[type, str],
     kwargs: dict,
 ) -> Any:
     """Handle caught exception with unified logic."""
@@ -243,7 +242,7 @@ def _handle_caught_exception(
     )
 
     # Log the error with full context
-    log_message = f"❌ Error in {component}.{operation}: {str(error)}"
+    log_message = f"❌ Error in {component}.{operation}: {error!s}"
     extra_data = {
         "operation": operation,
         "component": component,
@@ -264,13 +263,12 @@ def _handle_caught_exception(
             client_op_id=client_op_id,
             trace=include_trace,
         )
-    else:
-        # Re-raise the original exception
-        raise
+    # Re-raise the original exception
+    raise
 
 
 def handle_http_errors(
-    default_status: int = 500, error_mappings: Optional[Dict[type, int]] = None
+    default_status: int = 500, error_mappings: dict[type, int] | None = None
 ) -> Callable:
     """
     Décorateur spécialisé pour endpoints HTTP.
@@ -348,7 +346,7 @@ def handle_validation_errors(validation_context: str = "api") -> Callable:
                 )
             except Exception as e:
                 logger.error(
-                    f"Unexpected validation error in {validation_context}: {str(e)}"
+                    f"Unexpected validation error in {validation_context}: {e!s}"
                 )
                 return UnifiedResponseService.validation_error(
                     errors=[{"message": "Validation error occurred"}],
@@ -502,7 +500,7 @@ class ErrorTracker:
         if len(self.error_history) > self.max_history:
             self.error_history = self.error_history[-self.max_history:]
 
-    def get_error_stats(self) -> Dict[str, Any]:
+    def get_error_stats(self) -> dict[str, Any]:
         """Get error statistics."""
         return {
             "total_errors": sum(self.error_counts.values()),

@@ -5,10 +5,13 @@
 """State manager implementation."""
 
 import time
-from typing import Dict, Any, Optional
+from typing import Any
 
+from app.src.domain.protocols.state_manager_protocol import (
+    PlaybackState,
+    StateManagerProtocol,
+)
 from app.src.monitoring import get_logger
-from app.src.domain.protocols.state_manager_protocol import StateManagerProtocol, PlaybackState
 
 logger = get_logger(__name__)
 
@@ -18,11 +21,11 @@ class StateManager(StateManagerProtocol):
 
     def __init__(self):
         self._current_state = PlaybackState.STOPPED
-        self._track_info: Dict[str, Any] = {}
-        self._playlist_info: Dict[str, Any] = {}
+        self._track_info: dict[str, Any] = {}
+        self._playlist_info: dict[str, Any] = {}
         self._position_seconds = 0.0
         self._volume = 50
-        self._last_error: Optional[str] = None
+        self._last_error: str | None = None
         self._last_updated = time.time()
 
     def get_current_state(self) -> PlaybackState:
@@ -37,7 +40,7 @@ class StateManager(StateManagerProtocol):
             self._last_updated = time.time()
             logger.info(f"State changed: {old_state.value} -> {state.value}")
 
-    def get_state_dict(self) -> Dict[str, Any]:
+    def get_state_dict(self) -> dict[str, Any]:
         """Get complete state as dictionary."""
         return {
             "state": self._current_state.value,
@@ -49,13 +52,13 @@ class StateManager(StateManagerProtocol):
             "playlist_info": self._playlist_info.copy(),
         }
 
-    def update_track_info(self, track_info: Dict[str, Any]) -> None:
+    def update_track_info(self, track_info: dict[str, Any]) -> None:
         """Update current track information."""
         self._track_info = track_info.copy()
         self._last_updated = time.time()
         logger.debug(f"Track info updated: {track_info.get('title', 'Unknown')}")
 
-    def update_playlist_info(self, playlist_info: Dict[str, Any]) -> None:
+    def update_playlist_info(self, playlist_info: dict[str, Any]) -> None:
         """Update current playlist information."""
         self._playlist_info = playlist_info.copy()
         self._last_updated = time.time()
@@ -89,6 +92,6 @@ class StateManager(StateManagerProtocol):
             self._last_updated = time.time()
             logger.info("Error state cleared")
 
-    def get_last_error(self) -> Optional[str]:
+    def get_last_error(self) -> str | None:
         """Get last error message."""
         return self._last_error

@@ -12,9 +12,9 @@ Single Responsibility: Initialize and register YouTube API routes with dependenc
 from fastapi import FastAPI
 from socketio import AsyncServer
 
+from app.src.api.endpoints.youtube_api_routes import YouTubeAPIRoutes
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.api.endpoints.youtube_api_routes import YouTubeAPIRoutes
 
 logger = get_logger(__name__)
 

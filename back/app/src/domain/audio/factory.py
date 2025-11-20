@@ -6,18 +6,20 @@
 
 from typing import Any
 
-from app.src.monitoring import get_logger
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
-
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
 from app.src.domain.protocols.audio_backend_protocol import AudioBackendProtocol
 from app.src.domain.protocols.audio_engine_protocol import AudioEngineProtocol
+
 # PlaylistManagerProtocol removed - use data domain services
 from app.src.domain.protocols.event_bus_protocol import EventBusProtocol
 from app.src.domain.protocols.state_manager_protocol import StateManagerProtocol
+from app.src.monitoring import get_logger
 
+from .engine.audio_engine import AudioEngine
 from .engine.event_bus import EventBus
 from .engine.state_manager import StateManager
-from .engine.audio_engine import AudioEngine
 
 logger = get_logger(__name__)
 
@@ -122,10 +124,12 @@ class AudioDomainFactory:
         """
         logger.info("Creating default audio backend for pure domain architecture")
 
-        import sys
         import os
+        import sys
 
-        from app.src.domain.protocols.notification_protocol import PlaybackNotifierProtocol as PlaybackSubject
+        from app.src.domain.protocols.notification_protocol import (
+            PlaybackNotifierProtocol as PlaybackSubject,
+        )
 
         playback_subject = PlaybackSubject.get_instance()
 
@@ -146,7 +150,9 @@ class AudioDomainFactory:
         if sys.platform == "darwin":
             logger.info("🍎 Detected macOS platform")
             try:
-                from .backends.implementations.macos_audio_backend import MacOSAudioBackend
+                from .backends.implementations.macos_audio_backend import (
+                    MacOSAudioBackend,
+                )
 
                 macos_backend = MacOSAudioBackend(playback_subject)
                 logger.info(f"✅ Created macOS audio backend: {type(macos_backend).__name__}"
@@ -155,7 +161,9 @@ class AudioDomainFactory:
             except ImportError as e:
                 logger.warning(f"⚠️ macOS audio backend failed ({e}), falling back to mock"
                                )
-                from .backends.implementations.mock_audio_backend import MockAudioBackend
+                from .backends.implementations.mock_audio_backend import (
+                    MockAudioBackend,
+                )
 
                 fallback_backend = MockAudioBackend(playback_subject)
                 logger.info(f"✅ Created fallback mock backend: {type(fallback_backend).__name__}",
@@ -164,7 +172,9 @@ class AudioDomainFactory:
 
         elif sys.platform == "linux":
             logger.info("🐧 Detected Linux platform")
-            from .backends.implementations.wm8960_audio_backend import WM8960AudioBackend
+            from .backends.implementations.wm8960_audio_backend import (
+                WM8960AudioBackend,
+            )
 
             wm8960_backend = WM8960AudioBackend(playback_subject)
             logger.info(f"✅ Created WM8960 audio backend: {type(wm8960_backend).__name__}"

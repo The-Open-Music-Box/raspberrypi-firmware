@@ -10,7 +10,7 @@ across AudioController methods and providing consistent path resolution logic.
 """
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -35,7 +35,7 @@ class FilePathResolver:
         self.uploads_dir = Path(uploads_dir)
 
     @handle_service_errors("file_path_resolver")
-    def resolve_track_path(self, track, playlist_title: str) -> Optional[Path]:
+    def resolve_track_path(self, track, playlist_title: str) -> Path | None:
         """
         Resolve the path for a track file using multiple fallback strategies.
 
@@ -64,7 +64,7 @@ class FilePathResolver:
 
     def resolve_multiple_tracks(
         self, tracks, playlist_title: str
-    ) -> List[Tuple[object, Optional[Path]]]:
+    ) -> list[tuple[object, Path | None]]:
         """
         Resolve paths for multiple tracks efficiently.
 
@@ -82,7 +82,7 @@ class FilePathResolver:
 
         return results
 
-    def _generate_possible_paths(self, track, playlist_title: str) -> List[Path]:
+    def _generate_possible_paths(self, track, playlist_title: str) -> list[Path]:
         """
         Generate all possible paths for a track file.
 
@@ -147,7 +147,7 @@ class FilePathResolver:
             return False
         return True
 
-    def get_file_stats(self, path: Path) -> Optional[dict]:
+    def get_file_stats(self, path: Path) -> dict | None:
         """
         Get file statistics for a track file.
 

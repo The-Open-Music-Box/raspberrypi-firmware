@@ -23,9 +23,11 @@ def create_playback_coordinator(socketio=None):
     Returns:
         PlaybackCoordinator instance
     """
-    from app.src.application.controllers.playback_coordinator_controller import PlaybackCoordinator
-    from app.src.infrastructure.di.container import get_container
+    from app.src.application.controllers.playback_coordinator_controller import (
+        PlaybackCoordinator,
+    )
     from app.src.dependencies import get_data_playlist_service
+    from app.src.infrastructure.di.container import get_container
 
     # Get dependencies from DI container
     container = get_container()
@@ -50,7 +52,9 @@ def create_playback_coordinator(socketio=None):
         )
 
     # Fallback: create with mock backend
-    from app.src.domain.audio.backends.implementations.mock_audio_backend import MockAudioBackend
+    from app.src.domain.audio.backends.implementations.mock_audio_backend import (
+        MockAudioBackend,
+    )
     logger.warning("⚠️ Using MockAudioBackend fallback for PlaybackCoordinator")
     return PlaybackCoordinator(
         MockAudioBackend(),

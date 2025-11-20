@@ -10,8 +10,9 @@ across the application. It provides consistent formats for playlists, tracks,
 and player states across all layers (API, WebSocket, Database).
 """
 
-from typing import Dict, Any, List
 from datetime import datetime
+from typing import Any
+
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -44,7 +45,7 @@ class UnifiedSerializationService:
         include_tracks: bool = True,
         format: str = "api",
         calculate_duration: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Sérialise une playlist dans le format spécifié.
 
@@ -157,7 +158,7 @@ class UnifiedSerializationService:
 
     @staticmethod
     @handle_service_errors("unified_serialization")
-    def serialize_track(track: Any, format: str = "api") -> Dict[str, Any]:
+    def serialize_track(track: Any, format: str = "api") -> dict[str, Any]:
         """
         Sérialise une track dans le format spécifié.
 
@@ -257,7 +258,7 @@ class UnifiedSerializationService:
     @handle_service_errors("unified_serialization")
     def serialize_player_state(
         audio_controller: Any, state_manager: Any = None, include_playlist: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Construit l'état player unifié.
 
@@ -344,8 +345,8 @@ class UnifiedSerializationService:
 
     @staticmethod
     def serialize_bulk_playlists(
-        playlists: List[Any], format: str = "api", include_tracks: bool = False
-    ) -> List[Dict[str, Any]]:
+        playlists: list[Any], format: str = "api", include_tracks: bool = False
+    ) -> list[dict[str, Any]]:
         """
         Sérialise une liste de playlists de manière optimisée.
 

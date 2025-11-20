@@ -9,7 +9,7 @@ Defines the interface that button actions need from a playback coordinator.
 This allows the domain layer to remain pure without depending on application layer.
 """
 
-from typing import Protocol, Dict, Any
+from typing import Any, Protocol
 
 
 class PlaybackCoordinatorProtocol(Protocol):
@@ -96,7 +96,7 @@ class PlaybackCoordinatorProtocol(Protocol):
         """
         ...
 
-    def get_playback_status(self) -> Dict[str, Any]:
+    def get_playback_status(self) -> dict[str, Any]:
         """
         Get complete playback status information.
 

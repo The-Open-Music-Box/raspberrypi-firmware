@@ -8,8 +8,8 @@ This module provides clean dependency injection functions for FastAPI routes,
 using the DI Container to avoid circular dependencies.
 """
 
-from app.src.infrastructure.di.container import get_container
 from app.src.application.di.application_container import get_application_container
+from app.src.infrastructure.di.container import get_container
 from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)

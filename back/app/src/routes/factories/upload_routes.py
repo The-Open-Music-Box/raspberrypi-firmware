@@ -12,9 +12,9 @@ Single Responsibility: Initialize and register upload API routes with dependenci
 from fastapi import FastAPI
 from socketio import AsyncServer
 
+from app.src.api.endpoints.upload_api_routes import UploadAPIRoutes
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.api.endpoints.upload_api_routes import UploadAPIRoutes
 
 logger = get_logger(__name__)
 

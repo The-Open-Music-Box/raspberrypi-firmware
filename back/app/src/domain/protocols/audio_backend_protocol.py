@@ -4,8 +4,8 @@
 
 """Audio backend protocol for pure audio playback operations."""
 
-from typing import Protocol, Optional, runtime_checkable
 from abc import abstractmethod
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -90,7 +90,7 @@ class AudioBackendProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def get_position(self) -> Optional[int]:
+    async def get_position(self) -> int | None:
         """Get current playback position.
 
         Returns:
@@ -99,7 +99,7 @@ class AudioBackendProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def get_duration(self) -> Optional[int]:
+    async def get_duration(self) -> int | None:
         """Get duration of current track.
 
         Returns:

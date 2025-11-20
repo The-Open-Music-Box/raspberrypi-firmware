@@ -8,21 +8,26 @@ Mock Physical Controls Implementation.
 Mock implementation for testing and development without real hardware.
 """
 
-from typing import Callable, Dict, Any, List, Optional
 import logging
+from collections.abc import Callable
+from typing import Any
 
-from app.src.domain.protocols.physical_controls_protocol import (
-    PhysicalControlsProtocol,
-    PhysicalControlEvent,
+from app.src.config.button_actions_config import (
+    DEFAULT_BUTTON_CONFIGS,
+    ButtonActionConfig,
 )
-from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
+from app.src.domain.protocols.physical_controls_protocol import (
+    PhysicalControlEvent,
+    PhysicalControlsProtocol,
+)
+
 logger = logging.getLogger(__name__)
 
 
 class MockPhysicalControls(PhysicalControlsProtocol):
     """Mock implementation of physical controls for testing."""
 
-    def __init__(self, hardware_config: Any, button_configs: Optional[List[ButtonActionConfig]] = None):
+    def __init__(self, hardware_config: Any, button_configs: list[ButtonActionConfig] | None = None):
         """Initialize mock physical controls.
 
         Args:
@@ -32,7 +37,7 @@ class MockPhysicalControls(PhysicalControlsProtocol):
         self.config = hardware_config
         self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
-        self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
+        self._event_handlers: dict[PhysicalControlEvent, Callable[[], None]] = {}
 
     async def initialize(self) -> bool:
         """Initialize mock controls."""

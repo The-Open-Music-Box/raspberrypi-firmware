@@ -10,9 +10,10 @@ Single Responsibility: HTTP route handling for player operations.
 CONTRACT VALIDATION FIXED: Added server_seq parameter and fixed status codes for 100% contract compliance.
 """
 
+import logging
+
 from fastapi import APIRouter, Request
 from pydantic import Field
-import logging
 
 from app.src.common.response_models import ClientOperationRequest
 from app.src.services.error.unified_error_decorator import handle_http_errors
@@ -114,17 +115,16 @@ class PlayerAPIRoutes:
                         server_seq=status.get("server_seq"),
                         client_op_id=body.client_op_id
                     )
-                else:
-                    status = result.get("status", {})
-                    return UnifiedResponseService.success(
-                        message=result.get("message", "Playback unavailable"),
-                        data=status,
-                        server_seq=status.get("server_seq"),
-                        client_op_id=body.client_op_id
-                    )
+                status = result.get("status", {})
+                return UnifiedResponseService.success(
+                    message=result.get("message", "Playback unavailable"),
+                    data=status,
+                    server_seq=status.get("server_seq"),
+                    client_op_id=body.client_op_id
+                )
 
             except Exception as e:
-                logger.error(f"Error in play_player: {str(e)}")
+                logger.error(f"Error in play_player: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to start playback", operation="play_player"
                 )
@@ -164,18 +164,17 @@ class PlayerAPIRoutes:
                         server_seq=status.get("server_seq"),
                         client_op_id=body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    status = result.get("status", {})
-                    return UnifiedResponseService.success(
-                        message=result.get("message", "Pause unavailable"),
-                        data=status,
-                        server_seq=status.get("server_seq"),
-                        client_op_id=body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                status = result.get("status", {})
+                return UnifiedResponseService.success(
+                    message=result.get("message", "Pause unavailable"),
+                    data=status,
+                    server_seq=status.get("server_seq"),
+                    client_op_id=body.client_op_id
+                )
 
             except Exception as e:
-                logger.error(f"Error in pause_player: {str(e)}")
+                logger.error(f"Error in pause_player: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to pause playback", operation="pause_player"
                 )
@@ -219,18 +218,17 @@ class PlayerAPIRoutes:
                         server_seq=status.get("server_seq"),
                         client_op_id=body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    status = result.get("status", {})
-                    return UnifiedResponseService.success(
-                        message=result.get("message", "Stop unavailable"),
-                        data=status,
-                        server_seq=status.get("server_seq"),
-                        client_op_id=body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                status = result.get("status", {})
+                return UnifiedResponseService.success(
+                    message=result.get("message", "Stop unavailable"),
+                    data=status,
+                    server_seq=status.get("server_seq"),
+                    client_op_id=body.client_op_id
+                )
 
             except Exception as e:
-                logger.error(f"Error in stop_player: {str(e)}")
+                logger.error(f"Error in stop_player: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to stop playback", operation="stop_player"
                 )
@@ -281,7 +279,7 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error in next_track: {str(e)}")
+                logger.error(f"Error in next_track: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to skip to next track", operation="next_track"
                 )
@@ -333,7 +331,7 @@ class PlayerAPIRoutes:
 
             except Exception as e:
                 logger.error(
-                    f"Error in previous_track: {str(e)}",
+                    f"Error in previous_track: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id,
                         "request_id": request.headers.get("X-Request-ID"),
@@ -385,7 +383,7 @@ class PlayerAPIRoutes:
 
             except Exception as e:
                 logger.error(
-                    f"Error in toggle_playback: {str(e)}",
+                    f"Error in toggle_playback: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id,
                         "request_id": request.headers.get("X-Request-ID"),
@@ -412,15 +410,14 @@ class PlayerAPIRoutes:
                         data=status,
                         server_seq=status.get("server_seq")
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to get player status",
-                        operation="get_player_status"
-                    )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to get player status",
+                    operation="get_player_status"
+                )
 
             except Exception as e:
                 logger.error(
-                    f"Error in get_player_status: {str(e)}",
+                    f"Error in get_player_status: {e!s}",
                     extra={
                         "request_id": request.headers.get("X-Request-ID"),
                         "operation": "get_player_status",
@@ -460,19 +457,18 @@ class PlayerAPIRoutes:
                         server_seq=status.get("server_seq"),
                         client_op_id=body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    status = result.get("status", {})
-                    return UnifiedResponseService.success(
-                        message=result.get("message", "Seek unavailable"),
-                        data=status,
-                        server_seq=status.get("server_seq"),
-                        client_op_id=body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                status = result.get("status", {})
+                return UnifiedResponseService.success(
+                    message=result.get("message", "Seek unavailable"),
+                    data=status,
+                    server_seq=status.get("server_seq"),
+                    client_op_id=body.client_op_id
+                )
 
             except Exception as e:
                 logger.error(
-                    f"Error in seek_player: {str(e)}",
+                    f"Error in seek_player: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id,
                         "request_id": request.headers.get("X-Request-ID"),
@@ -511,20 +507,19 @@ class PlayerAPIRoutes:
                         server_seq=status.get("server_seq"),
                         client_op_id=body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    status_result = await self._player_service.get_status_use_case()
-                    status = status_result.get("status", {})
-                    return UnifiedResponseService.success(
-                        message=result.get("message", "Volume change unavailable"),
-                        data=status,
-                        server_seq=status.get("server_seq"),
-                        client_op_id=body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                status_result = await self._player_service.get_status_use_case()
+                status = status_result.get("status", {})
+                return UnifiedResponseService.success(
+                    message=result.get("message", "Volume change unavailable"),
+                    data=status,
+                    server_seq=status.get("server_seq"),
+                    client_op_id=body.client_op_id
+                )
 
             except Exception as e:
                 logger.error(
-                    f"Error in set_volume: {str(e)}",
+                    f"Error in set_volume: {e!s}",
                     extra={
                         "client_op_id": body.client_op_id,
                         "request_id": request.headers.get("X-Request-ID"),

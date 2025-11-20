@@ -10,13 +10,14 @@ Following DDD principles:
 - Maintains business invariants and rules
 """
 
-from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass
 from enum import Enum
 
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_service_errors
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_service_errors,
+)
 
 
 class ReorderingStrategy(Enum):
@@ -33,9 +34,9 @@ class ReorderingCommand:
 
     playlist_id: str
     strategy: ReorderingStrategy
-    track_numbers: List[int]
-    target_positions: Optional[List[int]] = None
-    validation_rules: Optional[Dict[str, any]] = None
+    track_numbers: list[int]
+    target_positions: list[int] | None = None
+    validation_rules: dict[str, any] | None = None
 
 
 @dataclass
@@ -43,11 +44,11 @@ class ReorderingResult:
     """Result object for track reordering operations."""
 
     success: bool
-    original_order: List[int]
-    new_order: List[int]
-    affected_tracks: List[Track]
-    validation_errors: List[str]
-    business_rule_violations: List[str]
+    original_order: list[int]
+    new_order: list[int]
+    affected_tracks: list[Track]
+    validation_errors: list[str]
+    business_rule_violations: list[str]
 
 
 class TrackReorderingService:
@@ -66,8 +67,8 @@ class TrackReorderingService:
         pass
 
     def validate_reordering_command(
-        self, command: ReorderingCommand, tracks: List[Track]
-    ) -> List[str]:
+        self, command: ReorderingCommand, tracks: list[Track]
+    ) -> list[str]:
         """
         Validate a reordering command against business rules.
 
@@ -133,7 +134,7 @@ class TrackReorderingService:
 
         return errors
 
-    def calculate_new_order(self, command: ReorderingCommand, tracks: List[Track]) -> List[int]:
+    def calculate_new_order(self, command: ReorderingCommand, tracks: list[Track]) -> list[int]:
         """
         Calculate the new track order based on the reordering command.
 
@@ -147,7 +148,7 @@ class TrackReorderingService:
         if command.strategy == ReorderingStrategy.BULK_REORDER:
             return command.track_numbers.copy()
 
-        elif command.strategy == ReorderingStrategy.MOVE_TO_POSITION:
+        if command.strategy == ReorderingStrategy.MOVE_TO_POSITION:
             # More complex logic for moving specific tracks to positions
             current_order = [
                 track.track_number for track in sorted(tracks, key=lambda t: t.track_number)
@@ -160,7 +161,7 @@ class TrackReorderingService:
 
             return new_order
 
-        elif command.strategy == ReorderingStrategy.SWAP_TRACKS:
+        if command.strategy == ReorderingStrategy.SWAP_TRACKS:
             if len(command.track_numbers) != 2:
                 raise ValueError("Swap strategy requires exactly 2 track numbers")
 
@@ -177,10 +178,9 @@ class TrackReorderingService:
 
             return new_order
 
-        else:
-            raise ValueError(f"Unsupported reordering strategy: {command.strategy}")
+        raise ValueError(f"Unsupported reordering strategy: {command.strategy}")
 
-    def create_reordered_tracks(self, new_order: List[int], tracks: List[Track]) -> List[Track]:
+    def create_reordered_tracks(self, new_order: list[int], tracks: list[Track]) -> list[Track]:
         """
         Create a new list of tracks with updated track numbers based on new order.
 
@@ -216,7 +216,7 @@ class TrackReorderingService:
 
     @handle_service_errors("track_reordering")
     def execute_reordering(
-        self, command: ReorderingCommand, tracks: List[Track]
+        self, command: ReorderingCommand, tracks: list[Track]
     ) -> ReorderingResult:
         """
         Execute a track reordering operation.
@@ -272,8 +272,8 @@ class TrackReorderingService:
         )
 
     def _check_business_rules(
-        self, reordered_tracks: List[Track], original_tracks: List[Track]
-    ) -> List[str]:
+        self, reordered_tracks: list[Track], original_tracks: list[Track]
+    ) -> list[str]:
         """
         Check business rules after reordering.
 
@@ -323,7 +323,7 @@ class TrackReorderingService:
 
         return violations
 
-    def can_reorder(self, playlist: Playlist) -> Tuple[bool, str]:
+    def can_reorder(self, playlist: Playlist) -> tuple[bool, str]:
         """
         Check if a playlist can be reordered.
 

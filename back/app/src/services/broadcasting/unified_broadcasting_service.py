@@ -9,11 +9,11 @@ This service centralizes all Socket.IO broadcasting patterns to eliminate
 the 15+ duplicated broadcasting patterns across route handlers.
 """
 
-from typing import Dict, Any, Optional, List
 import logging
+from typing import Any
 
-from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.common.socket_events import StateEventType
+from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
 logger = logging.getLogger(__name__)
@@ -44,11 +44,11 @@ class UnifiedBroadcastingService:
     async def broadcast_with_acknowledgment(
         self,
         event_type: StateEventType,
-        data: Dict[str, Any],
-        client_op_id: Optional[str] = None,
-        room: Optional[str] = None,
+        data: dict[str, Any],
+        client_op_id: str | None = None,
+        room: str | None = None,
         acknowledge_success: bool = True,
-        acknowledge_data: Optional[Dict[str, Any]] = None,
+        acknowledge_data: dict[str, Any] | None = None,
     ) -> bool:
         """
         Broadcast avec acknowledgment optionnel.
@@ -86,8 +86,8 @@ class UnifiedBroadcastingService:
         self,
         playlist_id: str,
         change_type: str,
-        playlist_data: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        playlist_data: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
     ) -> bool:
         """
         Broadcast spécifique pour changements de playlist.
@@ -132,8 +132,8 @@ class UnifiedBroadcastingService:
 
     async def broadcast_player_state(
         self,
-        state_data: Dict[str, Any],
-        client_op_id: Optional[str] = None,
+        state_data: dict[str, Any],
+        client_op_id: str | None = None,
         include_position: bool = True,
     ) -> bool:
         """
@@ -168,8 +168,8 @@ class UnifiedBroadcastingService:
         self,
         position_ms: int,
         duration_ms: int,
-        track_id: Optional[str] = None,
-        playlist_id: Optional[str] = None,
+        track_id: str | None = None,
+        playlist_id: str | None = None,
     ) -> bool:
         """
         Broadcast de progression de track (optimisé pour fréquence élevée).
@@ -204,11 +204,11 @@ class UnifiedBroadcastingService:
     async def broadcast_nfc_association(
         self,
         association_state: str,
-        playlist_id: Optional[str] = None,
-        tag_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        client_op_id: Optional[str] = None,
-        expires_at: Optional[str] = None,
+        playlist_id: str | None = None,
+        tag_id: str | None = None,
+        session_id: str | None = None,
+        client_op_id: str | None = None,
+        expires_at: str | None = None,
     ) -> bool:
         """
         Broadcast pour associations NFC.
@@ -278,9 +278,9 @@ class UnifiedBroadcastingService:
         self,
         error_message: str,
         error_type: str = "error",
-        operation: Optional[str] = None,
-        client_op_id: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        operation: str | None = None,
+        client_op_id: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> bool:
         """
         Broadcast d'erreur à tous les clients concernés.
@@ -318,7 +318,7 @@ class UnifiedBroadcastingService:
 
     @handle_service_errors("unified_broadcasting")
     async def broadcast_batch(
-        self, broadcasts: List[Dict[str, Any]], client_op_id: Optional[str] = None
+        self, broadcasts: list[dict[str, Any]], client_op_id: str | None = None
     ) -> int:
         """
         Effectue plusieurs broadcasts en batch.
@@ -352,7 +352,7 @@ class UnifiedBroadcastingService:
 
         return successful_count
 
-    def get_statistics(self) -> Dict[str, int]:
+    def get_statistics(self) -> dict[str, int]:
         """
         Retourne les statistiques de broadcasting.
 

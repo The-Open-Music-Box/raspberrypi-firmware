@@ -8,8 +8,8 @@ This module provides the main entry point for initializing the domain-driven arc
 and provides compatibility layers for legacy code.
 """
 
-from typing import Any, Dict, Optional
 import logging
+from typing import Any
 
 # Direct imports instead of dynamic imports
 from app.src.domain.audio.container import audio_domain_container
@@ -29,7 +29,7 @@ class DomainBootstrap:
 
     # MARK: - Initialization
 
-    def __init__(self, led_manager: Optional[Any] = None, led_event_handler: Optional[Any] = None, physical_controls_manager: Optional[Any] = None):
+    def __init__(self, led_manager: Any | None = None, led_event_handler: Any | None = None, physical_controls_manager: Any | None = None):
         """Initialize the bootstrap.
 
         Args:
@@ -145,7 +145,7 @@ class DomainBootstrap:
                     # Show boot hardware error LED (slow blink red)
                     if self._led_event_handler:
                         try:
-                            await self._led_event_handler.on_boot_error(f"Audio initialization failed: {str(e)}")
+                            await self._led_event_handler.on_boot_error(f"Audio initialization failed: {e!s}")
                         except Exception as led_error:
                             logger.warning(f"LED boot error indication failed: {led_error}")
                     # Re-raise to prevent app from starting with broken audio
@@ -167,8 +167,7 @@ class DomainBootstrap:
                 if success:
                     logger.info("✅ Physical controls initialized successfully (buttons + encoder)")
                     return  # Success!
-                else:
-                    raise RuntimeError("Physical controls initialization returned False")
+                raise RuntimeError("Physical controls initialization returned False")
             except Exception as e:
                 if attempt < max_retries:
                     logger.warning(f"⚠️ Physical controls initialization attempt {attempt} failed: {e}")
@@ -265,11 +264,11 @@ class DomainBootstrap:
         return self._is_initialized
 
     @property
-    def led_event_handler(self) -> Optional[Any]:
+    def led_event_handler(self) -> Any | None:
         """Get LED event handler for application use."""
         return self._led_event_handler
 
-    def set_physical_controls_manager(self, physical_controls_manager: Optional[Any]) -> None:
+    def set_physical_controls_manager(self, physical_controls_manager: Any | None) -> None:
         """Set physical controls manager after bootstrap creation.
 
         This method allows injecting PhysicalControlsManager after DomainBootstrap
@@ -286,7 +285,7 @@ class DomainBootstrap:
 
     # MARK: - System Status
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Get comprehensive system status."""
         return {
             "domain_bootstrap": {

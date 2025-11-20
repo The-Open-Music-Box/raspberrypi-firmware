@@ -8,6 +8,7 @@ This stub maintains API shape but does not subscribe to domain events.
 """
 
 import importlib as _il
+
 _logging = _il.import_module('logging')
 
 

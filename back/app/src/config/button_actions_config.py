@@ -10,7 +10,6 @@ This allows flexible configuration of button behavior without changing code.
 """
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 
 @dataclass
@@ -29,7 +28,7 @@ class ButtonActionConfig:
     gpio_pin: int
     action_name: str
     enabled: bool = True
-    description: Optional[str] = None
+    description: str | None = None
 
     def __post_init__(self):
         """Validate button configuration."""
@@ -45,7 +44,7 @@ class ButtonActionConfig:
 
 # Default button configuration matching the requested GPIO assignments
 # bt0=GPIO23, bt1=GPIO27, bt2=GPIO22, bt3=GPIO6, bt4=GPIO5
-DEFAULT_BUTTON_CONFIGS: List[ButtonActionConfig] = [
+DEFAULT_BUTTON_CONFIGS: list[ButtonActionConfig] = [
     ButtonActionConfig(
         button_id=0,
         gpio_pin=23,
@@ -93,7 +92,7 @@ AVAILABLE_ACTIONS = {
 }
 
 
-def validate_button_configs(configs: List[ButtonActionConfig]) -> List[str]:
+def validate_button_configs(configs: list[ButtonActionConfig]) -> list[str]:
     """
     Validate a list of button configurations.
 
@@ -126,7 +125,7 @@ def validate_button_configs(configs: List[ButtonActionConfig]) -> List[str]:
     return errors
 
 
-def get_button_config_by_id(button_id: int, configs: Optional[List[ButtonActionConfig]] = None) -> Optional[ButtonActionConfig]:
+def get_button_config_by_id(button_id: int, configs: list[ButtonActionConfig] | None = None) -> ButtonActionConfig | None:
     """
     Get button configuration by button ID.
 
@@ -144,7 +143,7 @@ def get_button_config_by_id(button_id: int, configs: Optional[List[ButtonActionC
     return None
 
 
-def get_button_config_by_pin(gpio_pin: int, configs: Optional[List[ButtonActionConfig]] = None) -> Optional[ButtonActionConfig]:
+def get_button_config_by_pin(gpio_pin: int, configs: list[ButtonActionConfig] | None = None) -> ButtonActionConfig | None:
     """
     Get button configuration by GPIO pin.
 

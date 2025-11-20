@@ -9,8 +9,9 @@ implemented purely with stdlib logging to avoid cross-layer imports.
 """
 
 import importlib as _il
+
 _logging = _il.import_module('logging')
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class ImprovedLogger:
@@ -66,7 +67,7 @@ class ImprovedLogger:
             return True
         return False
 
-    def _format_extra(self, extra: Dict[str, Any]) -> str:
+    def _format_extra(self, extra: dict[str, Any]) -> str:
         """Format extra context information.
 
         Args:
@@ -93,7 +94,7 @@ class ImprovedLogger:
         self,
         level: Any,
         message: str,
-        exc_info: Optional[Exception] = None,
+        exc_info: Exception | None = None,
         **kwargs,
     ):
         """Log a message with the specified level.
@@ -148,11 +149,11 @@ class ImprovedLogger:
         """Log a warning message."""
         self.logger.warning(message)
 
-    def error(self, message: str, exc_info: Optional[Exception] = None, **kwargs):
+    def error(self, message: str, exc_info: Exception | None = None, **kwargs):
         """Log an error message."""
         self.logger.error(message)
 
-    def critical(self, message: str, exc_info: Optional[Exception] = None, **kwargs):
+    def critical(self, message: str, exc_info: Exception | None = None, **kwargs):
         """Log a critical message."""
         self.logger.critical(message)
 
@@ -183,7 +184,7 @@ class ImprovedLogger:
 class LoggerContext:
     """Context manager for temporary logger context."""
 
-    def __init__(self, logger: ImprovedLogger, context: Dict[str, Any]):
+    def __init__(self, logger: ImprovedLogger, context: dict[str, Any]):
         self.logger = logger
         self.context = context
         self.original_context = {}

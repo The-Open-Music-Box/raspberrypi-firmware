@@ -4,13 +4,13 @@
 
 """Data domain track repository implementation."""
 
-from typing import List, Optional, Dict, Any
+from typing import Any
 
-from app.src.monitoring import get_logger
 from app.src.domain.data.protocols.repository_protocol import TrackRepositoryProtocol
 from app.src.infrastructure.repositories.pure_sqlite_playlist_repository import (
-    PureSQLitePlaylistRepository
+    PureSQLitePlaylistRepository,
 )
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -27,19 +27,19 @@ class DataTrackRepository(TrackRepositoryProtocol):
         self._repo = sqlite_repository
         logger.info("✅ DataTrackRepository initialized")
 
-    async def get_by_playlist(self, playlist_id: str) -> List[Dict[str, Any]]:
+    async def get_by_playlist(self, playlist_id: str) -> list[dict[str, Any]]:
         """Get all tracks for a playlist."""
         return await self._repo.get_tracks_by_playlist(playlist_id)
 
-    async def get_by_id(self, track_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, track_id: str) -> dict[str, Any] | None:
         """Get a track by its ID."""
         return await self._repo.get_track_by_id(track_id)
 
-    async def add_to_playlist(self, playlist_id: str, track_data: Dict[str, Any]) -> str:
+    async def add_to_playlist(self, playlist_id: str, track_data: dict[str, Any]) -> str:
         """Add a track to a playlist."""
         return await self._repo.add_track_to_playlist(playlist_id, track_data)
 
-    async def update(self, track_id: str, track_data: Dict[str, Any]) -> bool:
+    async def update(self, track_id: str, track_data: dict[str, Any]) -> bool:
         """Update a track."""
         return await self._repo.update_track(track_id, track_data)
 
@@ -47,7 +47,7 @@ class DataTrackRepository(TrackRepositoryProtocol):
         """Delete a track."""
         return await self._repo.delete_track(track_id)
 
-    async def reorder(self, playlist_id: str, track_orders: List[Dict[str, int]]) -> bool:
+    async def reorder(self, playlist_id: str, track_orders: list[dict[str, int]]) -> bool:
         """Reorder tracks in a playlist."""
         return await self._repo.reorder_tracks(playlist_id, track_orders)
 

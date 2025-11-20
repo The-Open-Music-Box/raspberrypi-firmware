@@ -10,26 +10,26 @@ Contains action definitions for physical controls and other triggers.
 
 from .button_actions import (
     ButtonAction,
-    PlayAction,
-    PauseAction,
-    PlayPauseAction,
     NextTrackAction,
+    PauseAction,
+    PlayAction,
+    PlayPauseAction,
     PreviousTrackAction,
-    VolumeUpAction,
-    VolumeDownAction,
-    StopAction,
     PrintDebugAction,
+    StopAction,
+    VolumeDownAction,
+    VolumeUpAction,
 )
 
 __all__ = [
     "ButtonAction",
-    "PlayAction",
-    "PauseAction",
-    "PlayPauseAction",
     "NextTrackAction",
+    "PauseAction",
+    "PlayAction",
+    "PlayPauseAction",
     "PreviousTrackAction",
-    "VolumeUpAction",
-    "VolumeDownAction",
-    "StopAction",
     "PrintDebugAction",
+    "StopAction",
+    "VolumeDownAction",
+    "VolumeUpAction",
 ]

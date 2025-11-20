@@ -4,10 +4,13 @@
 
 """NFC adapter for domain-driven architecture."""
 
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
 from app.src.monitoring import get_logger
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
 
 
 class NFCHardwareInterface(Protocol):
@@ -85,7 +88,6 @@ class NFCHandlerAdapter:
         # This is a compatibility method for legacy code
         # The preferred way is to use the tag_subject for event-driven detection
         logger.debug("Direct read_tag called (compatibility mode)")
-        return None  # Return None as events should come through tag_subject
 
     async def read_nfc(self):
         """Asynchronous NFC tag reading."""

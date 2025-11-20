@@ -11,9 +11,9 @@ Single Responsibility: Initialize and register system API routes with dependenci
 
 from fastapi import FastAPI
 
+from app.src.api.endpoints.system_api_routes import SystemAPIRoutes
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.api.endpoints.system_api_routes import SystemAPIRoutes
 
 logger = get_logger(__name__)
 

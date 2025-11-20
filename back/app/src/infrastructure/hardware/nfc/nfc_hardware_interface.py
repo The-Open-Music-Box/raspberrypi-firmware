@@ -5,7 +5,8 @@
 """NFC Hardware Interface for Domain-Driven Architecture."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Any
+
 from rx.subject import Subject
 
 
@@ -64,7 +65,7 @@ class NFCHardwareInterface(ABC):
         pass
 
     @abstractmethod
-    async def read_nfc(self) -> Optional[Dict[str, Any]]:
+    async def read_nfc(self) -> dict[str, Any] | None:
         """Read NFC tag data directly.
 
         This method provides a direct way to read tag data,

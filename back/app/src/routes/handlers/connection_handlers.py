@@ -12,13 +12,13 @@ This module handles client connection lifecycle events including:
 """
 
 import time
-from typing import Dict, Any
+from typing import Any
 
 import socketio
 
+from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_http_errors
-from app.src.domain.audio.engine.state_manager import StateManager
 
 logger = get_logger(__name__)
 
@@ -52,7 +52,7 @@ class ConnectionHandlers:
 
         @self.sio.event
         @handle_http_errors()
-        async def connect(sid: str, environ: Dict[str, Any]) -> None:
+        async def connect(sid: str, environ: dict[str, Any]) -> None:
             """Handle client connection and send initial state sync.
 
             When a client connects, this handler:

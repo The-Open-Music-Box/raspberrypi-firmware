@@ -5,8 +5,8 @@
 """File Metadata Value Object."""
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -19,13 +19,13 @@ class FileMetadata:
     filename: str
     size_bytes: int
     mime_type: str
-    title: Optional[str] = None
-    artist: Optional[str] = None
-    album: Optional[str] = None
-    duration_seconds: Optional[float] = None
-    bitrate: Optional[int] = None
-    sample_rate: Optional[int] = None
-    extra_attributes: Dict[str, Any] = None
+    title: str | None = None
+    artist: str | None = None
+    album: str | None = None
+    duration_seconds: float | None = None
+    bitrate: int | None = None
+    sample_rate: int | None = None
+    extra_attributes: dict[str, Any] = None
 
     def __post_init__(self):
         """Validate metadata on creation."""
@@ -84,7 +84,7 @@ class FileMetadata:
         """Check if metadata has all basic audio information."""
         return all([self.title, self.artist, self.duration_seconds is not None])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metadata to dictionary for serialization."""
         return {
             "filename": self.filename,

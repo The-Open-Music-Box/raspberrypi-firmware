@@ -5,13 +5,15 @@
 """PN532 NFC Hardware Implementation for Raspberry Pi."""
 
 import asyncio
-import time
-from typing import Optional, Dict, Any
-from rx.subject import Subject
 import logging
+import time
+from typing import Any
+
+from rx.subject import Subject
+
+from app.src.services.error.unified_error_decorator import handle_errors
 
 from .nfc_hardware_interface import NFCHardwareInterface
-from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ class PN532NFCHardware(NFCHardwareInterface):
     and event emission for actual NFC tag detection.
     """
 
-    def __init__(self, bus_lock: asyncio.Lock, config: Optional[Any] = None):
+    def __init__(self, bus_lock: asyncio.Lock, config: Any | None = None):
         """Initialize PN532 NFC hardware.
 
         Args:
@@ -61,9 +63,9 @@ class PN532NFCHardware(NFCHardwareInterface):
     async def initialize(self) -> None:
         """Initialize the PN532 hardware."""
         # Import PN532 libraries (only available on Raspberry Pi)
-        from adafruit_pn532.i2c import PN532_I2C
         import board
         import busio
+        from adafruit_pn532.i2c import PN532_I2C
 
         # Initialize I2C
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -103,7 +105,7 @@ class PN532NFCHardware(NFCHardwareInterface):
         if self._reader_task and not self._reader_task.done():
             try:
                 await asyncio.wait_for(self._reader_task, timeout=2.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self._reader_task.cancel()
                 try:
                     await self._reader_task
@@ -117,7 +119,7 @@ class PN532NFCHardware(NFCHardwareInterface):
         return self._running
 
     @_handle_errors("read_nfc")
-    async def read_nfc(self) -> Optional[Dict[str, Any]]:
+    async def read_nfc(self) -> dict[str, Any] | None:
         """Read NFC tag data directly from PN532."""
         if not self._pn532:
             return None
@@ -173,7 +175,7 @@ class PN532NFCHardware(NFCHardwareInterface):
             await asyncio.sleep(self._config.debounce_time)
 
     @_handle_errors("_read_tag_with_retry")
-    async def _read_tag_with_retry(self) -> Optional[Dict[str, Any]]:
+    async def _read_tag_with_retry(self) -> dict[str, Any] | None:
         """Read tag data with retry logic."""
         for attempt in range(self._config.max_retries):
             async with self._bus_lock:
@@ -192,7 +194,7 @@ class PN532NFCHardware(NFCHardwareInterface):
         return None
 
     @_handle_errors("_handle_tag_present")
-    async def _handle_tag_present(self, tag_data: Dict[str, Any]) -> None:
+    async def _handle_tag_present(self, tag_data: dict[str, Any]) -> None:
         """Handle when a tag is detected."""
         tag_uid = tag_data["uid"]
 

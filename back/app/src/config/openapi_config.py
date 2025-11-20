@@ -13,7 +13,7 @@ This module provides comprehensive OpenAPI documentation configuration including
 - Security schemes (for future authentication)
 """
 
-from typing import Dict, Any
+from typing import Any
 
 # API Metadata
 API_TITLE = "TheOpenMusicBox API"
@@ -272,7 +272,7 @@ Real-time bidirectional communication for state synchronization.
 # Custom OpenAPI Schema Modifications
 
 
-def customize_openapi_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
+def customize_openapi_schema(schema: dict[str, Any]) -> dict[str, Any]:
     """
     Customize the OpenAPI schema with additional information and examples.
 
@@ -427,7 +427,7 @@ RESPONSE_EXAMPLES = {
 
 
 # OpenAPI configuration for FastAPI
-def get_openapi_config() -> Dict[str, Any]:
+def get_openapi_config() -> dict[str, Any]:
     """
     Get the complete OpenAPI configuration for FastAPI initialization.
 
