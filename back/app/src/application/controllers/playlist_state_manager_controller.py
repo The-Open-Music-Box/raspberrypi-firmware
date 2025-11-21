@@ -71,6 +71,22 @@ class PlaylistStateManager:
 
         logger.info("✅ PlaylistStateManager initialized")
 
+    def _has_valid_playlist(self) -> bool:
+        """Check if current playlist is valid and has tracks.
+
+        Returns:
+            bool: True if playlist is valid
+        """
+        return bool(self._current_playlist and self._current_playlist.tracks)
+
+    def _can_navigate_with_repeat(self) -> bool:
+        """Check if navigation is allowed based on repeat modes.
+
+        Returns:
+            bool: True if repeat mode allows navigation
+        """
+        return self._repeat_mode in ["one", "all"]
+
     # --- Playlist Management ---
 
     def set_playlist(self, playlist: Playlist, start_index: int = 0) -> bool:
@@ -131,7 +147,7 @@ class PlaylistStateManager:
         Returns:
             Optional[Track]: Next track or None if at end
         """
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return None
 
         total_tracks = len(self._current_playlist.tracks)
@@ -174,7 +190,7 @@ class PlaylistStateManager:
         Returns:
             Optional[Track]: Previous track or None if at beginning
         """
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return None
 
         total_tracks = len(self._current_playlist.tracks)
@@ -258,20 +274,20 @@ class PlaylistStateManager:
 
     def can_go_next(self) -> bool:
         """Check if can move to next track."""
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return False
 
-        if self._repeat_mode in ["one", "all"]:
+        if self._can_navigate_with_repeat():
             return True
 
         return self._current_track_index < len(self._current_playlist.tracks) - 1
 
     def can_go_previous(self) -> bool:
         """Check if can move to previous track."""
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return False
 
-        if self._repeat_mode in ["one", "all"]:
+        if self._can_navigate_with_repeat():
             return True
 
         return self._current_track_index > 0

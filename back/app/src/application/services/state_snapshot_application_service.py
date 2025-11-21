@@ -85,6 +85,32 @@ class StateSnapshotApplicationService:
         else:
             logger.warning(f"Unknown room type for snapshot: {room}")
 
+    async def _emit_snapshot_event(
+        self,
+        event_type: str,
+        data: dict,
+        client_id: str,
+        **extra_fields
+    ) -> None:
+        """Create and emit a snapshot event.
+
+        Args:
+            event_type: Type of snapshot event
+            data: Snapshot data payload
+            client_id: Client to send snapshot to
+            **extra_fields: Additional fields for the event (e.g., playlist_id, playlist_seq)
+        """
+        snapshot_event = {
+            "event_type": event_type,
+            "server_seq": self.sequences.get_current_global_seq(),
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+            "event_id": str(uuid.uuid4())[:8],
+            **extra_fields
+        }
+
+        await self.socketio.emit(event_type, snapshot_event, room=client_id)
+
     @handle_service_errors("state_snapshot_service")
     async def _send_playlists_snapshot(self, client_id: str) -> None:
         """
@@ -112,18 +138,10 @@ class StateSnapshotApplicationService:
         playlists_data = self.serialization_service.serialize_playlists_collection(playlists)
 
         # Create and send snapshot event
-        snapshot_event = {
-            "event_type": StateEventType.PLAYLISTS_SNAPSHOT.value,
-            "server_seq": self.sequences.get_current_global_seq(),
-            "data": {"playlists": playlists_data},
-            "timestamp": int(time.time() * 1000),
-            "event_id": str(uuid.uuid4())[:8],  # Contract-required field
-        }
-
-        await self.socketio.emit(
+        await self._emit_snapshot_event(
             StateEventType.PLAYLISTS_SNAPSHOT.value,
-            snapshot_event,
-            room=client_id,
+            {"playlists": playlists_data},
+            client_id
         )
 
         logger.info(
@@ -163,20 +181,12 @@ class StateSnapshotApplicationService:
         playlist_data = self.serialization_service.serialize_playlist(playlist, include_tracks=True)
 
         # Create and send snapshot event
-        snapshot_event = {
-            "event_type": StateEventType.PLAYLIST_SNAPSHOT.value,
-            "server_seq": self.sequences.get_current_global_seq(),
-            "playlist_id": playlist_id,
-            "playlist_seq": self.sequences.get_current_playlist_seq(playlist_id),
-            "data": playlist_data,
-            "timestamp": int(time.time() * 1000),
-            "event_id": str(uuid.uuid4())[:8],  # Contract-required field
-        }
-
-        await self.socketio.emit(
+        await self._emit_snapshot_event(
             StateEventType.PLAYLIST_SNAPSHOT.value,
-            snapshot_event,
-            room=client_id,
+            playlist_data,
+            client_id,
+            playlist_id=playlist_id,
+            playlist_seq=self.sequences.get_current_playlist_seq(playlist_id)
         )
 
         logger.info(
