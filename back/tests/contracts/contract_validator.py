@@ -9,10 +9,16 @@ frontend and backend API/Socket.IO implementations.
 import json
 import asyncio
 import logging
+import warnings
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union, Tuple
 from dataclasses import dataclass
 from enum import Enum
+
+# Suppress jsonschema RefResolver deprecation warning
+# TODO: Migrate to new 'referencing' library when time permits
+warnings.filterwarnings("ignore", message=".*RefResolver.*", category=DeprecationWarning)
+
 import jsonschema
 from jsonschema import validate, ValidationError, RefResolver
 import requests

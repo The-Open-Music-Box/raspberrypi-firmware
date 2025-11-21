@@ -619,32 +619,15 @@ async function processDragEvent(evt: { moved?: { element: Track }; added?: { ele
       currentPlaylist.tracks.forEach((track) => {
         trackNumbers.push(getTrackNumber(track)) // Original track number in new position
       })
-      
-      // Apply optimistic update directly to the store for immediate UI feedback
-      const currentStoreTracks = unifiedStore.getTracksForPlaylist(playlistId)
-      if (currentStoreTracks.length > 0) {
-        // Create reordered array based on drag result
-        const reorderedTracks = trackNumbers
-          .map(num => currentStoreTracks.find(t => getTrackNumber(t) === num))
-          .filter((track): track is Track => track !== undefined)
-          .map((track, index) => ({
-            ...track,
-            track_number: index + 1, // Update track numbers for new positions
-            number: undefined // Remove legacy field
-          }))
-        
-        // Apply optimistic update to store immediately
-        unifiedStore.setTracksOptimistic(playlistId, reorderedTracks)
-      }
-      
-      logger.debug('Drag reorder details', { 
-        playlistId, 
+
+      logger.debug('Drag reorder details', {
+        playlistId,
         trackCount: currentPlaylist.tracks.length,
         newOrder: trackNumbers,
         firstThreeTracks: currentPlaylist.tracks.slice(0, 3).map(t => ({ number: getTrackNumber(t), title: t.title }))
       }, 'FilesList')
 
-      // Use unified store for consistency
+      // reorderTracks handles optimistic update internally
       await unifiedStore.reorderTracks(playlistId, trackNumbers)
       logger.info('Tracks reordered via unified store', { playlistId, newOrder: trackNumbers }, 'FilesList')
       showFeedback('success', t('file.tracksReordered'))

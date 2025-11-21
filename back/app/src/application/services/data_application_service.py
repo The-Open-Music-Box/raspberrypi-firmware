@@ -254,7 +254,7 @@ class DataApplicationService:
             logger.error(f"Failed to delete track {track_id}: {e}")
             raise BusinessLogicError(f"Failed to delete track: {str(e)}")
 
-    async def reorder_tracks_use_case(self, playlist_id: str, track_ids: List[str]) -> bool:
+    async def reorder_tracks_use_case(self, playlist_id: str, track_ids: List[str]) -> Dict[str, Any]:
         """Reorder tracks in a playlist.
 
         Args:
@@ -262,13 +262,24 @@ class DataApplicationService:
             track_ids: List of track IDs in new order
 
         Returns:
-            True if successful
+            Dict with status and message
         """
         try:
             if not track_ids:
                 raise BusinessLogicError("Track IDs list cannot be empty")
 
-            return await self._track_service.reorder_tracks(playlist_id, track_ids)
+            success = await self._track_service.reorder_tracks(playlist_id, track_ids)
+
+            if success:
+                return {
+                    "status": "success",
+                    "message": f"Reordered {len(track_ids)} tracks successfully"
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": "Failed to reorder tracks"
+                }
         except BusinessLogicError:
             raise
         except Exception as e:
@@ -297,12 +308,17 @@ class DataApplicationService:
             # Delete each track by number
             deleted_count = 0
             for track_number in track_numbers:
-                # Find track by number
-                tracks = await self._track_service.get_tracks_by_playlist(playlist_id)
-                track_to_delete = next((t for t in tracks if t.get('track_number') == track_number), None)
+                # Find track by number - handle both Track objects and dictionaries
+                tracks = await self._track_service.get_tracks(playlist_id)
+                track_to_delete = next(
+                    (t for t in tracks if (hasattr(t, 'track_number') and t.track_number == track_number) or
+                     (isinstance(t, dict) and t.get('track_number') == track_number)),
+                    None
+                )
 
                 if track_to_delete:
-                    await self._track_service.delete_track(track_to_delete['id'])
+                    track_id = track_to_delete.id if hasattr(track_to_delete, 'id') else track_to_delete['id']
+                    await self._track_service.delete_track(track_id)
                     deleted_count += 1
 
             return {

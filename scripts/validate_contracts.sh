@@ -198,7 +198,7 @@ start_server() {
     export USE_MOCK_HARDWARE="${USE_MOCK_HARDWARE:-true}"
 
     # Start the server in background (using app_sio for Socket.IO support)
-    if source venv/bin/activate && nohup python -m uvicorn app.main:app_sio --host 0.0.0.0 --port 8000 > /tmp/musicbox_server.log 2>&1 &
+    if source venv/bin/activate && nohup python3 -m uvicorn app.main:app_sio --host 0.0.0.0 --port 8000 > /tmp/musicbox_server.log 2>&1 &
     then
         SERVER_PID=$!
         log_info "Server started with PID: $SERVER_PID"

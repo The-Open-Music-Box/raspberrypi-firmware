@@ -181,7 +181,19 @@ class TestDataApplicationService:
 
         result = await service.reorder_tracks_use_case('playlist-1', track_ids)
 
-        assert result is True
+        assert result == {"status": "success", "message": f"Reordered {len(track_ids)} tracks successfully"}
+        assert result["status"] == "success"
+
+    @pytest.mark.asyncio
+    async def test_reorder_tracks_use_case_failure(self, service, mock_track_service):
+        """Test failed track reordering."""
+        track_ids = ['track-2', 'track-1', 'track-3']
+        mock_track_service.reorder_tracks.return_value = False
+
+        result = await service.reorder_tracks_use_case('playlist-1', track_ids)
+
+        assert result == {"status": "error", "message": "Failed to reorder tracks"}
+        assert result["status"] == "error"
 
     @pytest.mark.asyncio
     async def test_reorder_tracks_use_case_empty_list(self, service, mock_track_service):
@@ -241,3 +253,42 @@ class TestDataApplicationService:
         result = await service.get_playlist_by_nfc_use_case('nfc-123')
 
         assert result == expected_playlist
+
+    @pytest.mark.asyncio
+    async def test_delete_tracks_use_case_success(self, service, mock_playlist_service, mock_track_service):
+        """Test successful deletion of tracks."""
+        playlist_id = 'playlist-1'
+        track_numbers = [1, 3]
+
+        # Mock playlist exists
+        mock_playlist_service.get_playlist.return_value = {'id': playlist_id, 'title': 'Test'}
+
+        # Mock tracks exist
+        mock_track_service.get_tracks.return_value = [
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'},
+            {'id': 'track-3', 'track_number': 3, 'title': 'Track 3'}
+        ]
+
+        # Mock successful deletion
+        mock_track_service.delete_track.return_value = True
+
+        result = await service.delete_tracks_use_case(playlist_id, track_numbers)
+
+        assert result["status"] == "success"
+        assert result["deleted_count"] == 2
+        assert "Deleted 2 tracks" in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_delete_tracks_use_case_empty_list(self, service, mock_playlist_service, mock_track_service):
+        """Test deleting tracks with empty list."""
+        with pytest.raises(BusinessLogicError, match="Track numbers list cannot be empty"):
+            await service.delete_tracks_use_case('playlist-1', [])
+
+    @pytest.mark.asyncio
+    async def test_delete_tracks_use_case_playlist_not_found(self, service, mock_playlist_service, mock_track_service):
+        """Test deleting tracks when playlist doesn't exist."""
+        mock_playlist_service.get_playlist.return_value = None
+
+        with pytest.raises(BusinessLogicError, match="Playlist .* not found"):
+            await service.delete_tracks_use_case('playlist-1', [1, 2])

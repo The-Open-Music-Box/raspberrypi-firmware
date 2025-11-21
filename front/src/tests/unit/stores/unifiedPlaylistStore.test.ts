@@ -328,6 +328,56 @@ describe('unifiedPlaylistStore', () => {
       expect(mockApiService.reorderTracks).toHaveBeenCalledWith('pl1', ['t2', 't1'])
     })
 
+    it('should correctly reorder tracks with proper state updates', async () => {
+      // Regression test for off-by-one bug where duplicate optimistic updates
+      // caused track mapping to fail
+      const mockPlaylist = {
+        id: 'pl1',
+        title: 'Playlist 1',
+        tracks: [
+          { id: 't1', track_number: 1, title: 'Track 1', filename: 'track1.mp3' },
+          { id: 't2', track_number: 2, title: 'Track 2', filename: 'track2.mp3' },
+          { id: 't3', track_number: 3, title: 'Track 3', filename: 'track3.mp3' },
+          { id: 't4', track_number: 4, title: 'Track 4', filename: 'track4.mp3' },
+          { id: 't5', track_number: 5, title: 'Track 5', filename: 'track5.mp3' }
+        ]
+      }
+      mockApiService.getPlaylist.mockResolvedValue(mockPlaylist)
+      await store.loadPlaylistTracks('pl1')
+
+      mockApiService.reorderTracks.mockResolvedValue({ success: true })
+
+      // Simulate dragging track 5 to position 1 (0-indexed position 0)
+      // Visual order after drag: [track5, track1, track2, track3, track4]
+      // Track numbers from visual order: [5, 1, 2, 3, 4]
+      await store.reorderTracks('pl1', [5, 1, 2, 3, 4])
+
+      // Verify API was called with correct track IDs in correct order
+      expect(mockApiService.reorderTracks).toHaveBeenCalledWith('pl1', ['t5', 't1', 't2', 't3', 't4'])
+
+      // Verify optimistic update applied correct track_numbers
+      const updatedTracks = store.getTracksForPlaylist('pl1')
+      expect(updatedTracks).toHaveLength(5)
+
+      // Track 5 should now be first with track_number = 1
+      expect(updatedTracks[0].id).toBe('t5')
+      expect(updatedTracks[0].track_number).toBe(1)
+      expect(updatedTracks[0].title).toBe('Track 5')
+
+      // Track 1 should now be second with track_number = 2
+      expect(updatedTracks[1].id).toBe('t1')
+      expect(updatedTracks[1].track_number).toBe(2)
+      expect(updatedTracks[1].title).toBe('Track 1')
+
+      // Verify all tracks are in correct order
+      expect(updatedTracks[2].id).toBe('t2')
+      expect(updatedTracks[2].track_number).toBe(3)
+      expect(updatedTracks[3].id).toBe('t3')
+      expect(updatedTracks[3].track_number).toBe(4)
+      expect(updatedTracks[4].id).toBe('t4')
+      expect(updatedTracks[4].track_number).toBe(5)
+    })
+
     it('should move track between playlists', async () => {
       mockApiService.moveTrackBetweenPlaylists.mockResolvedValue({ success: true })
 

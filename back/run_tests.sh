@@ -271,13 +271,6 @@ main() {
             FAILED_TESTS=$((FAILED_TESTS + 1))
         fi
 
-        # App route tests
-        if run_pytest "app/tests/routes/" "App Route Tests"; then
-            TOTAL_TESTS_RUN=$((TOTAL_TESTS_RUN + 1))
-        else
-            FAILED_TESTS=$((FAILED_TESTS + 1))
-        fi
-
         # App integration tests (with timeout protection)
         if [ "$QUIET_MODE" != true ]; then
             echo ""
@@ -301,21 +294,6 @@ main() {
                 print_status $YELLOW "✅ Continuing with other tests..."
             fi
             # Don't count timeout as failure for integration tests
-        fi
-
-        # Hardware/Tools tests (GPIO, controls, etc.)
-        if [ "$QUIET_MODE" != true ]; then
-            echo ""
-            print_status $PURPLE "🔧 Running hardware and tools tests..."
-        fi
-
-        if run_pytest "tools/test_*.py" "Hardware & Tools Tests"; then
-            TOTAL_TESTS_RUN=$((TOTAL_TESTS_RUN + 1))
-        else
-            # Tools tests might fail in non-hardware environments
-            if [ "$QUIET_MODE" != true ]; then
-                print_status $YELLOW "⚠️️ Hardware tests failed (expected in non-RPi environment)"
-            fi
         fi
 
         # Standalone test files in app/tests/

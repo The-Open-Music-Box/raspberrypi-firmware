@@ -122,7 +122,7 @@ class TrackService:
 
     @handle_domain_errors(operation_name="delete_track")
     async def delete_track(self, track_id: str) -> bool:
-        """Delete a track.
+        """Delete a track and its associated file.
 
         Args:
             track_id: The track ID
@@ -130,13 +130,49 @@ class TrackService:
         Returns:
             True if successful
         """
+        # Get track info before deletion (for filesystem cleanup)
+        track = await self._track_repo.get_by_id(track_id)
+
+        # Delete from database
         success = await self._track_repo.delete(track_id)
+
         if success:
-            logger.info(f"✅ Deleted track {track_id}")
+            logger.info(f"✅ Deleted track {track_id} from database")
+
+            # Clean up track file from filesystem
+            if track and track.get('file_path'):
+                await self._cleanup_track_file(track)
         else:
             logger.warning(f"Failed to delete track {track_id}")
 
         return success
+
+    async def _cleanup_track_file(self, track: Dict[str, Any]) -> None:
+        """Clean up the filesystem file for a deleted track.
+
+        Args:
+            track: Track data dictionary
+        """
+        try:
+            from pathlib import Path
+            import os
+
+            file_path = track.get('file_path')
+            if not file_path:
+                logger.debug(f"No file_path for track {track.get('id')}, skipping filesystem cleanup")
+                return
+
+            file_path_obj = Path(file_path)
+
+            if file_path_obj.exists() and file_path_obj.is_file():
+                os.remove(file_path_obj)
+                logger.info(f"🗑️ Removed track file: {file_path}")
+            else:
+                logger.debug(f"📁 Track file not found (may have been manually deleted): {file_path}")
+
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to clean up track file {file_path}: {e}")
+            # Don't fail the delete operation if file cleanup fails
 
     @handle_domain_errors(operation_name="reorder_tracks")
     async def reorder_tracks(self, playlist_id: str, track_ids: List[str]) -> bool:

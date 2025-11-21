@@ -21,7 +21,7 @@ interface StateEvent {
   event_type: string
   server_seq: number
   playlist_id?: string
-  data: any
+  data: unknown
   timestamp: number
   event_id: string
 }
@@ -48,6 +48,29 @@ interface PlayerState {
   muted?: boolean
   state?: string
   server_seq: number
+}
+
+interface OperationAck {
+  client_op_id: string
+  data?: Partial<PlayerState>
+  error?: string
+}
+
+interface PlaylistIndexUpdate {
+  type: 'create' | 'update' | 'delete'
+  id?: string
+  playlist?: Playlist
+}
+
+type StateEventDetail = StateEvent | PlayerState | Playlist | Track | {
+  playlists?: Playlist[]
+  playlist?: Playlist
+  track?: Track
+  playlist_id?: string
+  track_numbers?: number[]
+  volume?: number
+  updates?: PlaylistIndexUpdate[]
+  [key: string]: unknown
 }
 
 export const useServerStateStore = defineStore('serverState', () => {
@@ -152,40 +175,40 @@ export const useServerStateStore = defineStore('serverState', () => {
     // These events are dispatched from setupStateListeners in socketService
     logger.info('🔊 Setting up DOM event listeners for server state...', {}, 'ServerState')
 
-    window.addEventListener('state:playlists', (e: any) => {
+    window.addEventListener('state:playlists', (e: Event) => {
       logger.info('🔊 DOM event state:playlists received', {}, 'ServerState')
-      handlePlaylistsSnapshot(e.detail)
+      handlePlaylistsSnapshot((e as CustomEvent<StateEventDetail>).detail)
     })
-    window.addEventListener('state:playlist', (e: any) => handlePlaylistSnapshot(e.detail))
-    window.addEventListener('state:track', (e: any) => handleTrackSnapshot(e.detail))
-    window.addEventListener('state:player', (e: any) => handlePlayerState(e.detail))
-    window.addEventListener('state:track_progress', (e: any) => handleTrackProgress(e.detail))
+    window.addEventListener('state:playlist', (e: Event) => handlePlaylistSnapshot((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:track', (e: Event) => handleTrackSnapshot((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:player', (e: Event) => handlePlayerState((e as CustomEvent<StateEvent | PlayerState>).detail))
+    window.addEventListener('state:track_progress', (e: Event) => handleTrackProgress((e as CustomEvent<StateEvent>).detail))
     let trackPositionLogged = false
-    window.addEventListener('state:track_position', (e: any) => {
+    window.addEventListener('state:track_position', (e: Event) => {
       if (!trackPositionLogged) {
-        logger.info('🔊 DOM event state:track_position received for first time!', e.detail, 'ServerState')
+        logger.info('🔊 DOM event state:track_position received for first time!', (e as CustomEvent<StateEvent>).detail, 'ServerState')
         trackPositionLogged = true
       }
-      handleTrackPosition(e.detail)
+      handleTrackPosition((e as CustomEvent<StateEvent>).detail)
     })
 
     // Specific action events for enhanced UX - also via DOM events
-    window.addEventListener('state:playlist_deleted', (e: any) => handlePlaylistDeleted(e.detail))
-    window.addEventListener('state:playlist_created', (e: any) => handlePlaylistCreated(e.detail))
-    window.addEventListener('state:playlist_updated', (e: any) => handlePlaylistUpdated(e.detail))
-    window.addEventListener('state:track_deleted', (e: any) => handleTrackDeleted(e.detail))
-    window.addEventListener('state:track_added', (e: any) => handleTrackAdded(e.detail))
-    window.addEventListener('state:playlists_index_update', (e: any) => handlePlaylistsIndexUpdate(e.detail))
+    window.addEventListener('state:playlist_deleted', (e: Event) => handlePlaylistDeleted((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:playlist_created', (e: Event) => handlePlaylistCreated((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:playlist_updated', (e: Event) => handlePlaylistUpdated((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:track_deleted', (e: Event) => handleTrackDeleted((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:track_added', (e: Event) => handleTrackAdded((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:playlists_index_update', (e: Event) => handlePlaylistsIndexUpdate((e as CustomEvent<StateEvent>).detail))
 
     // System state events
-    window.addEventListener('state:volume_changed', (e: any) => handleVolumeChanged(e.detail))
-    window.addEventListener('state:nfc_state', (e: any) => handleNFCState(e.detail))
+    window.addEventListener('state:volume_changed', (e: Event) => handleVolumeChanged((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:nfc_state', (e: Event) => handleNFCState((e as CustomEvent<StateEvent>).detail))
 
     // Upload events - handled by dedicated upload components
 
     // Operation acknowledgments - these still come directly via socket
-    socketService.on(SOCKET_EVENTS.ACK_OP, (ack: any) => handleOperationSuccess(ack))
-    socketService.on(SOCKET_EVENTS.ERR_OP, (ack: any) => handleOperationError(ack))
+    socketService.on(SOCKET_EVENTS.ACK_OP, (ack: OperationAck) => handleOperationSuccess(ack))
+    socketService.on(SOCKET_EVENTS.ERR_OP, (ack: OperationAck) => handleOperationError(ack))
   }
 
   // Subscription management
@@ -229,24 +252,26 @@ export const useServerStateStore = defineStore('serverState', () => {
   // Clean architecture - paginated index handlers removed
 
   // State event handlers
-  function handlePlaylistsSnapshot(event: StateEvent | any) {
+  function handlePlaylistsSnapshot(event: StateEventDetail) {
     logger.debug('[ServerState] Received playlists snapshot', event)
     // Handle both wrapped and direct data formats
-    let playlistsData = []
-    if (event.data && event.data.playlists) {
+    let playlistsData: Playlist[] = []
+    if ('data' in event && event.data && typeof event.data === 'object' && 'playlists' in event.data) {
       // Standard format: event.data.playlists
-      playlistsData = event.data.playlists
-    } else if (event.playlists) {
+      playlistsData = (event.data as { playlists: Playlist[] }).playlists
+    } else if ('playlists' in event && Array.isArray(event.playlists)) {
       // Direct format: event.playlists (from fallback)
       playlistsData = event.playlists
     }
     playlists.value = playlistsData || []
-    globalSequence.value = event.server_seq || 0
+    globalSequence.value = ('server_seq' in event && typeof (event as { server_seq?: number }).server_seq === 'number')
+      ? (event as { server_seq: number }).server_seq
+      : 0
   }
 
   function handlePlaylistSnapshot(event: StateEvent) {
     logger.debug('[ServerState] Received playlist snapshot', event)
-    const playlist = event.data
+    const playlist = event.data as Playlist
     if (playlist) {
       updatePlaylistInList(playlist)
       if (currentPlaylist.value?.id === playlist.id) {
@@ -255,7 +280,8 @@ export const useServerStateStore = defineStore('serverState', () => {
     }
     globalSequence.value = event.server_seq
     if (event.playlist_id) {
-      playlistSequences[event.playlist_id] = event.data.playlist_seq || 0
+      const data = event.data as { playlist_seq?: number }
+      playlistSequences[event.playlist_id] = data.playlist_seq || 0
     }
   }
 
@@ -263,13 +289,14 @@ export const useServerStateStore = defineStore('serverState', () => {
     logger.debug('[ServerState] Received track snapshot', event)
     // Track changes are embedded in playlist updates
     // This handler ensures we process any track-specific state changes
-    if (event.playlist_id && event.data.playlist) {
-      const playlist = event.data.playlist
+    const data = event.data as { playlist?: Playlist; playlist_seq?: number }
+    if (event.playlist_id && data.playlist) {
+      const playlist = data.playlist
       updatePlaylistInList(playlist)
       if (currentPlaylist.value?.id === playlist.id) {
         currentPlaylist.value = playlist
       }
-      playlistSequences[event.playlist_id] = event.data.playlist_seq || 0
+      playlistSequences[event.playlist_id] = data.playlist_seq || 0
     }
     globalSequence.value = event.server_seq
   }
@@ -281,23 +308,23 @@ export const useServerStateStore = defineStore('serverState', () => {
     // Handle both direct PlayerState and StateEvent wrapper
     // StateEvent has structure: { event_type, server_seq, data: {...actual player state...} }
     // Direct PlayerState has structure: { is_playing, active_track, ... }
-    let stateData: any
+    let stateData: Partial<PlayerState> | null = null
     let serverSeq: number | undefined
 
-    if ('event_type' in event && event.event_type === 'state:player') {
+    if ('event_type' in event && (event as StateEvent).event_type === 'state:player') {
       // This is a StateEvent wrapper from socket
-      stateData = event.data
-      serverSeq = event.server_seq
+      stateData = (event as StateEvent).data as Partial<PlayerState>
+      serverSeq = (event as StateEvent).server_seq
       logger.debug('[ServerState] Extracting from StateEvent wrapper:', {
-        event_type: event.event_type,
+        event_type: (event as StateEvent).event_type,
         server_seq: serverSeq,
         data_keys: Object.keys(stateData || {}),
         active_track: stateData?.active_track?.title || 'none'
       })
     } else if ('data' in event && typeof event.data === 'object') {
       // This might be another wrapper format
-      stateData = event.data
-      serverSeq = (event as any).server_seq
+      stateData = event.data as Partial<PlayerState>
+      serverSeq = ('server_seq' in event ? (event as { server_seq: number }).server_seq : undefined)
       logger.debug('[ServerState] Extracting from data wrapper:', {
         has_data: true,
         server_seq: serverSeq,
@@ -305,8 +332,8 @@ export const useServerStateStore = defineStore('serverState', () => {
       })
     } else {
       // Direct PlayerState object
-      stateData = event
-      serverSeq = (event as any).server_seq
+      stateData = event as Partial<PlayerState>
+      serverSeq = ('server_seq' in event ? (event as { server_seq: number }).server_seq : undefined)
       logger.debug('[ServerState] Using direct PlayerState:', {
         direct: true,
         keys: Object.keys(stateData || {})
@@ -335,10 +362,10 @@ export const useServerStateStore = defineStore('serverState', () => {
 
       playerState.value = {
         is_playing: newPlayingState,
-        active_playlist_id: newPlaylistId,
-        active_playlist_title: stateData.active_playlist_title,
-        active_track_id: stateData.active_track_id,
-        active_track: stateData.active_track,
+        active_playlist_id: newPlaylistId ?? null,
+        active_playlist_title: stateData.active_playlist_title ?? null,
+        active_track_id: stateData.active_track_id ?? null,
+        active_track: stateData.active_track ?? null,
         position_ms: stateData.position_ms || 0,
         duration_ms: stateData.duration_ms || 0,
         track_index: stateData.track_index || 0,
@@ -404,7 +431,7 @@ export const useServerStateStore = defineStore('serverState', () => {
   function handleTrackProgress(event: StateEvent) {
     // Comment out to reduce console spam - track progress events are too frequent
     // logger.debug('[ServerState] Track progress', event)
-    const data = event.data
+    const data = event.data as { position_ms?: number; duration_ms?: number; track_info?: { id: string; title?: string; filename: string } }
     if (typeof data?.position_ms === 'number') {
       // Update only the position; do not change playing flags here
       playerState.value.position_ms = data.position_ms
@@ -434,7 +461,7 @@ export const useServerStateStore = defineStore('serverState', () => {
 
   function handleTrackPosition(event: StateEvent) {
     // Lightweight position-only updates with strategic logging
-    const data = event.data
+    const data = event.data as { position_ms?: number; duration_ms?: number; is_playing?: boolean; track_id?: string }
 
     // Log first event for debugging and every subsequent event for a few seconds
     if (!firstPositionLogged) {
@@ -477,7 +504,7 @@ export const useServerStateStore = defineStore('serverState', () => {
     }
   }
 
-  function handleOperationSuccess(ack: any) {
+  function handleOperationSuccess(ack: OperationAck) {
     logger.debug('[ServerState] Operation success', ack)
     pendingOperations.delete(ack.client_op_id)
 
@@ -491,10 +518,10 @@ export const useServerStateStore = defineStore('serverState', () => {
 
       playerState.value = {
         is_playing: newPlayingState,
-        active_playlist_id: stateData.active_playlist_id,
-        active_playlist_title: stateData.active_playlist_title,
-        active_track_id: stateData.active_track_id,
-        active_track: stateData.active_track,
+        active_playlist_id: stateData.active_playlist_id ?? null,
+        active_playlist_title: stateData.active_playlist_title ?? null,
+        active_track_id: stateData.active_track_id ?? null,
+        active_track: stateData.active_track ?? null,
         position_ms: stateData.position_ms || 0,
         duration_ms: stateData.duration_ms || 0,
         track_index: stateData.track_index || 0,
@@ -514,7 +541,7 @@ export const useServerStateStore = defineStore('serverState', () => {
     }
   }
 
-  function handleOperationError(ack: any) {
+  function handleOperationError(ack: OperationAck) {
     logger.error('[ServerState] Operation error', ack)
     pendingOperations.delete(ack.client_op_id)
   }
@@ -523,7 +550,8 @@ export const useServerStateStore = defineStore('serverState', () => {
   function handlePlaylistDeleted(event: StateEvent) {
     logger.debug('[ServerState] Playlist deleted', event)
     // Handle both event.data.playlist_id and event.playlist_id structures
-    const playlistId = event.data?.playlist_id || event.playlist_id
+    const data = event.data as { playlist_id?: string }
+    const playlistId = data?.playlist_id || event.playlist_id
     if (playlistId) {
       // Remove from playlists array
       const index = playlists.value.findIndex(p => p.id === playlistId)
@@ -547,7 +575,8 @@ export const useServerStateStore = defineStore('serverState', () => {
 
   function handlePlaylistCreated(event: StateEvent) {
     logger.info('🔊 [ServerState] Playlist created event received', event)
-    const playlist = event.data?.playlist
+    const data = event.data as { playlist?: Playlist }
+    const playlist = data?.playlist
     if (playlist) {
       // Add to playlists array if not already present
       const existingIndex = playlists.value.findIndex(p => p.id === playlist.id)
@@ -565,7 +594,8 @@ export const useServerStateStore = defineStore('serverState', () => {
 
   function handlePlaylistUpdated(event: StateEvent) {
     logger.debug('[ServerState] Playlist updated', event)
-    const playlist = event.data?.playlist
+    const data = event.data as { playlist?: Playlist; playlist_seq?: number }
+    const playlist = data?.playlist
     if (playlist) {
       updatePlaylistInList(playlist)
       if (currentPlaylist.value?.id === playlist.id) {
@@ -574,14 +604,15 @@ export const useServerStateStore = defineStore('serverState', () => {
     }
     globalSequence.value = event.server_seq
     if (event.playlist_id) {
-      playlistSequences[event.playlist_id] = event.data?.playlist_seq || 0
+      playlistSequences[event.playlist_id] = data?.playlist_seq || 0
     }
   }
 
   function handleTrackDeleted(event: StateEvent) {
     logger.debug('[ServerState] Track deleted', event)
-    const playlistId = event.data?.playlist_id
-    const trackNumbers = event.data?.track_numbers
+    const data = event.data as { playlist_id?: string; track_numbers?: number[]; playlist_seq?: number }
+    const playlistId = data?.playlist_id
+    const trackNumbers = data?.track_numbers
 
     if (playlistId && trackNumbers && Array.isArray(trackNumbers)) {
       const playlist = playlists.value.find(p => p.id === playlistId)
@@ -598,14 +629,15 @@ export const useServerStateStore = defineStore('serverState', () => {
 
     globalSequence.value = event.server_seq
     if (playlistId) {
-      playlistSequences[playlistId] = event.data?.playlist_seq || 0
+      playlistSequences[playlistId] = data?.playlist_seq || 0
     }
   }
 
   function handleTrackAdded(event: StateEvent) {
     logger.debug('[ServerState] Track added', event)
-    const playlistId = event.data?.playlist_id
-    const track = event.data?.track
+    const data = event.data as { playlist_id?: string; track?: Track; playlist_seq?: number }
+    const playlistId = data?.playlist_id
+    const track = data?.track
 
     if (playlistId && track) {
       const playlist = playlists.value.find(p => p.id === playlistId)
@@ -637,16 +669,16 @@ export const useServerStateStore = defineStore('serverState', () => {
 
     globalSequence.value = event.server_seq
     if (playlistId) {
-      playlistSequences[playlistId] = event.data?.playlist_seq || 0
+      playlistSequences[playlistId] = data?.playlist_seq || 0
     }
   }
 
   function handlePlaylistsIndexUpdate(event: StateEvent) {
     logger.debug('[ServerState] Playlists index update', event)
     // Handle paginated playlist updates
-    const updates = event.data?.updates
+    const updates = (event.data as { updates?: PlaylistIndexUpdate[] })?.updates
     if (updates && Array.isArray(updates)) {
-      updates.forEach((update: any) => {
+      updates.forEach((update: PlaylistIndexUpdate) => {
         if (update.type === 'delete' && update.id) {
           const index = playlists.value.findIndex(p => p.id === update.id)
           if (index >= 0) {
@@ -654,10 +686,11 @@ export const useServerStateStore = defineStore('serverState', () => {
             logger.debug(`[ServerState] Removed playlist ${update.id} from index update`)
           }
         } else if (update.type === 'create' && update.playlist) {
-          const existingIndex = playlists.value.findIndex(p => p.id === update.playlist.id)
+          const playlist = update.playlist
+          const existingIndex = playlists.value.findIndex(p => p.id === playlist.id)
           if (existingIndex === -1) {
-            playlists.value.push(update.playlist)
-            logger.debug(`[ServerState] Added playlist ${update.playlist.id} from index update`)
+            playlists.value.push(playlist)
+            logger.debug(`[ServerState] Added playlist ${playlist.id} from index update`)
           }
         } else if (update.type === 'update' && update.playlist) {
           updatePlaylistInList(update.playlist)
@@ -671,7 +704,8 @@ export const useServerStateStore = defineStore('serverState', () => {
 
   function handleVolumeChanged(event: StateEvent) {
     logger.debug('[ServerState] Volume changed', event)
-    const volume = event.data?.volume
+    const data = event.data as { volume?: number }
+    const volume = data?.volume
     if (volume !== undefined && playerState.value) {
       playerState.value.volume = volume
       logger.debug(`[ServerState] Updated volume to ${volume}`)

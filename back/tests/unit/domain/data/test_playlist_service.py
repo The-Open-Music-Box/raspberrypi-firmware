@@ -142,33 +142,51 @@ class TestPlaylistService:
         assert result['track_count'] == 0
         mock_playlist_repo.save.assert_called_once()
 
-    @pytest.mark.skip(reason="Mock configuration issue with AsyncMock - needs investigation")
     @pytest.mark.asyncio
     async def test_update_playlist_success(self, mock_track_repo):
         """Test updating a playlist successfully."""
         # Create fresh mocks for this test
         fresh_playlist_repo = AsyncMock()
         playlist_id = 'playlist-1'
-        updates = {'name': 'Updated Title'}
+        updates = {'title': 'Updated Title'}
+
+        # Create playlist entities
         existing_entity = Playlist(title="Old Title", tracks=[], id=playlist_id)
         updated_entity = Playlist(title="Updated Title", tracks=[], id=playlist_id)
 
-        # Configure mocks to return entities
-        fresh_playlist_repo.find_by_id.side_effect = [existing_entity, updated_entity]
-        fresh_playlist_repo.update.return_value = updated_entity
+        # Track call count to return different values
+        call_count = {'count': 0}
+
+        async def mock_find_by_id(pid):
+            """Mock that returns different values on subsequent calls."""
+            call_count['count'] += 1
+            if call_count['count'] == 1:
+                # First call in update_playlist - return existing entity
+                return existing_entity
+            else:
+                # Second call in get_playlist - return updated entity
+                return updated_entity
+
+        # Configure mocks
+        fresh_playlist_repo.find_by_id = mock_find_by_id
+        fresh_playlist_repo.update = AsyncMock(return_value=updated_entity)
 
         # Create service with fresh mocks
         fresh_service = PlaylistService(fresh_playlist_repo, mock_track_repo)
 
         result = await fresh_service.update_playlist(playlist_id, updates)
 
+        # Verify the result contains the updated data
         assert result['title'] == 'Updated Title'
-        fresh_playlist_repo.update.assert_called_once()
+        assert result['id'] == playlist_id
+        assert result['track_count'] == 0
+        # Verify update was called with the updated entity
+        assert fresh_playlist_repo.update.called
 
     @pytest.mark.asyncio
     async def test_update_playlist_not_found(self, service, mock_playlist_repo, mock_track_repo):
         """Test updating a playlist that doesn't exist."""
-        mock_playlist_repo.find_by_id.return_value = False
+        mock_playlist_repo.find_by_id.return_value = None
 
         with pytest.raises(ValueError, match="Playlist playlist-1 not found"):
             await service.update_playlist('playlist-1', {'title': 'New Title'})

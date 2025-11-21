@@ -67,7 +67,7 @@ class PurePlaylistRepositoryAdapter:
 
         # Create playlist domain entity
         playlist = Playlist(
-            name=playlist_data.get("title", ""),
+            title=playlist_data.get("title", ""),
             tracks=tracks,
             description=playlist_data.get("description"),
             id=playlist_data.get("id"),
@@ -75,7 +75,7 @@ class PurePlaylistRepositoryAdapter:
 
         # Save using pure DDD repository
         saved_playlist = await self._repo.save(playlist)
-        logger.info(f"✅ Created playlist: {playlist.name}")
+        logger.info(f"✅ Created playlist: {playlist.title}")
         return saved_playlist.id
 
     @_handle_repository_errors("playlist_adapter")
@@ -147,7 +147,7 @@ class PurePlaylistRepositoryAdapter:
         # Save updated playlist
         await self._repo.update(playlist)
 
-        logger.info(f"✅ Added track '{track.title}' to playlist '{playlist.name}'")
+        logger.info(f"✅ Added track '{track.title}' to playlist '{playlist.title}'")
         return True
 
     @_handle_repository_errors("playlist_adapter")
@@ -162,7 +162,7 @@ class PurePlaylistRepositoryAdapter:
         if playlist is not None:
             try:
                 # playlist is a domain entity, not a dict
-                playlist_title = playlist.name
+                playlist_title = playlist.title
                 playlist_path = playlist.path
                 logger.info(f"🗑️ Playlist to delete: '{playlist_title}', path: '{playlist_path}'")
             except Exception as e:
@@ -202,7 +202,7 @@ class PurePlaylistRepositoryAdapter:
             upload_folder = Path(app_config.upload_folder)
 
             # Get playlist title and path - playlist is a domain entity
-            playlist_title = playlist.name
+            playlist_title = playlist.title
             playlist_path = playlist.path
             playlist_id = playlist.id
 
@@ -311,9 +311,9 @@ class PurePlaylistRepositoryAdapter:
 
         # Apply updates to domain entity
         if "title" in updates:
-            playlist.name = updates["title"]
+            playlist.title = updates["title"]
         if "name" in updates:
-            playlist.name = updates["name"]
+            playlist.title = updates["name"]
         if "description" in updates:
             playlist.description = updates["description"]
         if "nfc_tag_id" in updates:
@@ -321,7 +321,7 @@ class PurePlaylistRepositoryAdapter:
 
         # Save updated playlist
         await self._repo.update(playlist)
-        logger.info(f"✅ Updated playlist '{playlist.name}' ({playlist_id})")
+        logger.info(f"✅ Updated playlist '{playlist.title}' ({playlist_id})")
         return True
 
     @_handle_repository_errors("playlist_adapter")
@@ -351,7 +351,7 @@ class PurePlaylistRepositoryAdapter:
 
         # Save updated playlist
         await self._repo.update(playlist)
-        logger.info(f"✅ Replaced tracks for playlist '{playlist.name}' with {len(tracks_data)} tracks")
+        logger.info(f"✅ Replaced tracks for playlist '{playlist.title}' with {len(tracks_data)} tracks")
         return True
 
     @_handle_repository_errors("playlist_adapter")
@@ -383,8 +383,8 @@ class PurePlaylistRepositoryAdapter:
         """Convert domain model to dict format for API compatibility."""
         return {
             "id": playlist.id,
-            "title": playlist.name,  # API compatibility
-            "name": playlist.name,   # Domain model field
+            "title": playlist.title,  # API compatibility
+            "name": playlist.title,   # Legacy field for backward compatibility
             "description": playlist.description,
             "nfc_tag_id": playlist.nfc_tag_id,
             "path": playlist.path,   # Folder path for uploads

@@ -5,6 +5,53 @@
 import { vi } from 'vitest'
 import { config } from '@vue/test-utils'
 
+// Mock socketService to prevent WebSocket connection attempts during tests
+vi.mock('@/services/socketService', () => ({
+  socketService: {
+    on: vi.fn(),
+    off: vi.fn(),
+    once: vi.fn(),
+    emit: vi.fn(),
+    joinRoom: vi.fn().mockResolvedValue(undefined),
+    leaveRoom: vi.fn().mockResolvedValue(undefined),
+    sendOperation: vi.fn().mockResolvedValue({ success: true }),
+    requestSync: vi.fn(),
+    isConnected: vi.fn().mockReturnValue(false),
+    isReady: vi.fn().mockReturnValue(false),
+    getLastServerSeq: vi.fn().mockReturnValue(0),
+    getSubscribedRooms: vi.fn().mockReturnValue([]),
+    destroy: vi.fn()
+  },
+  default: {
+    on: vi.fn(),
+    off: vi.fn(),
+    once: vi.fn(),
+    emit: vi.fn(),
+    joinRoom: vi.fn().mockResolvedValue(undefined),
+    leaveRoom: vi.fn().mockResolvedValue(undefined),
+    sendOperation: vi.fn().mockResolvedValue({ success: true }),
+    requestSync: vi.fn(),
+    isConnected: vi.fn().mockReturnValue(false),
+    isReady: vi.fn().mockReturnValue(false),
+    getLastServerSeq: vi.fn().mockReturnValue(0),
+    getSubscribedRooms: vi.fn().mockReturnValue([]),
+    destroy: vi.fn()
+  }
+}))
+
+// Mock Socket.IO client to prevent actual connection attempts
+vi.mock('socket.io-client', () => ({
+  io: vi.fn(() => ({
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    connected: false,
+    id: 'mock-socket-id'
+  }))
+}))
+
 // Mock console methods to reduce test noise
 global.console = {
   ...console,

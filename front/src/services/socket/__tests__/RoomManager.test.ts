@@ -668,12 +668,10 @@ describe('RoomManager', () => {
       expect(handler).not.toHaveBeenCalled()
     })
 
-    it('should null out socket', () => {
+    it('should null out socket', async () => {
       roomManager.destroy()
 
-      expect(async () => {
-        await roomManager.joinRoom('test-room')
-      }).rejects.toThrow('Socket not initialized')
+      await expect(roomManager.joinRoom('test-room')).rejects.toThrow('Socket not initialized')
     })
   })
 })

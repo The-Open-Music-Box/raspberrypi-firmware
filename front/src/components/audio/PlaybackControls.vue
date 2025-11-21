@@ -89,7 +89,6 @@
  */
 
 import { useI18n } from 'vue-i18n'
-import { defineEmits } from 'vue'
 import { logger } from '@/utils/logger'
 
 const { t } = useI18n()
