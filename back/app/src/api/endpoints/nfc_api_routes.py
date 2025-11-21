@@ -174,7 +174,6 @@ class NFCAPIRoutes:
             client_op_id=client_op_id
         )
 
-
     def _register_routes(self):
         """Register all NFC-related API routes."""
 
