@@ -2,12 +2,12 @@ name: Code Quality Metrics
 
 on:
   push:
-    branches: [deploy, develop]
+    branches: [develop]
     paths:
       - 'back/app/src/**'
       - 'back/pyproject.toml'
   pull_request:
-    branches: [deploy, develop]
+    branches: [develop]
     paths:
       - 'back/app/src/**'
   schedule:
@@ -47,7 +47,7 @@ jobs:
 
       - name: Run metrics collection
         run: |
-          ./scripts/export_metrics.sh http://localhost:9091
+          ./scripts/export_metrics.sh http://host.docker.internal:9091
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
 

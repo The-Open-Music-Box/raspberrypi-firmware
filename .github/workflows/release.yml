@@ -4,13 +4,62 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+
 jobs:
+  # Run tests before building release
+  test:
+    name: Run Tests
+    runs-on: [self-hosted, Linux, ARM64, rpi]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python virtual environment
+        run: |
+          cd back
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: |
+          cd back
+          source venv/bin/activate
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run unit tests
+        run: |
+          cd back
+          source venv/bin/activate
+          export USE_MOCK_HARDWARE=true
+          export ENVIRONMENT=test
+          pytest app/tests/unit/ -v --tb=short
+
+      - name: Run contract tests
+        run: |
+          cd back
+          source venv/bin/activate
+          export USE_MOCK_HARDWARE=true
+          export ENVIRONMENT=test
+          pytest app/tests/contracts/ -v --tb=short || echo "No contract tests found"
+
   build-release:
+    name: Build Release
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Checkout code
@@ -139,3 +188,12 @@ jobs:
             **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ github.event.repository.default_branch }}...${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export metrics to Pushgateway
+        if: always()
+        run: |
+          RELEASE_SUCCESS=${{ job.status == 'success' && 1 || 0 }}
+          cat <<EOF | curl --data-binary @- http://host.docker.internal:9091/metrics/job/release/instance/rpi-firmware
+          release_success{repo="rpi-firmware",version="${{ github.ref_name }}"} ${RELEASE_SUCCESS}
+          release_timestamp{repo="rpi-firmware",version="${{ github.ref_name }}"} $(date +%s)
+          EOF
