@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Set, Optional, Dict, Any
-from uuid import uuid4
 
+from app.src.domain.base.base_session_entity import BaseSessionEntity
 from ..value_objects.file_chunk import FileChunk
 from ..value_objects.file_metadata import FileMetadata
 
@@ -26,27 +26,27 @@ class UploadStatus(Enum):
 
 
 @dataclass
-class UploadSession:
+class UploadSession(BaseSessionEntity):
     """Domain entity for managing file upload sessions.
 
     Handles the lifecycle of chunked file uploads, tracking progress,
     validation, and completion status.
+
+    Inherits common session patterns from BaseSessionEntity.
     """
 
-    session_id: str = field(default_factory=lambda: str(uuid4()))
     filename: str = ""
     playlist_id: Optional[str] = None
     playlist_path: Optional[str] = None
     total_chunks: int = 0
     total_size_bytes: int = 0
     status: UploadStatus = UploadStatus.CREATED
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     received_chunks: Set[int] = field(default_factory=set)
     current_size_bytes: int = 0
     file_metadata: Optional[FileMetadata] = None
     error_message: Optional[str] = None
-    timeout_seconds: int = 3600  # 1 hour default
+    timeout_seconds: int = 3600  # 1 hour default (override base class)
     completion_data: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
@@ -57,13 +57,6 @@ class UploadSession:
             raise ValueError("Total chunks must be positive")
         if self.total_size_bytes <= 0:
             raise ValueError("Total size must be positive")
-
-    @property
-    def timeout_at(self) -> datetime:
-        """Calculate when this session expires."""
-        return datetime.fromtimestamp(
-            self.created_at.timestamp() + self.timeout_seconds, tz=timezone.utc
-        )
 
     @property
     def progress_percentage(self) -> float:
@@ -78,10 +71,6 @@ class UploadSession:
         if self.total_size_bytes == 0:
             return 0.0
         return (self.current_size_bytes / self.total_size_bytes) * 100.0
-
-    def is_expired(self) -> bool:
-        """Check if this session has expired."""
-        return datetime.now(timezone.utc) > self.timeout_at
 
     def is_active(self) -> bool:
         """Check if this session is active (not completed/failed/expired)."""
@@ -165,14 +154,6 @@ class UploadSession:
         all_chunks = set(range(self.total_chunks))
         return all_chunks - self.received_chunks
 
-    def get_remaining_seconds(self) -> int:
-        """Get remaining seconds before timeout."""
-        if self.is_expired():
-            return 0
-
-        remaining = self.timeout_at - datetime.now(timezone.utc)
-        return max(0, int(remaining.total_seconds()))
-
     def validate_chunk_size_consistency(self, expected_size: int) -> bool:
         """Validate that current size matches expected size.
 
@@ -186,8 +167,11 @@ class UploadSession:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert session to dictionary for serialization."""
-        return {
-            "session_id": self.session_id,
+        # Start with base class common fields
+        result = self._base_dict_fields()
+
+        # Add domain-specific fields
+        result.update({
             "filename": self.filename,
             "playlist_id": self.playlist_id,
             "status": self.status.value,
@@ -198,10 +182,10 @@ class UploadSession:
             "missing_chunks": len(self.get_missing_chunks()),
             "total_size_bytes": self.total_size_bytes,
             "current_size_bytes": self.current_size_bytes,
-            "created_at": self.created_at.isoformat(),
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
-            "remaining_seconds": self.get_remaining_seconds(),
             "file_metadata": self.file_metadata.to_dict() if self.file_metadata else None,
             "error_message": self.error_message,
             "completion_data": self.completion_data,
-        }
+        })
+
+        return result
