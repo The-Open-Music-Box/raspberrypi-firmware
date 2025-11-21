@@ -7,81 +7,39 @@
 import asyncio
 import time
 from typing import Optional, Dict, Any
-from rx.subject import Subject
 import logging
 
-from .nfc_hardware_interface import NFCHardwareInterface
-from app.src.services.error.unified_error_decorator import handle_errors
+from .base_nfc_hardware import BaseNFCHardware, _handle_errors
 
 logger = logging.getLogger(__name__)
 
 
-def _handle_errors(operation_name: str):
-    return handle_errors(operation_name)
-
-
-class MockNFCHardware(NFCHardwareInterface):
+class MockNFCHardware(BaseNFCHardware):
     """Mock implementation of NFC hardware for testing and development.
 
     This implementation simulates NFC tag detection using a timer-based approach
     and provides all the event mechanisms that the real hardware would provide.
+
+    Inherits common NFC hardware functionality from BaseNFCHardware.
     """
 
     def __init__(self):
         """Initialize the Mock NFC hardware."""
-        self._tag_subject = Subject()
-        self._running = False
-        self._reader_task = None
-        self._stop_event = asyncio.Event()
+        super().__init__()
+
+        # Mock-specific state
         self._scan_counter = 0
-        self._last_simulated_tag = None
+        self._last_simulated_tag: Optional[Dict[str, Any]] = None
         self._simulation_cycle = 0
 
-        logger.info("✅ Mock NFC Hardware initialized")
+        # Mock has shorter stop timeout
+        self._stop_timeout = 1.0
 
-    @property
-    def tag_subject(self) -> Subject:
-        """Get the RxPy Subject for tag detection events."""
-        return self._tag_subject
+        logger.info("✅ Mock NFC Hardware initialized")
 
     async def initialize(self) -> None:
         """Initialize the mock hardware (no-op for mock)."""
         logger.info("🔧 Mock NFC Hardware initialized (no-op)")
-
-    async def start_nfc_reader(self) -> None:
-        """Start the mock NFC reader simulation."""
-        if self._running:
-            logger.warning("⚠️ Mock NFC reader already running")
-            return
-
-        self._stop_event.clear()
-        self._running = True
-        self._reader_task = asyncio.create_task(self._simulate_nfc_scanning())
-        logger.info("🚀 Mock NFC Reader started - scanning for tags...")
-
-    async def stop_nfc_reader(self) -> None:
-        """Stop the mock NFC reader simulation."""
-        if not self._running:
-            return
-
-        self._stop_event.set()
-        self._running = False
-
-        if self._reader_task and not self._reader_task.done():
-            try:
-                await asyncio.wait_for(self._reader_task, timeout=1.0)
-            except asyncio.TimeoutError:
-                self._reader_task.cancel()
-                try:
-                    await self._reader_task
-                except asyncio.CancelledError:
-                    pass
-
-        logger.info("⏹️ Mock NFC Reader stopped")
-
-    def is_running(self) -> bool:
-        """Check if the mock reader is running."""
-        return self._running
 
     async def read_nfc(self) -> Optional[Dict[str, Any]]:
         """Simulate reading an NFC tag directly.
@@ -95,16 +53,8 @@ class MockNFCHardware(NFCHardwareInterface):
             return tag_data
         return None
 
-    def cleanup(self) -> None:
-        """Clean up mock hardware resources."""
-        if self._running:
-            # Schedule stop for async cleanup
-            asyncio.create_task(self.stop_nfc_reader())
-
-        logger.info("🧹 Mock NFC Hardware cleaned up")
-
-    @_handle_errors("_simulate_nfc_scanning")
-    async def _simulate_nfc_scanning(self) -> None:
+    @_handle_errors("_scan_loop_impl")
+    async def _scan_loop_impl(self) -> None:
         """Main simulation loop for NFC tag detection."""
         logger.info("🔄 Mock NFC scanning loop started")
         last_info_log = 0
@@ -141,7 +91,10 @@ class MockNFCHardware(NFCHardwareInterface):
         logger.debug("📤 Tag detection event emitted successfully")
 
     def _generate_mock_tag(self) -> Dict[str, Any]:
-        """Generate mock NFC tag data."""
+        """Generate mock NFC tag data.
+
+        Uses the base class _create_tag_data() helper for standardized tag structure.
+        """
         # Cycle through different mock tag IDs (hexadecimal UIDs)
         mock_tags = [
             "abcd1234",
@@ -154,31 +107,32 @@ class MockNFCHardware(NFCHardwareInterface):
         tag_index = (self._scan_counter // 50) % len(mock_tags)
         tag_uid = mock_tags[tag_index]
 
-        return {
-            "uid": tag_uid,
-            "present": True,
-            "timestamp": time.time(),
-            "scan_count": self._scan_counter,
-            "mock_data": True,
-            "hardware": "MockNFC",
-        }
+        return self._create_tag_data(
+            uid=tag_uid,
+            present=True,
+            hardware_name="MockNFC",
+            scan_count=self._scan_counter,
+            mock_data=True,
+        )
 
     # Additional method for manual tag simulation (for testing)
     def simulate_tag_manually(self, tag_uid: str = "manual_test_tag") -> None:
-        """Manually trigger a tag detection event (for testing)."""
+        """Manually trigger a tag detection event (for testing).
+
+        Uses the base class _create_tag_data() helper for standardized tag structure.
+        """
         if not self._running:
             logger.warning("⚠️ Cannot simulate tag - Mock NFC reader not running")
             return
 
-        tag_data = {
-            "uid": tag_uid,
-            "present": True,
-            "timestamp": time.time(),
-            "scan_count": self._scan_counter,
-            "mock_data": True,
-            "hardware": "MockNFC",
-            "manual": True,
-        }
+        tag_data = self._create_tag_data(
+            uid=tag_uid,
+            present=True,
+            hardware_name="MockNFC",
+            scan_count=self._scan_counter,
+            mock_data=True,
+            manual=True,
+        )
 
         logger.info(f"🎯 Manually triggering tag detection: {tag_uid}")
         self._tag_subject.on_next(tag_data)
