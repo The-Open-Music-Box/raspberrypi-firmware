@@ -40,6 +40,22 @@ class PlaylistNfcAPI(BaseAPIRoutes):
         self._operations_service = operations_service
         self._register_routes(router)
 
+    def _prepare_nfc_operation(self, body: dict = None):
+        """Prepare NFC operation by parsing body and checking service availability.
+
+        Args:
+            body: Request body containing client_op_id
+
+        Returns:
+            Tuple of (client_op_id, error_response) where error_response is None if successful
+        """
+        body = body or {}
+        client_op_id = body.get("client_op_id")
+
+        # Check service availability
+        service_check = self.check_service_available("Playlist operations", self._operations_service)
+        return client_op_id, service_check
+
     def _register_routes(self, router: APIRouter):
         """Register all NFC association routes on the parent router.
 
@@ -52,11 +68,7 @@ class PlaylistNfcAPI(BaseAPIRoutes):
         async def associate_nfc_tag(nfc_tag_id: str, playlist_id: str, body: dict = Body(None)):
             """Associate NFC tag with playlist."""
             try:
-                body = body or {}
-                client_op_id = body.get("client_op_id")
-
-                # Use base class helper for service availability check
-                service_check = self.check_service_available("Playlist operations", self._operations_service)
+                client_op_id, service_check = self._prepare_nfc_operation(body)
                 if service_check:
                     return service_check
 
@@ -89,11 +101,7 @@ class PlaylistNfcAPI(BaseAPIRoutes):
         async def remove_nfc_association(playlist_id: str, body: dict = Body(None)):
             """Remove NFC association from playlist."""
             try:
-                body = body or {}
-                client_op_id = body.get("client_op_id")
-
-                # Use base class helper for service availability check
-                service_check = self.check_service_available("Playlist operations", self._operations_service)
+                client_op_id, service_check = self._prepare_nfc_operation(body)
                 if service_check:
                     return service_check
 
