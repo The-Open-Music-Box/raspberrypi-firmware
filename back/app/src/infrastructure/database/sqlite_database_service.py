@@ -11,7 +11,7 @@ Handles all SQLite-specific connection management, transactions, and operations.
 
 import sqlite3
 import time
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -44,7 +44,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
         """
         self.database_path = database_path
         self.pool_size = pool_size
-        self._connection_pool: Optional[ConnectionPool] = None
+        self._connection_pool = None
         self._setup_database()
 
     def _setup_database(self):
@@ -98,12 +98,37 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                 f"⚠️ Slow {operation_name}: took {execution_time:.2f}ms"
             )
 
+    def _execute_with_transaction_and_timing(
+        self,
+        query: str,
+        params: Union[tuple, dict],
+        operation_name: str,
+        result_extractor
+    ):
+        """Execute query within transaction with timing and result extraction.
+
+        Args:
+            query: SQL query to execute
+            params: Optional query parameters
+            operation_name: Name for logging
+            result_extractor: Callable that takes cursor and returns result
+
+        Returns:
+            Result from result_extractor
+        """
+        start_time = time.time()
+
+        with self.get_transaction() as connection:
+            cursor = connection.cursor()
+            self._execute_query(cursor, query, params)
+            result = result_extractor(cursor)
+            self._log_slow_query(operation_name, start_time)
+
+            return result
+
     @contextmanager
     def get_connection(self):
         """Get a database connection with proper lifecycle management."""
-        if self._connection_pool is None:
-            raise RuntimeError("Connection pool not initialized")
-
         connection = None
         try:
             connection = self._connection_pool.get_connection()
@@ -119,7 +144,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                 try:
                     connection.rollback()
                 except Exception:
-                    pass  # nosec B110 - rollback cleanup, best effort
+                    pass
             raise
         finally:
             if connection:
@@ -137,14 +162,14 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                 try:
                     connection.rollback()
                 except Exception:
-                    pass  # nosec B110 - rollback cleanup, best effort
+                    pass
                 raise
 
     @_handle_infrastructure_errors("database_service")
     def execute_query(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: Union[tuple, dict] = None,
         operation_name: str = "query"
     ) -> List[Any]:
         """Execute a SELECT query and return results."""
@@ -167,13 +192,13 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
                     f"⚠️ Slow query: {operation_name} took {execution_time:.2f}ms"
                 )
 
-            return cast(list[Any], results)
+            return results
 
     @_handle_infrastructure_errors("database_service")
     def execute_single(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: Union[tuple, dict] = None,
         operation_name: str = "query_single"
     ) -> Optional[Any]:
         """Execute a SELECT query and return single result."""
@@ -192,37 +217,25 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
     def execute_command(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: Union[tuple, dict] = None,
         operation_name: str = "command"
     ) -> int:
         """Execute an INSERT/UPDATE/DELETE command."""
-        start_time = time.time()
-
-        with self.get_transaction() as connection:
-            cursor = connection.cursor()
-            self._execute_query(cursor, query, params)
-            rowcount = cursor.rowcount
-            self._log_slow_query(operation_name, start_time)
-
-            return cast(int, rowcount)
+        return self._execute_with_transaction_and_timing(
+            query, params, operation_name, lambda cursor: cursor.rowcount
+        )
 
     @_handle_infrastructure_errors("database_service")
     def execute_insert(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: Union[tuple, dict] = None,
         operation_name: str = "insert"
     ) -> str:
         """Execute an INSERT command and return the new row ID."""
-        start_time = time.time()
-
-        with self.get_transaction() as connection:
-            cursor = connection.cursor()
-            self._execute_query(cursor, query, params)
-            lastrowid = str(cursor.lastrowid)
-            self._log_slow_query(operation_name, start_time)
-
-            return lastrowid
+        return self._execute_with_transaction_and_timing(
+            query, params, operation_name, lambda cursor: str(cursor.lastrowid)
+        )
 
     @_handle_infrastructure_errors("database_service")
     def execute_batch(

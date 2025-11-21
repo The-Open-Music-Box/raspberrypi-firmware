@@ -87,6 +87,34 @@ class PlaylistStateManager:
         """
         return self._repeat_mode in ["one", "all"]
 
+    def _navigate_shuffle(self, direction: int) -> bool:
+        """Navigate in shuffle mode.
+
+        Args:
+            direction: 1 for next, -1 for previous
+
+        Returns:
+            bool: True if navigation successful, False if at boundary
+        """
+        current_shuffle_pos = self._shuffle_order.index(self._current_track_index)
+        new_shuffle_pos = current_shuffle_pos + direction
+
+        # Check if new position is valid
+        if 0 <= new_shuffle_pos < len(self._shuffle_order):
+            self._current_track_index = self._shuffle_order[new_shuffle_pos]
+            return True
+
+        # Handle repeat all mode
+        if self._repeat_mode == "all":
+            if direction > 0:  # Next
+                self._current_track_index = self._shuffle_order[0]
+            else:  # Previous
+                self._current_track_index = self._shuffle_order[-1]
+            return True
+
+        # At boundary with no repeat
+        return False
+
     # --- Playlist Management ---
 
     def set_playlist(self, playlist: Playlist, start_index: int = 0) -> bool:
@@ -158,14 +186,7 @@ class PlaylistStateManager:
 
         # Calculate next index
         if self._shuffle_enabled and self._shuffle_order:
-            current_shuffle_pos = self._shuffle_order.index(self._current_track_index)
-            next_shuffle_pos = current_shuffle_pos + 1
-
-            if next_shuffle_pos < len(self._shuffle_order):
-                self._current_track_index = self._shuffle_order[next_shuffle_pos]
-            elif self._repeat_mode == "all":
-                self._current_track_index = self._shuffle_order[0]
-            else:
+            if not self._navigate_shuffle(1):
                 return None  # End of playlist
         else:
             next_index = self._current_track_index + 1
@@ -201,14 +222,7 @@ class PlaylistStateManager:
 
         # Calculate previous index
         if self._shuffle_enabled and self._shuffle_order:
-            current_shuffle_pos = self._shuffle_order.index(self._current_track_index)
-            prev_shuffle_pos = current_shuffle_pos - 1
-
-            if prev_shuffle_pos >= 0:
-                self._current_track_index = self._shuffle_order[prev_shuffle_pos]
-            elif self._repeat_mode == "all":
-                self._current_track_index = self._shuffle_order[-1]
-            else:
+            if not self._navigate_shuffle(-1):
                 return None  # Beginning of playlist
         else:
             prev_index = self._current_track_index - 1

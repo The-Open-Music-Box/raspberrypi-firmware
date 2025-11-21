@@ -71,6 +71,35 @@ class NFCHandlers:
             exc_info=True
         )
 
+    def _validate_playlist_and_log(
+        self,
+        data: Dict[str, Any],
+        operation: str,
+        sid: str
+    ) -> tuple[str, Optional[str]]:
+        """Validate playlist_id and log operation start.
+
+        Args:
+            data: Request data dictionary
+            operation: Operation description for logging (e.g., "Starting NFC association")
+            sid: Socket.IO session ID
+
+        Returns:
+            Tuple of (playlist_id, client_op_id)
+
+        Raises:
+            ValueError: If playlist_id not provided
+        """
+        playlist_id = data.get("playlist_id")
+        client_op_id = data.get("client_op_id")
+
+        if not playlist_id:
+            raise ValueError("playlist_id is required")
+
+        logger.info(f"{operation} for playlist {playlist_id} from client {sid}")
+
+        return playlist_id, client_op_id
+
     def register(self) -> None:
         """Register all NFC-related event handlers.
 
@@ -105,13 +134,8 @@ class NFCHandlers:
                 - Logs operation at INFO level
             """
             try:
-                playlist_id = data.get("playlist_id")
-                client_op_id = data.get("client_op_id")
-                if not playlist_id:
-                    raise ValueError("playlist_id is required")
-
-                logger.info(
-                    f"Starting NFC association for playlist {playlist_id} from client {sid}"
+                playlist_id, client_op_id = self._validate_playlist_and_log(
+                    data, "Starting NFC association", sid
                 )
 
                 # Start association using the service
@@ -168,13 +192,8 @@ class NFCHandlers:
                 - Logs operation at INFO level
             """
             try:
-                playlist_id = data.get("playlist_id")
-                client_op_id = data.get("client_op_id")
-                if not playlist_id:
-                    raise ValueError("playlist_id is required")
-
-                logger.info(
-                    f"Stopping NFC association for playlist {playlist_id} from client {sid}"
+                playlist_id, client_op_id = self._validate_playlist_and_log(
+                    data, "Stopping NFC association", sid
                 )
 
                 # Cancel association - need to find the association ID

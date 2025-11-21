@@ -123,6 +123,45 @@ class PlayerAPIRoutes(BaseAPIRoutes):
         message = result.get("message", default_message)
         return self._success_response(message, status, client_op_id)
 
+    async def _handle_track_navigation(
+        self,
+        operation_callable,
+        direction: str,
+        success_message: str,
+        client_op_id: str = None
+    ):
+        """Handle track navigation (next/previous) with broadcasting.
+
+        Args:
+            operation_callable: Async callable that returns navigation result
+            direction: Navigation direction ("next" or "previous")
+            success_message: Message for successful navigation
+            client_op_id: Optional client operation ID
+
+        Returns:
+            Unified response dictionary, or None if operation unsuccessful
+        """
+        result = await operation_callable()
+
+        if result.get("success"):
+            status = result.get("status", {})
+
+            # Broadcast track change event (legacy for backward compatibility)
+            await self._broadcasting_service.broadcast_track_changed(
+                result.get("track"), direction
+            )
+
+            # CRITICAL FIX: Also broadcast complete player state for UI synchronization
+            # This ensures all UI elements update (play/pause button, track info, progress bar)
+            await self._broadcasting_service.broadcast_playback_state_changed(
+                "playing" if status.get("is_playing") else "paused",
+                status
+            )
+
+            return self._success_response(success_message, status, client_op_id)
+
+        return None  # Indicate unsuccessful result
+
     def _register_routes(self):
         """Register all player API routes."""
 
@@ -270,26 +309,14 @@ class PlayerAPIRoutes(BaseAPIRoutes):
             try:
                 # Use operations service for navigation
                 if self._operations_service:
-                    result = await self._operations_service.next_track_use_case()
-
-                    if result.get("success"):
-                        status = result.get("status", {})
-
-                        # Broadcast track change event (legacy for backward compatibility)
-                        await self._broadcasting_service.broadcast_track_changed(
-                            result.get("track"), "next"
-                        )
-
-                        # CRITICAL FIX: Also broadcast complete player state for UI synchronization
-                        # This ensures all UI elements update (play/pause button, track info, progress bar)
-                        await self._broadcasting_service.broadcast_playback_state_changed(
-                            "playing" if status.get("is_playing") else "paused",
-                            status
-                        )
-
-                        return self._success_response(
-                            "Skipped to next track", status, body.client_op_id
-                        )
+                    navigation_result = await self._handle_track_navigation(
+                        operation_callable=self._operations_service.next_track_use_case,
+                        direction="next",
+                        success_message="Skipped to next track",
+                        client_op_id=body.client_op_id
+                    )
+                    if navigation_result:
+                        return navigation_result
 
                 # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
                 # Fallback to default PlayerState when operations service unavailable
@@ -316,26 +343,14 @@ class PlayerAPIRoutes(BaseAPIRoutes):
             try:
                 # Use operations service for navigation
                 if self._operations_service:
-                    result = await self._operations_service.previous_track_use_case()
-
-                    if result.get("success"):
-                        status = result.get("status", {})
-
-                        # Broadcast track change event (legacy for backward compatibility)
-                        await self._broadcasting_service.broadcast_track_changed(
-                            result.get("track"), "previous"
-                        )
-
-                        # CRITICAL FIX: Also broadcast complete player state for UI synchronization
-                        # This ensures all UI elements update (play/pause button, track info, progress bar)
-                        await self._broadcasting_service.broadcast_playback_state_changed(
-                            "playing" if status.get("is_playing") else "paused",
-                            status
-                        )
-
-                        return self._success_response(
-                            "Skipped to previous track", status, body.client_op_id
-                        )
+                    navigation_result = await self._handle_track_navigation(
+                        operation_callable=self._operations_service.previous_track_use_case,
+                        direction="previous",
+                        success_message="Skipped to previous track",
+                        client_op_id=body.client_op_id
+                    )
+                    if navigation_result:
+                        return navigation_result
 
                 # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
                 # Fallback to default PlayerState when operations service unavailable
