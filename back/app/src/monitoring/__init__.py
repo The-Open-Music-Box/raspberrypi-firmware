@@ -9,7 +9,6 @@ Uses lazy loading to avoid circular dependencies.
 """
 
 from typing import Optional
-import logging as _logging
 
 # Lazy loaded references
 _ImprovedLogger = None

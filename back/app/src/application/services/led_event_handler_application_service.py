@@ -9,7 +9,6 @@ Bridges application events to LED state changes.
 """
 
 import logging
-from typing import Optional
 
 from app.src.application.services.led_state_manager_application_service import LEDStateManager
 from app.src.domain.models.led import LEDState

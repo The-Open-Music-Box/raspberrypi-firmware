@@ -13,7 +13,7 @@ This module provides comprehensive OpenAPI documentation configuration including
 - Security schemes (for future authentication)
 """
 
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 # API Metadata
 API_TITLE = "TheOpenMusicBox API"

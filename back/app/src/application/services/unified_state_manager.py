@@ -9,7 +9,6 @@ Clean coordinator that delegates to single-responsibility components.
 Implements StateManagerProtocol while following DDD principles.
 """
 
-import asyncio
 import logging
 from typing import Any, Dict, Optional, Set
 

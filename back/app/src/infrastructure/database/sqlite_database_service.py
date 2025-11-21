@@ -83,7 +83,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
             if connection:
                 try:
                     connection.rollback()
-                except:
+                except Exception:
                     pass
             raise
         finally:
@@ -101,7 +101,7 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
             except Exception as e:
                 try:
                     connection.rollback()
-                except:
+                except Exception:
                     pass
                 raise
 

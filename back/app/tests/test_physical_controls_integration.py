@@ -9,11 +9,9 @@ Tests for the complete physical controls implementation including GPIO integrati
 """
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, AsyncMock
 
 from app.src.application.controllers.physical_controls_controller import PhysicalControlsManager
-from app.src.domain.protocols.physical_controls_protocol import PhysicalControlEvent
 from app.src.infrastructure.hardware.controls.mock_controls_implementation import MockPhysicalControls
 from app.src.infrastructure.hardware.controls.controls_factory import PhysicalControlsFactory
 from app.src.config.hardware_config import HardwareConfig

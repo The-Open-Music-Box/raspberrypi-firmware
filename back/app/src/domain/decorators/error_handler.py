@@ -11,7 +11,7 @@ Pure domain error handling without infrastructure dependencies.
 import asyncio
 import functools
 import traceback
-from typing import Callable, Any, Optional, Dict
+from typing import Callable, Any, Optional
 from datetime import datetime
 
 import logging

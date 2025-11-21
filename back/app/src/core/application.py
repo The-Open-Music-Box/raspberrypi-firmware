@@ -20,10 +20,6 @@ from app.src.infrastructure.nfc.nfc_factory import NfcFactory
 # Application imports
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.services.broadcasting.unified_broadcasting_service import UnifiedBroadcastingService
-
-# Domain-driven architecture imports (PURE DDD - No Legacy)
-from app.src.dependencies import get_data_application_service
 from app.src.application.services.nfc_application_service import NfcApplicationService
 
 # MARK: - Constants

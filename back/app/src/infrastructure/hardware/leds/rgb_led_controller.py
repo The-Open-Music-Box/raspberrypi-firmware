@@ -9,7 +9,6 @@ Real hardware implementation using gpiozero PWMLED for RGB LED control.
 """
 
 import os
-import asyncio
 import math
 from threading import Thread, Event, Lock
 from typing import Optional, Dict, Any
@@ -124,7 +123,7 @@ class RGBLEDController(IndicatorLightsProtocol):
                     for pin in [self._red_pin, self._green_pin, self._blue_pin]:
                         try:
                             GPIO_Direct.cleanup(pin)
-                        except:
+                        except Exception:
                             pass
                     logger.debug("GPIO pins cleaned before LED initialization")
                 except Exception as e:

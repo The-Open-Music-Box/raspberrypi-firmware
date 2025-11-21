@@ -12,7 +12,7 @@ to execute synchronous operations in a non-blocking manner.
 import asyncio
 import os
 from pathlib import Path
-from typing import Any, Optional, Union, List
+from typing import Optional, Union, List
 from concurrent.futures import ThreadPoolExecutor
 import functools
 
@@ -377,9 +377,3 @@ async def amkdir(path: Union[str, Path], parents: bool = False, exist_ok: bool =
 async def aunlink(path: Union[str, Path], missing_ok: bool = False) -> None:
     """Async version of Path.unlink()"""
     await AsyncFileUtils.unlink(path, missing_ok)
-
-
-def cleanup_file_executor():
-    """Clean up the file executor thread pool."""
-    _file_executor.shutdown(wait=True)
-    logger.info("File executor thread pool cleaned up")

@@ -4,7 +4,6 @@
 
 """NFC Hardware Adapter Implementation."""
 
-import asyncio
 from typing import Optional, Callable, Any, Dict
 
 from app.src.domain.nfc.protocols.nfc_hardware_protocol import NfcHardwareProtocol

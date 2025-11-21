@@ -13,7 +13,7 @@ from app.src.domain.decorators.error_handler import handle_domain_errors
 
 logger = logging.getLogger(__name__)
 
- 
+
 
 
 class TrackService:

@@ -15,7 +15,6 @@ from app.src.domain.upload.protocols.file_storage_protocol import (
     FileStorageProtocol,
     MetadataExtractionProtocol,
 )
-from app.src.services.error.unified_error_decorator import handle_service_errors
 import logging
 
 logger = logging.getLogger(__name__)

@@ -195,8 +195,8 @@ class BackendAdapter(AudioBackendProtocol):
                 return duration_ms
         return None
 
-    @handle_errors("get_duration")
-    def get_duration(self) -> Optional[float]:
+    @handle_errors("get_duration_seconds")
+    def get_duration_seconds(self) -> Optional[float]:
         """Get duration of current track in seconds."""
         if hasattr(self._backend, "get_duration"):
             duration = self._backend.get_duration()

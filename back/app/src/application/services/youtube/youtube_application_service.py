@@ -76,14 +76,14 @@ class YouTubeApplicationService:
 
             # Create playlist using new architecture
             data_service = self._get_data_application_service()
-            
+
             # Create playlist first
             playlist_result = await data_service.create_playlist_use_case(
                 name=result["title"],
                 description=f"YouTube download from {url}"
             )
             playlist_id = playlist_result.get("id")
-            
+
             # Add tracks/chapters to the playlist
             tracks = result.get("chapters", [])
             for track_data in tracks:

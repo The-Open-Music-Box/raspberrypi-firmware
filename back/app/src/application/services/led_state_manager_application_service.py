@@ -11,7 +11,7 @@ Manages LED indicator states with priority-based stack and automatic timeout han
 import asyncio
 import logging
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime
 from dataclasses import dataclass, field
 from threading import Lock
 
@@ -19,8 +19,6 @@ from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsPr
 from app.src.domain.models.led import (
     LEDState,
     LEDStateConfig,
-    LEDColor,
-    LEDAnimation,
     DEFAULT_LED_STATE_CONFIGS
 )
 

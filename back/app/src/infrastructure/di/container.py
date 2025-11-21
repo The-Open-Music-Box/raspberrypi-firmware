@@ -8,7 +8,7 @@ Enhanced DI container with protocol support and proper lifecycle management.
 Eliminates dynamic imports in favor of explicit registration.
 """
 
-from typing import Dict, Any, Callable, TypeVar, Type, Optional, Protocol
+from typing import Dict, Any, Callable, TypeVar, Type
 from enum import Enum
 import logging
 
@@ -200,11 +200,6 @@ def register_core_infrastructure_services():
         handle_infrastructure_errors,
     )
     from app.src.domain.protocols.response_service_protocol import ResponseServiceProtocol
-    from app.src.domain.protocols.error_handling_protocol import (
-        ErrorHandlerProtocol,
-        HTTPErrorHandlerProtocol,
-        ServiceErrorHandlerProtocol,
-    )
     from app.src.config.app_config import AppConfig
 
     # Register configuration

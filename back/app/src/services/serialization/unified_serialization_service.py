@@ -10,7 +10,7 @@ across the application. It provides consistent formats for playlists, tracks,
 and player states across all layers (API, WebSocket, Database).
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from datetime import datetime
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -413,4 +413,3 @@ class UnifiedSerializationService:
         }
 
         return format_mapping.get(context.lower(), UnifiedSerializationService.FORMAT_API)
-

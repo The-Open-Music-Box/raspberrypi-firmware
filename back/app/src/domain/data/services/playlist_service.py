@@ -4,11 +4,10 @@
 
 """Playlist service for data domain."""
 
-import os
 import uuid
 import shutil
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime
 from dataclasses import asdict
 import logging
@@ -306,7 +305,7 @@ class PlaylistService:
             try:
                 # UUID format: 8-4-4-4-12 hex digits
                 return len(s) == 36 and s.count('-') == 4
-            except:
+            except Exception:
                 return False
 
         # Scan all directories in upload folder
