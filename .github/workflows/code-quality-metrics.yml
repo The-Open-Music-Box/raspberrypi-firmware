@@ -2,12 +2,12 @@ name: Code Quality Metrics
 
 on:
   push:
-    branches: [main, develop]
+    branches: [deploy, develop]
     paths:
       - 'back/app/src/**'
       - 'back/pyproject.toml'
   pull_request:
-    branches: [main, develop]
+    branches: [deploy, develop]
     paths:
       - 'back/app/src/**'
   schedule:
