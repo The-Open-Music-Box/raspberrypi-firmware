@@ -47,6 +47,26 @@ class PurePlaylistRepositoryAdapter:
             logger.info("✅ Repository directly instantiated to avoid circular dependency")
         return self._repository
 
+    def _track_from_dict(self, track_data: Dict[str, Any]) -> Track:
+        """Create Track domain entity from dictionary data.
+
+        Args:
+            track_data: Dictionary with track data
+
+        Returns:
+            Track domain entity
+        """
+        return Track(
+            track_number=track_data.get("track_number", 0),
+            title=track_data.get("title", "Unknown"),
+            filename=track_data.get("filename", ""),
+            file_path=track_data.get("file_path", ""),
+            duration_ms=track_data.get("duration", track_data.get("duration_ms", 0)),
+            artist=track_data.get("artist"),
+            album=track_data.get("album"),
+            id=track_data.get("id"),
+        )
+
     @_handle_repository_errors("playlist_adapter")
     async def create_playlist(self, playlist_data: Dict[str, Any]) -> str:
         """Create playlist using pure DDD principles."""
@@ -54,16 +74,7 @@ class PurePlaylistRepositoryAdapter:
         tracks = []
         if "tracks" in playlist_data:
             for track_data in playlist_data["tracks"]:
-                track = Track(
-                    track_number=track_data.get("track_number", 0),
-                    title=track_data.get("title", "Unknown"),
-                    filename=track_data.get("filename", ""),
-                    file_path=track_data.get("file_path", ""),
-                    duration_ms=track_data.get("duration", track_data.get("duration_ms", 0)),
-                    artist=track_data.get("artist"),
-                    album=track_data.get("album"),
-                    id=track_data.get("id"),
-                )
+                track = self._track_from_dict(track_data)
                 tracks.append(track)
 
         # Create playlist domain entity
@@ -131,16 +142,7 @@ class PurePlaylistRepositoryAdapter:
             return False
 
         # Create track from dict
-        track = Track(
-            track_number=track_data.get("track_number", 0),
-            title=track_data.get("title", ""),
-            filename=track_data.get("filename", ""),
-            file_path=track_data.get("file_path", ""),
-            duration_ms=track_data.get("duration", track_data.get("duration_ms")),
-            artist=track_data.get("artist"),
-            album=track_data.get("album"),
-            id=track_data.get("id"),
-        )
+        track = self._track_from_dict(track_data)
 
         # Add track to playlist (domain logic)
         playlist.add_track(track)
@@ -297,16 +299,7 @@ class PurePlaylistRepositoryAdapter:
         playlist.tracks = []
 
         for track_data in tracks_data:
-            track = Track(
-                track_number=track_data.get("track_number", 0),
-                title=track_data.get("title", "Unknown"),
-                filename=track_data.get("filename", ""),
-                file_path=track_data.get("file_path", ""),
-                duration_ms=track_data.get("duration", track_data.get("duration_ms", 0)),
-                artist=track_data.get("artist"),
-                album=track_data.get("album"),
-                id=track_data.get("id"),
-            )
+            track = self._track_from_dict(track_data)
             playlist.add_track(track)
 
         # Save updated playlist
