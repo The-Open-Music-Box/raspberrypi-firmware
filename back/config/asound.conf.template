@@ -1,0 +1,66 @@
+# Configuration ALSA pour The Open Music Box avec WM8960
+# Utilise le nom de la carte au lieu du numéro pour éviter les changements au redémarrage
+
+# Définir le périphérique par défaut avec dmix pour permettre le partage
+pcm.!default {
+    type plug
+    slave.pcm "dmixed"
+}
+
+# Configuration dmix pour le partage audio entre applications
+pcm.dmixed {
+    type dmix
+    ipc_key 555555  # Clé IPC unique pour le partage
+    ipc_key_add_uid false  # Partage entre différents utilisateurs
+    ipc_perm 0666  # Permissions pour tous les utilisateurs
+
+    slave {
+        # Utilise le nom de la carte au lieu du numéro
+        pcm "hw:wm8960soundcard"
+
+        # Configuration optimisée pour WM8960
+        period_time 0
+        period_size 1024
+        buffer_size 8192
+        rate 44100
+        format S16_LE
+        channels 2
+    }
+
+    # Configuration de la latence
+    bindings {
+        0 0  # Canal gauche
+        1 1  # Canal droit
+    }
+}
+
+# Contrôle du volume par défaut
+ctl.!default {
+    type hw
+    card "wm8960soundcard"
+}
+
+# Alias direct pour le WM8960 (utilise dmix)
+pcm.wm8960 {
+    type plug
+    slave.pcm "dmixed"
+}
+
+# Contrôle direct du WM8960
+ctl.wm8960 {
+    type hw
+    card "wm8960soundcard"
+}
+
+# Configuration pour l'accès direct si nécessaire (sans dmix)
+pcm.wm8960_direct {
+    type hw
+    card "wm8960soundcard"
+    device 0
+}
+
+# Configuration de sortie avec conversion de format automatique
+pcm.output {
+    type plug
+    slave.pcm "dmixed"
+}

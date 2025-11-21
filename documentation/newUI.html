@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player - Gestionnaire de Playlists</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #F27B70;
+            --primary-hover: #E5655A;
+            --primary-light: #FDF2F1;
+            --on-primary: #FFFFFF;
+            --secondary: #A3C9A8;
+            --secondary-hover: #8FB594;
+            --secondary-light: #F2F8F3;
+            --background: #FDF8EF;
+            --surface: #FFFFFF;
+            --surface-secondary: #FAF5EC;
+            --border: #E8DCC6;
+            --border-light: #F0E6D2;
+            --text: #444444;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --success: #77C29B;
+            --success-light: #EBF7F0;
+            --error: #D9605E;
+            --error-light: #FDF2F2;
+            --focus: #6F9FD2;
+            --focus-light: #EDF4FB;
+            --disabled: #C5C5C5;
+            --shadow-sm: 0 1px 2px 0 rgba(68, 68, 68, 0.05);
+            --shadow: 0 1px 3px 0 rgba(68, 68, 68, 0.1), 0 1px 2px -1px rgba(68, 68, 68, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(68, 68, 68, 0.1), 0 2px 4px -2px rgba(68, 68, 68, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--on-primary);
+            font-size: 18px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: var(--on-primary);
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn.secondary {
+            background: var(--surface-secondary);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn.secondary:hover {
+            background: var(--border-light);
+        }
+
+        .btn.active {
+            background: var(--success);
+            color: var(--on-primary);
+        }
+
+        .btn.danger {
+            background: var(--error);
+            color: var(--on-primary);
+        }
+
+        .btn.danger:hover {
+            background: #C14F4D;
+        }
+
+        /* Error Banner */
+        .error-banner {
+            background: var(--error-light);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-banner.show {
+            display: flex;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        /* Compact Player */
+        .compact-player {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--surface-secondary);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .player-cover {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--on-primary);
+            font-size: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .track-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .track-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-artist {
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 8px;
+        }
+
+        .volume-slider-container {
+            width: 80px;
+        }
+
+        .volume-slider {
+            width: 100%;
+            height: 4px;
+            background: var(--border-light);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .control-btn:hover {
+            background: var(--surface-secondary);
+            border-color: var(--focus);
+            color: var(--focus);
+        }
+
+        .play-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border: 1px solid var(--primary);
+            color: var(--on-primary);
+            font-size: 18px;
+        }
+
+        .play-btn:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            transform: scale(1.05);
+        }
+
+        .progress-section {
+            margin-top: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border-light);
+            border-radius: 3px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.1s ease;
+            border-radius: 3px;
+        }
+
+        .time-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Playlists Section */
+        .playlists-section {
+            padding: 24px;
+        }
+
+        .playlists-header {
+            margin-bottom: 20px;
+        }
+
+        .playlists-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* Playlist Items */
+        .playlist-item {
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .playlist-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .playlist-item:hover {
+            border-color: var(--focus);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .playlist-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            background: var(--surface);
+            transition: background-color 0.2s ease;
+        }
+
+        .playlist-header:hover {
+            background: var(--surface-secondary);
+        }
+
+        .playlist-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .playlist-info h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .playlist-title-input {
+            background: none;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            outline: none;
+            flex: 1;
+        }
+
+        .playlist-title-input:focus {
+            background: var(--surface);
+            border: 1px solid var(--focus);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .nfc-status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .nfc-status.linked {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .nfc-status.none {
+            background: var(--border-light);
+            color: var(--text-muted);
+        }
+
+        .playlist-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+        }
+
+        .playlist-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .playlist-actions.edit-mode {
+            gap: 12px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-btn.play {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .action-btn.play:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .action-btn.nfc {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            color: var(--on-primary);
+        }
+
+        .action-btn.nfc:hover {
+            background: var(--secondary-hover);
+            border-color: var(--secondary-hover);
+        }
+
+        .action-btn.nfc.override {
+            background: #F2B661;
+            border-color: #F2B661;
+            color: var(--on-primary);
+        }
+
+        .action-btn.nfc.override:hover {
+            background: #E5A64D;
+            border-color: #E5A64D;
+        }
+
+        .delete-playlist-btn {
+            background: var(--error);
+            border-color: var(--error);
+            color: var(--on-primary);
+        }
+
+        .delete-playlist-btn:hover {
+            background: #C14F4D;
+            border-color: #C14F4D;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            margin: 0 20px 20px;
+            padding: 24px;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--surface-secondary);
+            display: none;
+        }
+
+        .upload-zone.show {
+            display: block;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--focus);
+            background: var(--focus-light);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            color: var(--text-muted);
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .upload-subtext {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Upload Progress Modal */
+        .upload-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .upload-modal.active {
+            display: flex;
+        }
+
+        .upload-content {
+            background: var(--surface);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            padding: 32px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .upload-file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: var(--surface-secondary);
+        }
+
+        .upload-file-progress {
+            flex: 1;
+        }
+
+        .upload-file-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .upload-progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border-light);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .upload-progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .upload-file-status {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .upload-file-cancel {
+            color: var(--danger);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* Playlist Content */
+        .playlist-content {
+            border-top: 1px solid var(--border-light);
+            display: none;
+            background: var(--surface-secondary);
+        }
+
+        .playlist-content.show {
+            display: block;
+        }
+
+        .track-list {
+            padding: 16px 20px;
+        }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .track-item:hover {
+            background: var(--surface);
+        }
+
+        .track-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .track-item.edit-mode {
+            padding-left: 40px;
+            cursor: default;
+        }
+
+        .track-item.edit-mode:hover {
+            background: var(--border-light);
+        }
+
+        .track-item.current {
+            background: var(--primary-light);
+            border: 1px solid var(--primary);
+        }
+
+        .track-drag-handle {
+            position: absolute;
+            left: 12px;
+            cursor: grab;
+            color: var(--text-muted);
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .track-item.edit-mode .track-drag-handle {
+            opacity: 1;
+        }
+
+        .track-drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .track-number {
+            width: 32px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .track-name {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-duration {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .track-delete-btn {
+            margin-left: 12px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: var(--error);
+            color: var(--on-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .track-item.edit-mode .track-delete-btn {
+            opacity: 1;
+        }
+
+        .track-delete-btn:hover {
+            background: #C14F4D;
+            transform: scale(1.1);
+        }
+
+        .track-item.dragging {
+            opacity: 0.5;
+            background: var(--primary-light);
+        }
+
+        /* NFC Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .nfc-modal {
+            background: var(--surface);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 32px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-muted);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--surface-secondary);
+            color: var(--error);
+        }
+
+        .nfc-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--secondary);
+        }
+
+        .nfc-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .nfc-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .nfc-status-box {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 24px 0;
+            font-size: 14px;
+        }
+
+        .nfc-status-box.waiting {
+            background: var(--focus-light);
+            border: 1px solid var(--focus);
+            color: var(--focus);
+        }
+
+        .nfc-status-box.expired {
+            background: #FDF2F1;
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        .nfc-status-box.override {
+            background: #FEF7E6;
+            border: 1px solid #F2B661;
+            color: #B8860B;
+        }
+
+        .nfc-countdown {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--focus);
+            margin: 16px 0;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container {
+                padding: 16px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .player-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+
+            .playlist-main {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .playlist-actions {
+                align-self: flex-end;
+            }
+
+            .track-item {
+                padding: 12px;
+            }
+        }
+
+        /* Smooth scrolling */
+        .playlists-section {
+            max-height: calc(100vh - 320px);
+            overflow-y: auto;
+        }
+
+        .playlists-section::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .playlists-section::-webkit-scrollbar-track {
+            background: var(--surface-secondary);
+            border-radius: 4px;
+        }
+
+        .playlists-section::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .playlists-section::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Animations */
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🎵</div>
+                    <span>Music Player</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn secondary" onclick="createNewPlaylist()">+ Nouvelle Playlist</button>
+                    <button class="btn" id="modifyBtn" onclick="toggleEditMode()">Modifier</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Error Banner (UC1.10) -->
+        <div class="error-banner" id="errorBanner">
+            <span>⚠️</span>
+            <span id="errorMessage">Erreur de lecture: fichier manquant ou codec non supporté</span>
+            <button onclick="hideError()" style="margin-left: auto; background: none; border: none; color: inherit; cursor: pointer;">×</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Compact Player (UC1.1 - UC1.9) -->
+            <div class="compact-player">
+                <div class="player-info">
+                    <div class="player-cover">🎵</div>
+                    <div class="track-details">
+                        <div class="track-title">Aucun morceau sélectionné</div>
+                        <div class="track-artist">Choisissez une playlist pour commencer</div>
+                    </div>
+                    <div class="player-controls">
+                        <!-- UC1.6: Go to previous track -->
+                        <button class="control-btn" onclick="previousTrack()" title="Précédent">⏮</button>
+                        <!-- UC1.3/UC1.4: Play/Pause functionality -->
+                        <button class="control-btn play-btn" onclick="togglePlayback()" title="Lecture/Pause">▶</button>
+                        <!-- UC1.5: Skip to next track -->
+                        <button class="control-btn" onclick="nextTrack()" title="Suivant">⏭</button>
+                        <!-- Volume control -->
+                        <div class="volume-control">
+                            <button class="control-btn volume-btn" onclick="toggleMute()" title="Volume">🔊</button>
+                            <div class="volume-slider-container">
+                                <input type="range" class="volume-slider" min="0" max="100" value="75" oninput="setVolume(this.value)" title="Volume">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UC1.7: Seek inside track, UC1.8: Real-time progress -->
+                <div class="progress-section">
+                    <div class="progress-bar" onclick="seekToPosition(event)">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="time-indicators">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlists Section (UC2.1 - UC2.13) -->
+            <div class="playlists-section">
+                <div class="playlists-header">
+                    <h2 class="playlists-title">Mes Playlists</h2>
+                </div>
+
+                <!-- Playlist 1 -->
+                <div class="playlist-item" id="playlist1">
+                    <div class="playlist-header" onclick="togglePlaylist('playlist1')">
+                        <div class="playlist-main">
+                            <div class="playlist-info">
+                                <h3>
+                                    🌙
+                                    <!-- UC2.7: Rename playlist -->
+                                    <input type="text" class="playlist-title-input" value="Zelda & Sleep" onblur="savePlaylistName(this)" style="display: none;">
+                                    <span class="playlist-title-display">Zelda & Sleep</span>
+                                    <!-- UC2.13: Display NFC tag status -->
+                                    <span class="nfc-status linked">NFC: TAG001</span>
+                                </h3>
+                                <!-- UC2.1: Show playlist metadata -->
+                                <div class="playlist-meta">
+                                    <span>30 morceaux</span>
+                                    <span>1h28m</span>
+                                    <span>Dernière lecture: hier</span>
+                                </div>
+                            </div>
+                            <div class="playlist-actions">
+                                <!-- UC2.2/UC2.4: Play button per playlist -->
+                                <button class="action-btn play" title="Lire la playlist" onclick="event.stopPropagation(); playPlaylist('playlist1')">▶</button>
+                                <!-- UC2.3/UC2.12: NFC association button -->
+                                <button class="action-btn nfc override" title="Réassocier tag NFC" onclick="event.stopPropagation(); openNfcModal('Zelda & Sleep', true)">📡</button>
+                                <!-- UC2.6: Delete playlist (edit mode only) -->
+                                <button class="action-btn delete-playlist-btn" title="Supprimer la playlist" onclick="event.stopPropagation(); deletePlaylist('playlist1')" style="display: none;">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UC3.1, UC3.2: File upload zone -->
+                    <div class="upload-zone" onclick="openFilePicker('playlist1')">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Glissez vos fichiers ici ou cliquez pour parcourir</div>
+                        <div class="upload-subtext">MP3, WAV, FLAC, M4A acceptés (max 100MB par fichier)</div>
+                        <input type="file" id="fileInput1" style="display: none;" multiple accept=".mp3,.wav,.flac,.m4a">
+                    </div>
+
+                    <div class="playlist-content" id="playlist1-content">
+                        <div class="track-list">
+                            <!-- UC2.8: Reorderable tracks, UC2.10: Delete track -->
+                            <div class="track-item" draggable="false" data-track-id="1">
+                                <span class="track-drag-handle">⋮⋮</span>
+                                <span class="track-number">01</span>
+                                <span class="track-name">A la volette</span>
+                                <span class="track-duration">01:59</span>
+                                <button class="track-delete-btn" onclick="deleteTrack(this)" title="Supprimer">×</button>
+                            </div>
+                            <div class="track-item" draggable="false" data-track-id="2">
+                                <span class="track-drag-handle">⋮⋮</span>
+                                <span class="track-number">02</span>
+                                <span class="track-name">Alouette, gentille alouette</span>
+                                <span class="track-duration">02:13</span>
+                                <button class="track-delete-btn" onclick="deleteTrack(this)" title="Supprimer">×</button>
+                            </div>
+                            <div class="track-item current" draggable="false" data-track-id="3">
+                                <span class="track-drag-handle">⋮⋮</span>
+                                <span class="track-number">03</span>
+                                <span class="track-name">Au clair de la lune</span>
+                                <span class="track-duration">02:42</span>
+                                <button class="track-delete-btn" onclick="deleteTrack(this)" title="Supprimer">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Playlist 2 -->
+                <div class="playlist-item" id="playlist2">
+                    <div class="playlist-header" onclick="togglePlaylist('playlist2')">
+                        <div class="playlist-main">
+                            <div class="playlist-info">
+                                <h3>
+                                    🌲
+                                    <input type="text" class="playlist-title-input" value="Promenons nous dans les bois" onblur="savePlaylistName(this)" style="display: none;">
+                                    <span class="playlist-title-display">Promenons nous dans les bois</span>
+                                    <span class="nfc-status none">Aucun tag</span>
+                                </h3>
+                                <div class="playlist-meta">
+                                    <span>12 morceaux</span>
+                                    <span>23:11</span>
+                                    <span>Jamais joué</span>
+                                </div>
+                            </div>
+                            <div class="playlist-actions">
+                                <button class="action-btn play" title="Lire la playlist" onclick="event.stopPropagation(); playPlaylist('playlist2')">▶</button>
+                                <button class="action-btn nfc" title="Associer tag NFC" onclick="event.stopPropagation(); openNfcModal('Promenons nous dans les bois', false)">📡</button>
+                                <button class="action-btn delete-playlist-btn" title="Supprimer la playlist" onclick="event.stopPropagation(); deletePlaylist('playlist2')" style="display: none;">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upload-zone" onclick="openFilePicker('playlist2')">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Glissez vos fichiers ici ou cliquez pour parcourir</div>
+                        <div class="upload-subtext">MP3, WAV, FLAC, M4A acceptés (max 100MB par fichier)</div>
+                        <input type="file" id="fileInput2" style="display: none;" multiple accept=".mp3,.wav,.flac,.m4a">
+                    </div>
+
+                    <div class="playlist-content" id="playlist2-content">
+                        <div class="track-list">
+                            <div class="track-item" draggable="false" data-track-id="4">
+                                <span class="track-drag-handle">⋮⋮</span>
+                                <span class="track-number">01</span>
+                                <span class="track-name">Compère Guilleri</span>
+                                <span class="track-duration">02:09</span>
+                                <button class="track-delete-btn" onclick="deleteTrack(this)" title="Supprimer">×</button>
+                            </div>
+                            <div class="track-item" draggable="false" data-track-id="5">
+                                <span class="track-drag-handle">⋮⋮</span>
+                                <span class="track-number">02</span>
+                                <span class="track-name">Dans la forêt lointaine</span>
+                                <span class="track-duration">01:52</span>
+                                <button class="track-delete-btn" onclick="deleteTrack(this)" title="Supprimer">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Playlist 3 -->
+                <div class="playlist-item" id="playlist3">
+                    <div class="playlist-header" onclick="togglePlaylist('playlist3')">
+                        <div class="playlist-main">
+                            <div class="playlist-info">
+                                <h3>
+                                    🐠
+                                    <input type="text" class="playlist-title-input" value="Les petits poissons" onblur="savePlaylistName(this)" style="display: none;">
+                                    <span class="playlist-title-display">Les petits poissons</span>
+                                    <span class="nfc-status none">Aucun tag</span>
+                                </h3>
+                                <div class="playlist-meta">
+                                    <span>11 morceaux</span>
+                                    <span>20:30</span>
+                                    <span>Jamais joué</span>
+                                </div>
+                            </div>
+                            <div class="playlist-actions">
+                                <button class="action-btn play" title="Lire la playlist" onclick="event.stopPropagation(); playPlaylist('playlist3')">▶</button>
+                                <button class="action-btn nfc" title="Associer tag NFC" onclick="event.stopPropagation(); openNfcModal('Les petits poissons', false)">📡</button>
+                                <button class="action-btn delete-playlist-btn" title="Supprimer la playlist" onclick="event.stopPropagation(); deletePlaylist('playlist3')" style="display: none;">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upload-zone" onclick="openFilePicker('playlist3')">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Glissez vos fichiers ici ou cliquez pour parcourir</div>
+                        <div class="upload-subtext">MP3, WAV, FLAC, M4A acceptés (max 100MB par fichier)</div>
+                        <input type="file" id="fileInput3" style="display: none;" multiple accept=".mp3,.wav,.flac,.m4a">
+                    </div>
+
+                    <div class="playlist-content" id="playlist3-content">
+                        <div class="track-list">
+                            <div class="track-item" draggable="false" data-track-id="6">
+                                <span class="track-drag-handle">⋮⋮</span>
+                                <span class="track-number">01</span>
+                                <span class="track-name">Il court, il court le furet</span>
+                                <span class="track-duration">00:51</span>
+                                <button class="track-delete-btn" onclick="deleteTrack(this)" title="Supprimer">×</button>
+                            </div>
+                            <div class="track-item" draggable="false" data-track-id="7">
+                                <span class="track-drag-handle">⋮⋮</span>
+                                <span class="track-number">02</span>
+                                <span class="track-name">Le loup, le renard et la belette</span>
+                                <span class="track-duration">02:13</span>
+                                <button class="track-delete-btn" onclick="deleteTrack(this)" title="Supprimer">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Progress Modal (UC3.3 - UC3.8) -->
+    <div class="upload-modal" id="uploadModal">
+        <div class="upload-content">
+            <h3>Upload en cours</h3>
+            <div id="uploadFilesList">
+                <!-- Files will be dynamically added here -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn danger" onclick="cancelAllUploads()">Annuler tout</button>
+                <button class="btn secondary" onclick="closeUploadModal()" style="display: none;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NFC Modal (UC4.1 - UC4.10) -->
+    <div class="modal-overlay" id="nfcModal">
+        <div class="nfc-modal">
+            <button class="modal-close" onclick="closeNfcModal()" style="position: absolute;">×</button>
+
+            <div class="nfc-icon">📡</div>
+            <h3 class="nfc-title">Association Tag NFC</h3>
+            <p class="nfc-subtitle">Playlist: <strong id="selectedNfcPlaylist"></strong></p>
+
+            <!-- UC4.2: 60s timeout countdown -->
+            <div class="nfc-countdown" id="nfcCountdown">60</div>
+
+            <!-- UC4.3: Waiting state -->
+            <div class="nfc-status-box waiting" id="nfcStatusBox">
+                <div>🔍 Approchez votre tag NFC du lecteur...</div>
+                <div style="margin-top: 8px; font-size: 12px;">Temps restant: <span id="timeRemaining">60s</span></div>
+            </div>
+
+            <div class="modal-buttons">
+                <!-- UC4.7: Manual cancel -->
+                <button class="btn secondary" onclick="closeNfcModal()">Annuler</button>
+                <!-- UC4.6: Override confirmation (shown when tag already associated) -->
+                <button class="btn danger" id="overrideBtn" onclick="confirmOverride()" style="display: none;">Remplacer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state variables
+        let editMode = false;
+        let openPlaylist = null;
+        let nfcScanStartTime = null;
+        let nfcTimeout = null;
+        let nfcCountdown = 60;
+        let isPlaying = false;
+        let isPaused = false; // UC1.9: Track pause state
+        let currentProgress = 0;
+        let animationInterval = null;
+        let currentVolume = 75;
+        let draggedItem = null;
+        let currentPlaylist = null;
+        let currentTrackIndex = 0;
+        let uploadQueue = [];
+
+        /**
+         * UC2.5: Toggle edit mode on/off
+         * Shows/hides edit controls like delete buttons, upload zones, and drag handles
+         */
+        function toggleEditMode() {
+            editMode = !editMode;
+            const modifyBtn = document.getElementById('modifyBtn');
+            const uploadZones = document.querySelectorAll('.upload-zone');
+            const deletePlaylistBtns = document.querySelectorAll('.delete-playlist-btn');
+            const trackItems = document.querySelectorAll('.track-item');
+            const playlistActions = document.querySelectorAll('.playlist-actions');
+            const playlistTitles = document.querySelectorAll('.playlist-title-display');
+            const playlistInputs = document.querySelectorAll('.playlist-title-input');
+
+            if (editMode) {
+                modifyBtn.textContent = '✓ Terminer';
+                modifyBtn.classList.add('active');
+                uploadZones.forEach(zone => zone.classList.add('show'));
+                deletePlaylistBtns.forEach(btn => btn.style.display = 'flex');
+                trackItems.forEach(item => {
+                    item.classList.add('edit-mode');
+                    item.draggable = true;
+                });
+                playlistActions.forEach(actions => actions.classList.add('edit-mode'));
+
+                // Enable playlist title editing
+                playlistTitles.forEach(title => title.style.display = 'none');
+                playlistInputs.forEach(input => input.style.display = 'inline-block');
+            } else {
+                modifyBtn.textContent = 'Modifier';
+                modifyBtn.classList.remove('active');
+                uploadZones.forEach(zone => zone.classList.remove('show'));
+                deletePlaylistBtns.forEach(btn => btn.style.display = 'none');
+                trackItems.forEach(item => {
+                    item.classList.remove('edit-mode');
+                    item.draggable = false;
+                });
+                playlistActions.forEach(actions => actions.classList.remove('edit-mode'));
+
+                // Disable playlist title editing
+                playlistTitles.forEach(title => title.style.display = 'inline');
+                playlistInputs.forEach(input => input.style.display = 'none');
+            }
+        }
+
+        /**
+         * UC2.11: Create a new playlist
+         */
+        function createNewPlaylist() {
+            const playlistName = prompt('Nom de la nouvelle playlist:');
+            if (playlistName && playlistName.trim()) {
+                showToast(`Playlist "${playlistName}" créée`);
+                // In real implementation, would create actual playlist element
+            }
+        }
+
+        /**
+         * UC2.6: Delete a playlist
+         */
+        function deletePlaylist(playlistId) {
+            const playlistElement = document.getElementById(playlistId);
+            const playlistName = playlistElement.querySelector('.playlist-title-display').textContent;
+
+            if (confirm(`Êtes-vous sûr de vouloir supprimer la playlist "${playlistName}" ?`)) {
+                playlistElement.style.animation = 'slideOut 0.3s ease';
+
+                setTimeout(() => {
+                    playlistElement.remove();
+                    showToast(`Playlist "${playlistName}" supprimée`, 'danger');
+                }, 300);
+            }
+        }
+
+        /**
+         * UC2.7: Save playlist name after editing
+         */
+        function savePlaylistName(input) {
+            const newName = input.value.trim();
+            if (newName) {
+                const displaySpan = input.parentElement.querySelector('.playlist-title-display');
+                displaySpan.textContent = newName;
+                showToast(`Playlist renommée en "${newName}"`);
+            }
+        }
+
+        /**
+         * UC2.10: Delete a track from playlist
+         */
+        function deleteTrack(button) {
+            const trackItem = button.closest('.track-item');
+            const trackName = trackItem.querySelector('.track-name').textContent;
+
+            if (confirm(`Supprimer "${trackName}" ?`)) {
+                trackItem.style.animation = 'slideOut 0.3s ease';
+
+                setTimeout(() => {
+                    trackItem.remove();
+                    updateTrackNumbers();
+                    showToast(`"${trackName}" supprimé`);
+                }, 300);
+            }
+        }
+
+        /**
+         * UC2.8: Update track numbers after reordering
+         */
+        function updateTrackNumbers() {
+            document.querySelectorAll('.track-list').forEach(list => {
+                const tracks = list.querySelectorAll('.track-item');
+                tracks.forEach((track, index) => {
+                    track.querySelector('.track-number').textContent = (index + 1).toString().padStart(2, '0');
+                });
+            });
+        }
+
+        /**
+         * Toggle playlist content visibility
+         */
+        function togglePlaylist(playlistId) {
+            const content = document.getElementById(playlistId + '-content');
+            const isCurrentlyOpen = content.classList.contains('show');
+
+            // Close all playlists
+            document.querySelectorAll('.playlist-content').forEach(el => {
+                el.classList.remove('show');
+            });
+
+            // Open clicked playlist if it was closed
+            if (!isCurrentlyOpen) {
+                content.classList.add('show');
+                openPlaylist = playlistId;
+            } else {
+                openPlaylist = null;
+            }
+        }
+
+        /**
+         * UC1.3/UC1.4: Toggle playback (play/pause)
+         * UC1.9: Keep track position when paused
+         */
+        function togglePlayback() {
+            const playBtn = document.querySelector('.play-btn');
+
+            if (!isPlaying && !isPaused) {
+                // Start playing
+                isPlaying = true;
+                playBtn.textContent = '⏸';
+                startProgressAnimation();
+                showToast('Lecture démarrée');
+            } else if (isPlaying && !isPaused) {
+                // Pause
+                isPlaying = false;
+                isPaused = true;
+                playBtn.textContent = '▶';
+                stopProgressAnimation();
+                showToast('Lecture en pause');
+            } else if (!isPlaying && isPaused) {
+                // Resume
+                isPlaying = true;
+                isPaused = false;
+                playBtn.textContent = '⏸';
+                startProgressAnimation();
+                showToast('Lecture reprise');
+            }
+        }
+
+        /**
+         * UC2.2/UC2.4: Start playlist playback
+         */
+        function playPlaylist(playlistId) {
+            currentPlaylist = playlistId;
+            currentTrackIndex = 0;
+
+            const playlistElement = document.getElementById(playlistId);
+            const playlistName = playlistElement.querySelector('.playlist-title-display').textContent;
+            const trackCount = playlistElement.querySelector('.playlist-meta span').textContent;
+
+            document.querySelector('.track-title').textContent = playlistName;
+            document.querySelector('.track-artist').textContent = trackCount + ' • En lecture';
+
+            // Reset pause state and start playing
+            isPaused = false;
+            if (!isPlaying) {
+                togglePlayback();
+            }
+
+            showToast(`Lecture de "${playlistName}"`);
+        }
+
+        /**
+         * UC1.5: Skip to next track
+         */
+        function nextTrack() {
+            if (currentPlaylist) {
+                const tracks = document.querySelectorAll(`#${currentPlaylist} .track-item`);
+                if (currentTrackIndex < tracks.length - 1) {
+                    currentTrackIndex++;
+                    playTrackAtIndex(currentTrackIndex);
+                } else {
+                    // End of playlist
+                    showToast('Fin de la playlist');
+                }
+            }
+        }
+
+        /**
+         * UC1.6: Go to previous track
+         */
+        function previousTrack() {
+            if (currentPlaylist) {
+                if (currentTrackIndex > 0) {
+                    currentTrackIndex--;
+                    playTrackAtIndex(currentTrackIndex);
+                } else {
+                    // Beginning of playlist - restart current track
+                    currentProgress = 0;
+                    document.querySelector('.progress-fill').style.width = '0%';
+                    updateTimeIndicators(0);
+                }
+            }
+        }
+
+        /**
+         * Play track at specific index
+         */
+        function playTrackAtIndex(index) {
+            const tracks = document.querySelectorAll(`#${currentPlaylist} .track-item`);
+            if (tracks[index]) {
+                const trackName = tracks[index].querySelector('.track-name').textContent;
+                document.querySelector('.track-title').textContent = trackName;
+
+                // Visual feedback
+                document.querySelectorAll('.track-item').forEach(t => t.classList.remove('current'));
+                tracks[index].classList.add('current');
+
+                // Reset progress
+                currentProgress = 0;
+                document.querySelector('.progress-fill').style.width = '0%';
+                updateTimeIndicators(0);
+            }
+        }
+
+        /**
+         * UC1.7: Seek to position in track using progress bar
+         */
+        function seekToPosition(event) {
+            const rect = event.target.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const width = rect.width;
+            currentProgress = (x / width) * 100;
+            document.querySelector('.progress-fill').style.width = currentProgress + '%';
+            updateTimeIndicators(currentProgress);
+        }
+
+        /**
+         * UC1.8: Real-time progress animation
+         */
+        function startProgressAnimation() {
+            animationInterval = setInterval(() => {
+                if (currentProgress < 100) {
+                    currentProgress += 0.1;
+                    document.querySelector('.progress-fill').style.width = currentProgress + '%';
+                    updateTimeIndicators(currentProgress);
+                } else {
+                    // Track finished, go to next
+                    nextTrack();
+                }
+            }, 100);
+        }
+
+        function stopProgressAnimation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+        }
+
+        /**
+         * Update time indicators based on progress
+         */
+        function updateTimeIndicators(progress) {
+            const totalTime = 180; // 3 minutes
+            const currentTime = Math.floor((progress / 100) * totalTime);
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = currentTime % 60;
+            document.getElementById('currentTime').textContent =
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('totalTime').textContent = '3:00';
+        }
+
+        /**
+         * Volume control functions
+         */
+        function setVolume(value) {
+            currentVolume = value;
+            updateVolumeIcon(currentVolume);
+        }
+
+        function toggleMute() {
+            const slider = document.querySelector('.volume-slider');
+            if (currentVolume > 0) {
+                slider.value = 0;
+                currentVolume = 0;
+            } else {
+                slider.value = 75;
+                currentVolume = 75;
+            }
+            updateVolumeIcon(currentVolume);
+        }
+
+        function updateVolumeIcon(volume) {
+            const volumeBtn = document.querySelector('.volume-btn');
+            if (volume == 0) {
+                volumeBtn.textContent = '🔇';
+            } else if (volume < 30) {
+                volumeBtn.textContent = '🔈';
+            } else if (volume < 70) {
+                volumeBtn.textContent = '🔉';
+            } else {
+                volumeBtn.textContent = '🔊';
+            }
+        }
+
+        /**
+         * UC3.1: Open file picker for upload
+         */
+        function openFilePicker(playlistId) {
+            if (!editMode) return;
+            document.getElementById('fileInput' + playlistId.slice(-1)).click();
+        }
+
+        /**
+         * UC3.2: Handle drag and drop file upload
+         */
+        function setupDragAndDrop() {
+            document.querySelectorAll('.upload-zone').forEach((zone, index) => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('dragover');
+                });
+
+                zone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('dragover');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('dragover');
+
+                    const files = e.dataTransfer.files;
+                    const playlistNames = ['Zelda & Sleep', 'Promenons nous dans les bois', 'Les petits poissons'];
+                    startFileUpload(files, playlistNames[index]);
+                });
+            });
+        }
+
+        /**
+         * UC3.3 - UC3.8: File upload with progress tracking
+         */
+        function startFileUpload(files, playlistName) {
+            if (files.length === 0) return;
+
+            // Show upload modal
+            document.getElementById('uploadModal').classList.add('active');
+            const filesList = document.getElementById('uploadFilesList');
+            filesList.innerHTML = '';
+
+            Array.from(files).forEach((file, index) => {
+                // UC3.6: Check file size and format
+                if (file.size > 100 * 1024 * 1024) { // 100MB limit
+                    showToast(`Fichier trop volumineux: ${file.name}`, 'danger');
+                    return;
+                }
+
+                if (!file.type.startsWith('audio/')) {
+                    showToast(`Format non supporté: ${file.name}`, 'danger');
+                    return;
+                }
+
+                const uploadItem = createUploadItem(file, index);
+                filesList.appendChild(uploadItem);
+
+                // Simulate upload progress
+                simulateUploadProgress(uploadItem, file, playlistName);
+            });
+        }
+
+        /**
+         * Create upload progress item UI
+         */
+        function createUploadItem(file, index) {
+            const item = document.createElement('div');
+            item.className = 'upload-file-item';
+            item.innerHTML = `
+                <div class="upload-file-progress">
+                    <div class="upload-file-name">${file.name}</div>
+                    <div class="upload-progress-bar">
+                        <div class="upload-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="upload-file-status">Préparation...</div>
+                </div>
+                <div class="upload-file-cancel" onclick="cancelUpload(${index})">×</div>
+            `;
+            return item;
+        }
+
+        /**
+         * UC3.4: Simulate upload progress with speed and ETA
+         */
+        function simulateUploadProgress(uploadItem, file, playlistName) {
+            let progress = 0;
+            const progressFill = uploadItem.querySelector('.upload-progress-fill');
+            const statusElement = uploadItem.querySelector('.upload-file-status');
+            const startTime = Date.now();
+
+            const interval = setInterval(() => {
+                progress += Math.random() * 10; // Simulate variable upload speed
+
+                if (progress >= 100) {
+                    progress = 100;
+                    progressFill.style.width = '100%';
+                    statusElement.textContent = 'Terminé ✓';
+                    statusElement.style.color = 'var(--success)';
+                    clearInterval(interval);
+
+                    // UC3.8: Add to playlist after upload
+                    showToast(`"${file.name}" ajouté à "${playlistName}"`);
+
+                    // Check if all uploads are complete
+                    checkAllUploadsComplete();
+                } else {
+                    progressFill.style.width = progress + '%';
+
+                    // UC3.4: Calculate speed and ETA
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const speed = (progress / 100 * file.size) / elapsed;
+                    const remaining = (file.size - (progress / 100 * file.size)) / speed;
+
+                    statusElement.textContent = `${Math.round(progress)}% • ${formatBytes(speed)}/s • ${Math.round(remaining)}s restant`;
+                }
+            }, 200);
+        }
+
+        /**
+         * UC3.5: Cancel individual upload
+         */
+        function cancelUpload(index) {
+            const uploadItems = document.querySelectorAll('.upload-file-item');
+            if (uploadItems[index]) {
+                uploadItems[index].remove();
+                showToast('Upload annulé');
+            }
+        }
+
+        /**
+         * Cancel all uploads
+         */
+        function cancelAllUploads() {
+            document.getElementById('uploadModal').classList.remove('active');
+            showToast('Tous les uploads annulés');
+        }
+
+        /**
+         * Check if all uploads are complete
+         */
+        function checkAllUploadsComplete() {
+            const activeUploads = document.querySelectorAll('.upload-file-item .upload-file-status:not([style*="var(--success)"])');
+            if (activeUploads.length === 0) {
+                // All uploads complete
+                document.querySelector('.btn.danger').style.display = 'none';
+                document.querySelector('.btn.secondary').style.display = 'inline-block';
+            }
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        /**
+         * Format bytes for display
+         */
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        /**
+         * UC4.1: Open NFC association modal
+         * UC4.5: Handle override case for already associated tags
+         */
+        function openNfcModal(playlistName, hasExistingTag) {
+            document.getElementById('selectedNfcPlaylist').textContent = playlistName;
+            document.getElementById('nfcModal').classList.add('active');
+
+            if (hasExistingTag) {
+                // UC4.5: Show override prompt
+                document.getElementById('nfcStatusBox').className = 'nfc-status-box override';
+                document.getElementById('nfcStatusBox').innerHTML =
+                    '⚠️ Ce tag est déjà associé à une autre playlist. Voulez-vous le remplacer ?';
+                document.getElementById('overrideBtn').style.display = 'inline-block';
+                document.getElementById('nfcCountdown').style.display = 'none';
+            } else {
+                startNfcScan();
+            }
+        }
+
+        /**
+         * UC4.6: Confirm override of existing tag association
+         */
+        function confirmOverride() {
+            document.getElementById('overrideBtn').style.display = 'none';
+            document.getElementById('nfcCountdown').style.display = 'block';
+            document.getElementById('nfcStatusBox').className = 'nfc-status-box waiting';
+            document.getElementById('nfcStatusBox').innerHTML =
+                '🔍 Approchez votre tag NFC du lecteur...<br><div style="margin-top: 8px; font-size: 12px;">Temps restant: <span id="timeRemaining">60s</span></div>';
+            startNfcScan();
+        }
+
+        /**
+         * UC4.2, UC4.3: Start NFC scan with 60s timeout countdown
+         */
+        function startNfcScan() {
+            nfcScanStartTime = new Date();
+            nfcCountdown = 60;
+            updateNfcCountdown();
+
+            // UC4.2: 60 second timeout
+            nfcTimeout = setTimeout(() => {
+                // UC4.8: Show expired state
+                document.getElementById('nfcStatusBox').className = 'nfc-status-box expired';
+                document.getElementById('nfcStatusBox').innerHTML = '⏰ Délai d\'attente expiré. Veuillez réessayer.';
+                document.getElementById('nfcCountdown').textContent = '0';
+                showToast('Délai d\'association NFC expiré', 'warning');
+            }, 60000);
+
+            // Simulate tag detection after random time (3-10 seconds for demo)
+            setTimeout(() => {
+                if (nfcTimeout) {
+                    simulateTagDetection();
+                }
+            }, Math.random() * 7000 + 3000);
+        }
+
+        /**
+         * Update NFC countdown timer
+         */
+        function updateNfcCountdown() {
+            if (!nfcScanStartTime) return;
+
+            const now = new Date();
+            const elapsed = Math.floor((now - nfcScanStartTime) / 1000);
+            const remaining = Math.max(0, 60 - elapsed);
+
+            document.getElementById('nfcCountdown').textContent = remaining;
+            document.getElementById('timeRemaining').textContent = remaining + 's';
+
+            if (remaining > 0 && nfcTimeout) {
+                setTimeout(updateNfcCountdown, 1000);
+            }
+        }
+
+        /**
+         * UC4.4: Simulate successful tag detection
+         */
+        function simulateTagDetection() {
+            if (!nfcTimeout) return; // Already cancelled or expired
+
+            clearTimeout(nfcTimeout);
+            nfcTimeout = null;
+
+            document.getElementById('nfcStatusBox').className = 'nfc-status-box waiting';
+            document.getElementById('nfcStatusBox').innerHTML = '✅ Tag détecté ! Association en cours...';
+
+            setTimeout(() => {
+                const playlistName = document.getElementById('selectedNfcPlaylist').textContent;
+                showToast(`Tag NFC associé à "${playlistName}"`);
+                closeNfcModal();
+
+                // Update UI to show tag is linked
+                // In real implementation, would update the playlist's NFC status
+            }, 1500);
+        }
+
+        /**
+         * UC4.7: Close NFC modal (manual cancel)
+         */
+        function closeNfcModal() {
+            document.getElementById('nfcModal').classList.remove('active');
+            stopNfcScan();
+        }
+
+        /**
+         * Stop NFC scan and cleanup
+         */
+        function stopNfcScan() {
+            nfcScanStartTime = null;
+            if (nfcTimeout) {
+                clearTimeout(nfcTimeout);
+                nfcTimeout = null;
+            }
+        }
+
+        /**
+         * UC2.8: Drag and drop functionality for track reordering
+         */
+        function setupTrackDragAndDrop() {
+            document.addEventListener('dragstart', function(e) {
+                if (e.target.classList.contains('track-item') && editMode) {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+
+            document.addEventListener('dragend', function(e) {
+                if (e.target.classList.contains('track-item')) {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                }
+            });
+
+            document.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const target = e.target.closest('.track-item');
+                if (target && target !== draggedItem && editMode) {
+                    const rect = target.getBoundingClientRect();
+                    const midpoint = rect.top + rect.height / 2;
+
+                    if (e.clientY < midpoint) {
+                        target.parentNode.insertBefore(draggedItem, target);
+                    } else {
+                        target.parentNode.insertBefore(draggedItem, target.nextSibling);
+                    }
+                    updateTrackNumbers();
+                }
+            });
+        }
+
+        /**
+         * UC1.10: Show playback error
+         */
+        function showPlaybackError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorBanner').classList.add('show');
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        }
+
+        /**
+         * Hide error banner
+         */
+        function hideError() {
+            document.getElementById('errorBanner').classList.remove('show');
+        }
+
+        /**
+         * Show toast notification
+         */
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'danger' ? 'var(--danger)' :
+                           type === 'warning' ? 'var(--warning)' : 'var(--success)';
+            const icon = type === 'danger' ? '🗑️' :
+                        type === 'warning' ? '⚠️' : '✅';
+
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: ${bgColor};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: var(--shadow-md);
+                z-index: 2000;
+                font-size: 14px;
+                font-weight: 500;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+            `;
+            toast.textContent = `${icon} ${message}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        /**
+         * Handle track item clicks (play track when not in edit mode)
+         */
+        function handleTrackClick(event) {
+            const trackItem = event.target.closest('.track-item');
+            if (trackItem && !editMode && !event.target.classList.contains('track-delete-btn')) {
+                const trackName = trackItem.querySelector('.track-name').textContent;
+                const trackNumber = trackItem.querySelector('.track-number').textContent;
+
+                document.querySelector('.track-title').textContent = trackName;
+                document.querySelector('.track-artist').textContent = `Piste ${trackNumber}`;
+
+                // Update current track visual
+                document.querySelectorAll('.track-item').forEach(t => t.classList.remove('current'));
+                trackItem.classList.add('current');
+
+                // Start playing if not already playing
+                if (!isPlaying) {
+                    togglePlayback();
+                }
+
+                // Reset progress for new track
+                currentProgress = 0;
+                document.querySelector('.progress-fill').style.width = '0%';
+                updateTimeIndicators(0);
+            }
+        }
+
+        /**
+         * Setup file input event listeners
+         */
+        function setupFileInputs() {
+            ['1', '2', '3'].forEach(num => {
+                document.getElementById('fileInput' + num).addEventListener('change', function(e) {
+                    const playlistNames = ['Zelda & Sleep', 'Promenons nous dans les bois', 'Les petits poissons'];
+                    startFileUpload(e.target.files, playlistNames[num - 1]);
+                });
+            });
+        }
+
+        /**
+         * Initialize application
+         */
+        function init() {
+            setupDragAndDrop();
+            setupTrackDragAndDrop();
+            setupFileInputs();
+
+            // Add click listener for track items
+            document.addEventListener('click', handleTrackClick);
+
+            // Close modals when clicking outside
+            document.getElementById('nfcModal').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    closeNfcModal();
+                }
+            });
+
+            document.getElementById('uploadModal').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    closeUploadModal();
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && !e.target.matches('input, button')) {
+                    e.preventDefault();
+                    togglePlayback();
+                }
+                if (e.code === 'ArrowRight' && e.ctrlKey) {
+                    e.preventDefault();
+                    nextTrack();
+                }
+                if (e.code === 'ArrowLeft' && e.ctrlKey) {
+                    e.preventDefault();
+                    previousTrack();
+                }
+            });
+
+            // Simulate some initial states for demo
+            setTimeout(() => {
+                // Simulate a playback error after 10 seconds
+                showPlaybackError('Erreur de lecture: fichier "track3.mp3" corrompu');
+            }, 10000);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

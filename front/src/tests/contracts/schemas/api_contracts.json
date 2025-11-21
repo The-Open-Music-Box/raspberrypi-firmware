@@ -1,0 +1,775 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TheOpenMusicBox API Contracts",
+  "description": "Complete contract definitions for all API endpoints based on DDD implementation analysis",
+  "version": "3.0.0",
+  "unified_response_format": {
+    "description": "All API responses follow UnifiedResponseService format",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["success", "error"]
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": ["object", "array", "null"]
+        },
+        "client_op_id": {
+          "type": ["string", "null"]
+        },
+        "server_seq": {
+          "type": ["number", "null"]
+        },
+        "timestamp": {
+          "type": "number"
+        },
+        "request_id": {
+          "type": ["string", "null"]
+        },
+        "error_type": {
+          "type": ["string", "null"],
+          "enum": ["validation_error", "not_found", "rate_limit_exceeded", "service_unavailable", "internal_error", "conflict", "bad_request", null]
+        },
+        "details": {
+          "type": ["object", "null"]
+        }
+      },
+      "required": ["status", "message", "timestamp"]
+    }
+  },
+  "contracts": {
+    "playlist_api": {
+      "base_path": "/api/playlists",
+      "routes": {
+        "GET /": {
+          "description": "List playlists with pagination",
+          "query_parameters": {
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "playlists": {
+                "type": "array",
+                "items": {"$ref": "#/definitions/PlaylistSummary"}
+              },
+              "page": {"type": "integer"},
+              "limit": {"type": "integer"},
+              "total": {"type": "integer"},
+              "total_pages": {"type": "integer"}
+            },
+            "required": ["playlists", "page", "limit", "total", "total_pages"]
+          }
+        },
+        "POST /": {
+          "description": "Create new playlist",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "title": {"type": "string", "minLength": 1},
+              "description": {"type": "string"},
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["title"]
+          },
+          "response_data": {"$ref": "#/definitions/PlaylistDetailed"},
+          "status_code": 201
+        },
+        "GET /{playlist_id}": {
+          "description": "Get specific playlist",
+          "path_parameters": {
+            "playlist_id": {"type": "string"}
+          },
+          "response_data": {"$ref": "#/definitions/PlaylistDetailed"}
+        },
+        "PUT /{playlist_id}": {
+          "description": "Update playlist",
+          "path_parameters": {
+            "playlist_id": {"type": "string"}
+          },
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "title": {"type": "string"},
+              "description": {"type": "string"},
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          }
+        },
+        "DELETE /{playlist_id}": {
+          "description": "Delete playlist",
+          "path_parameters": {
+            "playlist_id": {"type": "string"}
+          },
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "status_code": 204
+        },
+        "POST /{playlist_id}/reorder": {
+          "description": "Reorder tracks in playlist",
+          "path_parameters": {
+            "playlist_id": {"type": "string"}
+          },
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "track_order": {
+                "type": "array",
+                "items": {"type": "integer"}
+              },
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["track_order"]
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "client_op_id": {"type": "string"}
+            }
+          }
+        },
+        "DELETE /{playlist_id}/tracks": {
+          "description": "Delete tracks from playlist",
+          "path_parameters": {
+            "playlist_id": {"type": "string"}
+          },
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "track_numbers": {
+                "type": "array",
+                "items": {"type": "integer"}
+              },
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["track_numbers"]
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          }
+        },
+        "POST /{playlist_id}/start": {
+          "description": "Start playlist playback",
+          "path_parameters": {
+            "playlist_id": {"type": "string"}
+          },
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "started": {"type": "boolean"}
+            }
+          }
+        },
+        "POST /sync": {
+          "description": "Sync playlists",
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "server_seq": {"type": "number"},
+              "playlists_count": {"type": "integer"}
+            }
+          }
+        },
+        "POST /move-track": {
+          "description": "Move track between playlists",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "source_playlist_id": {"type": "string"},
+              "target_playlist_id": {"type": "string"},
+              "track_number": {"type": "integer"},
+              "target_position": {"type": "integer"},
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["source_playlist_id", "target_playlist_id", "track_number"]
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          }
+        }
+      },
+      "upload_routes": {
+        "POST /{playlist_id}/uploads/session": {
+          "description": "Initialize upload session",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "filename": {"type": "string"},
+              "file_size": {"type": "integer"},
+              "chunk_size": {"type": "integer", "default": 1048576},
+              "file_hash": {"type": "string"}
+            },
+            "required": ["filename", "file_size"]
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "session_id": {"type": "string"},
+              "chunk_size": {"type": "integer"},
+              "expected_chunks": {"type": "integer"}
+            }
+          },
+          "status_code": 201
+        },
+        "PUT /{playlist_id}/uploads/{session_id}/chunks/{chunk_index}": {
+          "description": "Upload file chunk",
+          "request_body": "multipart/form-data",
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "chunk_index": {"type": "integer"},
+              "received_size": {"type": "integer"}
+            }
+          }
+        },
+        "POST /{playlist_id}/uploads/{session_id}/finalize": {
+          "description": "Finalize upload",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "file_hash": {"type": "string"},
+              "metadata_override": {"type": "object"},
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "track": {"$ref": "#/definitions/Track"},
+              "session_id": {"type": "string"}
+            }
+          }
+        },
+        "GET /{playlist_id}/uploads/{session_id}": {
+          "description": "Get upload status",
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "session_id": {"type": "string"},
+              "status": {"type": "string"},
+              "progress": {"type": "number"},
+              "chunks_received": {"type": "integer"}
+            }
+          }
+        }
+      }
+    },
+    "player_api": {
+      "base_path": "/api/player",
+      "routes": {
+        "POST /play": {
+          "description": "Start/resume playback",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "POST /pause": {
+          "description": "Pause playback",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "POST /stop": {
+          "description": "Stop playback",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "POST /next": {
+          "description": "Next track",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "POST /previous": {
+          "description": "Previous track",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "POST /toggle": {
+          "description": "Toggle play/pause",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "GET /status": {
+          "description": "Get player status",
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "POST /seek": {
+          "description": "Seek to position",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "position_ms": {"type": "integer", "minimum": 0, "maximum": 86400000},
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["position_ms"]
+          },
+          "response_data": {"$ref": "#/definitions/PlayerState"}
+        },
+        "POST /volume": {
+          "description": "Set volume",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "volume": {"type": "integer", "minimum": 0, "maximum": 100},
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["volume"]
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "volume": {"type": "integer"}
+            }
+          }
+        }
+      }
+    },
+    "nfc_api": {
+      "base_path": "/api/nfc",
+      "routes": {
+        "POST /associate": {
+          "description": "Associate NFC tag with playlist",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "playlist_id": {"type": "string"},
+              "tag_id": {"type": "string"},
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["playlist_id", "tag_id"]
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "association": {"$ref": "#/definitions/NFCAssociation"}
+            }
+          }
+        },
+        "DELETE /associate/{tag_id}": {
+          "description": "Remove NFC tag association",
+          "path_parameters": {
+            "tag_id": {"type": "string"}
+          },
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": null
+        },
+        "GET /status": {
+          "description": "Get NFC reader status",
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "reader_available": {"type": "boolean"},
+              "scanning": {"type": "boolean"},
+              "association_active": {"type": "boolean"},
+              "current_session_id": {"type": ["string", "null"]},
+              "active_sessions": {"type": "array"}
+            },
+            "required": ["reader_available", "scanning", "association_active", "active_sessions"]
+          }
+        },
+        "POST /scan": {
+          "description": "Start NFC scan session",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "timeout_ms": {"type": "integer", "minimum": 1000, "maximum": 300000, "default": 60000},
+              "playlist_id": {"type": "string"},
+              "client_op_id": {"type": "string"}
+            }
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "scan_id": {"type": "string"},
+              "timeout_ms": {"type": "integer"}
+            },
+            "required": ["scan_id", "timeout_ms"]
+          }
+        }
+      }
+    },
+    "system_api": {
+      "base_path": "/api/system",
+      "routes": {
+        "GET /info": {
+          "description": "Get system information",
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "system_info": {
+                "type": "object",
+                "properties": {
+                  "platform": {"type": "string"},
+                  "platform_release": {"type": "string"},
+                  "platform_version": {"type": "string"},
+                  "architecture": {"type": "string"},
+                  "hostname": {"type": "string"},
+                  "processor": {"type": "string"},
+                  "memory_total": {"type": "integer"},
+                  "memory_available": {"type": "integer"},
+                  "memory_percent": {"type": "number"}
+                },
+                "required": ["platform", "platform_release", "platform_version", "architecture", "hostname", "processor"]
+              },
+              "version": {"type": "string"},
+              "hostname": {"type": "string"},
+              "uptime": {"type": "number"}
+            },
+            "required": ["system_info", "version", "hostname", "uptime"]
+          }
+        },
+        "GET /logs": {
+          "description": "Get system logs",
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "logs": {"type": "array"},
+              "total_lines": {"type": "integer"}
+            }
+          }
+        },
+        "POST /restart": {
+          "description": "Restart system",
+          "skip_in_validation": true,
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "restart_scheduled": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "youtube_api": {
+      "base_path": "/api/youtube",
+      "routes": {
+        "POST /download": {
+          "description": "Download from YouTube URL",
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "url": {"type": "string", "format": "uri"},
+              "playlist_id": {"type": "string"},
+              "quality": {"type": "string"},
+              "client_op_id": {"type": "string"}
+            },
+            "required": ["url", "playlist_id"]
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "task_id": {"type": "string"},
+              "status": {"type": "string"}
+            }
+          }
+        },
+        "GET /status/{task_id}": {
+          "description": "Get download progress",
+          "path_parameters": {
+            "task_id": {"type": "string"}
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "task_id": {"type": "string"},
+              "status": {"type": "string"},
+              "progress_percent": {"type": "number"},
+              "current_step": {"type": "string"}
+            }
+          }
+        },
+        "GET /search": {
+          "description": "Search YouTube videos",
+          "query_parameters": {
+            "query": {"type": "string"},
+            "max_results": {"type": "integer", "default": 10}
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "url": {"type": "string"},
+                    "duration": {"type": "string"},
+                    "thumbnail": {"type": "string"}
+                  }
+                }
+              },
+              "total_results": {"type": "integer"}
+            }
+          }
+        }
+      }
+    },
+    "health_api": {
+      "base_path": "/api",
+      "routes": {
+        "GET /health": {
+          "description": "Health check endpoint",
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["healthy", "degraded", "unhealthy"]
+              },
+              "services": {
+                "type": "object",
+                "properties": {
+                  "api": {"type": "boolean"},
+                  "audio": {"type": "boolean"},
+                  "nfc": {"type": "boolean"},
+                  "gpio": {"type": "boolean"},
+                  "led_hat": {"type": "boolean"},
+                  "websocket": {"type": "boolean"}
+                },
+                "required": ["api", "audio", "nfc", "gpio", "led_hat", "websocket"]
+              },
+              "timestamp": {"type": "number"}
+            },
+            "required": ["status", "services", "timestamp"]
+          }
+        }
+      }
+    },
+    "upload_management_api": {
+      "base_path": "/api/uploads",
+      "routes": {
+        "GET /sessions": {
+          "description": "List all upload sessions with optional filtering",
+          "query_parameters": {
+            "status": {
+              "type": "string",
+              "description": "Filter by upload status (pending, uploading, completed, error)"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "description": "Maximum sessions to return"
+            }
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "sessions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "session_id": {"type": "string"},
+                    "filename": {"type": "string"},
+                    "file_size": {"type": "integer"},
+                    "chunks_uploaded": {"type": "integer"},
+                    "chunks_total": {"type": "integer"},
+                    "progress_percent": {"type": "number"},
+                    "playlist_id": {"type": "string"},
+                    "created_at": {"type": "string"},
+                    "status": {
+                      "type": "string",
+                      "enum": ["pending", "uploading", "completed", "error"]
+                    }
+                  },
+                  "required": ["session_id", "filename", "file_size", "chunks_uploaded", "chunks_total", "progress_percent", "status"]
+                }
+              }
+            },
+            "required": ["sessions"]
+          }
+        },
+        "DELETE /sessions/{session_id}": {
+          "description": "Delete a specific upload session",
+          "path_parameters": {
+            "session_id": {"type": "string"}
+          },
+          "response_data": null
+        },
+        "POST /cleanup": {
+          "description": "Cleanup stale upload sessions older than specified age",
+          "query_parameters": {
+            "max_age_hours": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 168,
+              "default": 24,
+              "description": "Maximum age in hours for cleanup"
+            }
+          },
+          "response_data": {
+            "type": "object",
+            "properties": {
+              "cleaned_sessions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "session_id": {"type": "string"},
+                    "filename": {"type": "string"},
+                    "age_hours": {"type": "number"}
+                  },
+                  "required": ["session_id", "filename", "age_hours"]
+                }
+              }
+            },
+            "required": ["cleaned_sessions"]
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "PlaylistSummary": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "track_count": {"type": "integer"},
+        "nfc_tag_id": {"type": ["string", "null"]},
+        "server_seq": {"type": "number"},
+        "created_at": {"type": "string"},
+        "updated_at": {"type": "string"}
+      },
+      "required": ["id", "title", "track_count"]
+    },
+    "PlaylistDetailed": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "tracks": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/Track"}
+        },
+        "nfc_tag_id": {"type": ["string", "null"]},
+        "server_seq": {"type": "number"},
+        "created_at": {"type": "string"},
+        "updated_at": {"type": "string"},
+        "total_duration_ms": {"type": "integer"}
+      },
+      "required": ["id", "title", "tracks"]
+    },
+    "Track": {
+      "type": "object",
+      "properties": {
+        "number": {"type": "integer"},
+        "title": {"type": "string"},
+        "filename": {"type": "string"},
+        "file_path": {"type": "string"},
+        "duration": {"type": ["integer", "null"]},
+        "duration_ms": {"type": ["integer", "null"]},
+        "artist": {"type": ["string", "null"]},
+        "album": {"type": ["string", "null"]},
+        "file_size": {"type": ["integer", "null"]},
+        "created_at": {"type": "string"},
+        "updated_at": {"type": "string"}
+      },
+      "required": ["number", "title", "filename"]
+    },
+    "PlayerState": {
+      "type": "object",
+      "properties": {
+        "is_playing": {"type": "boolean"},
+        "active_playlist_id": {"type": ["string", "null"]},
+        "active_playlist_title": {"type": ["string", "null"]},
+        "active_track_id": {"type": ["string", "null"]},
+        "active_track_number": {"type": ["integer", "null"]},
+        "active_track_title": {"type": ["string", "null"]},
+        "position_ms": {"type": "integer"},
+        "duration_ms": {"type": ["integer", "null"]},
+        "can_prev": {"type": "boolean"},
+        "can_next": {"type": "boolean"},
+        "volume": {"type": ["integer", "null"]},
+        "server_seq": {"type": "number"}
+      },
+      "required": ["is_playing", "position_ms", "can_prev", "can_next", "server_seq"]
+    },
+    "NFCAssociation": {
+      "type": "object",
+      "properties": {
+        "tag_id": {"type": "string"},
+        "playlist_id": {"type": "string"},
+        "playlist_title": {"type": "string"},
+        "created_at": {"type": "string"}
+      },
+      "required": ["tag_id", "playlist_id", "playlist_title", "created_at"]
+    }
+  }
+}

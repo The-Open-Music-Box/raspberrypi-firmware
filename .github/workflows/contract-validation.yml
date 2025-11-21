@@ -1,0 +1,269 @@
+name: Contract Validation
+
+on:
+  push:
+    branches: [ main, develop, feat/*, fix/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC to catch any drift
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggering from GitHub UI
+
+env:
+  USE_MOCK_HARDWARE: true
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  contract-validation:
+    name: API & Socket.IO Contract Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('back/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install Python dependencies
+      run: |
+        cd back
+        python -m pip install --upgrade pip
+        # Install application dependencies
+        pip install -r requirements.txt
+        # Install test dependencies
+        pip install -r requirements-test.txt
+        # Install contract validation dependencies
+        pip install jsonschema
+
+    - name: Install Node.js dependencies
+      run: |
+        cd front
+        npm ci
+
+    - name: Start backend server
+      run: |
+        cd back
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        # Start server in background (use app_sio for Socket.IO support)
+        python -m uvicorn app.main:app_sio --host 0.0.0.0 --port 8000 &
+        echo $! > backend.pid
+        # Wait for server to be ready
+        timeout 60 bash -c 'until curl -f http://localhost:8000/api/health; do sleep 2; done'
+
+    - name: Run contract validation
+      run: |
+        # Create report directory
+        mkdir -p ./contract-reports
+
+        # Make validation script executable
+        chmod +x scripts/validate_contracts.sh
+
+        # Run contract validation with detailed reporting
+        ./scripts/validate_contracts.sh \
+          --api-url http://localhost:8000 \
+          --socket-url http://localhost:8000 \
+          --output ./contract-reports \
+          --wait-server \
+          --skip-setup \
+          --fail-fast
+
+    - name: Upload contract validation reports
+      uses: actions/upload-artifact@v4
+      if: always()  # Upload reports even if validation fails
+      with:
+        name: contract-validation-reports-${{ github.run_number }}
+        path: contract-reports/
+        retention-days: 30
+
+    - name: Generate contract validation summary
+      if: always()
+      run: |
+        echo "## Contract Validation Summary" >> $GITHUB_STEP_SUMMARY
+
+        if [ -f contract-reports/combined_validation_*.json ]; then
+          REPORT_FILE=$(ls contract-reports/combined_validation_*.json | head -1)
+
+          # Extract summary using jq if available, otherwise basic parsing
+          if command -v jq &> /dev/null && [ -f "$REPORT_FILE" ]; then
+            echo "### Overall Results" >> $GITHUB_STEP_SUMMARY
+
+            # Parse backend results
+            BACKEND_TOTAL=$(jq -r '.backend_validation.summary.total_tests // 0' "$REPORT_FILE")
+            BACKEND_PASSED=$(jq -r '.backend_validation.summary.passed // 0' "$REPORT_FILE")
+            BACKEND_FAILED=$(jq -r '.backend_validation.summary.failed // 0' "$REPORT_FILE")
+
+            # Parse frontend results
+            FRONTEND_TOTAL=$(jq -r '.frontend_validation.summary.totalTests // 0' "$REPORT_FILE")
+            FRONTEND_PASSED=$(jq -r '.frontend_validation.summary.passed // 0' "$REPORT_FILE")
+            FRONTEND_FAILED=$(jq -r '.frontend_validation.summary.failed // 0' "$REPORT_FILE")
+
+            echo "| Component | Total | Passed | Failed |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Backend   | $BACKEND_TOTAL | $BACKEND_PASSED | $BACKEND_FAILED |" >> $GITHUB_STEP_SUMMARY
+            echo "| Frontend  | $FRONTEND_TOTAL | $FRONTEND_PASSED | $FRONTEND_FAILED |" >> $GITHUB_STEP_SUMMARY
+
+            # Add details for failed tests
+            if [ $BACKEND_FAILED -gt 0 ] || [ $FRONTEND_FAILED -gt 0 ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
+              echo "Check the detailed reports in the artifacts for more information." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### ✅ All contract validations passed!" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "Contract validation reports generated. Check artifacts for details." >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "⚠️ No contract validation reports found." >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Comment PR with validation results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+
+          // Find the latest combined report
+          const reportDir = './contract-reports';
+          if (!fs.existsSync(reportDir)) {
+            console.log('No contract reports directory found');
+            return;
+          }
+
+          const files = fs.readdirSync(reportDir);
+          const reportFile = files.find(f => f.startsWith('combined_validation_') && f.endsWith('.json'));
+
+          if (!reportFile) {
+            console.log('No combined validation report found');
+            return;
+          }
+
+          const reportPath = path.join(reportDir, reportFile);
+          const reportData = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+
+          // Generate comment content
+          let comment = '## 🔍 Contract Validation Results\n\n';
+
+          // Backend results
+          if (reportData.backend_validation) {
+            const backend = reportData.backend_validation.summary;
+            comment += `### Backend API Validation\n`;
+            comment += `- **Total tests:** ${backend.total_tests || 0}\n`;
+            comment += `- **Passed:** ✅ ${backend.passed || 0}\n`;
+            comment += `- **Failed:** ${backend.failed > 0 ? '❌' : '✅'} ${backend.failed || 0}\n`;
+            comment += `- **Success rate:** ${(backend.success_rate || 0).toFixed(1)}%\n\n`;
+          }
+
+          // Frontend results
+          if (reportData.frontend_validation) {
+            const frontend = reportData.frontend_validation.summary;
+            comment += `### Frontend Contract Validation\n`;
+            comment += `- **Total tests:** ${frontend.totalTests || 0}\n`;
+            comment += `- **Passed:** ✅ ${frontend.passed || 0}\n`;
+            comment += `- **Failed:** ${frontend.failed > 0 ? '❌' : '✅'} ${frontend.failed || 0}\n`;
+            comment += `- **Success rate:** ${(frontend.successRate || 0).toFixed(1)}%\n\n`;
+          }
+
+          // Overall status
+          const totalFailed = (reportData.backend_validation?.summary?.failed || 0) +
+                             (reportData.frontend_validation?.summary?.failed || 0);
+
+          if (totalFailed === 0) {
+            comment += '### ✅ All contract validations passed!\n\n';
+            comment += 'API and Socket.IO contracts are coherent between frontend and backend.';
+          } else {
+            comment += '### ❌ Contract validation failures detected\n\n';
+            comment += 'Please check the detailed reports in the CI artifacts and fix any contract mismatches.';
+          }
+
+          // Post comment
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+    - name: Stop backend server
+      if: always()
+      run: |
+        if [ -f back/backend.pid ]; then
+          kill $(cat back/backend.pid) || true
+          rm back/backend.pid
+        fi
+
+    - name: Fail job if validation failed
+      if: failure()
+      run: |
+        echo "❌ Contract validation failed"
+        echo "Check the uploaded artifacts for detailed reports"
+        exit 1
+
+  # Separate job for contract drift detection (only on schedule)
+  contract-drift-detection:
+    name: Contract Drift Detection
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check for contract changes
+      run: |
+        # This could be enhanced to compare against a baseline
+        echo "Contract drift detection - checking for recent changes in API/Socket.IO implementations"
+
+        # Look for recent changes in API routes
+        git log --since="24 hours ago" --name-only --pretty=format: | grep -E "(routes|api|socket)" | sort -u
+
+        # Could add more sophisticated drift detection here
+        echo "Contract drift check completed"
+
+    - name: Create issue if significant drift detected
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: 'Contract Drift Detected',
+            body: `## Contract Drift Alert
+
+            The scheduled contract validation detected potential API/Socket.IO contract drift.
+
+            This could indicate:
+            - API changes without corresponding frontend updates
+            - Socket.IO event changes without contract updates
+            - Version mismatches between components
+
+            Please review recent changes and run manual contract validation.
+
+            **Run:** \`./scripts/validate_contracts.sh\`
+
+            Auto-generated on ${new Date().toISOString()}`,
+            labels: ['contract-validation', 'technical-debt']
+          });
