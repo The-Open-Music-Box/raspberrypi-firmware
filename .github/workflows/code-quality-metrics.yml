@@ -28,15 +28,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+      # Use system Python 3.13 (actions/setup-python doesn't support ARM64 Debian 13)
+      - name: Set up Python virtual environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          source venv/bin/activate
           pip install -r requirements.txt
           pip install -r requirements-test.txt
 
@@ -47,6 +50,7 @@ jobs:
 
       - name: Run metrics collection
         run: |
+          source venv/bin/activate
           ./scripts/export_metrics.sh http://localhost:9091
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -54,6 +58,7 @@ jobs:
       - name: Generate metrics summary
         if: always()
         run: |
+          source venv/bin/activate
           echo "## Code Quality Metrics Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
