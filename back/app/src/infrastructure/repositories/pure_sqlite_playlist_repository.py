@@ -65,6 +65,21 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"find_tracks_for_playlist_{playlist_id}"
         )
 
+    def _build_playlist_or_none(self, playlist_row):
+        """Build playlist from row or return None if row is None.
+
+        Args:
+            playlist_row: Database row for playlist or None
+
+        Returns:
+            Playlist entity or None
+        """
+        if not playlist_row:
+            return None
+
+        track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
+        return self._build_playlist_from_rows(playlist_row, track_rows)
+
     @_handle_repository_errors("playlist")
     async def save(self, playlist: Playlist) -> Playlist:
         """Save a playlist using pure DDD principles.
@@ -217,13 +232,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"find_playlist_by_name_{name}"
         )
 
-        if not playlist_row:
-            return None
-
-        # Get tracks for this playlist
-        track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
-
-        return self._build_playlist_from_rows(playlist_row, track_rows)
+        return self._build_playlist_or_none(playlist_row)
 
     @_handle_repository_errors("playlist")
     async def find_by_nfc_tag(self, nfc_tag_id: str) -> Optional[Playlist]:
@@ -242,13 +251,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"find_playlist_by_nfc_{nfc_tag_id}"
         )
 
-        if not playlist_row:
-            return None
-
-        # Get tracks for this playlist
-        track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
-
-        return self._build_playlist_from_rows(playlist_row, track_rows)
+        return self._build_playlist_or_none(playlist_row)
 
     @_handle_repository_errors("playlist")
     async def find_all(self, limit: Optional[int] = None, offset: int = 0) -> List[Playlist]:
