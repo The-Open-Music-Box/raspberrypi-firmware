@@ -52,10 +52,9 @@ def handle_domain_errors(
                 try:
                     return await func(*args, **kwargs)
                 except Exception as e:
-                    _handle_error(e, func_operation, func_component, log_level, include_trace)
-                    if reraise:
-                        raise
-                    return default_return
+                    return _handle_exception_and_return(
+                        e, func_operation, func_component, log_level, include_trace, reraise, default_return
+                    )
             return async_wrapper
         else:
             @functools.wraps(func)
@@ -63,10 +62,9 @@ def handle_domain_errors(
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    _handle_error(e, func_operation, func_component, log_level, include_trace)
-                    if reraise:
-                        raise
-                    return default_return
+                    return _handle_exception_and_return(
+                        e, func_operation, func_component, log_level, include_trace, reraise, default_return
+                    )
             return sync_wrapper
 
     return decorator
@@ -92,6 +90,38 @@ def _handle_error(
         extra_data["traceback"] = traceback.format_exc()
 
     logger.log(log_level, log_message, extra=extra_data)
+
+
+def _handle_exception_and_return(
+    error: Exception,
+    operation: str,
+    component: str,
+    log_level: int,
+    include_trace: bool,
+    reraise: bool,
+    default_return: Any
+) -> Any:
+    """Handle exception, log it, and return appropriate value or reraise.
+
+    Args:
+        error: The exception that occurred
+        operation: Operation name
+        component: Component name
+        log_level: Logging level
+        include_trace: Whether to include stack trace
+        reraise: Whether to reraise the exception
+        default_return: Default value to return if not reraising
+
+    Returns:
+        default_return if not reraising
+
+    Raises:
+        Exception: The original exception if reraise is True
+    """
+    _handle_error(error, operation, component, log_level, include_trace)
+    if reraise:
+        raise
+    return default_return
 
 
 # Alias for backward compatibility
