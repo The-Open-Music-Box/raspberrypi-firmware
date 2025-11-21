@@ -43,6 +43,27 @@ class UploadValidationService:
         self.allowed_extensions = allowed_extensions or {"mp3", "wav", "flac", "ogg", "m4a", "aac"}
         self.min_audio_duration = min_audio_duration
 
+    def _create_validation_result(
+        self, errors: List[str], warnings: List[str], **extra_fields
+    ) -> Dict[str, any]:
+        """Create standard validation result dictionary.
+
+        Args:
+            errors: List of error messages
+            warnings: List of warning messages
+            **extra_fields: Additional fields to include in result
+
+        Returns:
+            Validation result with valid flag, errors, warnings, and extra fields
+        """
+        result = {
+            "valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings,
+        }
+        result.update(extra_fields)
+        return result
+
     def validate_upload_request(
         self, filename: str, total_size: int, total_chunks: int, playlist_id: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -151,15 +172,9 @@ class UploadValidationService:
                 f"Adding chunk would exceed total file size ({projected_size} > {session.total_size_bytes})"
             )
 
-        is_valid = len(errors) == 0
-
-        return {
-            "valid": is_valid,
-            "errors": errors,
-            "warnings": warnings,
-            "chunk_index": chunk.index,
-            "chunk_size": chunk.size,
-        }
+        return self._create_validation_result(
+            errors, warnings, chunk_index=chunk.index, chunk_size=chunk.size
+        )
 
     def validate_session_completion(self, session: UploadSession) -> Dict[str, Any]:
         """Validate that a session is ready for completion.
@@ -190,14 +205,9 @@ class UploadValidationService:
         if session.is_expired():
             errors.append("Session has expired")
 
-        is_valid = len(errors) == 0
-
-        return {
-            "valid": is_valid,
-            "errors": errors,
-            "warnings": warnings,
-            "progress": session.progress_percentage,
-        }
+        return self._create_validation_result(
+            errors, warnings, progress=session.progress_percentage
+        )
 
     def validate_audio_metadata(self, metadata: FileMetadata) -> Dict[str, Any]:
         """Validate audio file metadata against business rules.
