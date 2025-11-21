@@ -12,13 +12,11 @@ CONTRACT VALIDATION FIXED: Added server_seq parameter and fixed status codes for
 
 from fastapi import APIRouter, Request
 from pydantic import Field
-import logging
 
+from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.common.response_models import ClientOperationRequest
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
-
-logger = logging.getLogger(__name__)
 
 
 class SeekRequest(ClientOperationRequest):
@@ -38,7 +36,7 @@ class PlayerControlRequest(ClientOperationRequest):
     pass
 
 
-class PlayerAPIRoutes:
+class PlayerAPIRoutes(BaseAPIRoutes):
     """
     Pure API routes handler for player operations.
 
@@ -52,6 +50,8 @@ class PlayerAPIRoutes:
     - Business logic (delegated to application services)
     - State broadcasting (delegated to broadcasting service)
     - Rate limiting (delegated to operations service)
+
+    Inherits common API functionality from BaseAPIRoutes.
     """
 
     def __init__(self, player_service, broadcasting_service, operations_service=None):
@@ -63,6 +63,12 @@ class PlayerAPIRoutes:
             operations_service: Service for complex player operations
         """
         self.router = APIRouter(prefix="/api/player", tags=["player"])
+        super().__init__(
+            router=self.router,
+            player_service=player_service,
+            broadcasting_service=broadcasting_service,
+            operations_service=operations_service
+        )
         self._player_service = player_service
         self._broadcasting_service = broadcasting_service
         self._operations_service = operations_service
@@ -94,7 +100,7 @@ class PlayerAPIRoutes:
 
                 # Check if service returned an error
                 if result.get("status") == "error":
-                    logger.error(f"Service error in play_use_case: {result.get('message')}")
+                    self._logger.error(f"Service error in play_use_case: {result.get('message')}")
                     return UnifiedResponseService.internal_error(
                         message=result.get("message", "Failed to start playback"),
                         operation="play_player"
@@ -124,9 +130,11 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in play_player: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to start playback", operation="play_player"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="play_player",
+                    message="Failed to start playback"
                 )
 
         @self.router.post("/pause")
@@ -175,9 +183,11 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in pause_player: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to pause playback", operation="pause_player"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="pause_player",
+                    message="Failed to pause playback"
                 )
 
         @self.router.post("/stop")
@@ -230,9 +240,11 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in stop_player: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to stop playback", operation="stop_player"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="stop_player",
+                    message="Failed to stop playback"
                 )
 
         @self.router.post("/next")
@@ -281,9 +293,11 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error in next_track: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to skip to next track", operation="next_track"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="next_track",
+                    message="Failed to skip to next track"
                 )
 
         @self.router.post("/previous")
@@ -332,17 +346,13 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(
-                    f"Error in previous_track: {str(e)}",
-                    extra={
-                        "client_op_id": body.client_op_id,
-                        "request_id": request.headers.get("X-Request-ID"),
-                        "operation": "previous_track",
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to skip to previous_track", operation="previous_track"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="previous_track",
+                    message="Failed to skip to previous track",
+                    client_op_id=body.client_op_id,
+                    request_id=request.headers.get("X-Request-ID")
                 )
 
         @self.router.post("/toggle")
@@ -384,17 +394,13 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(
-                    f"Error in toggle_playback: {str(e)}",
-                    extra={
-                        "client_op_id": body.client_op_id,
-                        "request_id": request.headers.get("X-Request-ID"),
-                        "operation": "toggle_playback",
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to toggle playback", operation="toggle_playback"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="toggle_playback",
+                    message="Failed to toggle playback",
+                    client_op_id=body.client_op_id,
+                    request_id=request.headers.get("X-Request-ID")
                 )
 
         @self.router.get("/status")
@@ -419,16 +425,12 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(
-                    f"Error in get_player_status: {str(e)}",
-                    extra={
-                        "request_id": request.headers.get("X-Request-ID"),
-                        "operation": "get_player_status",
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to get player status", operation="get_player_status"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="get_player_status",
+                    message="Failed to get player status",
+                    request_id=request.headers.get("X-Request-ID")
                 )
 
         @self.router.post("/seek")
@@ -471,18 +473,14 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(
-                    f"Error in seek_player: {str(e)}",
-                    extra={
-                        "client_op_id": body.client_op_id,
-                        "request_id": request.headers.get("X-Request-ID"),
-                        "operation": "seek_player",
-                        "position_ms": body.position_ms,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to seek", operation="seek_player"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="seek_player",
+                    message="Failed to seek",
+                    client_op_id=body.client_op_id,
+                    request_id=request.headers.get("X-Request-ID"),
+                    position_ms=body.position_ms
                 )
 
         @self.router.post("/volume")
@@ -523,18 +521,14 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(
-                    f"Error in set_volume: {str(e)}",
-                    extra={
-                        "client_op_id": body.client_op_id,
-                        "request_id": request.headers.get("X-Request-ID"),
-                        "operation": "set_volume",
-                        "volume": body.volume,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to set volume", operation="set_volume"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="set_volume",
+                    message="Failed to set volume",
+                    client_op_id=body.client_op_id,
+                    request_id=request.headers.get("X-Request-ID"),
+                    volume=body.volume
                 )
 
     def get_router(self) -> APIRouter:
