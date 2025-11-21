@@ -10,11 +10,11 @@ Real hardware implementation using gpiozero PWMLED for RGB LED control.
 
 import os
 import math
-from threading import Thread, Event, Lock
+from threading import Thread, Event
 from typing import Optional, Dict, Any
 import logging
 
-from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
+from .base_led_controller import BaseLEDController
 from app.src.domain.models.led import LEDColor, LEDAnimation, LEDColors
 
 logger = logging.getLogger(__name__)
@@ -50,12 +50,14 @@ else:
     GPIO_AVAILABLE = False
 
 
-class RGBLEDController(IndicatorLightsProtocol):
+class RGBLEDController(BaseLEDController):
     """
     RGB LED controller using PWM for color mixing.
 
     Controls an RGB LED (like SMD5050) using three GPIO pins with PWM.
     Supports animations through a background thread.
+
+    Inherits common LED functionality from BaseLEDController.
     """
 
     def __init__(
@@ -76,17 +78,15 @@ class RGBLEDController(IndicatorLightsProtocol):
             pwm_frequency: PWM frequency in Hz (default: 1000)
             default_brightness: Initial brightness (0.0-1.0)
         """
+        super().__init__(default_brightness)
+
         self._red_pin = red_pin
         self._green_pin = green_pin
         self._blue_pin = blue_pin
         self._pwm_frequency = pwm_frequency
-        self._brightness = default_brightness
 
         # LOG CRITICAL: Trace brightness initialization
         logger.info(f"💡 RGBLEDController initialized with brightness={default_brightness:.2f} (GPIO pins R:{red_pin} G:{green_pin} B:{blue_pin})")
-
-        self._is_initialized = False
-        self._lock = Lock()
 
         # GPIO devices
         self._red_led: Optional['PWMLED'] = None
@@ -96,8 +96,6 @@ class RGBLEDController(IndicatorLightsProtocol):
         # Animation control
         self._animation_thread: Optional[Thread] = None
         self._animation_stop_event = Event()
-        self._current_color = LEDColors.OFF
-        self._current_animation = LEDAnimation.SOLID
         self._animation_speed = 1.0
 
     async def initialize(self) -> bool:

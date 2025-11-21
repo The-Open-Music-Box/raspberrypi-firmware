@@ -10,20 +10,21 @@ Mock implementation for testing and development without hardware.
 
 import logging
 from typing import Dict, Any
-from threading import Lock
 
-from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
+from .base_led_controller import BaseLEDController
 from app.src.domain.models.led import LEDColor, LEDAnimation, LEDColors
 
 logger = logging.getLogger(__name__)
 
 
-class MockLEDController(IndicatorLightsProtocol):
+class MockLEDController(BaseLEDController):
     """
     Mock LED controller for testing.
 
     Simulates LED behavior without real hardware, tracking all operations
     for verification in tests.
+
+    Inherits common LED functionality from BaseLEDController.
     """
 
     def __init__(self, default_brightness: float = 1.0):
@@ -32,12 +33,7 @@ class MockLEDController(IndicatorLightsProtocol):
         Args:
             default_brightness: Initial brightness (0.0-1.0)
         """
-        self._is_initialized = False
-        self._current_color = LEDColors.OFF
-        self._current_animation = LEDAnimation.SOLID
-        self._animation_speed = 1.0
-        self._brightness = default_brightness
-        self._lock = Lock()
+        super().__init__(default_brightness)
 
         # Operation tracking for tests
         self._operations: list = []
@@ -68,8 +64,7 @@ class MockLEDController(IndicatorLightsProtocol):
 
     async def set_color(self, color: LEDColor) -> bool:
         """Set mock LED to solid color."""
-        if not self._is_initialized:
-            logger.warning("Mock LED not initialized")
+        if not self._check_initialized("set_color"):
             return False
 
         with self._lock:
@@ -95,8 +90,7 @@ class MockLEDController(IndicatorLightsProtocol):
         speed: float = 1.0
     ) -> bool:
         """Set mock LED with animation."""
-        if not self._is_initialized:
-            logger.warning("Mock LED not initialized")
+        if not self._check_initialized("set_animation"):
             return False
 
         with self._lock:
@@ -127,16 +121,18 @@ class MockLEDController(IndicatorLightsProtocol):
         return await self.set_color(LEDColors.OFF)
 
     async def set_brightness(self, brightness: float) -> bool:
-        """Set mock LED brightness level."""
-        if not 0.0 <= brightness <= 1.0:
-            logger.warning(f"Invalid brightness {brightness}, must be 0.0-1.0")
-            return False
+        """Set mock LED brightness level.
 
-        with self._lock:
-            self._brightness = brightness
-            self._operations.append(("set_brightness", {"brightness": brightness}))
-            logger.info(f"🧪 Mock LED brightness set to {brightness:.1%}")
-            return True
+        Extends base class to track operation for testing.
+        """
+        # Call base class for validation and setting
+        result = await super().set_brightness(brightness)
+
+        if result:
+            with self._lock:
+                self._operations.append(("set_brightness", {"brightness": brightness}))
+
+        return result
 
     def stop_animation(self) -> None:
         """Stop any running mock animation."""
@@ -144,23 +140,23 @@ class MockLEDController(IndicatorLightsProtocol):
             self._operations.append(("stop_animation", {}))
             logger.debug("🧪 Mock LED animation stopped")
 
-    def is_initialized(self) -> bool:
-        """Check if mock LED is initialized."""
-        return self._is_initialized
-
     def get_status(self) -> Dict[str, Any]:
-        """Get current mock LED status."""
+        """Get current mock LED status.
+
+        Extends base class status with mock-specific information.
+        """
+        # Get base status
+        status = super().get_status()
+
+        # Add mock-specific fields
         with self._lock:
-            return {
-                "initialized": self._is_initialized,
+            status.update({
                 "mock_mode": True,
                 "gpio_available": False,
-                "current_color": self._current_color.to_tuple(),
-                "current_animation": self._current_animation.value,
-                "animation_speed": self._animation_speed,
-                "brightness": self._brightness,
                 "operations_count": len(self._operations)
-            }
+            })
+
+        return status
 
     # Test helper methods
 
@@ -174,14 +170,5 @@ class MockLEDController(IndicatorLightsProtocol):
         with self._lock:
             self._operations.clear()
 
-    def get_current_color(self) -> LEDColor:
-        """Get current color (for testing)."""
-        return self._current_color
-
-    def get_current_animation(self) -> LEDAnimation:
-        """Get current animation (for testing)."""
-        return self._current_animation
-
-    def get_brightness(self) -> float:
-        """Get current brightness (for testing)."""
-        return self._brightness
+    # Note: get_current_color(), get_current_animation(), and get_brightness()
+    # are now inherited from BaseLEDController
