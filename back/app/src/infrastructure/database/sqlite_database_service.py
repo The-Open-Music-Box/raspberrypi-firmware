@@ -68,6 +68,36 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
             pool_size=self.pool_size
         )
 
+    def _execute_query(self, cursor, query: str, params: Union[tuple, dict] = None):
+        """Execute query with optional parameters.
+
+        Args:
+            cursor: Database cursor
+            query: SQL query to execute
+            params: Optional query parameters
+
+        Returns:
+            Cursor after execution
+        """
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        return cursor
+
+    def _log_slow_query(self, operation_name: str, start_time: float):
+        """Log slow query if execution time exceeds threshold.
+
+        Args:
+            operation_name: Name of operation for logging
+            start_time: Query start time
+        """
+        execution_time = (time.time() - start_time) * 1000
+        if execution_time > 100:
+            logger.warning(
+                f"⚠️ Slow {operation_name}: took {execution_time:.2f}ms"
+            )
+
     @contextmanager
     def get_connection(self):
         """Get a database connection with proper lifecycle management."""
@@ -152,19 +182,9 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
         with self.get_connection() as connection:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
-
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-
+            self._execute_query(cursor, query, params)
             result = cursor.fetchone()
-
-            execution_time = (time.time() - start_time) * 1000
-            if execution_time > 100:
-                logger.warning(
-                    f"⚠️ Slow query: {operation_name} took {execution_time:.2f}ms"
-                )
+            self._log_slow_query(operation_name, start_time)
 
             return result
 
@@ -180,19 +200,9 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
 
         with self.get_transaction() as connection:
             cursor = connection.cursor()
-
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-
+            self._execute_query(cursor, query, params)
             rowcount = cursor.rowcount
-
-            execution_time = (time.time() - start_time) * 1000
-            if execution_time > 100:
-                logger.warning(
-                    f"⚠️ Slow command: {operation_name} took {execution_time:.2f}ms"
-                )
+            self._log_slow_query(operation_name, start_time)
 
             return cast(int, rowcount)
 
@@ -208,19 +218,9 @@ class SQLiteDatabaseService(PersistenceServiceProtocol):
 
         with self.get_transaction() as connection:
             cursor = connection.cursor()
-
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-
+            self._execute_query(cursor, query, params)
             lastrowid = str(cursor.lastrowid)
-
-            execution_time = (time.time() - start_time) * 1000
-            if execution_time > 100:
-                logger.warning(
-                    f"⚠️ Slow insert: {operation_name} took {execution_time:.2f}ms"
-                )
+            self._log_slow_query(operation_name, start_time)
 
             return lastrowid
 

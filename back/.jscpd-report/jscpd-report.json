@@ -1,6 +1,6 @@
 {
   "statistics": {
-    "detectionDate": "2025-11-21T09:29:57.082Z",
+    "detectionDate": "2025-11-21T09:53:39.227Z",
     "formats": {
       "python": {
         "sources": {
@@ -353,14 +353,14 @@
             "newClones": 0
           },
           "app/src/domain/upload/services/upload_validation_service.py": {
-            "lines": 312,
-            "tokens": 1816,
+            "lines": 299,
+            "tokens": 1775,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 26,
-            "duplicatedTokens": 99,
-            "percentage": 8.33,
-            "percentageTokens": 5.45,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -856,15 +856,27 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "app/src/services/validation/unified_validation_service.py": {
-            "lines": 486,
-            "tokens": 3390,
+          "app/src/services/validation/validation_constants.py": {
+            "lines": 37,
+            "tokens": 112,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 26,
-            "duplicatedTokens": 99,
-            "percentage": 5.35,
-            "percentageTokens": 2.92,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "app/src/services/validation/unified_validation_service.py": {
+            "lines": 462,
+            "tokens": 3307,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -905,14 +917,14 @@
             "newClones": 0
           },
           "app/src/services/response/unified_response_service.py": {
-            "lines": 488,
-            "tokens": 2426,
+            "lines": 510,
+            "tokens": 2495,
             "sources": 1,
-            "clones": 6,
-            "duplicatedLines": 57,
-            "duplicatedTokens": 423,
-            "percentage": 11.68,
-            "percentageTokens": 17.44,
+            "clones": 4,
+            "duplicatedLines": 35,
+            "duplicatedTokens": 317,
+            "percentage": 6.86,
+            "percentageTokens": 12.71,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -941,14 +953,14 @@
             "newClones": 0
           },
           "app/src/services/error/unified_error_decorator.py": {
-            "lines": 518,
-            "tokens": 3196,
+            "lines": 537,
+            "tokens": 3223,
             "sources": 1,
-            "clones": 12,
-            "duplicatedLines": 114,
-            "duplicatedTokens": 842,
-            "percentage": 22.01,
-            "percentageTokens": 26.35,
+            "clones": 8,
+            "duplicatedLines": 78,
+            "duplicatedTokens": 556,
+            "percentage": 14.53,
+            "percentageTokens": 17.25,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2369,14 +2381,14 @@
             "newClones": 0
           },
           "app/src/api/endpoints/player_api_routes.py": {
-            "lines": 536,
-            "tokens": 3391,
+            "lines": 512,
+            "tokens": 3008,
             "sources": 1,
-            "clones": 28,
-            "duplicatedLines": 288,
-            "duplicatedTokens": 1912,
-            "percentage": 53.73,
-            "percentageTokens": 56.38,
+            "clones": 4,
+            "duplicatedLines": 36,
+            "duplicatedTokens": 216,
+            "percentage": 7.03,
+            "percentageTokens": 7.18,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -3090,28 +3102,28 @@
           }
         },
         "total": {
-          "lines": 45010,
-          "tokens": 253587,
-          "sources": 257,
-          "clones": 110,
-          "duplicatedLines": 1109,
-          "duplicatedTokens": 7180,
-          "percentage": 2.46,
-          "percentageTokens": 2.83,
+          "lines": 45027,
+          "tokens": 253288,
+          "sources": 258,
+          "clones": 94,
+          "duplicatedLines": 928,
+          "duplicatedTokens": 6037,
+          "percentage": 2.06,
+          "percentageTokens": 2.38,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
       }
     },
     "total": {
-      "lines": 45010,
-      "tokens": 253587,
-      "sources": 257,
-      "clones": 110,
-      "duplicatedLines": 1109,
-      "duplicatedTokens": 7180,
-      "percentage": 2.46,
-      "percentageTokens": 2.83,
+      "lines": 45027,
+      "tokens": 253288,
+      "sources": 258,
+      "clones": 94,
+      "duplicatedLines": 928,
+      "duplicatedTokens": 6037,
+      "percentage": 2.06,
+      "percentageTokens": 2.38,
       "newDuplicatedLines": 0,
       "newClones": 0
     }
@@ -3515,78 +3527,6 @@
     },
     {
       "format": "python",
-      "lines": 27,
-      "fragment": "\n        reserved_names = {\n            \"CON\",\n            \"PRN\",\n            \"AUX\",\n            \"NUL\",\n            \"COM1\",\n            \"COM2\",\n            \"COM3\",\n            \"COM4\",\n            \"COM5\",\n            \"COM6\",\n            \"COM7\",\n            \"COM8\",\n            \"COM9\",\n            \"LPT1\",\n            \"LPT2\",\n            \"LPT3\",\n            \"LPT4\",\n            \"LPT5\",\n            \"LPT6\",\n            \"LPT7\",\n            \"LPT8\",\n            \"LPT9\",\n        }\n\n",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/services/validation/unified_validation_service.py",
-        "start": 408,
-        "end": 434,
-        "startLoc": {
-          "line": 408,
-          "column": 38,
-          "position": 2968
-        },
-        "endLoc": {
-          "line": 434,
-          "column": 1,
-          "position": 3067
-        }
-      },
-      "secondFile": {
-        "name": "app/src/domain/upload/services/upload_validation_service.py",
-        "start": 284,
-        "end": 309,
-        "startLoc": {
-          "line": 284,
-          "column": 37,
-          "position": 1676
-        },
-        "endLoc": {
-          "line": 309,
-          "column": 9,
-          "position": 1775
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 12,
-      "fragment": ",\n            details=details,\n            client_op_id=client_op_id,\n        )\n\n        if retry_after:\n            response.headers[\"Retry-After\"] = str(retry_after)\n\n        return response\n\n    @staticmethod\n    def internal_error",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/services/response/unified_response_service.py",
-        "start": 380,
-        "end": 391,
-        "startLoc": {
-          "line": 380,
-          "column": 4,
-          "position": 1910
-        },
-        "endLoc": {
-          "line": 391,
-          "column": 15,
-          "position": 1963
-        }
-      },
-      "secondFile": {
-        "name": "app/src/services/response/unified_response_service.py",
-        "start": 341,
-        "end": 352,
-        "startLoc": {
-          "line": 341,
-          "column": 4,
-          "position": 1719
-        },
-        "endLoc": {
-          "line": 352,
-          "column": 20,
-          "position": 1772
-        }
-      }
-    },
-    {
-      "format": "python",
       "lines": 12,
       "fragment": "(\n    func: Callable,\n    args: tuple,\n    kwargs: dict,\n    operation: str,\n    component: str,\n    return_response: bool,\n    log_level: Any,\n    include_trace: bool,\n    error_map: Dict[type, str],\n) -> Any:\n    \"\"\"Execute sync function with error handling.\"\"\"",
       "tokens": 0,
@@ -3695,109 +3635,37 @@
     },
     {
       "format": "python",
-      "lines": 9,
-      "fragment": " func(*args, **kwargs)\n            except HTTPException:\n                raise\n            except Exception as e:\n                # Convert to appropriate HTTP status\n                status_code = mappings.get(type(e), default_status)\n                raise HTTPException(status_code=status_code, detail=str(e))\n\n        return",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/services/error/unified_error_decorator.py",
-        "start": 314,
-        "end": 322,
-        "startLoc": {
-          "line": 314,
-          "column": 7,
-          "position": 1959
-        },
-        "endLoc": {
-          "line": 322,
-          "column": 7,
-          "position": 2030
-        }
-      },
-      "secondFile": {
-        "name": "app/src/services/error/unified_error_decorator.py",
-        "start": 303,
-        "end": 311,
-        "startLoc": {
-          "line": 303,
-          "column": 6,
-          "position": 1861
-        },
-        "endLoc": {
-          "line": 311,
-          "column": 11,
-          "position": 1932
-        }
-      }
-    },
-    {
-      "format": "python",
       "lines": 7,
       "fragment": "\n        )\n        @functools.wraps(func)\n        async def async_wrapper(*args, **kwargs):\n            try:\n                return await func(*args, **kwargs)\n            except Exception",
       "tokens": 0,
       "firstFile": {
         "name": "app/src/services/error/unified_error_decorator.py",
-        "start": 446,
-        "end": 452,
+        "start": 475,
+        "end": 481,
         "startLoc": {
-          "line": 446,
+          "line": 475,
           "column": 52,
-          "position": 2624
+          "position": 2717
         },
         "endLoc": {
-          "line": 452,
+          "line": 481,
           "column": 10,
-          "position": 2674
+          "position": 2767
         }
       },
       "secondFile": {
         "name": "app/src/services/error/unified_error_decorator.py",
-        "start": 298,
-        "end": 304,
+        "start": 313,
+        "end": 319,
         "startLoc": {
-          "line": 298,
+          "line": 313,
           "column": 2,
-          "position": 1825
+          "position": 1895
         },
         "endLoc": {
-          "line": 304,
+          "line": 319,
           "column": 14,
-          "position": 1875
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 11,
-      "fragment": " func(*args, **kwargs)\n            except Exception as e:\n                # Return error dict instead of JSONResponse for internal service calls\n                return {\n                    \"status\": \"error\",\n                    \"message\": str(e),\n                    \"error_type\": type(e).__name__,\n                    \"operation\": func.__name__,\n                }\n\n        return",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/services/error/unified_error_decorator.py",
-        "start": 464,
-        "end": 474,
-        "startLoc": {
-          "line": 464,
-          "column": 7,
-          "position": 2759
-        },
-        "endLoc": {
-          "line": 474,
-          "column": 7,
-          "position": 2831
-        }
-      },
-      "secondFile": {
-        "name": "app/src/services/error/unified_error_decorator.py",
-        "start": 451,
-        "end": 461,
-        "startLoc": {
-          "line": 451,
-          "column": 6,
-          "position": 2660
-        },
-        "endLoc": {
-          "line": 461,
-          "column": 11,
-          "position": 2732
+          "position": 1945
         }
       }
     },
@@ -4867,17 +4735,17 @@
       },
       "secondFile": {
         "name": "app/src/services/response/unified_response_service.py",
-        "start": 29,
-        "end": 39,
+        "start": 67,
+        "end": 77,
         "startLoc": {
-          "line": 29,
-          "column": 8,
-          "position": 79
+          "line": 67,
+          "column": 9,
+          "position": 244
         },
         "endLoc": {
-          "line": 39,
+          "line": 77,
           "column": 13,
-          "position": 177
+          "position": 342
         }
       }
     },
@@ -4903,17 +4771,17 @@
       },
       "secondFile": {
         "name": "app/src/services/response/unified_response_service.py",
-        "start": 81,
-        "end": 91,
+        "start": 119,
+        "end": 129,
         "startLoc": {
-          "line": 81,
+          "line": 119,
           "column": 9,
-          "position": 387
+          "position": 552
         },
         "endLoc": {
-          "line": 91,
+          "line": 129,
           "column": 13,
-          "position": 479
+          "position": 644
         }
       }
     },
@@ -4939,17 +4807,17 @@
       },
       "secondFile": {
         "name": "app/src/services/response/unified_response_service.py",
-        "start": 388,
-        "end": 396,
+        "start": 410,
+        "end": 418,
         "startLoc": {
-          "line": 388,
-          "column": 9,
-          "position": 1954
+          "line": 410,
+          "column": 2,
+          "position": 2023
         },
         "endLoc": {
-          "line": 396,
+          "line": 418,
           "column": 13,
-          "position": 2022
+          "position": 2091
         }
       }
     },
@@ -4975,17 +4843,17 @@
       },
       "secondFile": {
         "name": "app/src/services/response/unified_response_service.py",
-        "start": 265,
-        "end": 272,
+        "start": 303,
+        "end": 310,
         "startLoc": {
-          "line": 265,
+          "line": 303,
           "column": 2,
-          "position": 1395
+          "position": 1560
         },
         "endLoc": {
-          "line": 272,
+          "line": 310,
           "column": 13,
-          "position": 1454
+          "position": 1619
         }
       }
     },
@@ -6395,505 +6263,73 @@
     },
     {
       "format": "python",
-      "lines": 14,
-      "fragment": "\n            try:\n                # Rate limiting via operations service\n                if self._operations_service:\n                    rate_check = await self._operations_service.check_rate_limit_use_case(request)\n                    if not rate_check.get(\"allowed\", True):\n                        return UnifiedResponseService.error(\n                            message=rate_check.get(\"message\", \"Too many requests\"),\n                            error_type=\"rate_limit_error\",\n                            status_code=429\n                        )\n\n                # Use player service\n                result = await self._player_service.pause_use_case",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 146,
-        "end": 159,
-        "startLoc": {
-          "line": 146,
-          "column": 22,
-          "position": 802
-        },
-        "endLoc": {
-          "line": 159,
-          "column": 15,
-          "position": 901
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 86,
-        "end": 99,
-        "startLoc": {
-          "line": 86,
-          "column": 29,
-          "position": 387
-        },
-        "endLoc": {
-          "line": 99,
-          "column": 14,
-          "position": 486
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 11,
-      "fragment": "),\n                        data=status,\n                        server_seq=status.get(\"server_seq\"),\n                        client_op_id=body.client_op_id\n                    )\n\n            except Exception as e:\n                # Use base class helper for error handling\n                return self.handle_endpoint_error(\n                    e,\n                    operation=\"pause_player\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 179,
-        "end": 189,
-        "startLoc": {
-          "line": 179,
-          "column": 20,
-          "position": 1040
-        },
-        "endLoc": {
-          "line": 189,
-          "column": 15,
-          "position": 1099
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 126,
-        "end": 136,
-        "startLoc": {
-          "line": 126,
-          "column": 23,
-          "position": 682
-        },
-        "endLoc": {
-          "line": 136,
-          "column": 14,
-          "position": 741
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 14,
-      "fragment": "\n            try:\n                # Rate limiting via operations service\n                if self._operations_service:\n                    rate_check = await self._operations_service.check_rate_limit_use_case(request)\n                    if not rate_check.get(\"allowed\", True):\n                        return UnifiedResponseService.error(\n                            message=rate_check.get(\"message\", \"Too many requests\"),\n                            error_type=\"rate_limit_error\",\n                            status_code=429\n                        )\n\n                # Use player service\n                result = await self._player_service.stop_use_case",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 199,
-        "end": 212,
-        "startLoc": {
-          "line": 199,
-          "column": 21,
-          "position": 1160
-        },
-        "endLoc": {
-          "line": 212,
-          "column": 14,
-          "position": 1259
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 86,
-        "end": 99,
-        "startLoc": {
-          "line": 86,
-          "column": 29,
-          "position": 387
-        },
-        "endLoc": {
-          "line": 99,
-          "column": 14,
-          "position": 486
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 10,
-      "fragment": ",\n                        data=status,\n                        server_seq=status.get(\"server_seq\"),\n                        client_op_id=body.client_op_id\n                    )\n                else:\n                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)\n                    status = result.get(\"status\", {})\n                    return UnifiedResponseService.success(\n                        message=result.get(\"message\", \"Stop unavailable\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 227,
-        "end": 236,
-        "startLoc": {
-          "line": 227,
-          "column": 32,
-          "position": 1351
-        },
-        "endLoc": {
-          "line": 236,
-          "column": 19,
-          "position": 1421
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 170,
-        "end": 179,
-        "startLoc": {
-          "line": 170,
-          "column": 31,
-          "position": 969
-        },
-        "endLoc": {
-          "line": 179,
-          "column": 20,
-          "position": 1039
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 11,
-      "fragment": "),\n                        data=status,\n                        server_seq=status.get(\"server_seq\"),\n                        client_op_id=body.client_op_id\n                    )\n\n            except Exception as e:\n                # Use base class helper for error handling\n                return self.handle_endpoint_error(\n                    e,\n                    operation=\"stop_player\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 236,
-        "end": 246,
-        "startLoc": {
-          "line": 236,
-          "column": 19,
-          "position": 1422
-        },
-        "endLoc": {
-          "line": 246,
-          "column": 14,
-          "position": 1481
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 126,
-        "end": 136,
-        "startLoc": {
-          "line": 126,
-          "column": 23,
-          "position": 682
-        },
-        "endLoc": {
-          "line": 136,
-          "column": 14,
-          "position": 741
-        }
-      }
-    },
-    {
-      "format": "python",
       "lines": 8,
       "fragment": "()\n\n                    if result.get(\"success\"):\n                        status = result.get(\"status\", {})\n\n                        # Broadcast track change event (legacy for backward compatibility)\n                        await self._broadcasting_service.broadcast_track_changed(\n                            result.get(\"track\"), \"previous\"",
       "tokens": 0,
       "firstFile": {
         "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 313,
-        "end": 320,
+        "start": 319,
+        "end": 326,
         "startLoc": {
-          "line": 313,
+          "line": 319,
           "column": 24,
-          "position": 1908
+          "position": 1773
         },
         "endLoc": {
-          "line": 320,
+          "line": 326,
           "column": 11,
-          "position": 1962
+          "position": 1827
         }
       },
       "secondFile": {
         "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 260,
-        "end": 267,
+        "start": 273,
+        "end": 280,
         "startLoc": {
-          "line": 260,
+          "line": 273,
           "column": 20,
-          "position": 1570
+          "position": 1489
         },
         "endLoc": {
-          "line": 267,
+          "line": 280,
           "column": 7,
-          "position": 1624
+          "position": 1543
         }
       }
     },
     {
       "format": "python",
       "lines": 12,
-      "fragment": "\n                        )\n\n                        # CRITICAL FIX: Also broadcast complete player state for UI synchronization\n                        # This ensures all UI elements update (play/pause button, track info, progress bar)\n                        await self._broadcasting_service.broadcast_playback_state_changed(\n                            \"playing\" if status.get(\"is_playing\") else \"paused\",\n                            status\n                        )\n\n                        return UnifiedResponseService.success(\n                            message=\"Skipped to previous track\"",
+      "fragment": "\n                        )\n\n                        # CRITICAL FIX: Also broadcast complete player state for UI synchronization\n                        # This ensures all UI elements update (play/pause button, track info, progress bar)\n                        await self._broadcasting_service.broadcast_playback_state_changed(\n                            \"playing\" if status.get(\"is_playing\") else \"paused\",\n                            status\n                        )\n\n                        return self._success_response(\n                            \"Skipped to previous track\"",
       "tokens": 0,
       "firstFile": {
         "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 320,
-        "end": 331,
+        "start": 326,
+        "end": 337,
         "startLoc": {
-          "line": 320,
+          "line": 326,
           "column": 11,
-          "position": 1963
+          "position": 1828
         },
         "endLoc": {
-          "line": 331,
+          "line": 337,
           "column": 28,
-          "position": 2019
+          "position": 1882
         }
       },
       "secondFile": {
         "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 267,
-        "end": 278,
+        "start": 280,
+        "end": 291,
         "startLoc": {
-          "line": 267,
+          "line": 280,
           "column": 7,
-          "position": 1625
+          "position": 1544
         },
         "endLoc": {
-          "line": 278,
+          "line": 291,
           "column": 24,
-          "position": 1681
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 12,
-      "fragment": ",\n                            data=status,\n                            server_seq=status.get(\"server_seq\"),\n                            client_op_id=body.client_op_id\n                        )\n\n                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)\n                # Fallback to default PlayerState when operations service unavailable\n                result = await self._player_service.get_status_use_case()\n                status = result.get(\"status\", {})\n                return UnifiedResponseService.success(\n                    message=\"Previous track unavailable\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 331,
-        "end": 342,
-        "startLoc": {
-          "line": 331,
-          "column": 28,
-          "position": 2020
-        },
-        "endLoc": {
-          "line": 342,
-          "column": 29,
-          "position": 2098
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 278,
-        "end": 289,
-        "startLoc": {
-          "line": 278,
-          "column": 24,
-          "position": 1682
-        },
-        "endLoc": {
-          "line": 289,
-          "column": 25,
-          "position": 1760
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 11,
-      "fragment": ",\n                    data=status,\n                    server_seq=status.get(\"server_seq\"),\n                    client_op_id=body.client_op_id\n                )\n\n            except Exception as e:\n                # Use base class helper for error handling\n                return self.handle_endpoint_error(\n                    e,\n                    operation=\"previous_track\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 342,
-        "end": 352,
-        "startLoc": {
-          "line": 342,
-          "column": 29,
-          "position": 2099
-        },
-        "endLoc": {
-          "line": 352,
-          "column": 17,
-          "position": 2157
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 289,
-        "end": 299,
-        "startLoc": {
-          "line": 289,
-          "column": 25,
-          "position": 1761
-        },
-        "endLoc": {
-          "line": 299,
-          "column": 13,
-          "position": 1819
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 12,
-      "fragment": ",\n                            data=status,\n                            server_seq=status.get(\"server_seq\"),\n                            client_op_id=body.client_op_id\n                        )\n\n                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)\n                # Fallback to default PlayerState when operations service unavailable\n                result = await self._player_service.get_status_use_case()\n                status = result.get(\"status\", {})\n                return UnifiedResponseService.success(\n                    message=\"Toggle playback unavailable\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 379,
-        "end": 390,
-        "startLoc": {
-          "line": 379,
-          "column": 44,
-          "position": 2340
-        },
-        "endLoc": {
-          "line": 390,
-          "column": 30,
-          "position": 2418
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 278,
-        "end": 289,
-        "startLoc": {
-          "line": 278,
-          "column": 24,
-          "position": 1682
-        },
-        "endLoc": {
-          "line": 289,
-          "column": 25,
-          "position": 1760
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 11,
-      "fragment": ",\n                    data=status,\n                    server_seq=status.get(\"server_seq\"),\n                    client_op_id=body.client_op_id\n                )\n\n            except Exception as e:\n                # Use base class helper for error handling\n                return self.handle_endpoint_error(\n                    e,\n                    operation=\"toggle_playback\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 390,
-        "end": 400,
-        "startLoc": {
-          "line": 390,
-          "column": 30,
-          "position": 2419
-        },
-        "endLoc": {
-          "line": 400,
-          "column": 18,
-          "position": 2477
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 289,
-        "end": 299,
-        "startLoc": {
-          "line": 289,
-          "column": 25,
-          "position": 1761
-        },
-        "endLoc": {
-          "line": 299,
-          "column": 13,
-          "position": 1819
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 10,
-      "fragment": ",\n                        data=status,\n                        server_seq=status.get(\"server_seq\"),\n                        client_op_id=body.client_op_id\n                    )\n                else:\n                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)\n                    status = result.get(\"status\", {})\n                    return UnifiedResponseService.success(\n                        message=result.get(\"message\", \"Seek unavailable\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 460,
-        "end": 469,
-        "startLoc": {
-          "line": 460,
-          "column": 40,
-          "position": 2861
-        },
-        "endLoc": {
-          "line": 469,
-          "column": 19,
-          "position": 2931
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 170,
-        "end": 179,
-        "startLoc": {
-          "line": 170,
-          "column": 31,
-          "position": 969
-        },
-        "endLoc": {
-          "line": 179,
-          "column": 20,
-          "position": 1039
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 11,
-      "fragment": "),\n                        data=status,\n                        server_seq=status.get(\"server_seq\"),\n                        client_op_id=body.client_op_id\n                    )\n\n            except Exception as e:\n                # Use base class helper for error handling\n                return self.handle_endpoint_error(\n                    e,\n                    operation=\"seek_player\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 469,
-        "end": 479,
-        "startLoc": {
-          "line": 469,
-          "column": 19,
-          "position": 2932
-        },
-        "endLoc": {
-          "line": 479,
-          "column": 14,
-          "position": 2991
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 126,
-        "end": 136,
-        "startLoc": {
-          "line": 126,
-          "column": 23,
-          "position": 682
-        },
-        "endLoc": {
-          "line": 136,
-          "column": 14,
-          "position": 741
-        }
-      }
-    },
-    {
-      "format": "python",
-      "lines": 11,
-      "fragment": "),\n                        data=status,\n                        server_seq=status.get(\"server_seq\"),\n                        client_op_id=body.client_op_id\n                    )\n\n            except Exception as e:\n                # Use base class helper for error handling\n                return self.handle_endpoint_error(\n                    e,\n                    operation=\"set_volume\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 517,
-        "end": 527,
-        "startLoc": {
-          "line": 517,
-          "column": 28,
-          "position": 3268
-        },
-        "endLoc": {
-          "line": 527,
-          "column": 13,
-          "position": 3327
-        }
-      },
-      "secondFile": {
-        "name": "app/src/api/endpoints/player_api_routes.py",
-        "start": 126,
-        "end": 136,
-        "startLoc": {
-          "line": 126,
-          "column": 23,
-          "position": 682
-        },
-        "endLoc": {
-          "line": 136,
-          "column": 14,
-          "position": 741
+          "position": 1598
         }
       }
     },
