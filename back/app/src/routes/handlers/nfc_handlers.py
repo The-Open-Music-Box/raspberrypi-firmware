@@ -12,13 +12,14 @@ This module handles NFC association operations:
 """
 
 import time
-from typing import Dict, Any, Optional, cast
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 import socketio
 
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_http_errors
+from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
 
 logger = get_logger(__name__)
@@ -36,7 +37,7 @@ class NFCHandlers:
     def __init__(
         self,
         sio: socketio.AsyncServer,
-        state_manager: Any,
+        state_manager: StateManager,
         nfc_service: Any,
     ):
         """Initialize the NFC handlers.
@@ -49,6 +50,26 @@ class NFCHandlers:
         self.sio = sio
         self.state_manager = state_manager
         self.nfc_service = nfc_service
+
+    def _log_handler_error(self, error: Exception, operation: str, sid: str, data: Dict[str, Any]) -> None:
+        """Log handler error with consistent formatting and context.
+
+        Args:
+            error: The exception that occurred
+            operation: Name of the operation for logging
+            sid: Socket.IO session ID
+            data: Request data dictionary
+        """
+        logger.error(
+            f"Error in {operation}: {str(error)}",
+            extra={
+                "sid": sid,
+                "client_op_id": data.get("client_op_id") if isinstance(data, dict) else None,
+                "playlist_id": data.get("playlist_id") if isinstance(data, dict) else None,
+                "operation": operation,
+            },
+            exc_info=True
+        )
 
     def register(self) -> None:
         """Register all NFC-related event handlers.
@@ -120,16 +141,7 @@ class NFCHandlers:
                     f"NFC association started successfully for playlist {playlist_id}"
                 )
             except Exception as e:
-                logger.error(
-                    f"Error in handle_start_nfc_link: {str(e)}",
-                    extra={
-                        "sid": sid,
-                        "client_op_id": data.get("client_op_id") if isinstance(data, dict) else None,
-                        "playlist_id": data.get("playlist_id") if isinstance(data, dict) else None,
-                        "operation": "start_nfc_link",
-                    },
-                    exc_info=e
-                )
+                self._log_handler_error(e, "handle_start_nfc_link", sid, data)
                 raise
 
         @self.sio.on("stop_nfc_link")
@@ -191,16 +203,7 @@ class NFCHandlers:
 
                 logger.info(f"NFC association cancelled for playlist {playlist_id}")
             except Exception as e:
-                logger.error(
-                    f"Error in handle_stop_nfc_link: {str(e)}",
-                    extra={
-                        "sid": sid,
-                        "client_op_id": data.get("client_op_id") if isinstance(data, dict) else None,
-                        "playlist_id": data.get("playlist_id") if isinstance(data, dict) else None,
-                        "operation": "stop_nfc_link",
-                    },
-                    exc_info=e
-                )
+                self._log_handler_error(e, "handle_stop_nfc_link", sid, data)
                 raise
 
         @self.sio.on("override_nfc_tag")
@@ -259,7 +262,7 @@ class NFCHandlers:
                         "tag_id": data.get("tag_id") if isinstance(data, dict) else None,
                         "operation": "override_nfc_tag",
                     },
-                    exc_info=e
+                    exc_info=True
                 )
                 raise
 
@@ -325,7 +328,7 @@ class NFCHandlers:
                 },
             )
 
-        return cast(str, session_id)
+        return session_id
 
     def _calculate_expires_at(self, timeout_at: Optional[str]) -> float:
         """Calculate expiration timestamp for frontend countdown.
