@@ -469,11 +469,10 @@ class NFCAPIRoutes:
                         )
                     else:
                         error_msg = result.get("message", "Failed to start association session")
-                        if state_manager and client_op_id:
-                            await state_manager.send_acknowledgment(
-                                client_op_id, False, {"message": error_msg}
-                            )
-                        return UnifiedResponseService.bad_request(
+                        return await self._send_ack_and_respond(
+                            state_manager, client_op_id, False,
+                            UnifiedResponseService.bad_request,
+                            ack_data={"message": error_msg},
                             message=error_msg,
                             client_op_id=client_op_id
                         )
@@ -498,11 +497,10 @@ class NFCAPIRoutes:
                         )
                     else:
                         error_msg = result.get("message", "Failed to start scan session")
-                        if state_manager and client_op_id:
-                            await state_manager.send_acknowledgment(
-                                client_op_id, False, {"message": error_msg}
-                            )
-                        return UnifiedResponseService.bad_request(
+                        return await self._send_ack_and_respond(
+                            state_manager, client_op_id, False,
+                            UnifiedResponseService.bad_request,
+                            ack_data={"message": error_msg},
                             message=error_msg,
                             client_op_id=client_op_id
                         )
