@@ -4,16 +4,18 @@ on:
   push:
     branches: [develop]
     paths:
-      - 'back/app/src/**'
-      - 'back/pyproject.toml'
+      - "back/app/**"
+      - "back/pyproject.toml"
+      - "back/requirements*.txt"
   pull_request:
     branches: [develop]
-    paths:
-      - 'back/app/src/**'
   schedule:
     # Run daily at 6 AM UTC
-    - cron: '0 6 * * *'
+    - cron: "0 6 * * *"
   workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
 
 jobs:
   collect-metrics:
@@ -25,8 +27,8 @@ jobs:
         working-directory: back
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
       # Python 3.13 is pre-installed on self-hosted runner
       # - name: Set up Python
@@ -35,62 +37,67 @@ jobs:
       #     python-version: '3.11'
       #     cache: 'pip'
 
-      - name: Set up Python virtual environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          python -m pip install --upgrade pip
-          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
-          echo "$PWD/venv/bin" >> $GITHUB_PATH
+    - name: Set up Python virtual environment
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+        echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+        echo "$PWD/venv/bin" >> $GITHUB_PATH
 
-      - name: Install dependencies
-        run: |
-          source venv/bin/activate
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
+    - name: Install dependencies
+      run: |
+        source venv/bin/activate
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
 
-      - name: Install Node.js for jscpd
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Run tests with coverage
+      run: |
+        source venv/bin/activate
+        export USE_MOCK_HARDWARE=true
+        export ENVIRONMENT=test
+        pytest app/tests/ -v \
+          --cov=app \
+          --cov-report=json:coverage.json \
+          --cov-report=term-missing || echo "Tests failed but continuing for metrics"
 
-      - name: Run metrics collection
-        run: |
-          source venv/bin/activate
-          # Export metrics to Pushgateway if available (local CI only)
-          if [ -n "$PUSHGATEWAY_URL" ]; then
-            ./scripts/export_metrics.sh "$PUSHGATEWAY_URL"
-          else
-            echo "Skipping Pushgateway export (PUSHGATEWAY_URL not set)"
-          fi
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          PUSHGATEWAY_URL: ${{ vars.PUSHGATEWAY_URL }}
+    - name: Run metrics collection
+      run: |
+        source venv/bin/activate
+        # Export metrics to Pushgateway if available (local CI only)
+        if [ -n "$PUSHGATEWAY_URL" ]; then
+          ./scripts/export_metrics.sh "$PUSHGATEWAY_URL"
+        else
+          echo "Skipping Pushgateway export (PUSHGATEWAY_URL not set)"
+        fi
+      env:
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        PUSHGATEWAY_URL: ${{ vars.PUSHGATEWAY_URL }}
 
-      - name: Generate metrics summary
-        if: always()
-        run: |
-          source venv/bin/activate
-          echo "## Code Quality Metrics Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+    - name: Generate metrics summary
+      if: always()
+      run: |
+        source venv/bin/activate
+        echo "## Code Quality Metrics Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
 
-          # Capture individual metrics for summary
-          MYPY=$(mypy app/src --no-error-summary 2>&1 | grep -c "error:" || echo "0")
-          echo "| Type Errors (mypy) | $MYPY |" >> $GITHUB_STEP_SUMMARY
+        # Capture individual metrics for summary
+        MYPY=$(mypy app/src --no-error-summary 2>&1 | grep -c "error:" || echo "0")
+        echo "| Type Errors (mypy) | $MYPY |" >> $GITHUB_STEP_SUMMARY
 
-          BANDIT=$(bandit -r app/src -f json 2>/dev/null | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data.get('results', [])))" || echo "0")
-          echo "| Security Issues (bandit) | $BANDIT |" >> $GITHUB_STEP_SUMMARY
+        BANDIT=$(bandit -r app/src -f json 2>/dev/null | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data.get('results', [])))" || echo "0")
+        echo "| Security Issues (bandit) | $BANDIT |" >> $GITHUB_STEP_SUMMARY
 
-          RUFF=$(ruff check app/src --output-format=json 2>/dev/null | python3 -c "import sys, json; print(len(json.load(sys.stdin)))" || echo "0")
-          echo "| Lint Issues (ruff) | $RUFF |" >> $GITHUB_STEP_SUMMARY
+        RUFF=$(ruff check app/src --output-format=json 2>/dev/null | python3 -c "import sys, json; print(len(json.load(sys.stdin)))" || echo "0")
+        echo "| Lint Issues (ruff) | $RUFF |" >> $GITHUB_STEP_SUMMARY
 
-          VULTURE=$(vulture app/src --min-confidence 80 2>&1 | wc -l | tr -d ' ')
-          echo "| Dead Code (vulture) | $VULTURE |" >> $GITHUB_STEP_SUMMARY
+        VULTURE=$(vulture app/src --min-confidence 80 2>&1 | wc -l | tr -d ' ')
+        echo "| Dead Code (vulture) | $VULTURE |" >> $GITHUB_STEP_SUMMARY
 
-          DOCSTRING=$(interrogate app/src -v 2>&1 | grep "TOTAL" | awk '{print $NF}' || echo "0%")
-          echo "| Docstring Coverage | $DOCSTRING |" >> $GITHUB_STEP_SUMMARY
+        DOCSTRING=$(interrogate app/src -v 2>&1 | grep "TOTAL" | awk '{print $NF}' || echo "0%")
+        echo "| Docstring Coverage | $DOCSTRING |" >> $GITHUB_STEP_SUMMARY
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View detailed dashboard at: ${{ vars.DASHBOARD_URL || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "View detailed dashboard at: ${{ vars.DASHBOARD_URL || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
