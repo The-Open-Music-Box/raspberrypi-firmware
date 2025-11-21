@@ -45,7 +45,7 @@ class UploadValidationService:
 
     def _create_validation_result(
         self, errors: list[str], warnings: list[str], **extra_fields
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """Create standard validation result dictionary.
 
         Args:
