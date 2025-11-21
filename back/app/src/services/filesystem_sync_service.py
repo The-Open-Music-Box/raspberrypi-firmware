@@ -12,7 +12,7 @@ audio file metadata extraction.
 import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 from datetime import datetime, timezone
 
@@ -40,7 +40,26 @@ class FilesystemSyncService:
     SYNC_FOLDER_TIMEOUT = 30.0  # 30 seconds for folder scanning
     SYNC_OPERATION_TIMEOUT = 10.0  # 10 seconds per operation
 
-    def __init__(self, config_obj: Any = None):
+    # MARK: - Helper Methods (Extract duplication)
+
+    def _get_audio_files(self, folder_path: Path) -> List[Path]:
+        """Get all audio files from a folder.
+
+        Extracted helper to eliminate duplication of audio file retrieval logic.
+
+        Args:
+            folder_path: Path to the folder to scan
+
+        Returns:
+            List of Path objects for audio files in the folder
+        """
+        return [
+            f
+            for f in folder_path.iterdir()
+            if f.is_file() and f.suffix.lower() in self.SUPPORTED_AUDIO_EXTENSIONS
+        ]
+
+    def __init__(self, config_obj=None):
         """Initialize the FilesystemSyncService.
 
         Args:
@@ -54,8 +73,6 @@ class FilesystemSyncService:
         self.repository = get_playlist_repository_adapter()
         self.upload_folder = Path(self.config.upload_folder)
         self._sync_lock = threading.RLock()
-        # Type annotation for audio_files
-        self._audio_files: List[Path] = []
 
     @handle_service_errors("filesystem_sync")
     async def create_playlist_from_folder(
@@ -79,11 +96,7 @@ class FilesystemSyncService:
             logger.error(f"Folder does not exist: {folder_path}")
             return None
         # Retrieve audio files in the folder
-        audio_files = [
-            f
-            for f in folder_path.iterdir()
-            if f.is_file() and f.suffix.lower() in self.SUPPORTED_AUDIO_EXTENSIONS
-        ]
+        audio_files = self._get_audio_files(folder_path)
         # Check if there are any audio files
         if not audio_files:
             logger.warning(f"No audio files found in folder: {folder_path}")
@@ -115,11 +128,9 @@ class FilesystemSyncService:
                 "album": metadata.get("album", "Unknown"),
                 "play_counter": 0,
             }
-            tracks_list = playlist_data["tracks"]
-            if isinstance(tracks_list, list):
-                tracks_list.append(track)
+            playlist_data["tracks"].append(track)
         # Create the playlist in the repository
-        return cast(str | None, await self.repository.create_playlist(playlist_data))
+        return await self.repository.create_playlist(playlist_data)
 
     @handle_service_errors("filesystem_sync")
     async def update_playlist_tracks(
@@ -146,11 +157,7 @@ class FilesystemSyncService:
             logger.warning(f"Playlist not found: {playlist_id}")
             return False, stats
         # Retrieve audio files in the folder
-        audio_files = [
-            f
-            for f in folder_path.iterdir()
-            if f.is_file() and f.suffix.lower() in self.SUPPORTED_AUDIO_EXTENSIONS
-        ]
+        audio_files = self._get_audio_files(folder_path)
         # Create dictionaries for comparison
         existing_tracks = {t["filename"]: t for t in playlist.get("tracks", [])}
         disk_files_map = {f.name: f for f in audio_files}
@@ -362,14 +369,15 @@ class FilesystemSyncService:
                 continue
 
             # If the playlist doesn't exist in the database, create it
-            try:
-                folder_path = Path(self.upload_folder.parent / path)
-                playlist_id = await self.create_playlist_from_folder(folder_path)
-                if playlist_id:
-                    stats["playlists_added"] += 1
-                    stats["tracks_added"] += len(audio_files)
-                    logger.info(f"Created new playlist from folder: {path} (ID: {playlist_id})",
-                                )
-            except (OSError, IOError, PermissionError, ValueError) as e:
-                logger.error(f"Error creating playlist from folder {path}: {str(e)}",
-                             )
+            if True:  # Keep the same indentation level for the rest of the code
+                try:
+                    folder_path = Path(self.upload_folder.parent / path)
+                    playlist_id = await self.create_playlist_from_folder(folder_path)
+                    if playlist_id:
+                        stats["playlists_added"] += 1
+                        stats["tracks_added"] += len(audio_files)
+                        logger.info(f"Created new playlist from folder: {path} (ID: {playlist_id})",
+                                    )
+                except (OSError, IOError, PermissionError, ValueError) as e:
+                    logger.error(f"Error creating playlist from folder {path}: {str(e)}",
+                                 )
