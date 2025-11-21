@@ -8,31 +8,34 @@ Mock Physical Controls Implementation.
 Mock implementation for testing and development without real hardware.
 """
 
-from typing import Callable, Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional
 import logging
 
-from app.src.domain.protocols.physical_controls_protocol import (
-    PhysicalControlsProtocol,
-    PhysicalControlEvent,
-)
-from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
+from .base_controls_implementation import BaseControlsImplementation
+from app.src.domain.protocols.physical_controls_protocol import PhysicalControlEvent
+from app.src.config.button_actions_config import ButtonActionConfig
+
 logger = logging.getLogger(__name__)
 
 
-class MockPhysicalControls(PhysicalControlsProtocol):
-    """Mock implementation of physical controls for testing."""
+class MockPhysicalControls(BaseControlsImplementation):
+    """Mock implementation of physical controls for testing.
 
-    def __init__(self, hardware_config: Any, button_configs: Optional[List[ButtonActionConfig]] = None):
+    Inherits common controls functionality from BaseControlsImplementation.
+    """
+
+    def __init__(
+        self,
+        hardware_config: Any,
+        button_configs: Optional[List[ButtonActionConfig]] = None
+    ):
         """Initialize mock physical controls.
 
         Args:
             hardware_config: Hardware configuration (for compatibility)
-            button_configs: Optional button configurations (uses DEFAULT_BUTTON_CONFIGS if None)
+            button_configs: Optional button configurations
         """
-        self.config = hardware_config
-        self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
-        self._is_initialized = False
-        self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
+        super().__init__(hardware_config, button_configs)
 
     async def initialize(self) -> bool:
         """Initialize mock controls."""
@@ -48,26 +51,13 @@ class MockPhysicalControls(PhysicalControlsProtocol):
         self._event_handlers.clear()
         logger.info("✅ Mock physical controls cleanup completed")
 
-    def set_event_handler(self, event_type: PhysicalControlEvent, handler: Callable[[], None]) -> None:
-        """Set event handler for a specific control event."""
-        self._event_handlers[event_type] = handler
-        logger.debug(f"Mock event handler set for: {event_type}")
+    def get_status(self) -> Dict[str, Any]:
+        """Get current status of mock controls.
 
-    def is_initialized(self) -> bool:
-        """Check if mock controls are initialized."""
-        return self._is_initialized
-
-    def get_status(self) -> dict:
-        """Get current status of mock controls."""
-        # Build button configuration info
-        button_info = {}
-        for config in self._button_configs:
-            if config.enabled:
-                button_info[f"button_{config.button_id}"] = {
-                    "gpio_pin": config.gpio_pin,
-                    "action": config.action_name,
-                    "description": config.description,
-                }
+        Uses base class helper for button info.
+        """
+        # Get button info from base class helper
+        button_info = self._build_button_info()
 
         return {
             "initialized": self._is_initialized,
@@ -81,8 +71,12 @@ class MockPhysicalControls(PhysicalControlsProtocol):
             }
         }
 
+    # Note: set_event_handler() and is_initialized() are now inherited from BaseControlsImplementation
+
     async def simulate_button_press(self, event_type: PhysicalControlEvent) -> None:
         """Simulate a button press for testing.
+
+        Uses base class _invoke_event_handler() for consistent event handling.
 
         Args:
             event_type: Type of control event to simulate
@@ -91,15 +85,8 @@ class MockPhysicalControls(PhysicalControlsProtocol):
             logger.warning("Cannot simulate button press - mock controls not initialized")
             return
 
-        handler = self._event_handlers.get(event_type)
-        if handler:
-            logger.info(f"🧪 Simulating control event: {event_type}")
-            try:
-                handler()
-            except Exception as e:
-                logger.error(f"❌ Error in simulated event handler for {event_type}: {e}")
-        else:
-            logger.warning(f"No handler registered for simulated event: {event_type}")
+        logger.info(f"🧪 Simulating control event: {event_type}")
+        self._invoke_event_handler(event_type, "simulated")
 
     async def simulate_next_track(self) -> None:
         """Simulate next track button press."""
