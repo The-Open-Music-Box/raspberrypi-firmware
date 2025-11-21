@@ -113,6 +113,37 @@ async def _start_domain_bootstrap():
     container = get_container()
     domain_bootstrap = container.get("domain_bootstrap")
 
+    # Create and inject PhysicalControlsManager (done here to avoid circular dependencies in DI container)
+    try:
+        from app.src.application.controllers.physical_controls_controller import PhysicalControlsManager
+        from app.src.dependencies import get_playback_coordinator
+        from app.src.config import config
+
+        logger.log(LogLevel.INFO, "🎮 Getting shared PlaybackCoordinator instance for physical controls...")
+
+        # Get the SAME PlaybackCoordinator instance that the API uses (from application container)
+        # This is CRITICAL - buttons and API must share the same coordinator instance!
+        try:
+            playback_coordinator = get_playback_coordinator()
+            logger.log(LogLevel.INFO, "✅ Retrieved shared PlaybackCoordinator from application container")
+
+            # Create PhysicalControlsManager with injected PlaybackCoordinator
+            logger.log(LogLevel.INFO, "🎮 Creating PhysicalControlsManager with shared PlaybackCoordinator...")
+            physical_controls_manager = PhysicalControlsManager(
+                audio_controller=playback_coordinator,  # Inject SHARED coordinator
+                hardware_config=config.hardware_config,
+                button_configs=None  # Will use DEFAULT_BUTTON_CONFIGS
+            )
+            domain_bootstrap.set_physical_controls_manager(physical_controls_manager)
+            logger.log(LogLevel.INFO, "✅ PhysicalControlsManager injected into domain bootstrap (using shared coordinator)")
+        except Exception as coord_error:
+            logger.log(LogLevel.WARNING, f"⚠️ Could not get PlaybackCoordinator: {coord_error}")
+            logger.log(LogLevel.WARNING, "⚠️ Physical controls will not work without PlaybackCoordinator")
+
+    except Exception as e:
+        logger.log(LogLevel.WARNING, f"⚠️ Failed to create PhysicalControlsManager: {e}")
+        logger.log(LogLevel.WARNING, "⚠️ Continuing without physical controls (buttons/encoder will not work)")
+
     if domain_bootstrap.is_initialized:
         await domain_bootstrap.start()
         logger.log(LogLevel.INFO, "✅ Domain bootstrap started (includes physical controls)")

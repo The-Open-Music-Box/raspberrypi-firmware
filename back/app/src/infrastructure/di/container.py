@@ -206,14 +206,63 @@ def register_core_infrastructure_services():
         ServiceErrorHandlerProtocol,
     )
     from app.src.config.app_config import AppConfig
-    from app.src.domain.bootstrap import DomainBootstrap
 
     # Register configuration
     container.register_factory("config", lambda: AppConfig(), ServiceLifetime.SINGLETON)
 
+    # Register LED infrastructure components
+    def led_controller_factory():
+        from app.src.infrastructure.hardware.leds.led_controller_factory import LEDControllerFactory
+        from app.src.config import config
+        return LEDControllerFactory.create_controller(config.hardware)
+    container.register_factory("led_controller", led_controller_factory, ServiceLifetime.SINGLETON)
+
+    def led_state_manager_factory():
+        from app.src.application.services.led_state_manager_application_service import LEDStateManager
+        led_controller = container.get("led_controller")
+        return LEDStateManager(led_controller)
+    container.register_factory("led_state_manager", led_state_manager_factory, ServiceLifetime.SINGLETON)
+
+    def led_event_handler_factory():
+        from app.src.application.services.led_event_handler_application_service import LEDEventHandler
+        led_manager = container.get("led_state_manager")
+        return LEDEventHandler(led_manager)
+    container.register_factory("led_event_handler", led_event_handler_factory, ServiceLifetime.SINGLETON)
+
+    # NOTE: PhysicalControlsManager is NOT registered in DI container to avoid circular dependencies
+    # It will be created directly at application startup in main.py/app_factory.py
+    # This avoids: container -> PhysicalControlsManager -> data_container -> dependencies -> container
+
     # Register domain bootstrap (singleton instance - create new instance instead of using global)
     def domain_bootstrap_factory():
-        return DomainBootstrap()
+        from app.src.application.bootstrap import DomainBootstrap
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Inject LED components (with error handling in case they're not available)
+        led_manager = None
+        led_event_handler = None
+
+        try:
+            logger.info("🔌 Creating LED components for domain bootstrap...")
+            led_manager = container.get("led_state_manager")
+            logger.info(f"✅ LED state manager created: {type(led_manager).__name__}")
+            led_event_handler = container.get("led_event_handler")
+            logger.info(f"✅ LED event handler created: {type(led_event_handler).__name__}")
+        except Exception as e:
+            # LED system optional - continue without it
+            logger.warning(f"⚠️ LED system initialization failed: {e}", exc_info=True)
+            logger.warning("⚠️ Creating DomainBootstrap WITHOUT LED components")
+
+        # NOTE: physical_controls_manager is NOT injected here to avoid circular dependencies
+        # It will be set later via set_physical_controls_manager() in app_factory.py
+
+        logger.info("✅ Creating DomainBootstrap with LED components")
+        return DomainBootstrap(
+            led_manager=led_manager,
+            led_event_handler=led_event_handler,
+            physical_controls_manager=None  # Will be set later to avoid circular deps
+        )
     container.register_factory("domain_bootstrap", domain_bootstrap_factory, ServiceLifetime.SINGLETON)
 
     # Register audio domain container (use existing domain-internal instance)

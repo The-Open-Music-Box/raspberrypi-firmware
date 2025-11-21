@@ -21,9 +21,10 @@
  *
  * Displays metadata about the currently selected track.
  * Shows title, filename, duration, and play count.
+ * Uses ONLY OpenAPI Contract v4.0.0 types.
  */
 
-import type { Track } from '../files/types'
+import type { Track } from '@/types'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

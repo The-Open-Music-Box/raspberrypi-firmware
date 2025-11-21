@@ -150,6 +150,16 @@ class Application:
         Args:
             tag_data: The data associated with the NFC tag event.
         """
+        # Get LED event handler from domain bootstrap
+        led_handler = None
+        try:
+            from app.src.infrastructure.di.container import get_container
+            container = get_container()
+            domain_bootstrap = container.get("domain_bootstrap")
+            led_handler = domain_bootstrap.led_event_handler
+        except Exception:
+            pass  # LED not available, continue without it
+
         logger.info(f"🎵 Processing NFC event: {tag_data}")
         if isinstance(tag_data, dict) and tag_data.get("absence"):
             logger.debug("Handling NFC tag absence event.")
@@ -159,6 +169,13 @@ class Application:
                 return
             self._playlist_controller.handle_tag_absence()
         else:
+            # Show NFC scanning LED state
+            if led_handler:
+                try:
+                    await led_handler.on_nfc_scan_started()
+                except Exception as e:
+                    logger.debug(f"LED NFC scan indicator failed: {e}")
+
             uid = None
             full_data = None
             if isinstance(tag_data, dict):
@@ -176,6 +193,12 @@ class Application:
                 if not playlist_controller:
                     logger.error("❌ Playlist controller not initialized - cannot handle NFC tag scanned event",
                     )
+                    # Show NFC error
+                    if led_handler:
+                        try:
+                            await led_handler.on_nfc_scan_error()
+                        except Exception:
+                            pass
                     return
 
                 # Schedule async handler in event loop
@@ -183,40 +206,67 @@ class Application:
 
                 try:
                     asyncio.create_task(playlist_controller.handle_tag_scanned(uid, full_data))
+                    # Show NFC success
+                    if led_handler:
+                        try:
+                            await led_handler.on_nfc_scan_success()
+                        except Exception:
+                            pass
                 except Exception as e:
                     logger.error(f"Error scheduling NFC event handler: {e}")
+                    # Show NFC error
+                    if led_handler:
+                        try:
+                            await led_handler.on_nfc_scan_error()
+                        except Exception:
+                            pass
 
     # MARK: - Domain Playlist Synchronization
     @handle_errors("_sync_playlists_domain")
     async def _sync_playlists_domain(self):
-        """Synchronize playlists using pure domain architecture."""
+        """Synchronize playlists using pure domain architecture.
+
+        Performs bidirectional synchronization:
+        1. uploads → DB: Create playlists from folders (sync_with_filesystem)
+        2. DB → uploads: Remove orphaned folders (cleanup_orphaned_folders)
+        """
         logger.info("🔄 Starting DOMAIN playlist synchronization")
-        # Use domain application service for synchronization
-        from app.src.services.filesystem_sync_service import FilesystemSyncService
 
         # Get upload folder from config
         upload_folder = self._get_upload_folder_path()
-        # Create filesystem sync service
-        sync_service = FilesystemSyncService()
-        # Use domain application service to sync
-        # NOTE: Filesystem sync migration to DDD architecture
-        # Current: FilesystemSyncService (legacy) is created but not used
-        # Planned: Migrate to DataApplicationService.sync_filesystem_to_database()
-        # Timeline: Q1 2026 (after DDD migration stabilizes)
-        # For now, skip this sync operation as it's not critical for core functionality
-        sync_result = {"status": "success", "data": {"message": "Filesystem sync skipped in DDD architecture"}}
-        if sync_result.get("status") == "success":
-            stats = sync_result.get("data", {})
-            logger.info("✅ Domain playlist synchronization completed",
-                extra={
-                    "playlists_added": stats.get("playlists_added", 0),
-                    "playlists_updated": stats.get("playlists_updated", 0),
-                    "tracks_added": stats.get("tracks_added", 0),
-                    "tracks_removed": stats.get("tracks_removed", 0),
-                },
-            )
-        else:
-            logger.warning(f"⚠️ Domain sync completed with issues: {sync_result}")
+
+        # Get domain playlist service
+        from app.src.dependencies import get_data_playlist_service
+        playlist_service = get_data_playlist_service()
+
+        try:
+            # Step 1: Sync uploads → DB (create missing playlists)
+            logger.info("📥 Syncing uploads → database")
+            sync_result = await playlist_service.sync_with_filesystem(str(upload_folder))
+            logger.info("✅ Upload → DB sync completed", extra=sync_result)
+
+            # Step 2: Cleanup DB → uploads (remove orphaned folders)
+            logger.info("🗑️ Cleaning up orphaned folders")
+            cleanup_result = await playlist_service.cleanup_orphaned_folders(str(upload_folder))
+            logger.info("✅ Orphaned folders cleanup completed", extra=cleanup_result)
+
+            # Combined stats for logging
+            combined_stats = {
+                "playlists_scanned": sync_result.get("playlists_scanned", 0),
+                "playlists_added": sync_result.get("playlists_added", 0),
+                "playlists_updated": sync_result.get("playlists_updated", 0),
+                "tracks_added": sync_result.get("tracks_added", 0),
+                "tracks_removed": sync_result.get("tracks_removed", 0),
+                "folders_scanned": cleanup_result.get("folders_scanned", 0),
+                "folders_removed": cleanup_result.get("folders_removed", 0),
+            }
+
+            logger.info("✅ Domain playlist synchronization completed", extra=combined_stats)
+
+        except Exception as e:
+            logger.error(f"❌ Domain sync failed: {e}", exc_info=True)
+            # Don't raise - allow app to continue even if sync fails
+            logger.warning("⚠️ Application will continue despite sync failure")
 
     def _get_upload_folder_path(self) -> Path:
         """Get the upload folder path from config."""
@@ -267,10 +317,19 @@ class Application:
         playlist_repository = infrastructure_container.get("playlist_repository")
         logger.info("✅ Obtained playlist repository for NFC-Playlist synchronization")
 
+        # Get LED event handler for visual feedback (optional)
+        led_event_handler = None
+        try:
+            led_event_handler = infrastructure_container.get("led_event_handler")
+            logger.info("✅ LED event handler obtained for NFC visual feedback")
+        except Exception as e:
+            logger.debug(f"LED event handler not available (optional): {e}")
+
         self._nfc_app_service = NfcApplicationService(
             nfc_hardware=self._nfc_handler,
             nfc_repository=nfc_repository,
             playlist_repository=playlist_repository,  # Enable cross-repository synchronization
+            led_event_handler=led_event_handler,  # LED visual feedback
         )
         # Register callbacks for tag detection (NfcApplicationService handles hardware callbacks internally)
         self._nfc_app_service.register_tag_detected_callback(self._on_nfc_tag_detected)

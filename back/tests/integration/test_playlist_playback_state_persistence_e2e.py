@@ -40,7 +40,7 @@ class TestPlaylistPlaybackStatePersistence:
         """Reset DI container singleton state before each test."""
         # Ensure infrastructure DI container has required services
         from app.src.infrastructure.di.container import get_container
-        from app.src.domain.bootstrap import DomainBootstrap
+        from app.src.application.bootstrap import DomainBootstrap
         from app.src.domain.audio.container import AudioDomainContainer
 
         infra_container = get_container()

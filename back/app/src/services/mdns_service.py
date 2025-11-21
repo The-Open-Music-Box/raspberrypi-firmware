@@ -18,6 +18,8 @@ from zeroconf import IPVersion, ServiceInfo, Zeroconf
 
 import logging
 
+from app.src.services.error.unified_error_decorator import handle_service_errors
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +32,6 @@ class MDNSService:
     def __init__(self):
         """Initialize the mDNS service using the global app configuration."""
         from app.src.config import config
-        from app.src.services.error.unified_error_decorator import handle_service_errors
 
         self.config = config
         self.zeroconf_instance: Optional[Zeroconf] = None

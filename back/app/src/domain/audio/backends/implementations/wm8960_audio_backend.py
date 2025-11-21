@@ -449,17 +449,41 @@ class WM8960AudioBackend(BaseAudioBackend):
         """
         with self._state_lock:
             self._volume = max(0, min(100, volume))
+            logger.info(f"🔊 WM8960: set_volume_sync called with volume={self._volume}")
+
+            # Check pygame availability
+            if not PYGAME_AVAILABLE:
+                logger.error(f"🔊 WM8960: pygame not available, cannot set volume")
+                return False
+
+            mixer_init = pygame.mixer.get_init()
+            logger.info(f"🔊 WM8960: pygame.mixer.get_init() = {mixer_init}")
+
             # Set pygame volume (0.0 to 1.0)
-            if PYGAME_AVAILABLE and pygame.mixer.get_init():
+            if mixer_init:
                 pygame_volume = self._volume / 100.0
                 pygame.mixer.music.set_volume(pygame_volume)
-                logger.debug(f"🔊 WM8960: pygame volume set to {pygame_volume}")
-                # Also set system volume via ALSA
-                volume_percent = f"{self._volume}%"
-                subprocess.run(
-                    ["amixer", "sset", "Master", volume_percent], check=True, capture_output=True
-                )
-                logger.debug(f"🔊 WM8960: ALSA volume set to {self._volume}%")
+                actual_volume = pygame.mixer.music.get_volume()
+                logger.info(f"🔊 WM8960: pygame volume set to {pygame_volume:.2f}, actual={actual_volume:.2f}")
+
+                # Try to set system volume via ALSA (optional - pygame is the primary control)
+                try:
+                    volume_percent = f"{self._volume}%"
+                    subprocess.run(
+                        ["amixer", "sset", "Master", volume_percent],
+                        check=True,
+                        capture_output=True,
+                        timeout=1.0  # Don't hang if amixer is slow
+                    )
+                    logger.info(f"🔊 WM8960: ALSA volume set to {self._volume}%")
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+                    # ALSA control failed - this is OK, pygame volume is still set
+                    logger.info(f"🔊 WM8960: ALSA volume control unavailable (using pygame only): {e}")
+
+                return True
+            else:
+                logger.error(f"🔊 WM8960: pygame.mixer not initialized, cannot set volume")
+                return False
 
     @property
     def is_paused(self) -> bool:

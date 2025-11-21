@@ -73,12 +73,14 @@ class TestPlaylistLoading:
                     "id": "track-1",
                     "title": "Song 1",
                     "filename": "song1.mp3",
+                    "file_path": "/music/song1.mp3",
                     "duration_ms": 180000
                 },
                 {
                     "id": "track-2",
                     "title": "Song 2",
                     "filename": "song2.mp3",
+                    "file_path": "/music/song2.mp3",
                     "duration_ms": 200000
                 }
             ]
@@ -108,12 +110,15 @@ class TestPlaylistLoading:
         assert success is False
 
     @pytest.mark.asyncio
-    async def test_load_playlist_resolves_track_paths(self, controller, track_resolver):
-        """Test track paths are resolved during load."""
+    async def test_load_playlist_preserves_file_paths(self, controller):
+        """Test track file_paths from database are preserved."""
         await controller.load_playlist("pl-123")
 
-        # Should resolve paths for all tracks
-        assert track_resolver.resolve_path.call_count == 2
+        # Verify file paths from database are preserved
+        state = controller.get_state()
+        tracks = state["playlist"]["tracks"]
+        assert tracks[0]["file_path"] == "/music/song1.mp3"
+        assert tracks[1]["file_path"] == "/music/song2.mp3"
 
     @pytest.mark.asyncio
     async def test_load_playlist_validates_tracks(self, controller, track_resolver):

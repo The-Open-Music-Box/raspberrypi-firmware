@@ -344,11 +344,12 @@ class TestVolumeAndSeek:
         playlist_service = Mock()
         return PlaybackCoordinator(audio_backend, playlist_service)
 
-    def test_set_volume(self, coordinator):
+    @pytest.mark.asyncio
+    async def test_set_volume(self, coordinator):
         """Test setting volume."""
-        coordinator._audio_player.set_volume = Mock(return_value=True)
+        coordinator._audio_player.set_volume = AsyncMock(return_value=True)
 
-        success = coordinator.set_volume(75)
+        success = await coordinator.set_volume(75)
 
         assert success is True
         coordinator._audio_player.set_volume.assert_called_with(75)

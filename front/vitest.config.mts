@@ -26,18 +26,26 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: [
-        'src/stores/unifiedPlaylistStore.ts'
+        'src/**/*.ts',
+        'src/**/*.vue'
       ],
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'html'],
       exclude: [
         'src/**/__tests__/**',
-        'src/tests/**'
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
+        'src/tests/**',
+        'src/test/**',
+        'src/**/*.d.ts',
+        'src/main.ts',
+        'src/App.vue'
       ],
       thresholds: {
-        lines: 100,
-        statements: 100,
-        branches: 100,
-        functions: 100
+        // Start with realistic thresholds, gradually increase
+        lines: 50,
+        statements: 50,
+        branches: 40,
+        functions: 50
       }
     }
   },

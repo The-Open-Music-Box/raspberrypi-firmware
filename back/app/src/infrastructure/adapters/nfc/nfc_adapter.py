@@ -150,11 +150,19 @@ class NFCHandlerAdapter:
             tag_data: Tag event data from hardware (can be dict or other format)
         """
         logger.debug(f"🔄 NFCHandlerAdapter processing tag event: {tag_data}")
-        # Extract tag UID from various possible formats
-        tag_uid = None
+
         if isinstance(tag_data, dict):
-            # Dictionary format: {"uid": "...", "action": "detected/removed"}
             tag_uid = tag_data.get("uid")
+
+            # CRITICAL FIX: Check for tag absence/removal events
+            if tag_data.get("absence") or tag_data.get("present") is False:
+                logger.debug(f"🚫 Tag removed event detected for: {tag_uid}")
+                # Call all registered tag removed callbacks
+                for callback in self._tag_removed_callbacks:
+                    callback()
+                return
+
+            # Tag detection event
             action = tag_data.get("action", "detected")
             if tag_uid and action == "detected":
                 # Call all registered tag detected callbacks

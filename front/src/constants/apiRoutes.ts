@@ -54,6 +54,7 @@ export const API_ROUTES = {
   NFC_REMOVE_ASSOCIATION: (tagId: string) => `/api/nfc/associate/${tagId}`,
   NFC_STATUS: '/api/nfc/status',
   NFC_SCAN: '/api/nfc/scan',
+  NFC_CANCEL_SESSION: (sessionId: string) => `/api/nfc/session/${sessionId}`,
 
   // YouTube
   YOUTUBE_SEARCH: '/api/youtube/search',

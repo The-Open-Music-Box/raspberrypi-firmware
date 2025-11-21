@@ -23,7 +23,7 @@ class TestPlayerApplicationService:
         coordinator.next_track.return_value = True
         coordinator.previous_track.return_value = True
         coordinator.seek_to_position.return_value = True
-        coordinator.set_volume.return_value = True
+        coordinator.set_volume = AsyncMock(return_value=True)
         coordinator.get_playback_status.return_value = {
             "is_playing": False,
             "current_track": {"id": "1", "title": "Test Track"},

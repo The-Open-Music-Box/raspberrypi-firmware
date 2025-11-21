@@ -59,7 +59,7 @@
             <p><strong>{{ $t('nfc.associate.existingPlaylist') }}:</strong> {{ existingPlaylistInfo.title }}</p>
           </div>
           <div class="button-group">
-            <button class="btn btn-secondary" @click="handleClose">
+            <button class="btn btn-secondary" @click="cancelAssociation">
               {{ $t('common.cancel') }}
             </button>
             <button class="btn btn-warning" @click="replaceAssociation">
@@ -75,7 +75,7 @@
           </div>
           <p>{{ message || $t('nfc.associate.error') }}</p>
           <div class="button-group">
-            <button class="btn btn-secondary" @click="handleClose">
+            <button class="btn btn-secondary" @click="cancelAssociation">
               {{ $t('common.close') }}
             </button>
             <button class="btn btn-primary" @click="retryAssociation">
@@ -102,7 +102,7 @@
           </div>
           <p>{{ $t('nfc.associate.timedOut') }}</p>
           <div class="button-group">
-            <button class="btn btn-secondary" @click="handleClose">
+            <button class="btn btn-secondary" @click="cancelAssociation">
               {{ $t('common.close') }}
             </button>
             <button class="btn btn-primary" @click="retryAssociation">
@@ -118,7 +118,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import socketService from '@/services/socketService'
+import { socketService } from '@/services/SocketServiceFactory'
 import apiService from '@/services/apiService'
 import { SOCKET_EVENTS } from '@/constants/apiRoutes'
 import { NfcAssociationStateData, NfcTagDuplicateData } from '@/types/socket'
@@ -147,6 +147,7 @@ const countdown = ref(0)
 const isOverrideMode = ref(false)
 const existingPlaylistInfo = ref<{ id: string; title: string } | null>(null)
 const detectedTagId = ref<string | null>(null)  // Store the tag_id when duplicate is detected
+const currentSessionId = ref<string | null>(null)  // Store the current session_id for cancellation
 
 // Countdown timer
 let countdownInterval: ReturnType<typeof setInterval> | null = null
@@ -290,35 +291,62 @@ function stopAssociationPolling() {
 
 // User actions
 async function startAssociation() {
+  console.log('▶️ startAssociation() called for playlist:', props.playlistId)
   state.value = 'waiting'
   try {
     // Use proper REST API call instead of Socket.IO event
     // Note: nfc_association_state events are emitted globally, so no room joining needed
     const result = await apiService.startNfcAssociation(props.playlistId)
-    
+    console.log('✅ startNfcAssociation result:', result)
+
+    // Store session_id for later cancellation
+    if (result && result.scan_id) {
+      currentSessionId.value = result.scan_id
+      console.log('💾 Stored session_id:', currentSessionId.value)
+    } else {
+      console.warn('⚠️ No scan_id in result:', result)
+    }
+
     // Set up timeout countdown if we have expiration info
     if (result && result.timeout_ms) {
       const expiresAt = Date.now() / 1000 + (result.timeout_ms / 1000)
       startCountdown(expiresAt)
     }
-    
+
     // Start polling as fallback if socket events don't work
     startAssociationPolling()
-    
+
   } catch (error) {
     // Error handled silently
+    console.error('❌ Error starting association:', error)
     state.value = 'error'
   }
 }
 
 async function cancelAssociation() {
+  console.log('🚫 cancelAssociation() called, currentSessionId:', currentSessionId.value)
   try {
-    // Use proper REST API call instead of Socket.IO event
-    await apiService.cancelNfcObservation()
+    // Cancel the association session using the stored session_id
+    if (currentSessionId.value) {
+      console.log('🔄 Calling cancelNfcObservation with session_id:', currentSessionId.value)
+      await apiService.cancelNfcObservation(currentSessionId.value)
+      console.log('✅ cancelNfcObservation completed successfully')
+      currentSessionId.value = null
+    } else {
+      console.warn('⚠️ No session_id stored, cannot cancel association')
+    }
   } catch (error) {
     // Error handled silently
+    console.error('❌ Failed to cancel NFC association:', error)
   }
+  stopCountdown()
+  stopAssociationPolling()
   state.value = 'cancelled'
+
+  // Auto-close dialog after showing cancelled state briefly
+  setTimeout(() => {
+    handleClose()
+  }, 1500)
 }
 
 function retryAssociation() {
@@ -345,13 +373,17 @@ function handleBackdropClick() {
 }
 
 async function handleClose() {
+  console.log('🚪 handleClose() called, state:', state.value, 'session_id:', currentSessionId.value)
 
-  // Stop any ongoing association
-  if (state.value === 'waiting') {
+  // Stop any ongoing association if user closes with X button while waiting
+  // (cancelAssociation() handles this for Cancel buttons)
+  if (state.value === 'waiting' && currentSessionId.value) {
     try {
-      await apiService.cancelNfcObservation()
+      console.log('🔄 Cancelling association on close with session_id:', currentSessionId.value)
+      await apiService.cancelNfcObservation(currentSessionId.value)
+      console.log('✅ Association cancelled successfully on close')
     } catch (error) {
-    // Error handled silently
+      console.error('❌ Error cancelling association on close:', error)
     }
   }
 
@@ -364,6 +396,7 @@ async function handleClose() {
   isOverrideMode.value = false
   existingPlaylistInfo.value = null
   detectedTagId.value = null
+  currentSessionId.value = null
   stopCountdown()
 
   emit('update:visible', false)

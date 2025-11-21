@@ -93,6 +93,14 @@ class PlayerAPIRoutes:
                 # Use player service
                 result = await self._player_service.play_use_case()
 
+                # Check if service returned an error
+                if result.get("status") == "error":
+                    logger.error(f"Service error in play_use_case: {result.get('message')}")
+                    return UnifiedResponseService.internal_error(
+                        message=result.get("message", "Failed to start playback"),
+                        operation="play_player"
+                    )
+
                 if result.get("success"):
                     status = result.get("status", {})
 
@@ -325,9 +333,17 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error in previous_track: {str(e)}")
+                logger.error(
+                    f"Error in previous_track: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "previous_track",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
-                    message="Failed to skip to previous track", operation="previous_track"
+                    message="Failed to skip to previous_track", operation="previous_track"
                 )
 
         @self.router.post("/toggle")
@@ -369,7 +385,15 @@ class PlayerAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error in toggle_playback: {str(e)}")
+                logger.error(
+                    f"Error in toggle_playback: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "toggle_playback",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to toggle playback", operation="toggle_playback"
                 )
@@ -396,7 +420,14 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in get_player_status: {str(e)}")
+                logger.error(
+                    f"Error in get_player_status: {str(e)}",
+                    extra={
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "get_player_status",
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to get player status", operation="get_player_status"
                 )
@@ -441,7 +472,16 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in seek_player: {str(e)}")
+                logger.error(
+                    f"Error in seek_player: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "seek_player",
+                        "position_ms": body.position_ms,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to seek", operation="seek_player"
                 )
@@ -461,13 +501,14 @@ class PlayerAPIRoutes:
                     # Broadcast volume change
                     await self._broadcasting_service.broadcast_volume_changed(body.volume)
 
-                    # Get updated status for server_seq
+                    # CONTRACT COMPLIANT: Return PlayerState (which includes volume field)
+                    # Get updated status after volume change
                     status_result = await self._player_service.get_status_use_case()
                     status = status_result.get("status", {})
 
                     return UnifiedResponseService.success(
                         message=f"Volume set to {body.volume}%",
-                        data={"volume": body.volume, **status},
+                        data=status,
                         server_seq=status.get("server_seq"),
                         client_op_id=body.client_op_id
                     )
@@ -483,7 +524,16 @@ class PlayerAPIRoutes:
                     )
 
             except Exception as e:
-                logger.error(f"Error in set_volume: {str(e)}")
+                logger.error(
+                    f"Error in set_volume: {str(e)}",
+                    extra={
+                        "client_op_id": body.client_op_id,
+                        "request_id": request.headers.get("X-Request-ID"),
+                        "operation": "set_volume",
+                        "volume": body.volume,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to set volume", operation="set_volume"
                 )

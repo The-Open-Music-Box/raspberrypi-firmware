@@ -142,7 +142,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { youtubeApi } from '@/services/apiService'
-import { socketService } from '@/services/socketService'
+import { socketService } from '@/services/SocketServiceFactory'
 import { useServerStateStore } from '@/stores/serverStateStore'
 
 const serverStateStore = useServerStateStore()

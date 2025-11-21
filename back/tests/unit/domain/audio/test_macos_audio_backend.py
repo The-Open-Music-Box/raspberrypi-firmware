@@ -89,12 +89,14 @@ def temp_audio_file(tmp_path):
 class TestMacOSAudioBackendInitialization:
     """Test MacOSAudioBackend initialization."""
 
-    def test_create_backend(self, backend):
+    @pytest.mark.asyncio
+    async def test_create_backend(self, backend):
         """Test creating macOS backend."""
         assert backend is not None
         assert backend._mixer_initialized is True
 
-    def test_pygame_mixer_configured(self, mock_pygame, backend):
+    @pytest.mark.asyncio
+    async def test_pygame_mixer_configured(self, mock_pygame, backend):
         """Test pygame mixer is configured correctly."""
         # Should have called pre_init with macOS-compatible settings
         mock_pygame.mixer.pre_init.assert_called_once_with(
@@ -108,14 +110,16 @@ class TestMacOSAudioBackendInitialization:
         mock_pygame.mixer.init.assert_called_once()
 
     @patch.dict('os.environ', {}, clear=True)
-    def test_sets_core_audio_driver(self, backend):
+    @pytest.mark.asyncio
+    async def test_sets_core_audio_driver(self, backend):
         """Test sets SDL_AUDIODRIVER to coreaudio."""
         import os
         # Note: This test might be order-dependent due to env var setting
         # The backend should set the audio driver
         # We can't directly test os.environ modification in this way
 
-    def test_pygame_unavailable_raises_error(self):
+    @pytest.mark.asyncio
+    async def test_pygame_unavailable_raises_error(self):
         """Test error when pygame is not available."""
         with patch('app.src.domain.audio.backends.implementations.macos_audio_backend.PYGAME_AVAILABLE', False):
             from app.src.domain.audio.backends.implementations.macos_audio_backend import MacOSAudioBackend
@@ -123,13 +127,15 @@ class TestMacOSAudioBackendInitialization:
             with pytest.raises(ImportError):
                 MacOSAudioBackend()
 
-    def test_initializes_time_tracking(self, backend):
+    @pytest.mark.asyncio
+    async def test_initializes_time_tracking(self, backend):
         """Test time tracking variables are initialized."""
         assert backend._play_start_time is None
         assert backend._pause_time is None
         assert backend._is_paused is False
 
-    def test_initializes_current_file_tracking(self, backend):
+    @pytest.mark.asyncio
+    async def test_initializes_current_file_tracking(self, backend):
         """Test current file tracking is initialized."""
         assert backend._current_file_path is None
         assert backend._current_file_duration is None
@@ -138,7 +144,8 @@ class TestMacOSAudioBackendInitialization:
 class TestPlaybackControls:
     """Test playback control methods."""
 
-    def test_play_file(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_play_file(self, backend, mock_pygame, temp_audio_file):
         """Test playing an audio file."""
         result = backend.play_file(str(temp_audio_file))
 
@@ -146,7 +153,8 @@ class TestPlaybackControls:
         mock_pygame.mixer.music.load.assert_called_once_with(str(temp_audio_file))
         mock_pygame.mixer.music.play.assert_called_once()
 
-    def test_play_file_sets_state(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_play_file_sets_state(self, backend, temp_audio_file):
         """Test play_file sets internal state."""
         backend.play_file(str(temp_audio_file))
 
@@ -154,19 +162,22 @@ class TestPlaybackControls:
         assert backend._current_file_path == str(temp_audio_file)
         assert backend._play_start_time is not None
 
-    def test_play_file_with_duration(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_play_file_with_duration(self, backend, temp_audio_file):
         """Test play_file with custom duration."""
         backend.play_file(str(temp_audio_file), duration_ms=5000)
 
         assert backend._current_file_duration == 5.0
 
-    def test_play_nonexistent_file(self, backend):
+    @pytest.mark.asyncio
+    async def test_play_nonexistent_file(self, backend):
         """Test playing a nonexistent file."""
         result = backend.play_file("/nonexistent/file.mp3")
 
         assert result is False
 
-    def test_play_stops_current_playback(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_play_stops_current_playback(self, backend, mock_pygame, temp_audio_file):
         """Test playing stops current playback."""
         # Simulate music already playing
         mock_pygame.mixer.music._playing_state['is_playing'] = True
@@ -176,10 +187,11 @@ class TestPlaybackControls:
         mock_pygame.mixer.music.stop.assert_called()
         mock_pygame.mixer.music.unload.assert_called()
 
-    def test_stop_playback(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_stop_playback(self, backend, mock_pygame, temp_audio_file):
         """Test stopping playback."""
         backend.play_file(str(temp_audio_file))
-        result = backend.stop()
+        result = await backend.stop()
 
         assert result is True
         mock_pygame.mixer.music.stop.assert_called()
@@ -187,19 +199,21 @@ class TestPlaybackControls:
         assert backend._is_playing is False
         assert backend._current_file_path is None
 
-    def test_stop_resets_timing(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_stop_resets_timing(self, backend, temp_audio_file):
         """Test stop resets timing variables."""
         backend.play_file(str(temp_audio_file))
-        backend.stop()
+        await backend.stop()
 
         assert backend._play_start_time is None
         assert backend._pause_time is None
         assert backend._is_paused is False
 
-    def test_pause_playback(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_pause_playback(self, backend, mock_pygame, temp_audio_file):
         """Test pausing playback."""
         backend.play_file(str(temp_audio_file))
-        result = backend.pause()
+        result = await backend.pause()
 
         assert result is True
         mock_pygame.mixer.music.pause.assert_called_once()
@@ -207,39 +221,43 @@ class TestPlaybackControls:
         assert backend._is_paused is True
         assert backend._pause_time is not None
 
-    def test_pause_when_not_playing(self, backend):
+    @pytest.mark.asyncio
+    async def test_pause_when_not_playing(self, backend):
         """Test pausing when nothing is playing."""
-        result = backend.pause()
+        result = await backend.pause()
 
         assert result is False
 
-    def test_resume_playback(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_resume_playback(self, backend, mock_pygame, temp_audio_file):
         """Test resuming paused playback."""
         backend.play_file(str(temp_audio_file))
-        backend.pause()
+        await backend.pause()
 
-        result = backend.resume()
+        result = await backend.resume()
 
         assert result is True
         mock_pygame.mixer.music.unpause.assert_called_once()
         assert backend._is_playing is True
         assert backend._is_paused is False
 
-    def test_resume_when_not_paused(self, backend):
+    @pytest.mark.asyncio
+    async def test_resume_when_not_paused(self, backend):
         """Test resuming when not paused."""
-        result = backend.resume()
+        result = await backend.resume()
 
         assert result is False
 
-    def test_resume_adjusts_play_start_time(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_resume_adjusts_play_start_time(self, backend, temp_audio_file):
         """Test resume adjusts play start time for pause duration."""
         backend.play_file(str(temp_audio_file))
         original_start_time = backend._play_start_time
 
-        backend.pause()
+        await backend.pause()
         time.sleep(0.1)  # Small pause duration
 
-        backend.resume()
+        await backend.resume()
 
         # Play start time should be adjusted
         assert backend._play_start_time > original_start_time
@@ -248,42 +266,46 @@ class TestPlaybackControls:
 class TestVolumeControl:
     """Test volume control methods."""
 
-    def test_set_volume(self, backend, mock_pygame):
+    @pytest.mark.asyncio
+    async def test_set_volume(self, backend, mock_pygame):
         """Test setting volume."""
-        result = backend.set_volume(75)
+        result = backend._set_volume_sync(75)
 
         assert result is True
         assert backend._volume == 75
         mock_pygame.mixer.music.set_volume.assert_called_with(0.75)
 
-    def test_set_volume_min(self, backend, mock_pygame):
+    @pytest.mark.asyncio
+    async def test_set_volume_min(self, backend, mock_pygame):
         """Test setting volume to minimum."""
-        backend.set_volume(0)
+        backend._set_volume_sync(0)
 
         assert backend._volume == 0
         mock_pygame.mixer.music.set_volume.assert_called_with(0.0)
 
-    def test_set_volume_max(self, backend, mock_pygame):
+    @pytest.mark.asyncio
+    async def test_set_volume_max(self, backend, mock_pygame):
         """Test setting volume to maximum."""
-        backend.set_volume(100)
+        backend._set_volume_sync(100)
 
         assert backend._volume == 100
         mock_pygame.mixer.music.set_volume.assert_called_with(1.0)
 
-    def test_set_volume_clamped(self, backend):
+    @pytest.mark.asyncio
+    async def test_set_volume_clamped(self, backend):
         """Test volume is clamped to valid range."""
-        backend.set_volume(150)
+        backend._set_volume_sync(150)
 
         assert backend._volume == 100
 
-        backend.set_volume(-50)
+        backend._set_volume_sync(-50)
 
         assert backend._volume == 0
 
     @pytest.mark.asyncio
     async def test_get_volume_async(self, backend):
         """Test getting volume asynchronously."""
-        backend.set_volume(60)
+        backend._set_volume_sync(60)
 
         volume = await backend.get_volume()
 
@@ -293,7 +315,8 @@ class TestVolumeControl:
 class TestPositionTracking:
     """Test position tracking functionality."""
 
-    def test_get_position_when_playing(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_get_position_when_playing(self, backend, temp_audio_file):
         """Test getting position during playback."""
         backend.play_file(str(temp_audio_file))
         time.sleep(0.1)  # Small delay
@@ -302,25 +325,28 @@ class TestPositionTracking:
 
         assert position > 0
 
-    def test_get_position_when_not_playing(self, backend):
+    @pytest.mark.asyncio
+    async def test_get_position_when_not_playing(self, backend):
         """Test getting position when not playing."""
         position = backend.get_position()
 
         assert position == 0.0
 
-    def test_get_position_when_paused(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_get_position_when_paused(self, backend, temp_audio_file):
         """Test getting position when paused."""
         backend.play_file(str(temp_audio_file))
         time.sleep(0.1)
 
-        backend.pause()
+        await backend.pause()
         paused_position = backend.get_position()
 
         time.sleep(0.1)
         # Position should not increase while paused
         assert backend.get_position() == pytest.approx(paused_position, abs=0.01)
 
-    def test_position_increases_during_playback(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_position_increases_during_playback(self, backend, temp_audio_file):
         """Test position increases during playback."""
         backend.play_file(str(temp_audio_file))
 
@@ -330,7 +356,8 @@ class TestPositionTracking:
 
         assert position2 > position1
 
-    def test_get_position_never_negative(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_get_position_never_negative(self, backend, temp_audio_file):
         """Test position is never negative."""
         backend.play_file(str(temp_audio_file))
 
@@ -371,17 +398,19 @@ class TestDurationQueries:
 class TestStateProperties:
     """Test state property methods."""
 
-    def test_is_playing_property(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_is_playing_property(self, backend, temp_audio_file):
         """Test is_playing property."""
         assert backend.is_playing is False
 
         backend.play_file(str(temp_audio_file))
         assert backend.is_playing is True
 
-        backend.stop()
+        await backend.stop()
         assert backend.is_playing is False
 
-    def test_is_playing_syncs_with_pygame(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_is_playing_syncs_with_pygame(self, backend, mock_pygame, temp_audio_file):
         """Test is_playing syncs with pygame state."""
         backend.play_file(str(temp_audio_file))
 
@@ -394,7 +423,8 @@ class TestStateProperties:
         assert is_playing is False
         assert backend._is_playing is False
 
-    def test_is_busy_property(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_is_busy_property(self, backend, mock_pygame, temp_audio_file):
         """Test is_busy property."""
         # Not playing
         assert backend.is_busy is False
@@ -403,7 +433,8 @@ class TestStateProperties:
         backend.play_file(str(temp_audio_file))
         assert backend.is_busy is True
 
-    def test_is_busy_syncs_with_pygame(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_is_busy_syncs_with_pygame(self, backend, mock_pygame, temp_audio_file):
         """Test is_busy syncs with pygame state."""
         backend.play_file(str(temp_audio_file))
 
@@ -440,7 +471,8 @@ class TestAsyncWrappers:
 class TestCleanupAndResourceManagement:
     """Test cleanup and resource management."""
 
-    def test_cleanup(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_cleanup(self, backend, mock_pygame, temp_audio_file):
         """Test backend cleanup."""
         backend.play_file(str(temp_audio_file))
 
@@ -451,7 +483,8 @@ class TestCleanupAndResourceManagement:
         assert backend._mixer_initialized is False
         assert backend._is_playing is False
 
-    def test_cleanup_resets_state(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_cleanup_resets_state(self, backend, temp_audio_file):
         """Test cleanup resets all state."""
         backend.play_file(str(temp_audio_file))
 
@@ -463,7 +496,8 @@ class TestCleanupAndResourceManagement:
         assert backend._pause_time is None
         assert backend._is_paused is False
 
-    def test_cleanup_when_mixer_not_initialized(self, backend, mock_pygame):
+    @pytest.mark.asyncio
+    async def test_cleanup_when_mixer_not_initialized(self, backend, mock_pygame):
         """Test cleanup when mixer not initialized."""
         backend._mixer_initialized = False
 
@@ -476,7 +510,8 @@ class TestCleanupAndResourceManagement:
 class TestErrorHandling:
     """Test error handling scenarios."""
 
-    def test_play_when_mixer_not_initialized(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_play_when_mixer_not_initialized(self, backend, temp_audio_file):
         """Test playing when mixer not initialized."""
         backend._mixer_initialized = False
 
@@ -488,7 +523,8 @@ class TestErrorHandling:
 class TestPauseResumeTimingAccuracy:
     """Test pause/resume timing calculations."""
 
-    def test_pause_resume_maintains_accurate_position(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_pause_resume_maintains_accurate_position(self, backend, temp_audio_file):
         """Test pause/resume maintains accurate playback position."""
         backend.play_file(str(temp_audio_file))
 
@@ -497,7 +533,7 @@ class TestPauseResumeTimingAccuracy:
         position_before_pause = backend.get_position()
 
         # Pause
-        backend.pause()
+        await backend.pause()
         paused_position = backend.get_position()
 
         # Paused position should be close to position before pause
@@ -510,7 +546,7 @@ class TestPauseResumeTimingAccuracy:
         assert backend.get_position() == pytest.approx(paused_position, abs=0.01)
 
         # Resume
-        backend.resume()
+        await backend.resume()
 
         # After resuming, position should continue from where it paused
         # (with small tolerance for timing)
@@ -521,38 +557,41 @@ class TestPauseResumeTimingAccuracy:
 class TestIntegrationScenarios:
     """Test integration scenarios."""
 
-    def test_complete_playback_cycle(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_complete_playback_cycle(self, backend, mock_pygame, temp_audio_file):
         """Test a complete playback cycle."""
         # Play
         backend.play_file(str(temp_audio_file))
         assert backend.is_playing is True
 
         # Pause
-        backend.pause()
+        await backend.pause()
         assert backend.is_playing is False
 
         # Resume
-        backend.resume()
+        await backend.resume()
         assert backend.is_playing is True
 
         # Stop
-        backend.stop()
+        await backend.stop()
         assert backend.is_playing is False
 
-    def test_volume_changes_during_playback(self, backend, mock_pygame, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_volume_changes_during_playback(self, backend, mock_pygame, temp_audio_file):
         """Test volume can be changed during playback."""
         backend.play_file(str(temp_audio_file))
 
-        backend.set_volume(25)
+        backend._set_volume_sync(25)
         assert backend._volume == 25
 
-        backend.set_volume(75)
+        backend._set_volume_sync(75)
         assert backend._volume == 75
 
         # Should still be playing
         assert backend._is_playing is True
 
-    def test_playing_multiple_files_sequentially(self, backend, tmp_path):
+    @pytest.mark.asyncio
+    async def test_playing_multiple_files_sequentially(self, backend, tmp_path):
         """Test playing multiple files one after another."""
         file1 = tmp_path / "song1.mp3"
         file2 = tmp_path / "song2.mp3"
@@ -570,7 +609,8 @@ class TestIntegrationScenarios:
 class TestThreadSafety:
     """Test thread-safe state management."""
 
-    def test_concurrent_state_access(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_concurrent_state_access(self, backend, temp_audio_file):
         """Test concurrent access to state is thread-safe."""
         backend.play_file(str(temp_audio_file))
 
@@ -588,28 +628,31 @@ class TestThreadSafety:
 class TestEdgeCases:
     """Test edge cases."""
 
-    def test_pause_resume_multiple_cycles(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_pause_resume_multiple_cycles(self, backend, temp_audio_file):
         """Test multiple pause/resume cycles."""
         backend.play_file(str(temp_audio_file))
 
-        backend.pause()
-        backend.resume()
-        backend.pause()
-        backend.resume()
+        await backend.pause()
+        await backend.resume()
+        await backend.pause()
+        await backend.resume()
 
         assert backend.is_playing is True
 
-    def test_stop_when_not_playing(self, backend, mock_pygame):
+    @pytest.mark.asyncio
+    async def test_stop_when_not_playing(self, backend, mock_pygame):
         """Test stopping when nothing is playing."""
-        result = backend.stop()
+        result = await backend.stop()
 
         # Should still return True
         assert result is True
 
-    def test_play_file_resets_paused_state(self, backend, temp_audio_file):
+    @pytest.mark.asyncio
+    async def test_play_file_resets_paused_state(self, backend, temp_audio_file):
         """Test playing a new file resets paused state."""
         backend.play_file(str(temp_audio_file))
-        backend.pause()
+        await backend.pause()
 
         backend.play_file(str(temp_audio_file))
 

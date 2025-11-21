@@ -91,7 +91,12 @@ class PlaylistReadAPI:
                     raise
                 logger.error(
                     f"Error in list_playlists: {str(e)}",
-                    extra={"traceback": True},
+                    extra={
+                        "operation": "list_playlists",
+                        "page": page,
+                        "limit": limit,
+                    },
+                    exc_info=True
                 )
                 return UnifiedResponseService.internal_error(
                     message="Failed to retrieve playlists", operation="list_playlists"
@@ -119,24 +124,6 @@ class PlaylistReadAPI:
             """Get a specific playlist."""
             try:
                 logger.info(f"GET /api/playlists/{playlist_id} called")
-
-                # Handle contract testing scenarios
-                if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistReadAPI: Contract testing detected, returning mock playlist response")
-                    mock_playlist = {
-                        "id": playlist_id,
-                        "title": "Test Playlist",
-                        "description": "Contract testing playlist",
-                        "tracks": [],
-                        "created_at": "2025-01-01T00:00:00Z",
-                        "updated_at": "2025-01-01T00:00:00Z",
-                        "track_count": 0,
-                        "total_duration_ms": 0
-                    }
-                    return UnifiedResponseService.success(
-                        message="Playlist retrieved successfully (mock response for testing)",
-                        data=mock_playlist  # Return playlist data directly per contract
-                    )
 
                 # Use application service
                 result = await self._playlist_service.get_playlist_use_case(playlist_id)
@@ -167,7 +154,14 @@ class PlaylistReadAPI:
                 # Re-raise system exceptions
                 if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
                     raise
-                logger.error(f"Error getting playlist {playlist_id}: {str(e)}")
+                logger.error(
+                    f"Error in get_playlist: {str(e)}",
+                    extra={
+                        "operation": "get_playlist",
+                        "playlist_id": playlist_id,
+                    },
+                    exc_info=True
+                )
                 return UnifiedResponseService.internal_error(
                     message="Failed to retrieve playlist", operation="get_playlist"
                 )

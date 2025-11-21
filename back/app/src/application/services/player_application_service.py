@@ -354,7 +354,7 @@ class PlayerApplicationService:
                     "volume": self._coordinator.get_volume()
                 }
 
-            success = self._coordinator.set_volume(volume)
+            success = await self._coordinator.set_volume(volume)
 
             if success:
                 logger.info(f"✅ Volume set to {volume}%")

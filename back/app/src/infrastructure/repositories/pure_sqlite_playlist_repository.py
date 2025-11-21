@@ -58,9 +58,10 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         if not playlist.id:
             playlist.id = str(uuid.uuid4())
 
-        # Save playlist data with consistent path generation
-        from app.src.utils.path_utils import normalize_folder_name
-        path = normalize_folder_name(playlist.title)
+        # Generate UUID for path if not present (ensures unique folder names)
+        if not playlist.path:
+            playlist.path = str(uuid.uuid4())
+        path = playlist.path
 
         playlist_command = """
             INSERT OR REPLACE INTO playlists
@@ -542,10 +543,10 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             filename = track_row["filename"] if track_row["filename"] else ""
 
             if not file_path and filename:
-                # Use playlist title to generate file_path
+                # Use playlist path (UUID) to generate file_path
                 playlist_folder = (
-                    playlist_row["title"]
-                    if playlist_row["title"]
+                    playlist_row["path"]
+                    if playlist_row["path"]
                     else "Unknown"
                 )
                 try:
@@ -627,9 +628,9 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                 try:
                     from app.src.config import config
                     from pathlib import Path
-                    file_path = str(Path(config.upload_folder) / "unknown_playlist" / filename)
+                    file_path = str(Path(config.upload_folder) / "unknown" / filename)
                 except:
-                    file_path = f"./uploads/unknown_playlist/{filename}"
+                    file_path = f"./uploads/unknown/{filename}"
 
             track = Track(
                 id=track_row["id"],
@@ -694,12 +695,13 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         filename = track_row["filename"] if track_row["filename"] else ""
 
         if not file_path and filename:
+            # Fallback for tracks without playlist path
             try:
                 from app.src.config import config
                 from pathlib import Path
-                file_path = str(Path(config.upload_folder) / "unknown_playlist" / filename)
+                file_path = str(Path(config.upload_folder) / "unknown" / filename)
             except:
-                file_path = f"./uploads/unknown_playlist/{filename}"
+                file_path = f"./uploads/unknown/{filename}"
 
         # Build track entity and convert to dict
         track = Track(
