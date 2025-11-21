@@ -10,7 +10,7 @@ from pathlib import Path
 from ..entities.upload_session import UploadSession
 from ..value_objects.file_chunk import FileChunk
 from ..value_objects.file_metadata import FileMetadata
-from app.src.services.validation.validation_constants import WINDOWS_RESERVED_NAMES
+from ..constants import WINDOWS_RESERVED_NAMES
 import logging
 
 logger = logging.getLogger(__name__)
