@@ -8,21 +8,20 @@ Playlist Playback API - Playback Control Operations
 Single Responsibility: Handle HTTP requests for playlist playback control.
 """
 
-import logging
 from fastapi import APIRouter, Body, Request
 
+from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
 from typing import Optional
 
-logger = logging.getLogger(__name__)
 
-
-class PlaylistPlaybackAPI:
+class PlaylistPlaybackAPI(BaseAPIRoutes):
     """
     Handles playback control operations for playlists.
 
     Single Responsibility: HTTP operations for controlling playlist playback.
+    Inherits common API functionality from BaseAPIRoutes.
     """
 
     def __init__(self, playlist_service, broadcasting_service, router: APIRouter, operations_service=None):
@@ -34,6 +33,12 @@ class PlaylistPlaybackAPI:
             router: Parent FastAPI router to register routes on
             operations_service: Service for complex playlist operations
         """
+        super().__init__(
+            router=router,
+            playlist_service=playlist_service,
+            broadcasting_service=broadcasting_service,
+            operations_service=operations_service
+        )
         self._playlist_service = playlist_service
         self._broadcasting_service = broadcasting_service
         self._operations_service = operations_service
@@ -58,7 +63,7 @@ class PlaylistPlaybackAPI:
                 # has complex dependencies (PlaybackCoordinator, hardware, etc.) that are difficult
                 # to mock in contract tests. This allows contract validation without full integration setup.
                 if playlist_id.startswith("test-") or playlist_id.startswith("mock-"):
-                    logger.info("PlaylistPlaybackAPI: Contract testing detected, returning mock start response")
+                    self.log_operation("Contract testing detected, returning mock start response")
                     return UnifiedResponseService.success(
                         message="Playlist playback started successfully (mock response for testing)",
                         data={
@@ -79,14 +84,14 @@ class PlaylistPlaybackAPI:
                     )
 
                 # CRITICAL FIX: Actually trigger playback via PlaybackCoordinator
-                logger.info(f"Starting playlist playback: {playlist_id}")
+                self.log_operation(f"Starting playlist playback: {playlist_id}")
 
                 # Get playback coordinator
                 from app.src.dependencies import get_playback_coordinator as get_coord
                 try:
                     coordinator = get_coord()
                 except Exception as coord_error:
-                    logger.error(f"Failed to get playback coordinator: {coord_error}")
+                    self._logger.error(f"Failed to get playback coordinator: {coord_error}")
                     return UnifiedResponseService.internal_error(
                         message="Playback system not available",
                         operation="start_playlist",
@@ -96,7 +101,7 @@ class PlaylistPlaybackAPI:
                 # Load and start the playlist
                 load_success = await coordinator.load_playlist(playlist_id)
                 if not load_success:
-                    logger.error(f"Failed to load playlist {playlist_id} into playback coordinator")
+                    self._logger.error(f"Failed to load playlist {playlist_id} into playback coordinator")
                     return UnifiedResponseService.internal_error(
                         message="Failed to load playlist for playback",
                         operation="start_playlist",
@@ -106,14 +111,14 @@ class PlaylistPlaybackAPI:
                 # Start playback from first track
                 play_success = coordinator.start_playlist(track_number=1)
                 if not play_success:
-                    logger.error(f"Failed to start playback for playlist {playlist_id}")
+                    self._logger.error(f"Failed to start playback for playlist {playlist_id}")
                     return UnifiedResponseService.internal_error(
                         message="Failed to start playlist playback",
                         operation="start_playlist",
                         client_op_id=client_op_id
                     )
 
-                logger.info(f"✅ Successfully started playback for playlist {playlist_id}")
+                self.log_operation(f"Successfully started playback for playlist {playlist_id}")
 
                 # CRITICAL FIX: Get complete PlayerState from coordinator
                 # The frontend expects a full PlayerState object in the response
@@ -142,9 +147,9 @@ class PlaylistPlaybackAPI:
                                 "operation": "playlist_started"
                             }
                         )
-                        logger.info(f"✅ Broadcasted complete PLAYER_STATE for playlist {playlist_id}")
+                        self.log_operation(f"Broadcasted complete PLAYER_STATE for playlist {playlist_id}")
                 except Exception as broadcast_error:
-                    logger.error(f"❌ Failed to broadcast PLAYER_STATE: {broadcast_error}", exc_info=True)
+                    self._logger.error(f"Failed to broadcast PLAYER_STATE: {broadcast_error}", exc_info=True)
 
                 # CRITICAL FIX: Return complete PlayerState in HTTP response (not just playlist_id)
                 # The frontend TypeScript expects PlayerState from this endpoint
@@ -156,23 +161,14 @@ class PlaylistPlaybackAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in start_playlist: {str(e)}",
-                    extra={
-                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
-                        "request_id": request.headers.get("X-Request-ID") if request else None,
-                        "operation": "start_playlist",
-                        "playlist_id": playlist_id,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to start playlist playback",
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
                     operation="start_playlist",
-                    client_op_id=client_op_id
+                    message="Failed to start playlist playback",
+                    client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
+                    request_id=request.headers.get("X-Request-ID") if request else None,
+                    playlist_id=playlist_id
                 )
 
         @router.post("/sync")
@@ -180,11 +176,10 @@ class PlaylistPlaybackAPI:
         async def sync_playlists():
             """Trigger playlist synchronization and broadcast current state."""
             try:
-                if not self._operations_service:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Playlist operations",
-                        message="Operations service not available"
-                    )
+                # Use base class helper for service availability check
+                service_check = self.check_service_available("Playlist operations", self._operations_service)
+                if service_check:
+                    return service_check
 
                 # Use operations service for sync
                 result = await self._operations_service.sync_playlists_use_case()
@@ -208,17 +203,9 @@ class PlaylistPlaybackAPI:
                     )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in sync_playlists: {str(e)}",
-                    extra={
-                        "operation": "sync_playlists",
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to sync playlists",
-                    operation="sync_playlists"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="sync_playlists",
+                    message="Failed to sync playlists"
                 )
