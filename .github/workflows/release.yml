@@ -77,6 +77,11 @@ jobs:
             chmod +x tomb/tools/*.py 2>/dev/null || true
           fi
 
+          # Copy WM8960 driver files
+          if [ -d back/drivers ]; then
+            cp -r back/drivers tomb/
+          fi
+
           # Copy .env template (without secrets)
           if [ -f back/.env.example ]; then
             cp back/.env.example tomb/.env

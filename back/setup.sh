@@ -19,6 +19,9 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+# Get script directory (used throughout the script)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # 1. Install required apt packages
 REQUIRED_APT_PACKAGES=(python3 python3-venv python3-pip ffmpeg libasound2-dev libnss-mdns git i2c-tools python3-smbus python3-libgpiod libsdl2-mixer-2.0-0 swig unzip build-essential dkms raspberrypi-kernel-headers)
 echo -e "${GREEN}Installing required apt packages...${NC}"
@@ -43,14 +46,13 @@ cd "$ORIGINAL_DIR"
 
 # Install WM8960 Audio HAT driver
 echo -e "${GREEN}Installing WM8960 Audio HAT driver...${NC}"
-cd /tmp
 
-# Clone Waveshare WM8960 repository
-if [ -d "WM8960-Audio-HAT" ]; then
-  rm -rf WM8960-Audio-HAT
+# Use bundled driver files
+WM8960_DRIVER_DIR="$SCRIPT_DIR/drivers/wm8960"
+if [ ! -d "$WM8960_DRIVER_DIR" ]; then
+  echo -e "${RED}WM8960 driver files not found in $WM8960_DRIVER_DIR${NC}"
+  exit 1
 fi
-git clone https://github.com/waveshare/WM8960-Audio-HAT
-cd WM8960-Audio-HAT
 
 # Install kernel module via DKMS
 WM8960_MOD="wm8960-soundcard"
@@ -62,13 +64,13 @@ dkms remove --force -m $WM8960_MOD -v $WM8960_VER --all 2>/dev/null || true
 
 # Copy source and install
 mkdir -p "$WM8960_SRC"
-cp -a . "$WM8960_SRC/"
+cp -a "$WM8960_DRIVER_DIR/"* "$WM8960_SRC/"
 dkms add -m $WM8960_MOD -v $WM8960_VER
 dkms build -m $WM8960_MOD -v $WM8960_VER
 dkms install --force -m $WM8960_MOD -v $WM8960_VER
 
 # Install device tree overlay
-cp wm8960-soundcard.dtbo /boot/overlays/
+cp "$WM8960_DRIVER_DIR/wm8960-soundcard.dtbo" /boot/overlays/
 
 # Configure boot parameters
 CONFIG_FILE="/boot/firmware/config.txt"
@@ -88,8 +90,7 @@ grep -q "^dtoverlay=wm8960-soundcard" "$CONFIG_FILE" || echo "dtoverlay=wm8960-s
 
 # Install configuration files
 mkdir -p /etc/wm8960-soundcard
-cp *.conf /etc/wm8960-soundcard/ 2>/dev/null || true
-cp *.state /etc/wm8960-soundcard/ 2>/dev/null || true
+cp "$WM8960_DRIVER_DIR"/*.state /etc/wm8960-soundcard/ 2>/dev/null || true
 
 # Install ALSA configuration
 cat > /etc/asound.conf << 'EOF'
@@ -132,9 +133,9 @@ pcm.array {
 EOF
 
 # Install wm8960-soundcard service
-cp wm8960-soundcard /usr/bin/
+cp "$WM8960_DRIVER_DIR/wm8960-soundcard" /usr/bin/
 chmod +x /usr/bin/wm8960-soundcard
-cp wm8960-soundcard.service /lib/systemd/system/
+cp "$WM8960_DRIVER_DIR/wm8960-soundcard.service" /lib/systemd/system/
 systemctl enable wm8960-soundcard.service
 systemctl start wm8960-soundcard.service
 
@@ -147,12 +148,9 @@ fi
 sed -i '/^snd-soc-wm8960$/d' /etc/modules
 sed -i '/^snd-soc-wm8960-soundcard$/d' /etc/modules
 
-cd "$ORIGINAL_DIR"
 echo -e "${GREEN}WM8960 Audio HAT driver installed successfully!${NC}"
 
 # 2. Créer un environnement virtuel Python et installer les dépendances dans le venv
-# Correct the virtual environment path with absolute path logic
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_PATH="$SCRIPT_DIR/venv"
 
 # Create the virtual environment in the specified path
