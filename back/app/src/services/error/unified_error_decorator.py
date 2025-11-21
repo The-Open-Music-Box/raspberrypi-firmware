@@ -269,6 +269,21 @@ def _handle_caught_exception(
         raise
 
 
+def _convert_to_http_exception(exception: Exception, mappings: Dict[type, int], default_status: int):
+    """Convert an exception to an HTTPException with appropriate status code.
+
+    Args:
+        exception: The exception to convert
+        mappings: Mapping of exception types to HTTP status codes
+        default_status: Default status code if exception type not in mappings
+
+    Raises:
+        HTTPException: With appropriate status code and detail message
+    """
+    status_code = mappings.get(type(exception), default_status)
+    raise HTTPException(status_code=status_code, detail=str(exception))
+
+
 def handle_http_errors(
     default_status: int = 500, error_mappings: Optional[Dict[type, int]] = None
 ) -> Callable:
@@ -304,9 +319,7 @@ def handle_http_errors(
             except HTTPException:
                 raise
             except Exception as e:
-                # Convert to appropriate HTTP status
-                status_code = mappings.get(type(e), default_status)
-                raise HTTPException(status_code=status_code, detail=str(e))
+                _convert_to_http_exception(e, mappings, default_status)
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -315,9 +328,7 @@ def handle_http_errors(
             except HTTPException:
                 raise
             except Exception as e:
-                # Convert to appropriate HTTP status
-                status_code = mappings.get(type(e), default_status)
-                raise HTTPException(status_code=status_code, detail=str(e))
+                _convert_to_http_exception(e, mappings, default_status)
 
         return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
 
@@ -426,6 +437,24 @@ def handle_infrastructure_errors(component_name: str = "infrastructure") -> Call
     return decorator
 
 
+def _create_error_dict(exception: Exception, operation: str) -> Dict[str, Any]:
+    """Create standard error dictionary for internal service calls.
+
+    Args:
+        exception: The exception that occurred
+        operation: Name of the operation that failed
+
+    Returns:
+        Error dictionary with status, message, error_type, and operation
+    """
+    return {
+        "status": "error",
+        "message": str(exception),
+        "error_type": type(exception).__name__,
+        "operation": operation,
+    }
+
+
 def handle_service_errors(service_name: str) -> Callable:
     """
     Décorateur spécialisé pour services d'application.
@@ -451,12 +480,7 @@ def handle_service_errors(service_name: str) -> Callable:
                 return await func(*args, **kwargs)
             except Exception as e:
                 # Return error dict instead of JSONResponse for internal service calls
-                return {
-                    "status": "error",
-                    "message": str(e),
-                    "error_type": type(e).__name__,
-                    "operation": func.__name__,
-                }
+                return _create_error_dict(e, func.__name__)
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -464,12 +488,7 @@ def handle_service_errors(service_name: str) -> Callable:
                 return func(*args, **kwargs)
             except Exception as e:
                 # Return error dict instead of JSONResponse for internal service calls
-                return {
-                    "status": "error",
-                    "message": str(e),
-                    "error_type": type(e).__name__,
-                    "operation": func.__name__,
-                }
+                return _create_error_dict(e, func.__name__)
 
         return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
 
