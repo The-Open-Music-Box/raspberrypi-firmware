@@ -8,20 +8,19 @@ Playlist Upload API - Chunked File Upload Operations
 Single Responsibility: Handle HTTP requests for file uploads to playlists.
 """
 
-import logging
 from fastapi import APIRouter, Body, File
 
+from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
 
-logger = logging.getLogger(__name__)
 
-
-class PlaylistUploadAPI:
+class PlaylistUploadAPI(BaseAPIRoutes):
     """
     Handles chunked file upload operations for playlists.
 
     Single Responsibility: HTTP operations for uploading files to playlists.
+    Inherits common API functionality from BaseAPIRoutes.
     """
 
     def __init__(self, playlist_service, broadcasting_service, router: APIRouter, upload_controller):
@@ -33,6 +32,12 @@ class PlaylistUploadAPI:
             router: Parent FastAPI router to register routes on
             upload_controller: Controller for file upload operations
         """
+        super().__init__(
+            router=router,
+            playlist_service=playlist_service,
+            broadcasting_service=broadcasting_service,
+            upload_controller=upload_controller
+        )
         self._playlist_service = playlist_service
         self._broadcasting_service = broadcasting_service
         self._upload_controller = upload_controller
@@ -60,11 +65,10 @@ class PlaylistUploadAPI:
                         message="filename and file_size are required"
                     )
 
-                if not self._upload_controller:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Upload",
-                        message="Upload service not available"
-                    )
+                # Use base class helper for service availability check
+                service_check = self.check_service_available("Upload", self._upload_controller)
+                if service_check:
+                    return service_check
 
                 result = await self._upload_controller.init_upload_session(
                     playlist_id, filename, file_size, chunk_size, file_hash
@@ -76,13 +80,11 @@ class PlaylistUploadAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(f"Error initializing upload session: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to initialize upload session",
-                    operation="init_upload_session"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="init_upload_session",
+                    message="Failed to initialize upload session"
                 )
 
         @router.put("/{playlist_id}/uploads/{session_id}/chunks/{chunk_index}")
@@ -90,11 +92,10 @@ class PlaylistUploadAPI:
         async def upload_chunk(playlist_id: str, session_id: str, chunk_index: int, file: bytes = File(...)):
             """Upload a file chunk."""
             try:
-                if not self._upload_controller:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Upload",
-                        message="Upload service not available"
-                    )
+                # Use base class helper for service availability check
+                service_check = self.check_service_available("Upload", self._upload_controller)
+                if service_check:
+                    return service_check
 
                 result = await self._upload_controller.upload_chunk(
                     playlist_id=playlist_id,
@@ -109,13 +110,11 @@ class PlaylistUploadAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(f"Error uploading chunk: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to upload chunk",
-                    operation="upload_chunk"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="upload_chunk",
+                    message="Failed to upload chunk"
                 )
 
         @router.post("/{playlist_id}/uploads/{session_id}/finalize")
@@ -126,13 +125,12 @@ class PlaylistUploadAPI:
                 body = body or {}
                 client_op_id = body.get("client_op_id")
 
-                logger.info(f"Finalizing upload for session {session_id} in playlist {playlist_id}")
+                self.log_operation(f"Finalizing upload for session {session_id} in playlist {playlist_id}")
 
-                if not self._upload_controller:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Upload",
-                        message="Upload service not available"
-                    )
+                # Use base class helper for service availability check
+                service_check = self.check_service_available("Upload", self._upload_controller)
+                if service_check:
+                    return service_check
 
                 # Finalize upload via upload controller
                 result = await self._upload_controller.finalize_upload(
@@ -169,10 +167,9 @@ class PlaylistUploadAPI:
                         )
                         integration_result = {"status": "success", "track": created_track}
                     except Exception as e:
-                        # Re-raise system exceptions
-                        if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                            raise
-                        logger.error(f"Failed to add track to playlist: {e}")
+                        # Use base class helper for nested error handling
+                        self.handle_system_exceptions(e)
+                        self._logger.error(f"Failed to add track to playlist: {e}")
                         integration_result = {"status": "error", "message": str(e)}
 
                     if integration_result.get("status") != "success":
@@ -192,13 +189,11 @@ class PlaylistUploadAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(f"Error finalizing upload: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to finalize upload",
-                    operation="finalize_upload"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="finalize_upload",
+                    message="Failed to finalize upload"
                 )
 
         @router.get("/{playlist_id}/uploads/{session_id}")
@@ -206,11 +201,10 @@ class PlaylistUploadAPI:
         async def get_upload_status(playlist_id: str, session_id: str):
             """Get upload session status."""
             try:
-                if not self._upload_controller:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Upload",
-                        message="Upload service not available"
-                    )
+                # Use base class helper for service availability check
+                service_check = self.check_service_available("Upload", self._upload_controller)
+                if service_check:
+                    return service_check
 
                 result = await self._upload_controller.get_session_status(session_id)
 
@@ -220,11 +214,9 @@ class PlaylistUploadAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(f"Error getting upload status: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to get upload status",
-                    operation="get_upload_status"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="get_upload_status",
+                    message="Failed to get upload status"
                 )
