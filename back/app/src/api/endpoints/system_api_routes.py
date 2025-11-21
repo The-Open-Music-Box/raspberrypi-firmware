@@ -51,6 +51,61 @@ class SystemAPIRoutes(BaseAPIRoutes):
         self._get_led_handler = led_event_handler_getter
         self._register_routes()
 
+    def _get_server_seq_from_container(self, container) -> int:
+        """Extract server_seq from container's state manager.
+
+        Args:
+            container: Application container
+
+        Returns:
+            Server sequence number, or 0 if unavailable
+        """
+        if not container:
+            return 0
+
+        state_manager = getattr(container, "state_manager", None)
+        if state_manager and hasattr(state_manager, "get_global_sequence"):
+            return state_manager.get_global_sequence()
+
+        return 0
+
+    def _create_no_cache_response(self, content: dict, status_code: int = 200):
+        """Create JSONResponse with anti-cache headers.
+
+        Args:
+            content: Response content dictionary
+            status_code: HTTP status code
+
+        Returns:
+            JSONResponse with no-cache headers
+        """
+        from fastapi.responses import JSONResponse
+
+        response = JSONResponse(content=content, status_code=status_code)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    def _check_led_handler_available(self, request: Request):
+        """Check if LED handler is available and return error if not.
+
+        Args:
+            request: FastAPI request
+
+        Returns:
+            Tuple of (led_handler, error_response) where error_response is None if available
+        """
+        led_handler = self._get_led_handler(request)
+        if not led_handler:
+            error_response = UnifiedResponseService.error(
+                message="LED event handler not available",
+                error_type="service_unavailable",
+                status_code=503
+            )
+            return None, error_response
+        return led_handler, None
+
     def _register_routes(self):
         """Register all system-related API routes."""
 
@@ -71,12 +126,7 @@ class SystemAPIRoutes(BaseAPIRoutes):
                 self.log_operation("API: Responding with playback state")
 
                 # Create response with anti-cache headers
-                from fastapi.responses import JSONResponse
-                response = JSONResponse(content=playback_state, status_code=200)
-                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                response.headers["Pragma"] = "no-cache"
-                response.headers["Expires"] = "0"
-                return response
+                return self._create_no_cache_response(playback_state)
 
             except Exception as e:
                 return self.handle_endpoint_error(
@@ -139,12 +189,7 @@ class SystemAPIRoutes(BaseAPIRoutes):
                         health_status = "unhealthy"
 
                 # Get server_seq from state manager (required by contract v3.1.0)
-                state_manager = None
-                server_seq = 0
-                if container:
-                    state_manager = getattr(container, "state_manager", None)
-                    if state_manager and hasattr(state_manager, "get_global_sequence"):
-                        server_seq = state_manager.get_global_sequence()
+                server_seq = self._get_server_seq_from_container(container)
 
                 health_data = {
                     "status": health_status,
@@ -203,12 +248,7 @@ class SystemAPIRoutes(BaseAPIRoutes):
 
                 # Get server_seq from state manager (required by contract v3.1.0)
                 container = getattr(request.app, "container", None)
-                state_manager = None
-                server_seq = 0
-                if container:
-                    state_manager = getattr(container, "state_manager", None)
-                    if state_manager and hasattr(state_manager, "get_global_sequence"):
-                        server_seq = state_manager.get_global_sequence()
+                server_seq = self._get_server_seq_from_container(container)
 
                 # Read application version from VERSION file
                 import os
@@ -366,11 +406,7 @@ class SystemAPIRoutes(BaseAPIRoutes):
                     message="System restart scheduled successfully",
                     data=response_data
                 )
-                response = JSONResponse(content=standardized_response, status_code=200)
-                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                response.headers["Pragma"] = "no-cache"
-                response.headers["Expires"] = "0"
-                return response
+                return self._create_no_cache_response(standardized_response)
 
             except Exception as e:
                 return self.handle_endpoint_error(
@@ -393,13 +429,9 @@ class SystemAPIRoutes(BaseAPIRoutes):
                 try:
                     self.log_operation(f"API /api/system/led/brightness: Set brightness to {body.brightness:.1%}")
 
-                    led_handler = self._get_led_handler(request)
-                    if not led_handler:
-                        return UnifiedResponseService.error(
-                            message="LED event handler not available",
-                            error_type="service_unavailable",
-                            status_code=503
-                        )
+                    led_handler, error = self._check_led_handler_available(request)
+                    if error:
+                        return error
 
                     success = await led_handler.set_brightness(body.brightness)
 
@@ -429,13 +461,9 @@ class SystemAPIRoutes(BaseAPIRoutes):
                 try:
                     self.log_operation("API /api/system/led/reload-config: Reloading LED brightness from config")
 
-                    led_handler = self._get_led_handler(request)
-                    if not led_handler:
-                        return UnifiedResponseService.error(
-                            message="LED event handler not available",
-                            error_type="service_unavailable",
-                            status_code=503
-                        )
+                    led_handler, error = self._check_led_handler_available(request)
+                    if error:
+                        return error
 
                     success = await led_handler.reload_brightness_from_config()
 
