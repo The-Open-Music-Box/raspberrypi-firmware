@@ -45,6 +45,26 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         self._db_service = self._database_manager.database_service
         logger.info("✅ Pure DDD SQLite Playlist Repository initialized")
 
+    def _fetch_tracks_for_playlist(self, playlist_id: str):
+        """Fetch all tracks for a given playlist ID.
+
+        Args:
+            playlist_id: The playlist ID to fetch tracks for
+
+        Returns:
+            List of track rows from database
+        """
+        tracks_query = """
+            SELECT * FROM tracks
+            WHERE playlist_id = ?
+            ORDER BY track_number
+        """
+        return self._db_service.execute_query(
+            tracks_query,
+            (playlist_id,),
+            f"find_tracks_for_playlist_{playlist_id}"
+        )
+
     @_handle_repository_errors("playlist")
     async def save(self, playlist: Playlist) -> Playlist:
         """Save a playlist using pure DDD principles.
@@ -201,16 +221,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             return None
 
         # Get tracks for this playlist
-        tracks_query = """
-            SELECT * FROM tracks
-            WHERE playlist_id = ?
-            ORDER BY track_number
-        """
-        track_rows = self._db_service.execute_query(
-            tracks_query,
-            (playlist_row["id"],),
-            f"find_tracks_for_playlist_{playlist_row['id']}"
-        )
+        track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
 
         return self._build_playlist_from_rows(playlist_row, track_rows)
 
@@ -235,16 +246,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             return None
 
         # Get tracks for this playlist
-        tracks_query = """
-            SELECT * FROM tracks
-            WHERE playlist_id = ?
-            ORDER BY track_number
-        """
-        track_rows = self._db_service.execute_query(
-            tracks_query,
-            (playlist_row["id"],),
-            f"find_tracks_for_playlist_{playlist_row['id']}"
-        )
+        track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
 
         return self._build_playlist_from_rows(playlist_row, track_rows)
 
@@ -279,16 +281,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         playlists = []
         for playlist_row in playlist_rows:
             # Get tracks for each playlist
-            tracks_query = """
-                SELECT * FROM tracks
-                WHERE playlist_id = ?
-                ORDER BY track_number
-            """
-            track_rows = self._db_service.execute_query(
-                tracks_query,
-                (playlist_row["id"],),
-                f"find_tracks_for_playlist_{playlist_row['id']}"
-            )
+            track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
 
             playlist = self._build_playlist_from_rows(playlist_row, track_rows)
             playlists.append(playlist)
@@ -372,16 +365,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         playlists = []
         for playlist_row in playlist_rows:
             # Get tracks for each playlist
-            tracks_query = """
-                SELECT * FROM tracks
-                WHERE playlist_id = ?
-                ORDER BY track_number
-            """
-            track_rows = self._db_service.execute_query(
-                tracks_query,
-                (playlist_row["id"],),
-                f"find_tracks_for_playlist_{playlist_row['id']}"
-            )
+            track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
 
             playlist = self._build_playlist_from_rows(playlist_row, track_rows)
             playlists.append(playlist)
