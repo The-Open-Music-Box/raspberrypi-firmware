@@ -47,9 +47,15 @@ jobs:
 
       - name: Run metrics collection
         run: |
-          ./scripts/export_metrics.sh http://host.docker.internal:9091
+          # Export metrics to Pushgateway if available (local CI only)
+          if [ -n "$PUSHGATEWAY_URL" ]; then
+            ./scripts/export_metrics.sh "$PUSHGATEWAY_URL"
+          else
+            echo "Skipping Pushgateway export (PUSHGATEWAY_URL not set)"
+          fi
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
+          PUSHGATEWAY_URL: ${{ vars.PUSHGATEWAY_URL }}
 
       - name: Generate metrics summary
         if: always()
@@ -76,4 +82,4 @@ jobs:
           echo "| Docstring Coverage | $DOCSTRING |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View detailed dashboard at: http://homesrv.local:3001" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed dashboard at: ${{ vars.DASHBOARD_URL || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
