@@ -20,8 +20,6 @@ from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
 
-logger = logging.getLogger(__name__)
-
 
 class SystemAPIRoutes(BaseAPIRoutes):
     """
