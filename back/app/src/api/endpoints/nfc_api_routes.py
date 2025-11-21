@@ -145,6 +145,35 @@ class NFCAPIRoutes:
         # Return response
         return response_func(**response_kwargs)
 
+    async def _handle_operation_failure(
+        self,
+        result: dict,
+        state_manager: Optional[object],
+        client_op_id: Optional[str],
+        default_message: str
+    ):
+        """Handle failed NFC operation with standardized error response.
+
+        Extracted helper to eliminate duplication of error extraction and response.
+
+        Args:
+            result: Result dictionary from service operation
+            state_manager: State manager instance (may be None)
+            client_op_id: Client operation ID (may be None)
+            default_message: Default error message if not in result
+
+        Returns:
+            Bad request response with acknowledgment
+        """
+        error_msg = result.get("message", default_message)
+        return await self._send_ack_and_respond(
+            state_manager, client_op_id, False,
+            UnifiedResponseService.bad_request,
+            ack_data={"message": error_msg},
+            message=error_msg,
+            client_op_id=client_op_id
+        )
+
     def _register_routes(self):
         """Register all NFC-related API routes."""
 
@@ -232,13 +261,8 @@ class NFCAPIRoutes:
                         client_op_id=client_op_id
                     )
                 else:
-                    error_msg = association_result.get("message", "Association failed")
-                    return await self._send_ack_and_respond(
-                        state_manager, client_op_id, False,
-                        UnifiedResponseService.bad_request,
-                        ack_data={"message": error_msg},
-                        message=error_msg,
-                        client_op_id=client_op_id
+                    return await self._handle_operation_failure(
+                        association_result, state_manager, client_op_id, "Association failed"
                     )
 
             except Exception as e:
@@ -468,13 +492,8 @@ class NFCAPIRoutes:
                             client_op_id=client_op_id
                         )
                     else:
-                        error_msg = result.get("message", "Failed to start association session")
-                        return await self._send_ack_and_respond(
-                            state_manager, client_op_id, False,
-                            UnifiedResponseService.bad_request,
-                            ack_data={"message": error_msg},
-                            message=error_msg,
-                            client_op_id=client_op_id
+                        return await self._handle_operation_failure(
+                            result, state_manager, client_op_id, "Failed to start association session"
                         )
                 else:
                     # Generic scan session
@@ -496,13 +515,8 @@ class NFCAPIRoutes:
                             client_op_id=client_op_id
                         )
                     else:
-                        error_msg = result.get("message", "Failed to start scan session")
-                        return await self._send_ack_and_respond(
-                            state_manager, client_op_id, False,
-                            UnifiedResponseService.bad_request,
-                            ack_data={"message": error_msg},
-                            message=error_msg,
-                            client_op_id=client_op_id
+                        return await self._handle_operation_failure(
+                            result, state_manager, client_op_id, "Failed to start scan session"
                         )
 
             except Exception as e:
