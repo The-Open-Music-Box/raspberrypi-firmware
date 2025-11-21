@@ -44,6 +44,33 @@ class PlayerStateService:
         self.error_handler = get_error_handler()
         self.std_logger = logging.getLogger("tomb.player_state_service")
 
+    # MARK: - Helper Methods (Extract duplication)
+
+    def _parse_time_values(self, status: Dict[str, Any]) -> tuple[int, int]:
+        """Parse position and duration from status dict with legacy format support.
+
+        Extracted helper to eliminate duplication of time parsing logic.
+
+        Args:
+            status: Status dictionary containing position/duration fields
+
+        Returns:
+            Tuple of (position_ms, duration_ms) in milliseconds
+        """
+        # Get timing information - prioritize _ms fields for consistency
+        position_ms = status.get("position_ms") or status.get("current_time", 0) or 0
+        duration_ms = status.get("duration_ms") or status.get("duration", 0) or 0
+
+        # Convert legacy second values if needed
+        if position_ms < 1000 and status.get("current_time", 0) > 1:
+            # Assume it's in seconds and convert
+            position_ms = int(status.get("current_time", 0) * 1000)
+        if duration_ms < 1000 and status.get("duration", 0) > 1:
+            # Assume it's in seconds and convert
+            duration_ms = int(status.get("duration", 0) * 1000)
+
+        return position_ms, duration_ms
+
     @handle_service_errors("player_state")
     async def build_current_player_state(
         self, audio_controller=None, state_manager=None, _include_error_info: bool = False
@@ -98,16 +125,8 @@ class PlayerStateService:
         active_track_data = playlist_info.get("current_track") if playlist_info else None
         active_track = self._build_track_model(active_track_data) if active_track_data else None
         active_track_id = active_track.id if active_track else None
-        # Get timing information - prioritize _ms fields for consistency
-        position_ms = status.get("position_ms") or status.get("current_time", 0) or 0
-        duration_ms = status.get("duration_ms") or status.get("duration", 0) or 0
-        # Convert legacy second values if needed
-        if position_ms < 1000 and status.get("current_time", 0) > 1:
-            # Assume it's in seconds and convert
-            position_ms = int(status.get("current_time", 0) * 1000)
-        if duration_ms < 1000 and status.get("duration", 0) > 1:
-            # Assume it's in seconds and convert
-            duration_ms = int(status.get("duration", 0) * 1000)
+        # Get timing information
+        position_ms, duration_ms = self._parse_time_values(status)
         # Get navigation information
         track_index = playlist_info.get("current_track_index", 0) if playlist_info else 0
         track_count = playlist_info.get("track_count", 0) if playlist_info else 0
@@ -223,14 +242,8 @@ class PlayerStateService:
 
         status = await controller.get_playback_status()
         playlist_info = controller.get_current_playlist_info()
-        # Get position and duration - prioritize _ms fields for consistency
-        position_ms = status.get("position_ms") or status.get("current_time", 0) or 0
-        duration_ms = status.get("duration_ms") or status.get("duration", 0) or 0
-        # Convert legacy second values if needed
-        if position_ms < 1000 and status.get("current_time", 0) > 1:
-            position_ms = int(status.get("current_time", 0) * 1000)
-        if duration_ms < 1000 and status.get("duration", 0) > 1:
-            duration_ms = int(status.get("duration", 0) * 1000)
+        # Get position and duration
+        position_ms, duration_ms = self._parse_time_values(status)
         raw_state = status.get("state", "stopped")
         is_playing = raw_state == "playing"
         active_track_data = playlist_info.get("current_track") if playlist_info else None
