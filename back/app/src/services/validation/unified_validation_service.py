@@ -15,6 +15,7 @@ import os
 import re
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
+from app.src.services.validation.validation_constants import WINDOWS_RESERVED_NAMES
 
 logger = get_logger(__name__)
 
@@ -408,33 +409,8 @@ class UnifiedValidationService:
             return False
 
         # Check for reserved names on Windows
-        reserved_names = {
-            "CON",
-            "PRN",
-            "AUX",
-            "NUL",
-            "COM1",
-            "COM2",
-            "COM3",
-            "COM4",
-            "COM5",
-            "COM6",
-            "COM7",
-            "COM8",
-            "COM9",
-            "LPT1",
-            "LPT2",
-            "LPT3",
-            "LPT4",
-            "LPT5",
-            "LPT6",
-            "LPT7",
-            "LPT8",
-            "LPT9",
-        }
-
         name_without_ext = Path(filename).stem.upper()
-        if name_without_ext in reserved_names:
+        if name_without_ext in WINDOWS_RESERVED_NAMES:
             return False
 
         return True

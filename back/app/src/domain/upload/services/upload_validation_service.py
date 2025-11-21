@@ -10,6 +10,7 @@ from pathlib import Path
 from ..entities.upload_session import UploadSession
 from ..value_objects.file_chunk import FileChunk
 from ..value_objects.file_metadata import FileMetadata
+from app.src.services.validation.validation_constants import WINDOWS_RESERVED_NAMES
 import logging
 
 logger = logging.getLogger(__name__)
@@ -282,31 +283,7 @@ class UploadValidationService:
             warnings.append("Filename contains potentially problematic characters")
 
         # Check for reserved names (Windows)
-        reserved_names = {
-            "CON",
-            "PRN",
-            "AUX",
-            "NUL",
-            "COM1",
-            "COM2",
-            "COM3",
-            "COM4",
-            "COM5",
-            "COM6",
-            "COM7",
-            "COM8",
-            "COM9",
-            "LPT1",
-            "LPT2",
-            "LPT3",
-            "LPT4",
-            "LPT5",
-            "LPT6",
-            "LPT7",
-            "LPT8",
-            "LPT9",
-        }
-        if file_path.stem.upper() in reserved_names:
+        if file_path.stem.upper() in WINDOWS_RESERVED_NAMES:
             errors.append(f"'{file_path.stem}' is a reserved filename")
 
         return {"errors": errors, "warnings": warnings}
