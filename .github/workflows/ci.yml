@@ -1,0 +1,235 @@
+# TheOpenMusicBox - RPI Firmware CI
+# ==================================
+# Runs on PR to develop branch
+# Shows green checkmark on success, red X on failure
+# Requires branch to be rebased on develop
+
+name: CI
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [develop]
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ci-rpi-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PUSHGATEWAY_URL: http://host.docker.internal:9091
+  USE_MOCK_HARDWARE: "true"
+  ENVIRONMENT: test
+
+jobs:
+  # Check if branch is rebased on develop
+  check-rebase:
+    name: Check Rebase Status
+    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if rebased on develop
+        run: |
+          git fetch origin develop
+
+          # Get the merge base between this branch and develop
+          MERGE_BASE=$(git merge-base HEAD origin/develop)
+          DEVELOP_HEAD=$(git rev-parse origin/develop)
+
+          if [ "$MERGE_BASE" != "$DEVELOP_HEAD" ]; then
+            echo "::error::Branch is not rebased on develop. Please rebase your branch."
+            echo ""
+            echo "Run the following commands:"
+            echo "  git fetch origin develop"
+            echo "  git rebase origin/develop"
+            echo "  git push --force-with-lease"
+            exit 1
+          fi
+
+          echo "Branch is up to date with develop"
+
+  backend-tests:
+    name: Backend Tests
+    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    needs: [check-rebase]
+    if: always() && (needs.check-rebase.result == 'success' || github.event_name == 'push')
+    defaults:
+      run:
+        working-directory: back
+
+    outputs:
+      status: ${{ job.status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/dev.txt
+
+      - name: Run unit tests
+        id: unit-tests
+        run: |
+          pytest app/tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
+        continue-on-error: true
+
+      - name: Run contract tests
+        id: contract-tests
+        run: |
+          pytest app/tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: back/test-results-*.xml
+
+      - name: Check test results
+        run: |
+          if [[ "${{ steps.unit-tests.outcome }}" != "success" ]] || [[ "${{ steps.contract-tests.outcome }}" != "success" ]]; then
+            echo "::error::Backend tests failed"
+            exit 1
+          fi
+          echo "All backend tests passed"
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    needs: [check-rebase]
+    if: always() && (needs.check-rebase.result == 'success' || github.event_name == 'push')
+    defaults:
+      run:
+        working-directory: front
+
+    outputs:
+      status: ${{ job.status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:unit
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: front/test-results.xml
+          if-no-files-found: ignore
+
+  build-test:
+    name: Build Test
+    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    needs: [backend-tests, frontend-tests]
+    if: always() && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success'
+
+    outputs:
+      status: ${{ job.status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: Build frontend
+        working-directory: front
+        run: |
+          npm ci
+          npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "front/dist" ]; then
+            echo "::error::Build failed - dist directory not found"
+            exit 1
+          fi
+          echo "Build successful"
+          ls -la front/dist/
+
+  # Final status check - THIS IS THE REQUIRED CHECK FOR BRANCH PROTECTION
+  ci-status:
+    name: CI Status
+    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    needs: [check-rebase, backend-tests, frontend-tests, build-test]
+    if: always()
+
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "Check Rebase: ${{ needs.check-rebase.result }}"
+          echo "Backend Tests: ${{ needs.backend-tests.result }}"
+          echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+          echo "Build Test: ${{ needs.build-test.result }}"
+
+          # For push events, skip rebase check
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            REBASE_OK="true"
+          else
+            REBASE_OK="${{ needs.check-rebase.result == 'success' }}"
+          fi
+
+          if [[ "$REBASE_OK" != "true" ]]; then
+            echo "::error::Branch must be rebased on develop"
+            exit 1
+          fi
+
+          if [[ "${{ needs.backend-tests.result }}" != "success" ]]; then
+            echo "::error::Backend tests failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.frontend-tests.result }}" != "success" ]]; then
+            echo "::error::Frontend tests failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.build-test.result }}" != "success" ]]; then
+            echo "::error::Build test failed"
+            exit 1
+          fi
+
+          echo "All CI checks passed!"
+
+      - name: Export metrics
+        if: always()
+        run: |
+          STATUS=$([[ "${{ job.status }}" == "success" ]] && echo 1 || echo 0)
+          curl -s --data-binary @- "${{ env.PUSHGATEWAY_URL }}/metrics/job/ci/repo/raspberrypi-firmware" << EOF || true
+          ci_tests_success{repo="raspberrypi-firmware",branch="${{ github.head_ref || github.ref_name }}"} $STATUS
+          ci_build_timestamp{repo="raspberrypi-firmware",branch="${{ github.head_ref || github.ref_name }}"} $(date +%s)
+          EOF
