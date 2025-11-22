@@ -18,7 +18,7 @@ env:
 jobs:
   contract-validation:
     name: API & Socket.IO Contract Validation
-    runs-on: [self-hosted, Linux, ARM64, rpi]
+    runs-on: [self-hosted, Linux, X64, docker]
 
     steps:
     - name: Checkout repository
@@ -327,7 +327,7 @@ jobs:
   # Separate job for contract drift detection (only on schedule)
   contract-drift-detection:
     name: Contract Drift Detection
-    runs-on: [self-hosted, Linux, ARM64, rpi]
+    runs-on: [self-hosted, Linux, X64, docker]
     if: github.event_name == 'schedule'
 
     steps:

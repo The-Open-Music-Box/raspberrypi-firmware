@@ -18,7 +18,7 @@ on:
 jobs:
   collect-metrics:
     name: Collect Code Quality Metrics
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
 
     defaults:
       run:
