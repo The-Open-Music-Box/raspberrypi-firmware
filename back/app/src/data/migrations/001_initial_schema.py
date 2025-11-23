@@ -120,10 +120,7 @@ def verify_migration(db_path: str) -> bool:
 
             # Check if tracks table exists
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tracks'")
-            if not cursor.fetchone():
-                return False
-
-            return True
+            return bool(cursor.fetchone())
     except Exception as e:
         logger.error(f"❌ Migration verification failed: {e}")
         return False

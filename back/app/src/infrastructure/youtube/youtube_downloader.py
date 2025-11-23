@@ -407,7 +407,7 @@ class YouTubeDownloader:
             # If we still have no processed files but have MP3 files, create entries
             # for each file
             if not processed_files_info and mp3_files:
-                for idx, file_path in enumerate(sorted(mp3_files), 1):
+                for _, file_path in enumerate(sorted(mp3_files), 1):
                     processed_files_info.append(
                         {
                             "title": file_path.stem,

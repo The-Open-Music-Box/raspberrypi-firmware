@@ -360,10 +360,8 @@ class TrackProgressService:
         if current_time < 0:
             return False
 
-        if duration and duration > 0 and current_time > duration + 1:  # Allow small overflow
-            return False
-
-        return True
+        # Allow small overflow
+        return not (duration and duration > 0 and current_time > duration + 1)
 
     @asynccontextmanager
     @handle_service_errors("track_progress")

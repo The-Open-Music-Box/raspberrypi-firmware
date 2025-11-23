@@ -128,7 +128,7 @@ class UnifiedErrorHandler:
             # Last resort: print to stderr to avoid infinite recursion
             # Cannot use logger here since the logging system may have failed
             # This ensures critical errors are visible even when error handling crashes
-            import sys
+            # Note: sys is imported at module level, no need to re-import
             print(f"CRITICAL: Error handler itself failed: {handler_error}", file=sys.stderr)
             print(f"Original error was: {error}", file=sys.stderr)
 

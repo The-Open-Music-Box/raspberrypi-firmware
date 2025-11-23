@@ -96,7 +96,7 @@ class ClientSubscriptionManager:
     def get_stats(self) -> dict:
         """Get subscription statistics for monitoring."""
         room_counts: dict[str, int] = {}
-        for client_id, rooms in self._client_subscriptions.items():
+        for _client_id, rooms in self._client_subscriptions.items():
             for room in rooms:
                 room_counts[room] = room_counts.get(room, 0) + 1
 

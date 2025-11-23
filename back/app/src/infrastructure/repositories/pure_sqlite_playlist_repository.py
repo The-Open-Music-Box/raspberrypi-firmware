@@ -470,7 +470,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                     )
 
                 # Step 2: Update from temporary values to final values
-                for old_num, new_num in track_number_mapping.items():
+                for _old_num, new_num in track_number_mapping.items():
                     await self._db_service.execute(
                         """
                         UPDATE tracks

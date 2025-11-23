@@ -409,10 +409,7 @@ class UnifiedValidationService:
 
         # Check for reserved names on Windows
         name_without_ext = Path(filename).stem.upper()
-        if name_without_ext in WINDOWS_RESERVED_NAMES:
-            return False
-
-        return True
+        return name_without_ext not in WINDOWS_RESERVED_NAMES
 
     @staticmethod
     def _is_valid_id(id_value: str) -> bool:

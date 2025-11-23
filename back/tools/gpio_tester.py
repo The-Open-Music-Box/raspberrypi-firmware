@@ -122,7 +122,7 @@ class SimpleGPIOTester:
             for led in self.leds.values():
                 try:
                     led.close()
-                except:
+                except Exception:
                     pass
 
     def run(self):

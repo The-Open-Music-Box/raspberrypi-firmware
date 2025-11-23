@@ -25,7 +25,7 @@ try:
             print("   Hardware: ✅ Raspberry Pi detected")
         else:
             print("   Hardware: ⚠️  Not a Raspberry Pi")
-except:
+except Exception:
     print("   Hardware: ⚠️  Could not determine hardware")
 
 # Test different GPIO backends
@@ -121,9 +121,12 @@ except Exception as e:
 # 4. Check lgpio (the problematic one)
 print("\n4. lgpio:")
 try:
-    import lgpio
-    print("   ✅ lgpio imported successfully")
-    backends_tested.append("lgpio")
+    import importlib.util
+    if importlib.util.find_spec("lgpio") is not None:
+        print("   ✅ lgpio imported successfully")
+        backends_tested.append("lgpio")
+    else:
+        raise ImportError("lgpio module not found")
 except ImportError as e:
     if "GLIBC" in str(e):
         print(f"   ❌ GLIBC version mismatch: {e}")

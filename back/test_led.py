@@ -117,7 +117,7 @@ def test_led():
 
         # Test 8: Clignotement blanc
         print("💡 Test 8: CLIGNOTEMENT BLANC (5 fois)")
-        for i in range(5):
+        for _ in range(5):
             red.value = 1.0
             green.value = 1.0
             blue.value = 1.0

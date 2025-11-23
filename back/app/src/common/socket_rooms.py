@@ -88,9 +88,7 @@ class SocketRooms:
             return True
         if room_name.startswith("playlist:") and len(room_name) > len("playlist:"):
             return True
-        if room_name.startswith("nfc:") and len(room_name) > len("nfc:"):
-            return True
-        return False
+        return room_name.startswith("nfc:") and len(room_name) > len("nfc:")
 
     @staticmethod
     def extract_playlist_id(room_name: str) -> str | None:

@@ -147,10 +147,10 @@ class ButtonTester:
             GPIO_Direct.setmode(GPIO_Direct.BCM)
             GPIO_Direct.setwarnings(False)
 
-            for name, config in self.button_configs.items():
+            for _name, config in self.button_configs.items():
                 try:
                     GPIO_Direct.cleanup(config['gpio'])
-                except:
+                except Exception:
                     pass
 
             logger.debug("GPIO pins cleaned before initialization")
@@ -232,7 +232,7 @@ class ButtonTester:
                 GPIO_Direct.setwarnings(False)
                 GPIO_Direct.cleanup(self.encoder_config['clk'])
                 GPIO_Direct.cleanup(self.encoder_config['dt'])
-            except:
+            except Exception:
                 pass
 
             # Initialize the rotary encoder
