@@ -12,14 +12,14 @@ functionality used across the application.
 # This module is deprecated - all functionality has been migrated to domain layer
 # Keeping only for backwards compatibility during transition period
 
-from .system_dependency_checker import SystemDependencyChecker
-
 # Import exceptions from domain layer for backwards compatibility
 from app.src.infrastructure.error_handling.unified_error_handler import (
     ErrorCategory,
     ErrorContext,
-    ErrorSeverity
+    ErrorSeverity,
 )
+
+from .system_dependency_checker import SystemDependencyChecker
 
 # AppError is now replaced by the domain unified error handler
 
@@ -32,7 +32,7 @@ class AppError(Exception):
 __all__ = [
     "AppError",
     "ErrorCategory",
-    "ErrorSeverity",
     "ErrorContext",
+    "ErrorSeverity",
     "SystemDependencyChecker",
 ]

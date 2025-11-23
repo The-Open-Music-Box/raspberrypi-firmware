@@ -8,9 +8,10 @@ Enhanced DI container with protocol support and proper lifecycle management.
 Eliminates dynamic imports in favor of explicit registration.
 """
 
-from typing import Dict, Any, Callable, TypeVar, Type, cast
-from enum import Enum
 import logging
+from collections.abc import Callable
+from enum import Enum
+from typing import Any, TypeVar, cast
 
 T = TypeVar('T')
 
@@ -37,11 +38,11 @@ class DependencyContainer:
 
     def __init__(self):
         """Initialize the DI container."""
-        self._services: Dict[str, Any] = {}
-        self._singletons: Dict[str, Any] = {}
-        self._factories: Dict[str, Callable] = {}
-        self._lifetimes: Dict[str, ServiceLifetime] = {}
-        self._protocol_map: Dict[Type, str] = {}  # Protocol -> service_name mapping
+        self._services: dict[str, Any] = {}
+        self._singletons: dict[str, Any] = {}
+        self._factories: dict[str, Callable] = {}
+        self._lifetimes: dict[str, ServiceLifetime] = {}
+        self._protocol_map: dict[type, str] = {}  # Protocol -> service_name mapping
 
     def register_singleton(self, service_name: str, instance: Any) -> None:
         """Register a singleton instance.
@@ -73,7 +74,7 @@ class DependencyContainer:
 
     def register_protocol(
         self,
-        protocol: Type,
+        protocol: type,
         implementation_factory: Callable,
         lifetime: ServiceLifetime = ServiceLifetime.SINGLETON,
     ) -> None:
@@ -118,7 +119,7 @@ class DependencyContainer:
 
         raise KeyError(f"Service '{service_name}' not registered")
 
-    def get_by_protocol(self, protocol: Type[T]) -> T:
+    def get_by_protocol(self, protocol: type[T]) -> T:
         """Get a service instance by protocol.
 
         Args:
@@ -147,7 +148,7 @@ class DependencyContainer:
         """
         return service_name in self._singletons or service_name in self._factories
 
-    def has_protocol(self, protocol: Type) -> bool:
+    def has_protocol(self, protocol: type) -> bool:
         """Check if a protocol is registered.
 
         Args:
@@ -191,35 +192,45 @@ def register_core_infrastructure_services():
     container = get_container()
 
     # Import core infrastructure services at registration time
-    from app.src.services.response.unified_response_service import UnifiedResponseService
+    from app.src.config.app_config import AppConfig
+    from app.src.domain.protocols.response_service_protocol import (
+        ResponseServiceProtocol,
+    )
     from app.src.services.error.unified_error_decorator import (
         handle_errors,
         handle_http_errors,
-        handle_service_errors,
-        handle_repository_errors,
         handle_infrastructure_errors,
+        handle_repository_errors,
+        handle_service_errors,
     )
-    from app.src.domain.protocols.response_service_protocol import ResponseServiceProtocol
-    from app.src.config.app_config import AppConfig
+    from app.src.services.response.unified_response_service import (
+        UnifiedResponseService,
+    )
 
     # Register configuration
     container.register_factory("config", lambda: AppConfig(), ServiceLifetime.SINGLETON)
 
     # Register LED infrastructure components
     def led_controller_factory():
-        from app.src.infrastructure.hardware.leds.led_controller_factory import LEDControllerFactory
         from app.src.config import config
+        from app.src.infrastructure.hardware.leds.led_controller_factory import (
+            LEDControllerFactory,
+        )
         return LEDControllerFactory.create_controller(config.hardware)
     container.register_factory("led_controller", led_controller_factory, ServiceLifetime.SINGLETON)
 
     def led_state_manager_factory():
-        from app.src.application.services.led_state_manager_application_service import LEDStateManager
+        from app.src.application.services.led_state_manager_application_service import (
+            LEDStateManager,
+        )
         led_controller = container.get("led_controller")
         return LEDStateManager(led_controller)
     container.register_factory("led_state_manager", led_state_manager_factory, ServiceLifetime.SINGLETON)
 
     def led_event_handler_factory():
-        from app.src.application.services.led_event_handler_application_service import LEDEventHandler
+        from app.src.application.services.led_event_handler_application_service import (
+            LEDEventHandler,
+        )
         led_manager = container.get("led_state_manager")
         return LEDEventHandler(led_manager)
     container.register_factory("led_event_handler", led_event_handler_factory, ServiceLifetime.SINGLETON)
@@ -231,8 +242,9 @@ def register_core_infrastructure_services():
     # Register application bootstrap (registered as "domain_bootstrap" for backward compatibility)
     # Note: ApplicationBootstrap extends DomainBootstrap, adding LED and physical controls management
     def domain_bootstrap_factory():
-        from app.src.application.bootstrap import ApplicationBootstrap
         import logging
+
+        from app.src.application.bootstrap import ApplicationBootstrap
         logger = logging.getLogger(__name__)
 
         # Inject LED components (with error handling in case they're not available)
@@ -292,7 +304,9 @@ def register_core_infrastructure_services():
     container.register_factory("error_tracker", error_tracker_factory, ServiceLifetime.SINGLETON)
 
     def unified_error_handler_factory():
-        from app.src.infrastructure.error_handling.unified_error_handler import UnifiedErrorHandler
+        from app.src.infrastructure.error_handling.unified_error_handler import (
+            UnifiedErrorHandler,
+        )
         return UnifiedErrorHandler()
     container.register_factory("unified_error_handler", unified_error_handler_factory, ServiceLifetime.SINGLETON)
 

@@ -9,10 +9,11 @@ Mock implementation for testing and development without hardware.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any
+
+from app.src.domain.models.led import LEDAnimation, LEDColor, LEDColors
 
 from .base_led_controller import BaseLEDController
-from app.src.domain.models.led import LEDColor, LEDAnimation, LEDColors
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +141,7 @@ class MockLEDController(BaseLEDController):
             self._operations.append(("stop_animation", {}))
             logger.debug("🧪 Mock LED animation stopped")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current mock LED status.
 
         Extends base class status with mock-specific information.

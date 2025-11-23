@@ -9,7 +9,7 @@ extraction, extra context handling, and color support for enhanced log output.
 """
 
 import re
-from typing import Any, Dict
+from typing import Any
 
 from colorama import Fore, Style
 
@@ -28,7 +28,7 @@ class BaseLogFormatter:
         match = re.search(r"Initializing (\w+)", message)
         return match.group(1) if match else ""
 
-    def format_extra(self, extra: Dict[str, Any]) -> str:
+    def format_extra(self, extra: dict[str, Any]) -> str:
         """Format extra log record information for display."""
         if not extra:
             return ""

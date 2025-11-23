@@ -46,7 +46,10 @@ async def test_config_loading():
 
 async def test_di_container():
     """Test DI container registration."""
-    from app.src.infrastructure.di.container import get_container, register_core_infrastructure_services
+    from app.src.infrastructure.di.container import (
+        get_container,
+        register_core_infrastructure_services,
+    )
 
     container = get_container()
     logger.info("DI container obtained")

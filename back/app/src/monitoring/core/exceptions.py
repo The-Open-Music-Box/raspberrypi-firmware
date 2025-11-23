@@ -340,25 +340,24 @@ def get_error_category(exception: Exception) -> str:
     """
     if isinstance(exception, AudioError):
         return "audio"
-    elif isinstance(exception, PlaylistError):
+    if isinstance(exception, PlaylistError):
         return "playlist"
-    elif isinstance(exception, NFCError):
+    if isinstance(exception, NFCError):
         return "nfc"
-    elif isinstance(exception, UploadError):
+    if isinstance(exception, UploadError):
         return "upload"
-    elif isinstance(exception, ConfigurationError):
+    if isinstance(exception, ConfigurationError):
         return "configuration"
-    elif isinstance(exception, ServiceError):
+    if isinstance(exception, ServiceError):
         return "service"
-    elif isinstance(exception, MonitoringError):
+    if isinstance(exception, MonitoringError):
         return "monitoring"
-    elif isinstance(exception, ValidationError):
+    if isinstance(exception, ValidationError):
         return "validation"
-    elif isinstance(exception, NetworkError):
+    if isinstance(exception, NetworkError):
         return "network"
-    elif isinstance(exception, DatabaseError):
+    if isinstance(exception, DatabaseError):
         return "database"
-    elif isinstance(exception, FileSystemError):
+    if isinstance(exception, FileSystemError):
         return "filesystem"
-    else:
-        return "unknown"
+    return "unknown"

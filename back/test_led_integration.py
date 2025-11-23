@@ -12,8 +12,8 @@ are properly created, injected, and initialized.
 
 import asyncio
 import logging
-import sys
 import os
+import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -36,7 +36,9 @@ async def test_led_integration():
 
         # Step 1: Register infrastructure services (including LED)
         logger.info("\n📦 Step 1: Registering infrastructure services...")
-        from app.src.infrastructure.di.container import register_core_infrastructure_services
+        from app.src.infrastructure.di.container import (
+            register_core_infrastructure_services,
+        )
         register_core_infrastructure_services()
         logger.info("✅ Infrastructure services registered")
 

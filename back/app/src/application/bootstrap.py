@@ -10,18 +10,25 @@ This module extends the domain bootstrap with application-specific concerns:
 - Hardware initialization with retry logic for Raspberry Pi boot reliability
 """
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
+
+from app.src.application.utils.hardware_retry import retry_hardware_init
+from app.src.domain.audio.container import audio_domain_container
 
 # Domain imports
 from app.src.domain.bootstrap import DomainBootstrap
-from app.src.domain.audio.container import audio_domain_container
-from app.src.application.utils.hardware_retry import retry_hardware_init
 
 if TYPE_CHECKING:
-    from app.src.application.services.led_state_manager_application_service import LEDStateManager
-    from app.src.application.services.led_event_handler_application_service import LEDEventHandler
-    from app.src.application.controllers.physical_controls_controller import PhysicalControlsManager
+    from app.src.application.controllers.physical_controls_controller import (
+        PhysicalControlsManager,
+    )
+    from app.src.application.services.led_event_handler_application_service import (
+        LEDEventHandler,
+    )
+    from app.src.application.services.led_state_manager_application_service import (
+        LEDStateManager,
+    )
 
 logger = logging.getLogger(__name__)
 

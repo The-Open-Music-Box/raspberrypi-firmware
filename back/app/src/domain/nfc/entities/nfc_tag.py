@@ -5,8 +5,7 @@
 """NFC Tag Domain Entity."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from ..value_objects.tag_identifier import TagIdentifier
 
@@ -19,8 +18,8 @@ class NfcTag:
     """
 
     identifier: TagIdentifier
-    associated_playlist_id: Optional[str] = None
-    last_detected_at: Optional[datetime] = None
+    associated_playlist_id: str | None = None
+    last_detected_at: datetime | None = None
     detection_count: int = 0
     metadata: dict = field(default_factory=dict)
 
@@ -48,7 +47,7 @@ class NfcTag:
 
     def mark_detected(self) -> None:
         """Mark this tag as detected, updating counters and timestamp."""
-        self.last_detected_at = datetime.now(timezone.utc)
+        self.last_detected_at = datetime.now(UTC)
         self.detection_count += 1
 
     def is_recently_detected(self, seconds: int = 30) -> bool:
@@ -63,10 +62,10 @@ class NfcTag:
         if not self.last_detected_at:
             return False
 
-        time_diff = datetime.now(timezone.utc) - self.last_detected_at
+        time_diff = datetime.now(UTC) - self.last_detected_at
         return time_diff.total_seconds() <= seconds
 
-    def get_associated_playlist_id(self) -> Optional[str]:
+    def get_associated_playlist_id(self) -> str | None:
         """Get the associated playlist ID if any."""
         return self.associated_playlist_id
 

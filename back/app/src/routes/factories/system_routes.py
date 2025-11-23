@@ -9,12 +9,12 @@ Bootstrap/factory class for system-level routes.
 Single Responsibility: Initialize and register system API routes with dependencies.
 """
 
-from typing import Optional
+
 from fastapi import FastAPI
 
+from app.src.api.endpoints.system_api_routes import SystemAPIRoutes
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.api.endpoints.system_api_routes import SystemAPIRoutes
 
 logger = get_logger(__name__)
 
@@ -41,7 +41,7 @@ class SystemRoutes:
             app: FastAPI application instance
         """
         self.app = app
-        self.api_routes: Optional[SystemAPIRoutes] = None
+        self.api_routes: SystemAPIRoutes | None = None
 
     @handle_errors("system_routes_init", return_response=False)
     def initialize(self):

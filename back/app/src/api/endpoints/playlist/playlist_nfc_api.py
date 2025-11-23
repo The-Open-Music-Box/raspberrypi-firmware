@@ -40,7 +40,7 @@ class PlaylistNfcAPI(BaseAPIRoutes):
         self._operations_service = operations_service
         self._register_routes(router)
 
-    def _prepare_nfc_operation(self, body: dict = None):
+    def _prepare_nfc_operation(self, body: dict | None = None):
         """Prepare NFC operation by parsing body and checking service availability.
 
         Args:
@@ -83,10 +83,9 @@ class PlaylistNfcAPI(BaseAPIRoutes):
                         message="NFC tag associated successfully",
                         data={"client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to associate NFC tag"
-                    )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to associate NFC tag"
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -116,10 +115,9 @@ class PlaylistNfcAPI(BaseAPIRoutes):
                         message="NFC association removed successfully",
                         data={"client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to remove NFC association"
-                    )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to remove NFC association"
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -147,11 +145,10 @@ class PlaylistNfcAPI(BaseAPIRoutes):
                         message="Playlist found for NFC tag",
                         data={"playlist": playlist}
                     )
-                else:
-                    return UnifiedResponseService.not_found(
-                        resource="playlist",
-                        message="No playlist found for NFC tag"
-                    )
+                return UnifiedResponseService.not_found(
+                    resource="playlist",
+                    message="No playlist found for NFC tag"
+                )
 
             except Exception as e:
                 # Use base class helper for error handling

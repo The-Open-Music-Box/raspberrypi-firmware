@@ -9,7 +9,6 @@ Events triggered by physical hardware controls like buttons and encoders.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime
 
 
@@ -18,8 +17,8 @@ class ButtonPressedEvent:
     """Event triggered when a button is pressed."""
     button_type: str  # "next", "previous", "play_pause"
     timestamp: datetime
-    source_pin: Optional[int] = None
-    press_duration: Optional[float] = None  # Duration in seconds for long press detection
+    source_pin: int | None = None
+    press_duration: float | None = None  # Duration in seconds for long press detection
 
 
 @dataclass
@@ -27,7 +26,7 @@ class EncoderRotatedEvent:
     """Event triggered when rotary encoder is rotated."""
     direction: str  # "up" or "down"
     timestamp: datetime
-    source_pin: Optional[int] = None
+    source_pin: int | None = None
     steps: int = 1  # Number of encoder steps
 
 
@@ -38,4 +37,4 @@ class PhysicalControlErrorEvent:
     error_type: str
     component: str
     timestamp: datetime
-    source_pin: Optional[int] = None
+    source_pin: int | None = None

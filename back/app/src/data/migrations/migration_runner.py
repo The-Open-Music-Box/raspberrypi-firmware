@@ -8,13 +8,13 @@ Migration Runner for database schema management
 Handles migration versioning, execution, and rollback.
 """
 
-import sqlite3
 import importlib.util
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
-from types import ModuleType
 import re
+import sqlite3
+from datetime import UTC, datetime
+from pathlib import Path
+from types import ModuleType
+from typing import Any, cast
 
 from app.src.monitoring import get_logger
 
@@ -28,7 +28,7 @@ class Migration:
         self.version = version
         self.name = name
         self.file_path = file_path
-        self._module: Optional[ModuleType] = None
+        self._module: ModuleType | None = None
 
     @property
     def module(self) -> ModuleType:
@@ -53,12 +53,11 @@ class Migration:
         try:
             if hasattr(self.module, "migrate_database"):
                 return cast(bool, self.module.migrate_database(db_path))
-            else:
-                logger.error(f"Migration {self.version} missing migrate_database function"
-                             )
-                return False
+            logger.error(f"Migration {self.version} missing migrate_database function"
+                         )
+            return False
         except (ImportError, AttributeError, sqlite3.Error) as e:
-            logger.error(f"Migration {self.version} failed: {str(e)}")
+            logger.error(f"Migration {self.version} failed: {e!s}")
             return False
 
     def verify(self, db_path: str) -> bool:
@@ -66,11 +65,10 @@ class Migration:
         try:
             if hasattr(self.module, "verify_migration"):
                 return cast(bool, self.module.verify_migration(db_path))
-            else:
-                # No verification function, assume success
-                return True
+            # No verification function, assume success
+            return True
         except (ImportError, AttributeError, sqlite3.Error) as e:
-            logger.error(f"Migration {self.version} verification failed: {str(e)}")
+            logger.error(f"Migration {self.version} verification failed: {e!s}")
             return False
 
 
@@ -99,9 +97,9 @@ class MigrationRunner:
             conn.commit()
             conn.close()
         except sqlite3.Error as e:
-            logger.error(f"Failed to create migration table: {str(e)}")
+            logger.error(f"Failed to create migration table: {e!s}")
 
-    def _get_applied_migrations(self) -> List[str]:
+    def _get_applied_migrations(self) -> list[str]:
         """Get list of successfully applied migration versions."""
         try:
             conn = sqlite3.connect(self.db_path)
@@ -118,7 +116,7 @@ class MigrationRunner:
         """Record a migration attempt in the database."""
         try:
             conn = sqlite3.connect(self.db_path)
-            applied_at = datetime.now(timezone.utc).isoformat()
+            applied_at = datetime.now(UTC).isoformat()
 
             conn.execute(
                 """
@@ -130,9 +128,9 @@ class MigrationRunner:
             conn.commit()
             conn.close()
         except sqlite3.Error as e:
-            logger.error(f"Failed to record migration: {str(e)}")
+            logger.error(f"Failed to record migration: {e!s}")
 
-    def _discover_migrations(self) -> List[Migration]:
+    def _discover_migrations(self) -> list[Migration]:
         """Discover all migration files in the migrations directory."""
         migrations = []
 
@@ -164,7 +162,7 @@ class MigrationRunner:
 
         return False
 
-    def get_pending_migrations(self) -> List[Migration]:
+    def get_pending_migrations(self) -> list[Migration]:
         """Get list of pending migrations."""
         all_migrations = self._discover_migrations()
         applied_migrations = self._get_applied_migrations()
@@ -211,7 +209,7 @@ class MigrationRunner:
         logger.info("All migrations completed successfully")
         return True
 
-    def get_migration_status(self) -> Dict[str, Any]:
+    def get_migration_status(self) -> dict[str, Any]:
         """Get current migration status."""
         all_migrations = self._discover_migrations()
         applied_migrations = self._get_applied_migrations()

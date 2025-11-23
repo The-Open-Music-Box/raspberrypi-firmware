@@ -10,13 +10,12 @@ Extracted from StateManager for better separation of concerns.
 """
 
 import asyncio
+import logging
 import time
-from typing import List, Optional, Dict
 from dataclasses import dataclass
 
-import logging
-from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.config.socket_config import socket_config
+from app.src.services.error.unified_error_decorator import handle_service_errors
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +29,8 @@ class OutboxEvent:
     payload: dict
     server_seq: int
     retry_count: int = 0
-    created_at: Optional[float] = None
-    playlist_id: Optional[str] = None
+    created_at: float | None = None
+    playlist_id: str | None = None
 
     def __post_init__(self):
         if self.created_at is None:
@@ -48,7 +47,7 @@ class EventOutbox:
 
     def __init__(self, socketio_server=None):
         self.socketio = socketio_server
-        self._outbox: List[OutboxEvent] = []
+        self._outbox: list[OutboxEvent] = []
         self._outbox_lock = asyncio.Lock()
 
         # Configuration
@@ -64,7 +63,7 @@ class EventOutbox:
         event_type: str,
         payload: dict,
         server_seq: int,
-        playlist_id: Optional[str] = None,
+        playlist_id: str | None = None,
     ) -> None:
         """Add an event to the outbox for reliable delivery."""
         async with self._outbox_lock:
@@ -94,8 +93,8 @@ class EventOutbox:
         if not self.socketio:
             return
 
-        events_to_process: List[OutboxEvent] = []
-        retry_events: List[OutboxEvent] = []
+        events_to_process: list[OutboxEvent] = []
+        retry_events: list[OutboxEvent] = []
 
         # Get events to process
         async with self._outbox_lock:
@@ -138,14 +137,14 @@ class EventOutbox:
             "oldest_event_age": self._get_oldest_event_age(),
         }
 
-    def _get_event_type_counts(self) -> Dict[str, int]:
+    def _get_event_type_counts(self) -> dict[str, int]:
         """Get count of events by type."""
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for event in self._outbox:
             counts[event.event_type] = counts.get(event.event_type, 0) + 1
         return counts
 
-    def _get_oldest_event_age(self) -> Optional[float]:
+    def _get_oldest_event_age(self) -> float | None:
         """Get age of oldest event in seconds."""
         if not self._outbox:
             return None

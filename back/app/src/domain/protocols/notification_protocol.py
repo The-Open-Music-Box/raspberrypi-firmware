@@ -4,7 +4,7 @@
 
 """Protocol for notification services in domain layer."""
 
-from typing import Protocol, Dict, Optional, Any
+from typing import Any, Protocol
 
 
 class PlaybackNotifierProtocol(Protocol):
@@ -13,8 +13,8 @@ class PlaybackNotifierProtocol(Protocol):
     def notify_playback_status(
         self,
         status: str,
-        playlist_info: Optional[Dict] = None,
-        track_info: Optional[Dict] = None
+        playlist_info: dict | None = None,
+        track_info: dict | None = None
     ) -> None:
         """Notify playback status change.
 
@@ -30,7 +30,7 @@ class PlaybackNotifierProtocol(Protocol):
         _progress_percent: float,
         _elapsed_seconds: int,
         total_seconds: int,
-        track_info: Optional[Dict] = None
+        track_info: dict | None = None
     ) -> None:
         """Notify track progress update.
 
@@ -42,7 +42,7 @@ class PlaybackNotifierProtocol(Protocol):
         """
         ...
 
-    def notify(self, event_data: Dict[str, Any]) -> None:
+    def notify(self, event_data: dict[str, Any]) -> None:
         """Notify observers with event data.
 
         Args:
@@ -66,8 +66,8 @@ class MockPlaybackNotifier:
     def notify_playback_status(
         self,
         status: str,
-        playlist_info: Optional[Dict] = None,
-        track_info: Optional[Dict] = None
+        playlist_info: dict | None = None,
+        track_info: dict | None = None
     ) -> None:
         """Mock notification - does nothing."""
         pass
@@ -77,12 +77,12 @@ class MockPlaybackNotifier:
         _progress_percent: float,
         _elapsed_seconds: int,
         total_seconds: int,
-        track_info: Optional[Dict] = None
+        track_info: dict | None = None
     ) -> None:
         """Mock notification - does nothing."""
         pass
 
-    def notify(self, event_data: Dict[str, Any]) -> None:
+    def notify(self, event_data: dict[str, Any]) -> None:
         """Mock notification - does nothing."""
         pass
 

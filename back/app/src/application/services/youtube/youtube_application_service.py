@@ -9,13 +9,12 @@ processing, playlist database integration, and real-time progress notifications
 via Socket.IO. Coordinates between downloader and playlist services.
 """
 
-from pathlib import Path
-from typing import Dict
-from uuid import uuid4
 import logging
+from pathlib import Path
+from uuid import uuid4
 
-from app.src.services.notification_service import DownloadNotifier
 from app.src.infrastructure.youtube.youtube_downloader import YouTubeDownloader
+from app.src.services.notification_service import DownloadNotifier
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class YouTubeApplicationService:
             self.data_application_service = get_data_application_service()
         return self.data_application_service
 
-    async def process_download(self, url: str) -> Dict:
+    async def process_download(self, url: str) -> dict:
         """Process a YouTube download request asynchronously.
 
         This method handles the entire download workflow:
@@ -120,15 +119,15 @@ class YouTubeApplicationService:
             return {"status": "success", "playlist_id": playlist_id, "data": result}
 
         except Exception as e:
-            logger.error(f"Download failed: {str(e)}")
+            logger.error(f"Download failed: {e!s}")
             await notifier.notify(
                 status="error",
                 error=str(e),
-                message=f"An error occurred during download: {str(e)}",
+                message=f"An error occurred during download: {e!s}",
             )
             raise
 
-    async def search_videos(self, query: str, max_results: int = 10) -> Dict:
+    async def search_videos(self, query: str, max_results: int = 10) -> dict:
         """Search for YouTube videos.
 
         Args:
@@ -170,10 +169,10 @@ class YouTubeApplicationService:
             return mock_results
 
         except Exception as e:
-            logger.error(f"YouTubeService: Search failed: {str(e)}")
+            logger.error(f"YouTubeService: Search failed: {e!s}")
             raise
 
-    async def get_task_status(self, task_id: str) -> Dict:
+    async def get_task_status(self, task_id: str) -> dict:
         """Get the status of a YouTube download task.
 
         Args:
@@ -200,5 +199,5 @@ class YouTubeApplicationService:
             return mock_status
 
         except Exception as e:
-            logger.error(f"YouTubeService: Status check failed: {str(e)}")
+            logger.error(f"YouTubeService: Status check failed: {e!s}")
             raise

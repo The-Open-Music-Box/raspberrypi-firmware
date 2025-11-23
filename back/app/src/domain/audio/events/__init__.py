@@ -2,22 +2,22 @@
 
 from .audio_events import (
     AudioEvent,
-    TrackStartedEvent,
-    TrackEndedEvent,
-    PlaylistLoadedEvent,
-    PlaylistFinishedEvent,
-    PlaybackStateChangedEvent,
-    VolumeChangedEvent,
     ErrorEvent,
+    PlaybackStateChangedEvent,
+    PlaylistFinishedEvent,
+    PlaylistLoadedEvent,
+    TrackEndedEvent,
+    TrackStartedEvent,
+    VolumeChangedEvent,
 )
 
 __all__ = [
     "AudioEvent",
-    "TrackStartedEvent",
-    "TrackEndedEvent",
-    "PlaylistLoadedEvent",
-    "PlaylistFinishedEvent",
-    "PlaybackStateChangedEvent",
-    "VolumeChangedEvent",
     "ErrorEvent",
+    "PlaybackStateChangedEvent",
+    "PlaylistFinishedEvent",
+    "PlaylistLoadedEvent",
+    "TrackEndedEvent",
+    "TrackStartedEvent",
+    "VolumeChangedEvent",
 ]

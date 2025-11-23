@@ -11,12 +11,12 @@ detection, and error recovery with configurable update intervals.
 
 import asyncio
 import time
-from typing import Optional, Any
 from contextlib import asynccontextmanager
+from typing import Any
 
-from app.src.monitoring import get_logger
 from app.src.common.socket_events import StateEventType
 from app.src.config.socket_config import socket_config
+from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
 logger = get_logger(__name__)
@@ -31,7 +31,7 @@ class TrackProgressService:
     """
 
     def __init__(
-        self, state_manager: Any, audio_controller: Optional[Any] = None, interval: Optional[float] = None
+        self, state_manager: Any, audio_controller: Any | None = None, interval: float | None = None
     ):
         """Initialize the track progress service.
 
@@ -45,7 +45,7 @@ class TrackProgressService:
         self._controller_type = self._detect_controller_type()
         self.interval = interval or (socket_config.POSITION_UPDATE_INTERVAL_MS / 1000.0)
         self._running = False
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._last_progress: dict = {}
         self._error_count = 0
         self._max_consecutive_errors = 10
@@ -97,7 +97,7 @@ class TrackProgressService:
             self._task.cancel()
             try:
                 await asyncio.wait_for(self._task, timeout=5.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
+            except (TimeoutError, asyncio.CancelledError):
                 # Task was cancelled or timed out, which is expected
                 pass
         # Reset state including diagnostic attributes
@@ -197,7 +197,7 @@ class TrackProgressService:
                 f"🧹 Diagnostic attributes reset at iteration {self._emission_attempt_count}"
             )
 
-    async def _get_playback_status(self) -> Optional[dict]:
+    async def _get_playback_status(self) -> dict | None:
         """Get playback status from audio controller."""
         # Handle both sync and async get_playback_status
         if asyncio.iscoroutinefunction(self.audio_controller.get_playback_status):
@@ -394,7 +394,7 @@ class TrackProgressService:
             logger.info(f"Error count reset from {old_count} to 0")
 
     def configure_error_handling(
-        self, max_consecutive_errors: Optional[int] = None, recovery_delay: Optional[float] = None
+        self, max_consecutive_errors: int | None = None, recovery_delay: float | None = None
     ):
         """Configure error handling parameters."""
         if max_consecutive_errors is not None:
@@ -539,7 +539,7 @@ class TrackProgressService:
                     logger.warning(f"⚠️️ {self._controller_type} doesn't support auto-advance")
 
         except Exception as e:
-            logger.error(f"❌ Error in track end detection: {str(e)}")
+            logger.error(f"❌ Error in track end detection: {e!s}")
 
     @handle_service_errors("track_progress")
     async def _broadcast_player_state_after_auto_advance(self):
@@ -575,4 +575,4 @@ class TrackProgressService:
             logger.info(f"✅ Broadcasted player state after auto-advance: track='{track_title}', playing={status.get('is_playing', False)}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast player state after auto-advance: {str(e)}")
+            logger.error(f"❌ Failed to broadcast player state after auto-advance: {e!s}")

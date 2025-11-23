@@ -4,35 +4,35 @@
 
 """Repository protocols for the data domain."""
 
-from typing import Protocol, List, Optional, Dict, Any
 from abc import abstractmethod
+from typing import Any, Protocol
 
 
 class PlaylistRepositoryProtocol(Protocol):
     """Protocol for playlist repository operations."""
 
     @abstractmethod
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_all(self, skip: int = 0, limit: int = 100) -> list[dict[str, Any]]:
         """Get all playlists with pagination."""
         ...
 
     @abstractmethod
-    async def get_by_id(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, playlist_id: str) -> dict[str, Any] | None:
         """Get a playlist by its ID."""
         ...
 
     @abstractmethod
-    async def get_by_nfc_tag(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_nfc_tag(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Get a playlist by its associated NFC tag."""
         ...
 
     @abstractmethod
-    async def create(self, playlist_data: Dict[str, Any]) -> str:
+    async def create(self, playlist_data: dict[str, Any]) -> str:
         """Create a new playlist."""
         ...
 
     @abstractmethod
-    async def update(self, playlist_id: str, playlist_data: Dict[str, Any]) -> bool:
+    async def update(self, playlist_id: str, playlist_data: dict[str, Any]) -> bool:
         """Update an existing playlist."""
         ...
 
@@ -56,22 +56,22 @@ class TrackRepositoryProtocol(Protocol):
     """Protocol for track repository operations."""
 
     @abstractmethod
-    async def get_by_playlist(self, playlist_id: str) -> List[Dict[str, Any]]:
+    async def get_by_playlist(self, playlist_id: str) -> list[dict[str, Any]]:
         """Get all tracks for a playlist."""
         ...
 
     @abstractmethod
-    async def get_by_id(self, track_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, track_id: str) -> dict[str, Any] | None:
         """Get a track by its ID."""
         ...
 
     @abstractmethod
-    async def add_to_playlist(self, playlist_id: str, track_data: Dict[str, Any]) -> str:
+    async def add_to_playlist(self, playlist_id: str, track_data: dict[str, Any]) -> str:
         """Add a track to a playlist."""
         ...
 
     @abstractmethod
-    async def update(self, track_id: str, track_data: Dict[str, Any]) -> bool:
+    async def update(self, track_id: str, track_data: dict[str, Any]) -> bool:
         """Update a track."""
         ...
 
@@ -81,7 +81,7 @@ class TrackRepositoryProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def reorder(self, playlist_id: str, track_orders: List[Dict[str, int]]) -> bool:
+    async def reorder(self, playlist_id: str, track_orders: list[dict[str, int]]) -> bool:
         """Reorder tracks in a playlist."""
         ...
 

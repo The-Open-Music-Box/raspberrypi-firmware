@@ -9,8 +9,9 @@ Clean adapter for domain layer to access pure DDD repository implementation.
 Follows proper dependency injection and pure DDD principles.
 """
 
-from typing import Any, Dict, List, Optional, cast
 import logging
+from typing import Any, cast
+
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
 from app.src.services.error.unified_error_decorator import handle_repository_errors
@@ -42,12 +43,14 @@ class PurePlaylistRepositoryAdapter:
         """Lazy-loaded repository instance from container."""
         if self._repository is None:
             # Direct container access to avoid circular dependency
-            from app.src.infrastructure.repositories.pure_sqlite_playlist_repository import PureSQLitePlaylistRepository
+            from app.src.infrastructure.repositories.pure_sqlite_playlist_repository import (
+                PureSQLitePlaylistRepository,
+            )
             self._repository = PureSQLitePlaylistRepository()
             logger.info("✅ Repository directly instantiated to avoid circular dependency")
         return self._repository
 
-    def _track_from_dict(self, track_data: Dict[str, Any]) -> Track:
+    def _track_from_dict(self, track_data: dict[str, Any]) -> Track:
         """Create Track domain entity from dictionary data.
 
         Args:
@@ -68,7 +71,7 @@ class PurePlaylistRepositoryAdapter:
         )
 
     @_handle_repository_errors("playlist_adapter")
-    async def create_playlist(self, playlist_data: Dict[str, Any]) -> str:
+    async def create_playlist(self, playlist_data: dict[str, Any]) -> str:
         """Create playlist using pure DDD principles."""
         # Create tracks first from data
         tracks = []
@@ -91,7 +94,7 @@ class PurePlaylistRepositoryAdapter:
         return cast(str, saved_playlist.id)
 
     @_handle_repository_errors("playlist_adapter")
-    async def get_playlist_by_id(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist_by_id(self, playlist_id: str) -> dict[str, Any] | None:
         """Get playlist by ID using pure DDD principles."""
         playlist = await self._repo.find_by_id(playlist_id)
         if playlist is not None:
@@ -99,7 +102,7 @@ class PurePlaylistRepositoryAdapter:
         return None
 
     @_handle_repository_errors("playlist_adapter")
-    async def get_playlist_by_nfc_tag(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist_by_nfc_tag(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Get playlist by NFC tag using pure DDD principles."""
         playlist = await self._repo.find_by_nfc_tag(nfc_tag_id)
         if playlist is not None:
@@ -107,7 +110,7 @@ class PurePlaylistRepositoryAdapter:
         return None
 
     @_handle_repository_errors("playlist_adapter")
-    async def find_by_nfc_tag(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def find_by_nfc_tag(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Find playlist by NFC tag ID using pure DDD principles."""
         return cast(dict[str, Any] | None, await self.get_playlist_by_nfc_tag(nfc_tag_id))
 
@@ -122,7 +125,7 @@ class PurePlaylistRepositoryAdapter:
         return cast(bool, await self._repo.remove_nfc_tag_association(nfc_tag_id))
 
     @_handle_repository_errors("playlist_adapter")
-    async def find_all(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+    async def find_all(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
         """Get all playlists using pure DDD principles."""
         playlists = await self._repo.find_all(limit=limit, offset=offset)
         return [self._domain_to_dict(p) for p in playlists]
@@ -133,7 +136,7 @@ class PurePlaylistRepositoryAdapter:
         return cast(int, await self._repo.count())
 
     @_handle_repository_errors("playlist_adapter")
-    async def add_track(self, playlist_id: str, track_data: Dict[str, Any]) -> bool:
+    async def add_track(self, playlist_id: str, track_data: dict[str, Any]) -> bool:
         """Add track to playlist using pure DDD principles."""
         # Get playlist
         playlist = await self._repo.find_by_id(playlist_id)
@@ -182,7 +185,7 @@ class PurePlaylistRepositoryAdapter:
 
         if success and playlist is not None:
             # Also clean up associated filesystem folder using playlist info
-            logger.info(f"🗑️ Starting filesystem cleanup...")
+            logger.info("🗑️ Starting filesystem cleanup...")
             await self._cleanup_playlist_folder_by_data(playlist)
             logger.info(f"✅ Deleted playlist and cleaned up folder: {playlist_id}")
         elif success:
@@ -198,9 +201,10 @@ class PurePlaylistRepositoryAdapter:
         With UUID-based folder names, cleanup is straightforward - just delete the folder at playlist.path.
         """
         try:
-            from app.src.config import config as app_config
-            from pathlib import Path
             import shutil
+            from pathlib import Path
+
+            from app.src.config import config as app_config
 
             if not playlist.path:
                 logger.warning(f"📁 No path set for playlist {playlist.title}, skipping cleanup")
@@ -257,13 +261,13 @@ class PurePlaylistRepositoryAdapter:
         return True
 
     @_handle_repository_errors("playlist_adapter")
-    async def get_all_playlists(self, limit: Optional[int] = None, offset: int = 0) -> List[Dict[str, Any]]:
+    async def get_all_playlists(self, limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
         """Get all playlists using pure DDD principles."""
         playlists = await self._repo.find_all(limit=limit, offset=offset)
         return [self._domain_to_dict(p) for p in playlists]
 
     @_handle_repository_errors("playlist_adapter")
-    async def update_playlist(self, playlist_id: str, updates: Dict[str, Any]) -> bool:
+    async def update_playlist(self, playlist_id: str, updates: dict[str, Any]) -> bool:
         """Update playlist using pure DDD principles."""
         # Get existing playlist
         playlist = await self._repo.find_by_id(playlist_id)
@@ -287,7 +291,7 @@ class PurePlaylistRepositoryAdapter:
         return True
 
     @_handle_repository_errors("playlist_adapter")
-    async def replace_tracks(self, playlist_id: str, tracks_data: List[Dict[str, Any]]) -> bool:
+    async def replace_tracks(self, playlist_id: str, tracks_data: list[dict[str, Any]]) -> bool:
         """Replace all tracks in a playlist using pure DDD principles."""
         # Get existing playlist
         playlist = await self._repo.find_by_id(playlist_id)
@@ -308,7 +312,7 @@ class PurePlaylistRepositoryAdapter:
         return True
 
     @_handle_repository_errors("playlist_adapter")
-    async def update_track_numbers(self, playlist_id: str, track_number_mapping: Dict[int, int]) -> bool:
+    async def update_track_numbers(self, playlist_id: str, track_number_mapping: dict[int, int]) -> bool:
         """Update track numbers for reordering using pure DDD principles.
 
         Args:
@@ -332,7 +336,7 @@ class PurePlaylistRepositoryAdapter:
 
         return cast(bool, success)
 
-    def _domain_to_dict(self, playlist: Playlist) -> Dict[str, Any]:
+    def _domain_to_dict(self, playlist: Playlist) -> dict[str, Any]:
         """Convert domain model to dict format for API compatibility."""
         return {
             "id": playlist.id,
@@ -346,7 +350,7 @@ class PurePlaylistRepositoryAdapter:
             "tracks": [self._track_to_dict(track) for track in playlist.tracks],
         }
 
-    def _track_to_dict(self, track: Track) -> Dict[str, Any]:
+    def _track_to_dict(self, track: Track) -> dict[str, Any]:
         """Convert track domain model to dict format for API compatibility."""
         return {
             "id": track.id,

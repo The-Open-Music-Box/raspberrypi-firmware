@@ -9,13 +9,13 @@ Bootstrap/factory class for upload session management routes.
 Single Responsibility: Initialize and register upload API routes with dependencies.
 """
 
-from typing import Optional
+
 from fastapi import FastAPI
 from socketio import AsyncServer
 
+from app.src.api.endpoints.upload_api_routes import UploadAPIRoutes
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.api.endpoints.upload_api_routes import UploadAPIRoutes
 
 logger = get_logger(__name__)
 
@@ -43,7 +43,7 @@ class UploadRoutes:
         """
         self.app = app
         self.socketio = socketio
-        self.api_routes: Optional[UploadAPIRoutes] = None
+        self.api_routes: UploadAPIRoutes | None = None
 
     @handle_errors("upload_routes_init", return_response=False)
     def initialize(self):

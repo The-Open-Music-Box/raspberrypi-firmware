@@ -5,9 +5,9 @@
 """PN532 NFC Hardware Implementation for Raspberry Pi."""
 
 import asyncio
-import time
-from typing import Optional, Dict, Any
 import logging
+import time
+from typing import Any
 
 from .base_nfc_hardware import BaseNFCHardware, _handle_errors
 
@@ -24,7 +24,7 @@ class PN532NFCHardware(BaseNFCHardware):
     Inherits common NFC hardware functionality from BaseNFCHardware.
     """
 
-    def __init__(self, bus_lock: asyncio.Lock, config: Optional[Any] = None):
+    def __init__(self, bus_lock: asyncio.Lock, config: Any | None = None):
         """Initialize PN532 NFC hardware.
 
         Args:
@@ -42,7 +42,7 @@ class PN532NFCHardware(BaseNFCHardware):
             self._config = config
 
         self._pn532 = None
-        self._last_tag_uid: Optional[str] = None
+        self._last_tag_uid: str | None = None
         self._tag_present = False
         self._consecutive_errors = 0
 
@@ -55,9 +55,9 @@ class PN532NFCHardware(BaseNFCHardware):
     async def initialize(self) -> None:
         """Initialize the PN532 hardware."""
         # Import PN532 libraries (only available on Raspberry Pi)
-        from adafruit_pn532.i2c import PN532_I2C
         import board
         import busio
+        from adafruit_pn532.i2c import PN532_I2C
 
         # Initialize I2C
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -85,7 +85,7 @@ class PN532NFCHardware(BaseNFCHardware):
         await super().start_nfc_reader()
 
     @_handle_errors("read_nfc")
-    async def read_nfc(self) -> Optional[Dict[str, Any]]:
+    async def read_nfc(self) -> dict[str, Any] | None:
         """Read NFC tag data directly from PN532.
 
         Uses the base class _create_tag_data() helper for standardized tag structure.
@@ -146,7 +146,7 @@ class PN532NFCHardware(BaseNFCHardware):
             await asyncio.sleep(self._config.debounce_time)
 
     @_handle_errors("_read_tag_with_retry")
-    async def _read_tag_with_retry(self) -> Optional[Dict[str, Any]]:
+    async def _read_tag_with_retry(self) -> dict[str, Any] | None:
         """Read tag data with retry logic.
 
         Uses the base class _create_tag_data() helper for standardized tag structure.
@@ -167,7 +167,7 @@ class PN532NFCHardware(BaseNFCHardware):
         return None
 
     @_handle_errors("_handle_tag_present")
-    async def _handle_tag_present(self, tag_data: Dict[str, Any]) -> None:
+    async def _handle_tag_present(self, tag_data: dict[str, Any]) -> None:
         """Handle when a tag is detected."""
         tag_uid = tag_data["uid"]
 

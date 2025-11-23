@@ -9,17 +9,16 @@ to be uploaded in smaller pieces and reassembled on the server. Handles session
 creation, chunk processing, file validation, and cleanup operations.
 """
 
+import logging
 import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
 from app.src.infrastructure.error_handling.unified_error_handler import InvalidFileError
-import logging
-from app.src.services.upload_service import UploadService
-from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.services.base_upload_service import BaseUploadService
+from app.src.services.error.unified_error_decorator import handle_service_errors
+from app.src.services.upload_service import UploadService
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class ChunkedUploadService(BaseUploadService):
     processing individual chunks, and finalizing uploads by assembling chunks.
     """
 
-    def __init__(self, config, upload_service: Optional[UploadService] = None):
+    def __init__(self, config, upload_service: UploadService | None = None):
         """
         Initialize the ChunkedUploadService with application config.
 
@@ -105,7 +104,7 @@ class ChunkedUploadService(BaseUploadService):
     @handle_service_errors("chunked_upload")
     async def process_chunk(
         self, session_id: str, chunk_index: int, chunk_data, chunk_size: int
-    ) -> Dict:
+    ) -> dict:
         """
         Process a chunk of an upload session.
 
@@ -159,7 +158,7 @@ class ChunkedUploadService(BaseUploadService):
         }
 
     @handle_service_errors("chunked_upload")
-    async def finalize_upload(self, session_id: str, playlist_path: str) -> Tuple[str, Dict]:
+    async def finalize_upload(self, session_id: str, playlist_path: str) -> tuple[str, dict]:
         """
         Finalize an upload by assembling all chunks and processing the complete file.
 
@@ -205,7 +204,7 @@ class ChunkedUploadService(BaseUploadService):
         )
         return filename, metadata
 
-    def get_session_status(self, session_id: str) -> Dict:
+    def get_session_status(self, session_id: str) -> dict:
         """
         Get the status of an upload session.
 

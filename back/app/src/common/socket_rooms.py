@@ -11,7 +11,6 @@ and ensure consistency across the codebase.
 This follows DRY principles and makes room name changes easier to manage.
 """
 
-from typing import Optional
 
 
 class SocketRooms:
@@ -94,7 +93,7 @@ class SocketRooms:
         return False
 
     @staticmethod
-    def extract_playlist_id(room_name: str) -> Optional[str]:
+    def extract_playlist_id(room_name: str) -> str | None:
         """
         Extract playlist ID from a playlist room name.
 
@@ -115,7 +114,7 @@ class SocketRooms:
         return None
 
     @staticmethod
-    def extract_nfc_id(room_name: str) -> Optional[str]:
+    def extract_nfc_id(room_name: str) -> str | None:
         """
         Extract NFC association ID from an NFC room name.
 

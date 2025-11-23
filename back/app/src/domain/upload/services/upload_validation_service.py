@@ -4,14 +4,14 @@
 
 """Upload Validation Domain Service."""
 
-from typing import Optional, Dict, List, Set, Any
+import logging
 from pathlib import Path
+from typing import Any
 
+from ..constants import WINDOWS_RESERVED_NAMES
 from ..entities.upload_session import UploadSession
 from ..value_objects.file_chunk import FileChunk
 from ..value_objects.file_metadata import FileMetadata
-from ..constants import WINDOWS_RESERVED_NAMES
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class UploadValidationService:
         self,
         max_file_size: int = 100 * 1024 * 1024,  # 100MB
         max_chunk_size: int = 1024 * 1024,  # 1MB
-        allowed_extensions: Optional[Set[str]] = None,
+        allowed_extensions: set[str] | None = None,
         min_audio_duration: float = 1.0,  # 1 second minimum
     ):
         """Initialize validation service with business rules.
@@ -44,8 +44,8 @@ class UploadValidationService:
         self.min_audio_duration = min_audio_duration
 
     def _create_validation_result(
-        self, errors: List[str], warnings: List[str], **extra_fields
-    ) -> Dict[str, any]:
+        self, errors: list[str], warnings: list[str], **extra_fields
+    ) -> dict[str, any]:
         """Create standard validation result dictionary.
 
         Args:
@@ -65,8 +65,8 @@ class UploadValidationService:
         return result
 
     def validate_upload_request(
-        self, filename: str, total_size: int, total_chunks: int, playlist_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, filename: str, total_size: int, total_chunks: int, playlist_id: str | None = None
+    ) -> dict[str, Any]:
         """Validate an upload request before creating session.
 
         Args:
@@ -130,7 +130,7 @@ class UploadValidationService:
             "total_chunks": total_chunks,
         }
 
-    def validate_chunk(self, chunk: FileChunk, session: UploadSession) -> Dict[str, Any]:
+    def validate_chunk(self, chunk: FileChunk, session: UploadSession) -> dict[str, Any]:
         """Validate a file chunk against session constraints.
 
         Args:
@@ -176,7 +176,7 @@ class UploadValidationService:
             errors, warnings, chunk_index=chunk.index, chunk_size=chunk.size
         )
 
-    def validate_session_completion(self, session: UploadSession) -> Dict[str, Any]:
+    def validate_session_completion(self, session: UploadSession) -> dict[str, Any]:
         """Validate that a session is ready for completion.
 
         Args:
@@ -185,8 +185,8 @@ class UploadValidationService:
         Returns:
             Validation result dictionary
         """
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Check all chunks received
         if not session.is_complete():
@@ -209,7 +209,7 @@ class UploadValidationService:
             errors, warnings, progress=session.progress_percentage
         )
 
-    def validate_audio_metadata(self, metadata: FileMetadata) -> Dict[str, Any]:
+    def validate_audio_metadata(self, metadata: FileMetadata) -> dict[str, Any]:
         """Validate audio file metadata against business rules.
 
         Args:
@@ -260,7 +260,7 @@ class UploadValidationService:
             "has_complete_metadata": metadata.has_complete_metadata(),
         }
 
-    def _validate_filename(self, filename: str) -> Dict[str, List[str]]:
+    def _validate_filename(self, filename: str) -> dict[str, list[str]]:
         """Validate filename according to business rules.
 
         Args:

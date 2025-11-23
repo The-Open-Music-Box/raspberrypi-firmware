@@ -8,18 +8,24 @@ Follows dependency injection principles for NFC infrastructure components.
 """
 
 import asyncio
-from typing import Optional, Any
 import logging
+from typing import Any
 
-from app.src.domain.nfc import NfcAssociationService, NfcHardwareProtocol, NfcRepositoryProtocol
+from app.src.config.nfc_config import NFCConfig
+from app.src.domain.nfc import (
+    NfcAssociationService,
+    NfcHardwareProtocol,
+    NfcRepositoryProtocol,
+)
 from app.src.infrastructure.adapters.nfc.nfc_adapter import NFCHandlerAdapter
 from app.src.infrastructure.hardware.nfc import create_nfc_hardware
-from app.src.config.nfc_config import NFCConfig
 from app.src.infrastructure.nfc.adapters.nfc_hardware_adapter import (
-    NfcHardwareAdapter,
     MockNfcHardwareAdapter,
+    NfcHardwareAdapter,
 )
-from app.src.infrastructure.nfc.repositories.nfc_memory_repository import NfcMemoryRepository
+from app.src.infrastructure.nfc.repositories.nfc_memory_repository import (
+    NfcMemoryRepository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +35,9 @@ class NfcFactory:
 
     @staticmethod
     def create_nfc_infrastructure_components(
-        legacy_nfc_handler: Optional[Any] = None,
+        legacy_nfc_handler: Any | None = None,
         use_mock_hardware: bool = False,
-        repository: Optional[NfcRepositoryProtocol] = None,
+        repository: NfcRepositoryProtocol | None = None,
     ) -> tuple[NfcHardwareProtocol, NfcRepositoryProtocol, NfcAssociationService]:
         """Create infrastructure components for NFC services.
 
@@ -68,7 +74,7 @@ class NfcFactory:
         return NfcFactory.create_nfc_infrastructure_components(use_mock_hardware=True)
 
     @staticmethod
-    async def create_nfc_handler_adapter(nfc_lock: Optional[asyncio.Lock] = None) -> NFCHandlerAdapter:
+    async def create_nfc_handler_adapter(nfc_lock: asyncio.Lock | None = None) -> NFCHandlerAdapter:
         """Factory function to get NFC handler with new infrastructure.
 
         Args:

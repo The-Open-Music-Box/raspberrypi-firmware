@@ -10,15 +10,19 @@ extracting duplication between GPIOPhysicalControls and MockPhysicalControls.
 Follows Context7 principles with proper type safety and DDD architecture.
 """
 
-from typing import Callable, Dict, List, Optional, Any
-from abc import abstractmethod
 import logging
+from abc import abstractmethod
+from collections.abc import Callable
+from typing import Any
 
-from app.src.domain.protocols.physical_controls_protocol import (
-    PhysicalControlsProtocol,
-    PhysicalControlEvent,
+from app.src.config.button_actions_config import (
+    DEFAULT_BUTTON_CONFIGS,
+    ButtonActionConfig,
 )
-from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
+from app.src.domain.protocols.physical_controls_protocol import (
+    PhysicalControlEvent,
+    PhysicalControlsProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +46,7 @@ class BaseControlsImplementation(PhysicalControlsProtocol):
     def __init__(
         self,
         hardware_config: Any,
-        button_configs: Optional[List[ButtonActionConfig]] = None
+        button_configs: list[ButtonActionConfig] | None = None
     ):
         """Initialize base controls state.
 
@@ -56,7 +60,7 @@ class BaseControlsImplementation(PhysicalControlsProtocol):
         self.config = hardware_config
         self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
-        self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
+        self._event_handlers: dict[PhysicalControlEvent, Callable[[], None]] = {}
 
         logger.debug(f"{self.__class__.__name__}: Base controls state initialized")
 
@@ -117,7 +121,7 @@ class BaseControlsImplementation(PhysicalControlsProtocol):
                 f"{self.__class__.__name__}: No handler registered for {event_type}"
             )
 
-    def _build_button_info(self) -> Dict[str, Any]:
+    def _build_button_info(self) -> dict[str, Any]:
         """Build button configuration information for status reporting.
 
         Extracted helper to eliminate duplication of button info building logic.
@@ -160,7 +164,7 @@ class BaseControlsImplementation(PhysicalControlsProtocol):
         pass
 
     @abstractmethod
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of controls.
 
         Must be implemented by subclasses for hardware-specific status info.

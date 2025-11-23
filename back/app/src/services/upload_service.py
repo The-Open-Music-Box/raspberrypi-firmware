@@ -9,17 +9,17 @@ file types and sizes, extracting metadata using mutagen, and managing
 upload workflows for integration with playlist systems.
 """
 
+import logging
 from pathlib import Path
-from typing import Dict, Tuple, cast
+from typing import cast
 
 from mutagen import File as MutagenFile
 from mutagen.easyid3 import EasyID3
 from werkzeug.utils import secure_filename
 
 from app.src.infrastructure.error_handling.unified_error_handler import InvalidFileError
-import logging
-from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.services.base_upload_service import BaseUploadService
+from app.src.services.error.unified_error_decorator import handle_service_errors
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class UploadService(BaseUploadService):
         return cast(bool, size <= self.max_file_size)
 
     @handle_service_errors("upload")
-    def extract_metadata(self, file_path: Path) -> Dict:
+    def extract_metadata(self, file_path: Path) -> dict:
         """
         Extract metadata from an audio file.
 
@@ -74,7 +74,7 @@ class UploadService(BaseUploadService):
 
     @handle_service_errors("upload")
     @handle_service_errors("upload")
-    async def process_upload(self, file, playlist_path: str) -> Tuple[str, Dict]:
+    async def process_upload(self, file, playlist_path: str) -> tuple[str, dict]:
         """
         Process an uploaded file and extract its metadata.
 
@@ -132,4 +132,4 @@ class UploadService(BaseUploadService):
             if file_path.exists():
                 file_path.unlink()
         except OSError as e:
-            logger.error(f"Error cleaning up failed upload: {str(e)}")
+            logger.error(f"Error cleaning up failed upload: {e!s}")

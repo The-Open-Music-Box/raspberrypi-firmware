@@ -90,7 +90,7 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                 )
         return None
 
-    def _success_response(self, message: str, status: dict, client_op_id: str = None):
+    def _success_response(self, message: str, status: dict, client_op_id: str | None = None):
         """Create success response with standard fields.
 
         Args:
@@ -108,7 +108,7 @@ class PlayerAPIRoutes(BaseAPIRoutes):
             client_op_id=client_op_id
         )
 
-    def _fallback_response(self, result: dict, default_message: str, client_op_id: str = None):
+    def _fallback_response(self, result: dict, default_message: str, client_op_id: str | None = None):
         """Create fallback response when operation is unavailable.
 
         Args:
@@ -128,7 +128,7 @@ class PlayerAPIRoutes(BaseAPIRoutes):
         operation_callable,
         direction: str,
         success_message: str,
-        client_op_id: str = None
+        client_op_id: str | None = None
     ):
         """Handle track navigation (next/previous) with broadcasting.
 
@@ -200,10 +200,9 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                     return self._success_response(
                         "Playback started successfully", status, body.client_op_id
                     )
-                else:
-                    return self._fallback_response(
-                        result, "Playback unavailable", body.client_op_id
-                    )
+                return self._fallback_response(
+                    result, "Playback unavailable", body.client_op_id
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -240,11 +239,10 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                     return self._success_response(
                         "Playback paused successfully", status, body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    return self._fallback_response(
-                        result, "Pause unavailable", body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                return self._fallback_response(
+                    result, "Pause unavailable", body.client_op_id
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -285,11 +283,10 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                     return self._success_response(
                         "Playback stopped successfully", status, body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    return self._fallback_response(
-                        result, "Stop unavailable", body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                return self._fallback_response(
+                    result, "Stop unavailable", body.client_op_id
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -423,11 +420,10 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                     return self._success_response(
                         "Player status retrieved successfully", status
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to get player status",
-                        operation="get_player_status"
-                    )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to get player status",
+                    operation="get_player_status"
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -464,11 +460,10 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                     return self._success_response(
                         "Seek operation completed successfully", status, body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    return self._fallback_response(
-                        result, "Seek unavailable", body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                return self._fallback_response(
+                    result, "Seek unavailable", body.client_op_id
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -504,12 +499,11 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                     return self._success_response(
                         f"Volume set to {body.volume}%", status, body.client_op_id
                     )
-                else:
-                    # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
-                    status_result = await self._player_service.get_status_use_case()
-                    return self._fallback_response(
-                        status_result, "Volume change unavailable", body.client_op_id
-                    )
+                # CONTRACT FIX: Return success with 200 status instead of bad_request (400)
+                status_result = await self._player_service.get_status_use_case()
+                return self._fallback_response(
+                    status_result, "Volume change unavailable", body.client_op_id
+                )
 
             except Exception as e:
                 # Use base class helper for error handling

@@ -4,18 +4,12 @@
 
 """Data domain protocols."""
 
-from .repository_protocol import (
-    PlaylistRepositoryProtocol,
-    TrackRepositoryProtocol
-)
-from .service_protocol import (
-    PlaylistServiceProtocol,
-    TrackServiceProtocol
-)
+from .repository_protocol import PlaylistRepositoryProtocol, TrackRepositoryProtocol
+from .service_protocol import PlaylistServiceProtocol, TrackServiceProtocol
 
 __all__ = [
     'PlaylistRepositoryProtocol',
-    'TrackRepositoryProtocol',
     'PlaylistServiceProtocol',
+    'TrackRepositoryProtocol',
     'TrackServiceProtocol'
 ]

@@ -4,30 +4,30 @@
 
 """Service protocols for the data domain."""
 
-from typing import Protocol, List, Optional, Dict, Any
 from abc import abstractmethod
+from typing import Any, Protocol
 
 
 class PlaylistServiceProtocol(Protocol):
     """Protocol for playlist service operations."""
 
     @abstractmethod
-    async def get_playlists(self, page: int = 1, page_size: int = 50) -> Dict[str, Any]:
+    async def get_playlists(self, page: int = 1, page_size: int = 50) -> dict[str, Any]:
         """Get paginated playlists."""
         ...
 
     @abstractmethod
-    async def get_playlist(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist(self, playlist_id: str) -> dict[str, Any] | None:
         """Get a single playlist with its tracks."""
         ...
 
     @abstractmethod
-    async def create_playlist(self, name: str, description: Optional[str] = None) -> Dict[str, Any]:
+    async def create_playlist(self, name: str, description: str | None = None) -> dict[str, Any]:
         """Create a new playlist."""
         ...
 
     @abstractmethod
-    async def update_playlist(self, playlist_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_playlist(self, playlist_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update playlist metadata."""
         ...
 
@@ -42,12 +42,12 @@ class PlaylistServiceProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def get_playlist_by_nfc(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def get_playlist_by_nfc(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Get playlist associated with an NFC tag."""
         ...
 
     @abstractmethod
-    async def sync_with_filesystem(self, upload_folder: str) -> Dict[str, Any]:
+    async def sync_with_filesystem(self, upload_folder: str) -> dict[str, Any]:
         """Synchronize playlists with filesystem."""
         ...
 
@@ -56,17 +56,17 @@ class TrackServiceProtocol(Protocol):
     """Protocol for track service operations."""
 
     @abstractmethod
-    async def get_tracks(self, playlist_id: str) -> List[Dict[str, Any]]:
+    async def get_tracks(self, playlist_id: str) -> list[dict[str, Any]]:
         """Get all tracks for a playlist."""
         ...
 
     @abstractmethod
-    async def add_track(self, playlist_id: str, track_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def add_track(self, playlist_id: str, track_data: dict[str, Any]) -> dict[str, Any]:
         """Add a track to a playlist."""
         ...
 
     @abstractmethod
-    async def update_track(self, track_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_track(self, track_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update track metadata."""
         ...
 
@@ -76,16 +76,16 @@ class TrackServiceProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def reorder_tracks(self, playlist_id: str, track_ids: List[str]) -> bool:
+    async def reorder_tracks(self, playlist_id: str, track_ids: list[str]) -> bool:
         """Reorder tracks in a playlist."""
         ...
 
     @abstractmethod
-    async def get_next_track(self, playlist_id: str, current_track_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    async def get_next_track(self, playlist_id: str, current_track_id: str | None = None) -> dict[str, Any] | None:
         """Get the next track in a playlist."""
         ...
 
     @abstractmethod
-    async def get_previous_track(self, playlist_id: str, current_track_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    async def get_previous_track(self, playlist_id: str, current_track_id: str | None = None) -> dict[str, Any] | None:
         """Get the previous track in a playlist."""
         ...

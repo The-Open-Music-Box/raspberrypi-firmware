@@ -9,15 +9,16 @@ Single responsibility: Manages state snapshots for newly connected clients.
 Clean separation following Domain-Driven Design principles.
 """
 
+import logging
 import time
 import uuid
-import logging
 
-from app.src.services.error.unified_error_decorator import handle_service_errors
-from app.src.application.services.state_serialization_application_service import StateSerializationApplicationService
 from app.src.application.services.state_event_coordinator import StateEventType
+from app.src.application.services.state_serialization_application_service import (
+    StateSerializationApplicationService,
+)
+from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.services.sequence_generator import SequenceGenerator
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +43,8 @@ class StateSnapshotApplicationService:
     def __init__(
         self,
         socketio_server=None,
-        serialization_service: Optional[StateSerializationApplicationService] = None,
-        sequences: Optional[SequenceGenerator] = None,
+        serialization_service: StateSerializationApplicationService | None = None,
+        sequences: SequenceGenerator | None = None,
         data_application_service=None,
         player_application_service=None,
     ):

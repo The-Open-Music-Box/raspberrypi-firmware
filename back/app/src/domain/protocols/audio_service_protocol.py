@@ -9,8 +9,8 @@ This module defines the protocol interface for audio services,
 promoting loose coupling and testability in the domain layer.
 """
 
-from typing import Protocol, Dict, Any, Optional
 from abc import abstractmethod
+from typing import Any, Protocol
 
 
 class AudioServiceProtocol(Protocol):
@@ -108,7 +108,7 @@ class AudioServiceProtocol(Protocol):
         ...
 
     @abstractmethod
-    def get_duration(self) -> Optional[float]:
+    def get_duration(self) -> float | None:
         """Get duration of current track in seconds.
 
         Returns:
@@ -117,7 +117,7 @@ class AudioServiceProtocol(Protocol):
         ...
 
     @abstractmethod
-    def load_playlist(self, playlist_data: Dict[str, Any]) -> bool:
+    def load_playlist(self, playlist_data: dict[str, Any]) -> bool:
         """Load a playlist for playback.
 
         Args:

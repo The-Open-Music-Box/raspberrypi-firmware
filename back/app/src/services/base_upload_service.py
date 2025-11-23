@@ -7,7 +7,6 @@
 Extracted to eliminate duplication between UploadService and ChunkedUploadService.
 """
 
-from typing import Set
 
 
 class BaseUploadService:
@@ -17,7 +16,7 @@ class BaseUploadService:
     UploadService and ChunkedUploadService.
     """
 
-    def __init__(self, allowed_extensions: Set[str]):
+    def __init__(self, allowed_extensions: set[str]):
         """Initialize base upload service.
 
         Args:

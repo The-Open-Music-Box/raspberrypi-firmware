@@ -13,4 +13,4 @@ from .nfc_unified_routes import UnifiedNFCRoutes as NFCRoutes
 from .web_routes import WebRoutes
 from .youtube_routes import YouTubeRoutes
 
-__all__ = ["WebRoutes", "NFCRoutes", "YouTubeRoutes"]
+__all__ = ["NFCRoutes", "WebRoutes", "YouTubeRoutes"]

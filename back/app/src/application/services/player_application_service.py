@@ -9,7 +9,8 @@ This service coordinates player operations and provides use cases for the API la
 Single Responsibility: Player operation orchestration via application services.
 """
 
-from typing import Dict, Any
+from typing import Any
+
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -35,7 +36,7 @@ class PlayerApplicationService:
         self._coordinator = playback_coordinator
         self._state_manager = state_manager
 
-    def _ensure_complete_player_state(self, status: Dict[str, Any]) -> Dict[str, Any]:
+    def _ensure_complete_player_state(self, status: dict[str, Any]) -> dict[str, Any]:
         """Ensure PlayerState includes all required contract fields.
 
         Args:
@@ -91,7 +92,7 @@ class PlayerApplicationService:
 
         return complete_status
 
-    def _get_complete_status(self) -> Dict[str, Any]:
+    def _get_complete_status(self) -> dict[str, Any]:
         """Get complete player status with all required fields.
 
         Returns:
@@ -100,7 +101,7 @@ class PlayerApplicationService:
         status = self._coordinator.get_playback_status()
         return self._ensure_complete_player_state(status)
 
-    def _build_success_response(self, message: str, **extra_fields) -> Dict[str, Any]:
+    def _build_success_response(self, message: str, **extra_fields) -> dict[str, Any]:
         """Build standard success response for player operations.
 
         Args:
@@ -119,7 +120,7 @@ class PlayerApplicationService:
         response.update(extra_fields)
         return response
 
-    def _build_error_response(self, error: Exception, operation: str, fallback_message: str) -> Dict[str, Any]:
+    def _build_error_response(self, error: Exception, operation: str, fallback_message: str) -> dict[str, Any]:
         """Build standard error response for player operations.
 
         Args:
@@ -130,7 +131,7 @@ class PlayerApplicationService:
         Returns:
             Error response dictionary with PlayerState
         """
-        logger.error(f"❌ Error in {operation}: {str(error)}")
+        logger.error(f"❌ Error in {operation}: {error!s}")
         # Even on error, return valid PlayerState
         complete_status = self._get_complete_status()
         return {
@@ -140,7 +141,7 @@ class PlayerApplicationService:
         }
 
     @handle_service_errors("player_application")
-    async def play_use_case(self) -> Dict[str, Any]:
+    async def play_use_case(self) -> dict[str, Any]:
         """Use case: Start/resume playback.
 
         Returns:
@@ -162,7 +163,7 @@ class PlayerApplicationService:
             return self._build_error_response(e, "play_use_case", "Playback unavailable")
 
     @handle_service_errors("player_application")
-    async def pause_use_case(self) -> Dict[str, Any]:
+    async def pause_use_case(self) -> dict[str, Any]:
         """Use case: Pause playback.
 
         Returns:
@@ -184,7 +185,7 @@ class PlayerApplicationService:
             return self._build_error_response(e, "pause_use_case", "Pause unavailable")
 
     @handle_service_errors("player_application")
-    async def stop_use_case(self) -> Dict[str, Any]:
+    async def stop_use_case(self) -> dict[str, Any]:
         """Use case: Stop playback.
 
         Returns:
@@ -206,7 +207,7 @@ class PlayerApplicationService:
             return self._build_error_response(e, "stop_use_case", "Stop completed")
 
     @handle_service_errors("player_application")
-    async def next_track_use_case(self) -> Dict[str, Any]:
+    async def next_track_use_case(self) -> dict[str, Any]:
         """Use case: Skip to next track.
 
         Returns:
@@ -230,7 +231,7 @@ class PlayerApplicationService:
             return self._build_error_response(e, "next_track_use_case", "Navigation unavailable")
 
     @handle_service_errors("player_application")
-    async def previous_track_use_case(self) -> Dict[str, Any]:
+    async def previous_track_use_case(self) -> dict[str, Any]:
         """Use case: Skip to previous track.
 
         Returns:
@@ -254,7 +255,7 @@ class PlayerApplicationService:
             return self._build_error_response(e, "previous_track_use_case", "Navigation unavailable")
 
     @handle_service_errors("player_application")
-    async def seek_use_case(self, position_ms: int) -> Dict[str, Any]:
+    async def seek_use_case(self, position_ms: int) -> dict[str, Any]:
         """Use case: Seek to specific position.
 
         Args:
@@ -283,7 +284,7 @@ class PlayerApplicationService:
             return self._build_error_response(e, "seek_use_case", "Seek unavailable")
 
     @handle_service_errors("player_application")
-    async def set_volume_use_case(self, volume: int) -> Dict[str, Any]:
+    async def set_volume_use_case(self, volume: int) -> dict[str, Any]:
         """Use case: Set player volume.
 
         Args:
@@ -320,7 +321,7 @@ class PlayerApplicationService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error in set_volume_use_case: {str(e)}")
+            logger.error(f"❌ Error in set_volume_use_case: {e!s}")
             # Even on error, return success for contract compliance
             return {
                 "success": True,
@@ -329,7 +330,7 @@ class PlayerApplicationService:
             }
 
     @handle_service_errors("player_application")
-    async def get_status_use_case(self) -> Dict[str, Any]:
+    async def get_status_use_case(self) -> dict[str, Any]:
         """Use case: Get current player status.
 
         Returns:

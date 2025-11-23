@@ -10,9 +10,11 @@ Bridges application events to LED state changes.
 
 import logging
 
-from app.src.application.services.led_state_manager_application_service import LEDStateManager
-from app.src.domain.models.led import LEDState
+from app.src.application.services.led_state_manager_application_service import (
+    LEDStateManager,
+)
 from app.src.common.data_models import PlaybackState
+from app.src.domain.models.led import LEDState
 
 logger = logging.getLogger(__name__)
 
@@ -75,17 +77,17 @@ class LEDEventHandler:
             # Note: STOPPED reverts to IDLE (solid white) rather than turning off the LED
             if new_state == PlaybackState.PLAYING:
                 await self._led_manager.set_state(LEDState.PLAYING)
-                logger.debug(f"LED updated for playback state: PLAYING → solid green")
+                logger.debug("LED updated for playback state: PLAYING → solid green")
             elif new_state == PlaybackState.PAUSED:
                 await self._led_manager.set_state(LEDState.PAUSED)
-                logger.debug(f"LED updated for playback state: PAUSED → solid yellow")
+                logger.debug("LED updated for playback state: PAUSED → solid yellow")
             elif new_state == PlaybackState.STOPPED:
                 # Clear PLAYING/PAUSED states and ensure IDLE is set
                 await self._led_manager.clear_state(LEDState.PLAYING)
                 await self._led_manager.clear_state(LEDState.PAUSED)
                 # Explicitly set IDLE state to ensure LED shows solid white
                 await self._led_manager.set_state(LEDState.IDLE)
-                logger.debug(f"LED updated for playback state: STOPPED → IDLE (solid white)")
+                logger.debug("LED updated for playback state: STOPPED → IDLE (solid white)")
             else:
                 logger.debug(f"No LED mapping for playback state: {new_state.value}")
 

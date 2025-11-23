@@ -9,10 +9,12 @@ This service centralizes all API response formatting to eliminate the 140+
 duplicated response patterns across the application.
 """
 
-from typing import Dict, Any, Optional, List, Union
-from fastapi.responses import JSONResponse
 import time
 import traceback
+from typing import Any
+
+from fastapi.responses import JSONResponse
+
 from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
@@ -33,9 +35,9 @@ class UnifiedResponseService:
         message: str,
         error_type: str,
         status_code: int,
-        details: Dict[str, Any],
-        retry_after: Optional[int],
-        client_op_id: Optional[str],
+        details: dict[str, Any],
+        retry_after: int | None,
+        client_op_id: str | None,
     ) -> JSONResponse:
         """Helper to create error response with Retry-After header.
 
@@ -69,11 +71,11 @@ class UnifiedResponseService:
     @staticmethod
     def success(
         message: str,
-        data: Optional[Any] = None,
+        data: Any | None = None,
         status_code: int = 200,
-        server_seq: Optional[int] = None,
-        client_op_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        server_seq: int | None = None,
+        client_op_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse de succès standardisée.
@@ -123,8 +125,8 @@ class UnifiedResponseService:
         message: str,
         error_type: str = "error",
         status_code: int = 500,
-        details: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
         trace: bool = False,
     ) -> JSONResponse:
         """
@@ -177,10 +179,10 @@ class UnifiedResponseService:
 
     @staticmethod
     def validation_error(
-        errors: Union[List[str], Dict[str, Any]],
+        errors: list[str] | dict[str, Any],
         message: str = "Validation failed",
         status_code: int = 400,
-        client_op_id: Optional[str] = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse d'erreur de validation standardisée.
@@ -222,9 +224,9 @@ class UnifiedResponseService:
     @staticmethod
     def not_found(
         resource: str,
-        resource_id: Optional[str] = None,
-        message: Optional[str] = None,
-        client_op_id: Optional[str] = None,
+        resource_id: str | None = None,
+        message: str | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 404 standardisée.
@@ -255,8 +257,8 @@ class UnifiedResponseService:
     @staticmethod
     def unauthorized(
         message: str = "Unauthorized access",
-        details: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 401 standardisée.
@@ -280,8 +282,8 @@ class UnifiedResponseService:
     @staticmethod
     def forbidden(
         message: str = "Access forbidden",
-        details: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 403 standardisée.
@@ -305,8 +307,8 @@ class UnifiedResponseService:
     @staticmethod
     def bad_request(
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 400 Bad Request standardisée.
@@ -330,8 +332,8 @@ class UnifiedResponseService:
     @staticmethod
     def conflict(
         message: str,
-        conflict_data: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        conflict_data: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 409 Conflict standardisée.
@@ -355,8 +357,8 @@ class UnifiedResponseService:
     @staticmethod
     def rate_limit_exceeded(
         message: str = "Rate limit exceeded",
-        retry_after: Optional[int] = None,
-        client_op_id: Optional[str] = None,
+        retry_after: int | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 429 Too Many Requests standardisée.
@@ -381,9 +383,9 @@ class UnifiedResponseService:
     @staticmethod
     def service_unavailable(
         service: str,
-        message: Optional[str] = None,
-        retry_after: Optional[int] = None,
-        client_op_id: Optional[str] = None,
+        message: str | None = None,
+        retry_after: int | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 503 Service Unavailable standardisée.
@@ -412,8 +414,8 @@ class UnifiedResponseService:
     @staticmethod
     def internal_error(
         message: str = "Internal server error",
-        operation: Optional[str] = None,
-        client_op_id: Optional[str] = None,
+        operation: str | None = None,
+        client_op_id: str | None = None,
         trace: bool = False,
     ) -> JSONResponse:
         """
@@ -442,7 +444,7 @@ class UnifiedResponseService:
         )
 
     @staticmethod
-    def no_content(client_op_id: Optional[str] = None) -> JSONResponse:
+    def no_content(client_op_id: str | None = None) -> JSONResponse:
         """
         Crée une réponse 204 No Content standardisée.
 
@@ -462,8 +464,8 @@ class UnifiedResponseService:
     @staticmethod
     def accepted(
         message: str = "Request accepted for processing",
-        task_id: Optional[str] = None,
-        client_op_id: Optional[str] = None,
+        task_id: str | None = None,
+        client_op_id: str | None = None,
     ) -> JSONResponse:
         """
         Crée une réponse 202 Accepted standardisée.
@@ -486,7 +488,7 @@ class UnifiedResponseService:
 
     @staticmethod
     def created(
-        message: str, data: Any, location: Optional[str] = None, client_op_id: Optional[str] = None
+        message: str, data: Any, location: str | None = None, client_op_id: str | None = None
     ) -> JSONResponse:
         """
         Crée une réponse 201 Created standardisée.

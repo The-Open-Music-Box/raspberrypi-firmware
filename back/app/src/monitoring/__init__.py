@@ -8,7 +8,7 @@ Provides get_logger and stubs for event monitor without cross-layer imports.
 Uses lazy loading to avoid circular dependencies.
 """
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.src.monitoring.core.logger import ImprovedLogger
@@ -49,7 +49,7 @@ def get_error_handler():
     return _error_handler
 
 
-def get_event_monitor() -> Optional[object]:
+def get_event_monitor() -> object | None:
     """Get event monitor instance (only if debug enabled).
 
     Returns:
@@ -61,7 +61,7 @@ def get_event_monitor() -> Optional[object]:
 
 def shutdown_monitoring():
     """Shutdown all monitoring components."""
-    return None
+    return
 
 
 def get_monitoring_statistics() -> dict:
@@ -75,10 +75,10 @@ def get_monitoring_statistics() -> dict:
 
 # Export public interface
 __all__ = [
-    "get_logger",
     "get_error_handler",
     "get_event_monitor",
-    "shutdown_monitoring",
+    "get_logger",
     "get_monitoring_statistics",
+    "shutdown_monitoring",
     # Monitoring config removed from public interface
 ]

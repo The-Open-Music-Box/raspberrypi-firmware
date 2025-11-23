@@ -7,15 +7,15 @@
 from .data_exceptions import (
     DataDomainError,
     PlaylistNotFoundError,
-    TrackNotFoundError,
     PlaylistValidationError,
-    TrackValidationError
+    TrackNotFoundError,
+    TrackValidationError,
 )
 
 __all__ = [
     'DataDomainError',
     'PlaylistNotFoundError',
-    'TrackNotFoundError',
     'PlaylistValidationError',
+    'TrackNotFoundError',
     'TrackValidationError'
 ]

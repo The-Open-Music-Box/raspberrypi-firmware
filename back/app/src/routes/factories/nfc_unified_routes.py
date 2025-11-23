@@ -9,17 +9,17 @@ Bootstrap/factory class for NFC integration routes.
 Single Responsibility: Initialize and register NFC API routes with dependencies.
 """
 
-from typing import Optional
+
 from fastapi import FastAPI
 from socketio import AsyncServer
 
-from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_errors
 from app.src.api.endpoints.nfc_api_routes import NFCAPIRoutes
 from app.src.infrastructure.error_handling.unified_error_handler import (
-    unified_error_handler,
     service_unavailable_error,
+    unified_error_handler,
 )
+from app.src.monitoring import get_logger
+from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = get_logger(__name__)
 
@@ -50,7 +50,7 @@ class UnifiedNFCRoutes:
         self.app = app
         self.socketio = socketio
         self.error_handler = unified_error_handler
-        self.api_routes: Optional[NFCAPIRoutes] = None
+        self.api_routes: NFCAPIRoutes | None = None
 
         # Configure Socket.IO for NFC service if available
         self._configure_nfc_socketio()

@@ -9,11 +9,12 @@ This module defines consistent response formats, error handling, and data contra
 that are used throughout the entire backend API to ensure frontend compatibility.
 """
 
-from typing import Any, Dict, List, Optional, TypeVar, Generic
-from pydantic import BaseModel, Field
-from enum import Enum
 import time
 import uuid
+from enum import Enum
+from typing import Any, Generic, TypeVar
+
+from pydantic import BaseModel, Field
 
 T = TypeVar("T")
 
@@ -44,12 +45,12 @@ class BaseResponse(BaseModel, Generic[T]):
 
     status: ResponseStatus = Field(..., description="Response status")
     message: str = Field(..., description="Human-readable message")
-    data: Optional[T] = Field(None, description="Response data payload")
+    data: T | None = Field(None, description="Response data payload")
     timestamp: int = Field(
         default_factory=lambda: int(time.time() * 1000),
         description="Response timestamp in milliseconds",
     )
-    server_seq: Optional[int] = Field(
+    server_seq: int | None = Field(
         None, description="Server sequence number for state synchronization"
     )
 
@@ -62,7 +63,7 @@ class ErrorResponse(BaseModel):
     )
     message: str = Field(..., description="Human-readable error message")
     error_type: ErrorType = Field(..., description="Structured error type")
-    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+    details: dict[str, Any] | None = Field(None, description="Additional error details")
     timestamp: int = Field(
         default_factory=lambda: int(time.time() * 1000),
         description="Error timestamp in milliseconds",
@@ -84,7 +85,7 @@ class SuccessResponse(BaseResponse[T]):
 class PaginatedData(BaseModel, Generic[T]):
     """Standard pagination wrapper for list responses."""
 
-    items: List[T] = Field(..., description="List of items")
+    items: list[T] = Field(..., description="List of items")
     page: int = Field(..., ge=1, description="Current page number")
     limit: int = Field(..., ge=1, le=100, description="Items per page")
     total: int = Field(..., ge=0, description="Total number of items")
@@ -101,7 +102,7 @@ class PaginatedResponse(BaseResponse[PaginatedData[T]]):
 class ClientOperationRequest(BaseModel):
     """Base model for requests that include client operation tracking."""
 
-    client_op_id: Optional[str] = Field(
+    client_op_id: str | None = Field(
         default=None,
         max_length=100,
         pattern=r"^[a-zA-Z0-9_-]*$",
@@ -118,8 +119,8 @@ class PaginationParams(BaseModel):
 
 # Response utility functions
 def create_success_response(
-    message: str, data: Optional[Any] = None, server_seq: Optional[int] = None
-) -> Dict[str, Any]:
+    message: str, data: Any | None = None, server_seq: int | None = None
+) -> dict[str, Any]:
     """Create a standardized success response."""
     return SuccessResponse[Any](
         status=ResponseStatus.SUCCESS, message=message, data=data, server_seq=server_seq
@@ -127,8 +128,8 @@ def create_success_response(
 
 
 def create_error_response(
-    message: str, error_type: ErrorType, details: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    message: str, error_type: ErrorType, details: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Create a standardized error response."""
     return ErrorResponse(
         status=ResponseStatus.ERROR, message=message, error_type=error_type, details=details
@@ -137,12 +138,12 @@ def create_error_response(
 
 def create_paginated_response(
     message: str,
-    items: List[Any],
+    items: list[Any],
     page: int,
     limit: int,
     total: int,
-    server_seq: Optional[int] = None,
-) -> Dict[str, Any]:
+    server_seq: int | None = None,
+) -> dict[str, Any]:
     """Create a standardized paginated response."""
     total_pages = (total + limit - 1) // limit  # Ceiling division
 
@@ -177,13 +178,13 @@ def get_http_status_for_error(error_type: ErrorType) -> int:
 class Result(Generic[T]):
     """Simple result pattern for service layer operations."""
 
-    def __init__(self, success: bool, data: Optional[T] = None, error: Optional[str] = None):
+    def __init__(self, success: bool, data: T | None = None, error: str | None = None):
         self.success = success
         self.data = data
         self.error = error
 
     @classmethod
-    def success_result(cls, data: Optional[T] = None) -> "Result[T]":
+    def success_result(cls, data: T | None = None) -> "Result[T]":
         """Create a successful result."""
         return cls(success=True, data=data)
 
@@ -193,7 +194,7 @@ class Result(Generic[T]):
         return cls(success=False, error=error)
 
 
-def Success(data: Optional[T] = None) -> Result[T]:
+def Success(data: T | None = None) -> Result[T]:
     """Create a successful result (convenience function)."""
     return Result.success_result(data)
 

@@ -4,10 +4,13 @@
 
 """NFC adapter for domain-driven architecture."""
 
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
 from app.src.monitoring import get_logger
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
 
 
 class NFCHardwareInterface(Protocol):
@@ -68,7 +71,7 @@ class NFCHandlerAdapter:
         """Get the RxPy Subject for tag detection events."""
         # Access tag_subject if available (not in Protocol but used by implementations)
         if hasattr(self._hardware, "tag_subject"):
-            return getattr(self._hardware, "tag_subject")
+            return self._hardware.tag_subject
         return None
 
     def is_running(self) -> bool:
@@ -88,7 +91,6 @@ class NFCHandlerAdapter:
         # This is a compatibility method for legacy code
         # The preferred way is to use the tag_subject for event-driven detection
         logger.debug("Direct read_tag called (compatibility mode)")
-        return None  # Return None as events should come through tag_subject
 
     async def read_nfc(self):
         """Asynchronous NFC tag reading."""

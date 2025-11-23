@@ -8,12 +8,12 @@ Playlist Playback API - Playback Control Operations
 Single Responsibility: Handle HTTP requests for playlist playback control.
 """
 
+
 from fastapi import APIRouter, Body, Request
 
 from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
-from typing import Optional
 
 
 class PlaylistPlaybackAPI(BaseAPIRoutes):
@@ -131,7 +131,9 @@ class PlaylistPlaybackAPI(BaseAPIRoutes):
                 # CRITICAL FIX: Broadcast complete PLAYER_STATE just like play/pause/next/previous endpoints
                 # This ensures all UI elements update (play/pause button, track info, progress bar)
                 try:
-                    from app.src.application.services.unified_state_manager import UnifiedStateManager
+                    from app.src.application.services.unified_state_manager import (
+                        UnifiedStateManager,
+                    )
                     from app.src.common.socket_events import StateEventType
 
                     # Get the socketio instance from request
@@ -197,10 +199,9 @@ class PlaylistPlaybackAPI(BaseAPIRoutes):
                             "playlists_count": len(result.get("playlists", []))
                         }
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to sync playlists")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to sync playlists")
+                )
 
             except Exception as e:
                 # Use base class helper for error handling

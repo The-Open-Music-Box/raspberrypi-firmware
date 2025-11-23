@@ -11,7 +11,6 @@ import logging
 import os
 from enum import Enum, auto
 from pathlib import Path
-
 from typing import Any
 
 logger = logging.getLogger(__name__)

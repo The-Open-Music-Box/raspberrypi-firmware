@@ -5,10 +5,10 @@
 """Domain services package."""
 
 from .track_reordering_service import (
-    TrackReorderingService,
-    ReorderingStrategy,
     ReorderingCommand,
     ReorderingResult,
+    ReorderingStrategy,
+    TrackReorderingService,
 )
 
-__all__ = ["TrackReorderingService", "ReorderingStrategy", "ReorderingCommand", "ReorderingResult"]
+__all__ = ["ReorderingCommand", "ReorderingResult", "ReorderingStrategy", "TrackReorderingService"]

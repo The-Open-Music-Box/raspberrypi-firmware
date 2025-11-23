@@ -5,24 +5,28 @@
 """Unified audio engine implementation."""
 
 import time
-from typing import Dict, Any, Optional
+from typing import Any
 
-from app.src.monitoring import get_logger
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
 from app.src.domain.data.models.playlist import Playlist
-
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
 from app.src.domain.protocols.audio_backend_protocol import AudioBackendProtocol
 from app.src.domain.protocols.audio_engine_protocol import AudioEngineProtocol
 from app.src.domain.protocols.event_bus_protocol import EventBusProtocol
-from app.src.domain.protocols.state_manager_protocol import StateManagerProtocol, PlaybackState
-# PlaylistManagerProtocol removed - use data domain services
+from app.src.domain.protocols.state_manager_protocol import (
+    PlaybackState,
+    StateManagerProtocol,
+)
+from app.src.monitoring import get_logger
 
+# PlaylistManagerProtocol removed - use data domain services
 from ..events.audio_events import (
-    TrackStartedEvent,
-    PlaylistLoadedEvent,
-    PlaybackStateChangedEvent,
-    VolumeChangedEvent,
     ErrorEvent,
+    PlaybackStateChangedEvent,
+    PlaylistLoadedEvent,
+    TrackStartedEvent,
+    VolumeChangedEvent,
 )
 
 logger = get_logger(__name__)
@@ -48,7 +52,7 @@ class AudioEngine(AudioEngineProtocol):
         self._event_bus = event_bus
         self._state_manager = state_manager
         self._is_running = False
-        self._startup_time: Optional[float] = None
+        self._startup_time: float | None = None
         self._playlist_manager = None  # Initialize as None for safe operations
         self._is_stopping = False  # Flag to prevent recursive shutdown
 
@@ -89,10 +93,9 @@ class AudioEngine(AudioEngineProtocol):
         """Safely get current state with fallback."""
         if hasattr(self._state_manager, "get_current_state"):
             return self._state_manager.get_current_state()
-        else:
-            logger.warning(f"⚠️ StateManager {type(self._state_manager).__name__} lacks get_current_state method",
-                           )
-            return PlaybackState.STOPPED  # Safe fallback
+        logger.warning(f"⚠️ StateManager {type(self._state_manager).__name__} lacks get_current_state method",
+                       )
+        return PlaybackState.STOPPED  # Safe fallback
 
     def _setup_event_subscriptions(self) -> None:
         """Set up internal event subscriptions."""
@@ -102,7 +105,7 @@ class AudioEngine(AudioEngineProtocol):
     # MARK: - AudioEngineProtocol Implementation
 
     @handle_errors("play_track_by_path")
-    async def play_track_by_path(self, file_path: str, track_id: Optional[str] = None) -> bool:
+    async def play_track_by_path(self, file_path: str, track_id: str | None = None) -> bool:
         """Play a track by file path."""
         try:
             success = await self._backend.play(file_path)
@@ -119,7 +122,7 @@ class AudioEngine(AudioEngineProtocol):
             return False
 
     @handle_errors("get_playback_state")
-    def get_playback_state(self) -> Dict[str, Any]:
+    def get_playback_state(self) -> dict[str, Any]:
         """Get current playback state."""
         return {
             "is_playing": self._backend.is_playing() if hasattr(self._backend, 'is_playing') and callable(self._backend.is_playing) else False,
@@ -423,7 +426,7 @@ class AudioEngine(AudioEngineProtocol):
             return False
 
         try:
-            logger.debug(f"Getting current state...")
+            logger.debug("Getting current state...")
             old_state = self._safe_get_current_state()
             logger.debug(f"Current state: {old_state}")
 
@@ -544,7 +547,7 @@ class AudioEngine(AudioEngineProtocol):
 
     # === State Access ===
 
-    def get_state_dict(self) -> Dict[str, Any]:
+    def get_state_dict(self) -> dict[str, Any]:
         """Get current state as dictionary."""
         base_state = self._state_manager.get_state_dict()
 
@@ -562,7 +565,7 @@ class AudioEngine(AudioEngineProtocol):
 
         return base_state
 
-    def get_engine_statistics(self) -> Dict[str, Any]:
+    def get_engine_statistics(self) -> dict[str, Any]:
         """Get comprehensive engine statistics."""
         return {
             "engine": {

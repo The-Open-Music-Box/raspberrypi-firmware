@@ -7,11 +7,11 @@
 Provides centralized audio component initialization and lifecycle management.
 """
 
-from typing import Optional, Any
 import logging
+from typing import Any
 
-from app.src.domain.decorators.error_handler import handle_domain_errors
 from app.src.domain.audio.factory import AudioDomainFactory
+from app.src.domain.decorators.error_handler import handle_domain_errors
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +33,11 @@ class AudioDomainContainer:
     # MARK: - Initialization
 
     def __init__(self):
-        self._audio_engine: Optional[Any] = None
-        self._backend: Optional[Any] = None
+        self._audio_engine: Any | None = None
+        self._backend: Any | None = None
         # Playlist manager removed - use data domain services
-        self._event_bus: Optional[Any] = None
-        self._state_manager: Optional[Any] = None
+        self._event_bus: Any | None = None
+        self._state_manager: Any | None = None
 
         self._is_initialized = False
         logger.info("AudioDomainContainer created")

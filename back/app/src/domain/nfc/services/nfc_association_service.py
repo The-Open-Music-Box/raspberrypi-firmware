@@ -4,15 +4,13 @@
 
 """NFC Association Domain Service."""
 
-from typing import Optional, Dict, List
-
-from ..entities.nfc_tag import NfcTag
-from ..entities.association_session import AssociationSession, SessionState
-from ..value_objects.tag_identifier import TagIdentifier
-from ..protocols.nfc_hardware_protocol import NfcRepositoryProtocol
 import logging
-
 from typing import Any
+
+from ..entities.association_session import AssociationSession, SessionState
+from ..entities.nfc_tag import NfcTag
+from ..protocols.nfc_hardware_protocol import NfcRepositoryProtocol
+from ..value_objects.tag_identifier import TagIdentifier
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +25,7 @@ class NfcAssociationService:
     def __init__(
         self,
         nfc_repository: NfcRepositoryProtocol,
-        playlist_repository: Optional[Any] = None,
+        playlist_repository: Any | None = None,
     ):
         """Initialize the association service.
 
@@ -37,7 +35,7 @@ class NfcAssociationService:
         """
         self._nfc_repository = nfc_repository
         self._playlist_repository = playlist_repository
-        self._active_sessions: Dict[str, AssociationSession] = {}
+        self._active_sessions: dict[str, AssociationSession] = {}
 
     async def start_association_session(
         self, playlist_id: str, timeout_seconds: int = 60, override_mode: bool = False
@@ -83,8 +81,8 @@ class NfcAssociationService:
         return session
 
     async def process_tag_detection(
-        self, tag_identifier: TagIdentifier, session_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, tag_identifier: TagIdentifier, session_id: str | None = None
+    ) -> dict[str, Any]:
         """Process a detected NFC tag.
 
         Args:
@@ -148,7 +146,7 @@ class NfcAssociationService:
 
     async def _process_tag_for_session(
         self, tag: NfcTag, session: AssociationSession
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process a tag detection for a specific session.
 
         DATABASE-FIRST ARCHITECTURE:
@@ -243,7 +241,7 @@ class NfcAssociationService:
                 logger.warning(f"⚠️ NFC-Playlist sync failed for tag {tag.identifier}")
         else:
             logger.warning(
-                f"⚠️ Playlist repository not available, association saved to memory only (will be lost on restart!)"
+                "⚠️ Playlist repository not available, association saved to memory only (will be lost on restart!)"
             )
 
         logger.info(
@@ -281,7 +279,7 @@ class NfcAssociationService:
         logger.info(f"🛑 Cancelled association session {session_id}")
         return True
 
-    async def get_association_session(self, session_id: str) -> Optional[AssociationSession]:
+    async def get_association_session(self, session_id: str) -> AssociationSession | None:
         """Get an association session by ID.
 
         Args:
@@ -292,7 +290,7 @@ class NfcAssociationService:
         """
         return self._active_sessions.get(session_id)
 
-    def get_active_sessions(self) -> List[AssociationSession]:
+    def get_active_sessions(self) -> list[AssociationSession]:
         """Get all active association sessions.
 
         Returns:
@@ -320,7 +318,7 @@ class NfcAssociationService:
 
         return expired_count
 
-    def _find_active_session_for_playlist(self, playlist_id: str) -> Optional[AssociationSession]:
+    def _find_active_session_for_playlist(self, playlist_id: str) -> AssociationSession | None:
         """Find active session for a playlist.
 
         Args:

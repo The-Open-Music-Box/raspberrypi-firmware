@@ -8,14 +8,20 @@ Provides registration of data domain services following Clean Architecture princ
 """
 
 import logging
+from typing import cast
 
-from app.src.infrastructure.di.container import get_container
 from app.src.domain.data.services.playlist_service import PlaylistService
 from app.src.domain.data.services.track_service import TrackService
-from app.src.infrastructure.repositories.data_playlist_repository import DataPlaylistRepository
-from app.src.infrastructure.repositories.data_track_repository import DataTrackRepository
-from app.src.infrastructure.adapters.pure_playlist_repository_adapter import PurePlaylistRepositoryAdapter
-from typing import cast
+from app.src.infrastructure.adapters.pure_playlist_repository_adapter import (
+    PurePlaylistRepositoryAdapter,
+)
+from app.src.infrastructure.di.container import get_container
+from app.src.infrastructure.repositories.data_playlist_repository import (
+    DataPlaylistRepository,
+)
+from app.src.infrastructure.repositories.data_track_repository import (
+    DataTrackRepository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +37,9 @@ def register_data_domain_services() -> None:
 
     # Register base playlist repository (PureSQLitePlaylistRepository)
     def create_playlist_repository():
-        from app.src.infrastructure.repositories.pure_sqlite_playlist_repository import PureSQLitePlaylistRepository
+        from app.src.infrastructure.repositories.pure_sqlite_playlist_repository import (
+            PureSQLitePlaylistRepository,
+        )
         return PureSQLitePlaylistRepository()
 
     # Register repository factories

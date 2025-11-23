@@ -26,10 +26,9 @@ GPIO Pin Assignments (BCM numbering):
     SW  (GPIO16) - Play/Pause (encoder switch)
 """
 
-import sys
-import os
-import time
 import logging
+import sys
+import time
 from datetime import datetime
 
 # Setup logging
@@ -42,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import GPIO libraries
 try:
-    from gpiozero import Button, RotaryEncoder, Device
+    from gpiozero import Button, Device, RotaryEncoder
     from gpiozero.pins.rpigpio import RPiGPIOFactory
     Device.pin_factory = RPiGPIOFactory()
     GPIO_AVAILABLE = True
@@ -53,7 +52,7 @@ except ImportError as e:
 except Exception as e:
     logger.warning(f"⚠️ RPi.GPIO backend failed, trying lgpio: {e}")
     try:
-        from gpiozero import Button, RotaryEncoder, Device
+        from gpiozero import Button, Device, RotaryEncoder
         from gpiozero.pins.lgpio import LgpioFactory
         Device.pin_factory = LgpioFactory()
         GPIO_AVAILABLE = True
@@ -86,8 +85,8 @@ class ButtonTester:
 
         self.buttons = {}
         self.encoder = None
-        self.press_counts = {name: 0 for name in self.button_configs.keys()}
-        self.last_press_times = {name: None for name in self.button_configs.keys()}
+        self.press_counts = dict.fromkeys(self.button_configs.keys(), 0)
+        self.last_press_times = dict.fromkeys(self.button_configs.keys())
 
         # Encoder rotation tracking
         self.volume_up_count = 0

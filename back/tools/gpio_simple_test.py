@@ -4,8 +4,8 @@ Script simple pour tester les GPIO - Affiche quand un bouton est pressé
 """
 
 import signal
-import time
 import sys
+import time
 
 # Configuration des pins (mise à jour selon détection réelle)
 PINS = {
@@ -19,7 +19,7 @@ PINS = {
 def cleanup():
     """Nettoyer GPIO à la sortie"""
     try:
-        import RPi.GPIO as GPIO
+        from RPi import GPIO
         GPIO.cleanup()
         print("\n✅ GPIO nettoyé")
     except:
@@ -40,7 +40,7 @@ def main():
     print("=" * 50)
 
     try:
-        import RPi.GPIO as GPIO
+        from RPi import GPIO
         print("✅ RPi.GPIO importé")
     except ImportError:
         print("❌ RPi.GPIO non disponible")

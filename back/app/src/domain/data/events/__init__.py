@@ -6,20 +6,20 @@
 
 from .playlist_events import (
     PlaylistCreatedEvent,
-    PlaylistUpdatedEvent,
     PlaylistDeletedEvent,
+    PlaylistUpdatedEvent,
     TrackAddedEvent,
-    TrackUpdatedEvent,
     TrackDeletedEvent,
-    TracksReorderedEvent
+    TracksReorderedEvent,
+    TrackUpdatedEvent,
 )
 
 __all__ = [
     'PlaylistCreatedEvent',
-    'PlaylistUpdatedEvent',
     'PlaylistDeletedEvent',
+    'PlaylistUpdatedEvent',
     'TrackAddedEvent',
-    'TrackUpdatedEvent',
     'TrackDeletedEvent',
+    'TrackUpdatedEvent',
     'TracksReorderedEvent'
 ]

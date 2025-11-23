@@ -9,7 +9,6 @@ Manages client subscriptions to Socket.IO rooms and handles room-based message r
 Extracted from StateManager for better separation of concerns.
 """
 
-from typing import Dict, Set, Optional
 
 from app.src.monitoring import get_logger
 
@@ -26,7 +25,7 @@ class ClientSubscriptionManager:
 
     def __init__(self, socketio_server=None):
         self.socketio = socketio_server
-        self._client_subscriptions: Dict[str, Set[str]] = {}  # client_id -> {room_names}
+        self._client_subscriptions: dict[str, set[str]] = {}  # client_id -> {room_names}
 
         logger.info("ClientSubscriptionManager initialized")
 
@@ -43,7 +42,7 @@ class ClientSubscriptionManager:
 
         return True
 
-    async def unsubscribe_client(self, client_id: str, room: Optional[str] = None) -> None:
+    async def unsubscribe_client(self, client_id: str, room: str | None = None) -> None:
         """Unsubscribe a client from a room or all rooms."""
         if client_id not in self._client_subscriptions:
             return
@@ -62,11 +61,11 @@ class ClientSubscriptionManager:
             self._client_subscriptions[client_id].clear()
             logger.info(f"Client {client_id} unsubscribed from all rooms")
 
-    def get_client_subscriptions(self, client_id: str) -> Set[str]:
+    def get_client_subscriptions(self, client_id: str) -> set[str]:
         """Get all rooms a client is subscribed to."""
         return self._client_subscriptions.get(client_id, set()).copy()
 
-    def get_room_clients(self, room: str) -> Set[str]:
+    def get_room_clients(self, room: str) -> set[str]:
         """Get all clients subscribed to a specific room."""
         clients = set()
         for client_id, rooms in self._client_subscriptions.items():
@@ -96,7 +95,7 @@ class ClientSubscriptionManager:
 
     def get_stats(self) -> dict:
         """Get subscription statistics for monitoring."""
-        room_counts: Dict[str, int] = {}
+        room_counts: dict[str, int] = {}
         for client_id, rooms in self._client_subscriptions.items():
             for room in rooms:
                 room_counts[room] = room_counts.get(room, 0) + 1
@@ -109,7 +108,7 @@ class ClientSubscriptionManager:
             "clients_with_subscriptions": list(self._client_subscriptions.keys()),
         }
 
-    def get_room_list(self) -> Set[str]:
+    def get_room_list(self) -> set[str]:
         """Get list of all active rooms."""
         rooms = set()
         for room_set in self._client_subscriptions.values():

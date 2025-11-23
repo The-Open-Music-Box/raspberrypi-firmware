@@ -11,9 +11,9 @@ Single Responsibility: Reusable session state management.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict
+from typing import Any
 from uuid import uuid4
 
 
@@ -40,7 +40,7 @@ class BaseSessionEntity(ABC):
     """
 
     session_id: str = field(default_factory=lambda: str(uuid4()))
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     timeout_seconds: int = 300  # 5 minutes default
 
     @property
@@ -53,7 +53,7 @@ class BaseSessionEntity(ABC):
         - UploadSession (lines 62-66)
         """
         return datetime.fromtimestamp(
-            self.created_at.timestamp() + self.timeout_seconds, tz=timezone.utc
+            self.created_at.timestamp() + self.timeout_seconds, tz=UTC
         )
 
     def is_expired(self) -> bool:
@@ -64,7 +64,7 @@ class BaseSessionEntity(ABC):
         - AssociationSession (lines 58-60)
         - UploadSession (lines 82-84)
         """
-        return datetime.now(timezone.utc) > self.timeout_at
+        return datetime.now(UTC) > self.timeout_at
 
     def get_remaining_seconds(self) -> int:
         """
@@ -77,7 +77,7 @@ class BaseSessionEntity(ABC):
         if self.is_expired():
             return 0
 
-        remaining = self.timeout_at - datetime.now(timezone.utc)
+        remaining = self.timeout_at - datetime.now(UTC)
         return max(0, int(remaining.total_seconds()))
 
     @abstractmethod
@@ -90,7 +90,7 @@ class BaseSessionEntity(ABC):
         pass
 
     @abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert session to dictionary for serialization.
 
@@ -98,7 +98,7 @@ class BaseSessionEntity(ABC):
         """
         pass
 
-    def _base_dict_fields(self) -> Dict[str, Any]:
+    def _base_dict_fields(self) -> dict[str, Any]:
         """
         Get common dictionary fields for serialization.
 

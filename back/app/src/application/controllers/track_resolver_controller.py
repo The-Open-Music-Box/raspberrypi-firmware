@@ -8,10 +8,10 @@ TrackResolver - Responsible for resolving track file paths.
 Single responsibility: Convert track filenames to valid file paths.
 """
 
+import logging
 import os
 from pathlib import Path
-from typing import Optional, List
-import logging
+
 from app.src.config import config
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class TrackResolver:
     - Resolving relative paths to absolute paths
     """
 
-    def __init__(self, upload_folder: Optional[str] = None):
+    def __init__(self, upload_folder: str | None = None):
         """
         Initialize the track resolver.
 
@@ -37,7 +37,7 @@ class TrackResolver:
         self.upload_folder = upload_folder or config.upload_folder
         logger.info(f"✅ TrackResolver initialized with folder: {self.upload_folder}")
 
-    def resolve_path(self, filename: str) -> Optional[str]:
+    def resolve_path(self, filename: str) -> str | None:
         """
         Resolve a track filename to its full path.
 
@@ -56,9 +56,8 @@ class TrackResolver:
             if os.path.exists(filename):
                 logger.debug(f"Using absolute path: {filename}")
                 return filename
-            else:
-                logger.warning(f"Absolute path not found: {filename}")
-                return None
+            logger.warning(f"Absolute path not found: {filename}")
+            return None
 
         # Try to resolve relative to upload folder
         full_path = os.path.join(self.upload_folder, filename)
@@ -117,7 +116,7 @@ class TrackResolver:
 
         return True
 
-    def _search_recursive(self, filename: str) -> Optional[str]:
+    def _search_recursive(self, filename: str) -> str | None:
         """
         Search for a filename recursively in upload folder subdirectories.
 
@@ -148,7 +147,7 @@ class TrackResolver:
 
         return None
 
-    def resolve_multiple(self, filenames: List[str]) -> List[Optional[str]]:
+    def resolve_multiple(self, filenames: list[str]) -> list[str | None]:
         """
         Resolve multiple track filenames.
 
@@ -160,7 +159,7 @@ class TrackResolver:
         """
         return [self.resolve_path(filename) for filename in filenames]
 
-    def find_tracks_in_directory(self, directory: Optional[str] = None) -> List[str]:
+    def find_tracks_in_directory(self, directory: str | None = None) -> list[str]:
         """
         Find all audio track files in a directory.
 

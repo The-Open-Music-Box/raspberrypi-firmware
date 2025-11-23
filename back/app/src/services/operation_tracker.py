@@ -11,10 +11,10 @@ Extracted from StateManager for better separation of concerns.
 
 import asyncio
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
-from app.src.monitoring import get_logger
 from app.src.config.socket_config import socket_config
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -28,8 +28,8 @@ class OperationTracker:
     """
 
     def __init__(self):
-        self._processed_operations: Dict[str, float] = {}  # client_op_id -> timestamp
-        self._operation_results: Dict[str, Any] = {}  # client_op_id -> result for deduplication
+        self._processed_operations: dict[str, float] = {}  # client_op_id -> timestamp
+        self._operation_results: dict[str, Any] = {}  # client_op_id -> result for deduplication
         self._operations_lock = asyncio.Lock()
 
         # Configuration from SocketConfig
@@ -53,7 +53,7 @@ class OperationTracker:
                 return True
             return False
 
-    async def mark_operation_processed(self, client_op_id: str, result: Optional[Any] = None) -> None:
+    async def mark_operation_processed(self, client_op_id: str, result: Any | None = None) -> None:
         """Mark a client operation as processed with thread safety and optional result caching."""
         async with self._operations_lock:
             current_time = time.time()
@@ -68,7 +68,7 @@ class OperationTracker:
 
             logger.debug(f"Operation {client_op_id} marked as processed")
 
-    async def get_operation_result(self, client_op_id: str) -> Optional[Any]:
+    async def get_operation_result(self, client_op_id: str) -> Any | None:
         """Get cached result for a processed operation."""
         async with self._operations_lock:
             if client_op_id in self._operation_results:
@@ -78,9 +78,8 @@ class OperationTracker:
                 # Check if result is still valid
                 if current_time - result_data["timestamp"] <= self._result_ttl:
                     return result_data["result"]
-                else:
-                    # Clean up expired result
-                    del self._operation_results[client_op_id]
+                # Clean up expired result
+                del self._operation_results[client_op_id]
             return None
 
     async def cleanup_expired_operations(self) -> int:
@@ -147,7 +146,7 @@ class OperationTracker:
             "result_ttl_sec": self._result_ttl,
         }
 
-    def get_processed_operations(self) -> Dict[str, float]:
+    def get_processed_operations(self) -> dict[str, float]:
         """Get all processed operations (for testing/debugging)."""
         return self._processed_operations.copy()
 

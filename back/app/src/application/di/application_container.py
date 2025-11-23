@@ -8,16 +8,24 @@ This container wires Application services using proper dependency injection
 following Clean Architecture principles.
 """
 
-from typing import Dict, Any, Callable, TypeVar
 import logging
+from collections.abc import Callable
+from typing import Any, TypeVar
+
+from app.src.application.services.audio_application_service import (
+    AudioApplicationService,
+)
+from app.src.application.services.data_application_service import DataApplicationService
+from app.src.application.services.nfc_application_service import NfcApplicationService
+from app.src.application.services.upload_application_service import (
+    UploadApplicationService,
+)
+from app.src.domain.audio.engine.state_manager import StateManager
 
 # Direct imports - no more dynamic imports
-from app.src.infrastructure.di.container import get_container as get_infrastructure_container
-from app.src.application.services.data_application_service import DataApplicationService
-from app.src.application.services.audio_application_service import AudioApplicationService
-from app.src.application.services.nfc_application_service import NfcApplicationService
-from app.src.application.services.upload_application_service import UploadApplicationService
-from app.src.domain.audio.engine.state_manager import StateManager
+from app.src.infrastructure.di.container import (
+    get_container as get_infrastructure_container,
+)
 from app.src.infrastructure.nfc.nfc_factory import NfcFactory
 from app.src.infrastructure.upload.upload_factory import UploadFactory
 
@@ -35,9 +43,9 @@ class ApplicationContainer:
         Args:
             infrastructure_container: The infrastructure DI container
         """
-        self._services: Dict[str, Any] = {}
-        self._singletons: Dict[str, Any] = {}
-        self._factories: Dict[str, Callable] = {}
+        self._services: dict[str, Any] = {}
+        self._singletons: dict[str, Any] = {}
+        self._factories: dict[str, Callable] = {}
         self._infrastructure_container = infrastructure_container
 
     def register_singleton(self, service_name: str, instance: Any) -> None:
@@ -77,7 +85,7 @@ class ApplicationContainer:
         try:
             return self._infrastructure_container.get(service_name)
         except KeyError:
-            raise KeyError(f"Service '{service_name}' not found in application or infrastructure containers")
+            raise KeyError(f"Service '{service_name}' not found in application or infrastructure containers") from None
 
 
 # Global application container instance
@@ -144,7 +152,9 @@ def register_application_services(container: ApplicationContainer) -> None:
 
     def playback_coordinator_factory():
         # Create playback coordinator directly to avoid circular import
-        from app.src.application.controllers.playback_coordinator_controller import PlaybackCoordinator
+        from app.src.application.controllers.playback_coordinator_controller import (
+            PlaybackCoordinator,
+        )
         from app.src.infrastructure.di.container import get_container
 
         # Get dependencies from DI container
@@ -182,7 +192,9 @@ def register_application_services(container: ApplicationContainer) -> None:
             )
 
         # Fallback: create with mock backend
-        from app.src.domain.audio.backends.implementations.mock_audio_backend import MockAudioBackend
+        from app.src.domain.audio.backends.implementations.mock_audio_backend import (
+            MockAudioBackend,
+        )
         return PlaybackCoordinator(
             MockAudioBackend(),
             playlist_service=playlist_service,

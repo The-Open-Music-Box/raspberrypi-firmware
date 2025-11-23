@@ -4,7 +4,6 @@
 import ast
 import sys
 from pathlib import Path
-from typing import Set, List, Tuple
 
 
 class ImportChecker(ast.NodeVisitor):
@@ -12,8 +11,8 @@ class ImportChecker(ast.NodeVisitor):
 
     def __init__(self, source: str):
         self.source = source
-        self.imports: Set[str] = set()
-        self.used_names: Set[str] = set()
+        self.imports: set[str] = set()
+        self.used_names: set[str] = set()
         self.import_locations: dict = {}
 
     def visit_Import(self, node):
@@ -43,7 +42,7 @@ class ImportChecker(ast.NodeVisitor):
             self.used_names.add(node.value.id)
         self.generic_visit(node)
 
-    def get_unused_imports(self) -> List[Tuple[str, int]]:
+    def get_unused_imports(self) -> list[tuple[str, int]]:
         """Return list of (import_name, line_number) for unused imports."""
         unused = []
         for imp in self.imports:
@@ -52,7 +51,7 @@ class ImportChecker(ast.NodeVisitor):
         return sorted(unused, key=lambda x: x[1])
 
 
-def check_file(filepath: Path) -> List[Tuple[str, int]]:
+def check_file(filepath: Path) -> list[tuple[str, int]]:
     """Check a single file for unused imports."""
     try:
         source = filepath.read_text()

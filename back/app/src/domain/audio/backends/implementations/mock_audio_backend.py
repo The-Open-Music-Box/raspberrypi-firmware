@@ -9,12 +9,14 @@ It implements the AudioBackendProtocol interface and focuses purely on simulatin
 operations without requiring real hardware.
 """
 
-import time
-from typing import Optional, Any, cast
 import logging
+import time
+from typing import Any, cast
 
 from app.src.config import config
-from app.src.domain.audio.backends.implementations.base_audio_backend import BaseAudioBackend
+from app.src.domain.audio.backends.implementations.base_audio_backend import (
+    BaseAudioBackend,
+)
 from app.src.domain.decorators.error_handler import handle_domain_errors
 
 
@@ -35,11 +37,11 @@ class MockAudioBackend(BaseAudioBackend):
     It provides predictable behavior for testing auto-advance and playlist functionality.
     """
 
-    def __init__(self, playback_subject: Optional[Any] = None):
+    def __init__(self, playback_subject: Any | None = None):
         """Initialize the mock audio backend."""
         super().__init__(playback_subject)
         self._track_duration = config.audio.mock_track_duration  # Simulated duration
-        self._play_start_time: Optional[float] = None
+        self._play_start_time: float | None = None
         self._volume = 50  # Default volume
         self._initialized = False
 
@@ -126,7 +128,7 @@ class MockAudioBackend(BaseAudioBackend):
         return False
 
     @handle_errors("get_position")
-    async def get_position(self) -> Optional[int]:
+    async def get_position(self) -> int | None:
         """Get current playback position."""
         # Update internal state to check for track completion
         self._update_internal_state()
@@ -137,7 +139,7 @@ class MockAudioBackend(BaseAudioBackend):
         return None
 
     @handle_errors("get_duration")
-    async def get_duration(self) -> Optional[int]:
+    async def get_duration(self) -> int | None:
         """Get duration of current track."""
         if self._current_file_path:
             return int(self._track_duration * 1000)  # Convert to ms
@@ -153,7 +155,7 @@ class MockAudioBackend(BaseAudioBackend):
     # Removed duplicate is_playing method - using property below
 
     @handle_errors("play_file")
-    def play_file(self, file_path: str, duration_ms: Optional[int] = None) -> bool:
+    def play_file(self, file_path: str, duration_ms: int | None = None) -> bool:
         """Play a single audio file (simulated).
 
         Args:
@@ -189,7 +191,7 @@ class MockAudioBackend(BaseAudioBackend):
 
     # Removed duplicate sync set_volume - using async version above
 
-    def get_current_file(self) -> Optional[str]:
+    def get_current_file(self) -> str | None:
         """Get the currently playing file path.
 
         Returns:

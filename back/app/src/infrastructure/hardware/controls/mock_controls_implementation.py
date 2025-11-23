@@ -8,12 +8,13 @@ Mock Physical Controls Implementation.
 Mock implementation for testing and development without real hardware.
 """
 
-from typing import Dict, Any, List, Optional
 import logging
+from typing import Any
+
+from app.src.config.button_actions_config import ButtonActionConfig
+from app.src.domain.protocols.physical_controls_protocol import PhysicalControlEvent
 
 from .base_controls_implementation import BaseControlsImplementation
-from app.src.domain.protocols.physical_controls_protocol import PhysicalControlEvent
-from app.src.config.button_actions_config import ButtonActionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class MockPhysicalControls(BaseControlsImplementation):
     def __init__(
         self,
         hardware_config: Any,
-        button_configs: Optional[List[ButtonActionConfig]] = None
+        button_configs: list[ButtonActionConfig] | None = None
     ):
         """Initialize mock physical controls.
 
@@ -51,7 +52,7 @@ class MockPhysicalControls(BaseControlsImplementation):
         self._event_handlers.clear()
         logger.info("✅ Mock physical controls cleanup completed")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of mock controls.
 
         Uses base class helper for button info.

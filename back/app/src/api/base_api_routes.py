@@ -10,7 +10,9 @@ Follows Context7 principles with proper type safety and DDD architecture.
 """
 
 import logging
-from typing import Any, Callable, Optional, Dict
+from collections.abc import Callable
+from typing import Any
+
 from fastapi import APIRouter
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
@@ -34,7 +36,7 @@ class BaseAPIRoutes:
 
     def __init__(
         self,
-        router: Optional[APIRouter] = None,
+        router: APIRouter | None = None,
         **services
     ):
         """Initialize base API routes.
@@ -69,8 +71,8 @@ class BaseAPIRoutes:
         self,
         service_name: str,
         service_instance: Any,
-        error_message: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        error_message: str | None = None
+    ) -> dict[str, Any] | None:
         """Check if a service is available and return error response if not.
 
         Extracted helper to eliminate duplication of service availability checks.
@@ -96,9 +98,9 @@ class BaseAPIRoutes:
         self,
         error: Exception,
         operation: str,
-        message: Optional[str] = None,
+        message: str | None = None,
         **extra_context
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle errors in API endpoints with consistent logging and response.
 
         Extracted helper to eliminate duplication of error handling logic.
@@ -117,7 +119,7 @@ class BaseAPIRoutes:
         self.handle_system_exceptions(error)
 
         # Log the error with context
-        error_msg = f"Error in {operation}: {str(error)}"
+        error_msg = f"Error in {operation}: {error!s}"
         if extra_context:
             self._logger.error(error_msg, extra=extra_context, exc_info=True)
         else:

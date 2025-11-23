@@ -4,11 +4,11 @@
 
 """Pure audio playback controller - no data management."""
 
-from typing import Optional, Dict, Any, cast
 from dataclasses import dataclass
+from typing import Any, cast
 
-from app.src.monitoring import get_logger
 from app.src.domain.decorators.error_handler import handle_domain_errors
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -17,10 +17,10 @@ logger = get_logger(__name__)
 class PlaybackState:
     """Current playback state."""
     is_playing: bool = False
-    current_track_id: Optional[str] = None
+    current_track_id: str | None = None
     position_ms: int = 0
     volume: int = 50
-    playlist_id: Optional[str] = None
+    playlist_id: str | None = None
 
 
 class PlaybackController:
@@ -151,7 +151,7 @@ class PlaybackController:
             logger.error(f"❌ Failed to seek: {e}")
             return False
 
-    def get_playback_state(self) -> Dict[str, Any]:
+    def get_playback_state(self) -> dict[str, Any]:
         """Get current playback state.
 
         Returns:
@@ -166,7 +166,7 @@ class PlaybackController:
         }
 
     @handle_domain_errors(operation_name="update_position")
-    async def update_position(self) -> Optional[int]:
+    async def update_position(self) -> int | None:
         """Update current position from backend.
 
         Returns:

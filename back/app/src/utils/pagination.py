@@ -9,8 +9,8 @@ Provides cursor-based pagination with opaque cursor encoding/decoding.
 
 import base64
 import json
-from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
+from typing import Any
 
 
 def encode_cursor(updated_at: str, playlist_id: str) -> str:
@@ -29,7 +29,7 @@ def encode_cursor(updated_at: str, playlist_id: str) -> str:
     return base64.b64encode(cursor_json.encode("utf-8")).decode("ascii")
 
 
-def decode_cursor(cursor: str) -> Tuple[Optional[str], Optional[str]]:
+def decode_cursor(cursor: str) -> tuple[str | None, str | None]:
     """
     Decode pagination cursor to sort key components.
 
@@ -47,7 +47,7 @@ def decode_cursor(cursor: str) -> Tuple[Optional[str], Optional[str]]:
         return None, None
 
 
-def compute_playlist_aggregates(tracks: List[Dict[str, Any]]) -> Dict[str, Any]:
+def compute_playlist_aggregates(tracks: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Compute aggregate values for a playlist from its tracks.
 
@@ -82,8 +82,8 @@ def compute_playlist_aggregates(tracks: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def create_playlist_index_item(
-    playlist_data: Dict[str, Any], server_seq: int, playlist_seq: int
-) -> Dict[str, Any]:
+    playlist_data: dict[str, Any], server_seq: int, playlist_seq: int
+) -> dict[str, Any]:
     """
     Create a playlist index item from full playlist data.
 

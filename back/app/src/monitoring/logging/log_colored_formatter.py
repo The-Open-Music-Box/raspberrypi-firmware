@@ -40,7 +40,7 @@ class ColoredLogFormatter(BaseLogFormatter, logging.Formatter):
             self._startup_phase = self._extract_component(record.msg)
             return f"{Fore.CYAN}◉ Initializing {self._startup_phase}...{Style.RESET_ALL}"
 
-        elif "ready" in str(record.msg) and self._startup_phase:
+        if "ready" in str(record.msg) and self._startup_phase:
             result = f"{Fore.GREEN}  ↳ {self._startup_phase} ready{Style.RESET_ALL}"
             self._startup_phase = None
             return result

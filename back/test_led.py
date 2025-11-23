@@ -10,8 +10,8 @@ Teste les 3 couleurs primaires et quelques animations basiques.
 Usage: python test_led.py
 """
 
-import time
 import sys
+import time
 
 # Pins GPIO (numérotation BCM)
 RED_PIN = 25
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     print("="*50)
     print("Test LED RGB - TheOpenMusicBox")
     print("="*50)
-    print(f"\nPins utilisés:")
+    print("\nPins utilisés:")
     print(f"  Rouge (R):  GPIO {RED_PIN}")
     print(f"  Vert (G):   GPIO {GREEN_PIN}")
     print(f"  Bleu (B):   GPIO {BLUE_PIN}")

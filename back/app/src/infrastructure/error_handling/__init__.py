@@ -5,19 +5,19 @@
 """Domain error handling package."""
 
 from .unified_error_handler import (
-    UnifiedErrorHandler,
-    unified_error_handler,
-    ErrorSeverity,
     ErrorCategory,
     ErrorContext,
     ErrorRecord,
+    ErrorSeverity,
+    UnifiedErrorHandler,
+    unified_error_handler,
 )
 
 __all__ = [
-    "UnifiedErrorHandler",
-    "unified_error_handler",
-    "ErrorSeverity",
     "ErrorCategory",
     "ErrorContext",
     "ErrorRecord",
+    "ErrorSeverity",
+    "UnifiedErrorHandler",
+    "unified_error_handler",
 ]

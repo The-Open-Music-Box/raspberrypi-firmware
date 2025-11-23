@@ -5,7 +5,8 @@ Creates the base tables for TheOpenMusicBox: playlists and tracks
 """
 
 import sqlite3
-from typing import Dict, Any
+from typing import Any
+
 from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
@@ -87,7 +88,7 @@ def down(connection: sqlite3.Connection) -> bool:
         return False
 
 
-def get_migration_info() -> Dict[str, Any]:
+def get_migration_info() -> dict[str, Any]:
     """Get migration metadata."""
     return {
         "version": MIGRATION_VERSION,

@@ -11,12 +11,12 @@ Follows Context7 principles with proper type safety and DDD architecture.
 """
 
 import logging
-from threading import Lock
-from typing import Dict, Any
 from abc import abstractmethod
+from threading import Lock
+from typing import Any
 
+from app.src.domain.models.led import LEDAnimation, LEDColor, LEDColors
 from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
-from app.src.domain.models.led import LEDColor, LEDAnimation, LEDColors
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class BaseLEDController(IndicatorLightsProtocol):
         """
         return self._current_animation
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of LED controller.
 
         Provides base status information common to all implementations.

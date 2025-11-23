@@ -9,9 +9,9 @@ Clean API routes following Domain-Driven Design principles.
 Single Responsibility: HTTP route handling for upload session management.
 """
 
-from typing import Optional
-from fastapi import APIRouter, Query, Request
 import logging
+
+from fastapi import APIRouter, Query, Request
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
@@ -72,7 +72,7 @@ class UploadAPIRoutes:
         @handle_http_errors()
         async def list_upload_sessions(
             request: Request,
-            status: Optional[str] = Query(None, description="Filter by upload status"),
+            status: str | None = Query(None, description="Filter by upload status"),
             limit: int = Query(50, ge=1, le=100, description="Maximum sessions to return"),
         ):
             """List all upload sessions with optional filtering."""
@@ -123,7 +123,7 @@ class UploadAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error listing upload sessions: {str(e)}")
+                logger.error(f"Error listing upload sessions: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to list upload sessions",
                     operation="list_upload_sessions"
@@ -161,7 +161,7 @@ class UploadAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error deleting upload session: {str(e)}")
+                logger.error(f"Error deleting upload session: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to delete upload session",
                     operation="delete_upload_session"
@@ -223,7 +223,7 @@ class UploadAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error cleaning up sessions: {str(e)}")
+                logger.error(f"Error cleaning up sessions: {e!s}")
                 return UnifiedResponseService.internal_error(
                     message="Failed to cleanup stale sessions",
                     operation="cleanup_stale_sessions"
@@ -236,12 +236,11 @@ class UploadAPIRoutes:
 
         if chunks_received == 0:
             return "pending"
-        elif chunks_received < total_chunks:
+        if chunks_received < total_chunks:
             return "uploading"
-        elif chunks_received == total_chunks:
+        if chunks_received == total_chunks:
             return "completed"
-        else:
-            return "error"
+        return "error"
 
     def get_router(self) -> APIRouter:
         """Get the configured router."""

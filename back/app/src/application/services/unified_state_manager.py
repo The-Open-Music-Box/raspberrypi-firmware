@@ -10,16 +10,15 @@ Implements StateManagerProtocol while following DDD principles.
 """
 
 import logging
-from typing import Any, Dict, Optional, Set, cast
-
-# Direct imports - no more dynamic imports
-from app.src.services.error.unified_error_decorator import handle_service_errors
-from app.src.domain.protocols.state_manager_protocol import StateManagerProtocol, PlaybackState
+from typing import Any, cast
 
 # DDD Components - direct imports
 from app.src.application.services.state_event_coordinator import (
     StateEventCoordinator,
     StateEventType,
+)
+from app.src.application.services.state_manager_lifecycle_application_service import (
+    StateManagerLifecycleApplicationService,
 )
 from app.src.application.services.state_serialization_application_service import (
     StateSerializationApplicationService,
@@ -27,16 +26,20 @@ from app.src.application.services.state_serialization_application_service import
 from app.src.application.services.state_snapshot_application_service import (
     StateSnapshotApplicationService,
 )
-from app.src.domain.services.playback_state_manager import PlaybackStateManager
-from app.src.application.services.state_manager_lifecycle_application_service import (
-    StateManagerLifecycleApplicationService,
+from app.src.domain.protocols.state_manager_protocol import (
+    PlaybackState,
+    StateManagerProtocol,
 )
+from app.src.domain.services.playback_state_manager import PlaybackStateManager
 
 # Existing focused components - direct imports
 from app.src.services.client_subscription_manager import ClientSubscriptionManager
+
+# Direct imports - no more dynamic imports
+from app.src.services.error.unified_error_decorator import handle_service_errors
+from app.src.services.event_outbox import EventOutbox
 from app.src.services.operation_tracker import OperationTracker
 from app.src.services.sequence_generator import SequenceGenerator
-from app.src.services.event_outbox import EventOutbox
 
 logger = logging.getLogger(__name__)
 
@@ -111,11 +114,11 @@ class UnifiedStateManager(StateManagerProtocol):
         # Send current state snapshot to newly subscribed client
         await self.snapshot_service.send_state_snapshot(client_id, room)
 
-    async def unsubscribe_client(self, client_id: str, room: Optional[str] = None) -> None:
+    async def unsubscribe_client(self, client_id: str, room: str | None = None) -> None:
         """Unsubscribe a client from a room or all rooms."""
         await self.subscriptions.unsubscribe_client(client_id, room)
 
-    def get_client_subscriptions(self, client_id: str) -> Set[str]:
+    def get_client_subscriptions(self, client_id: str) -> set[str]:
         """Get all rooms a client is subscribed to."""
         return self.subscriptions.get_client_subscriptions(client_id)
 
@@ -124,11 +127,11 @@ class UnifiedStateManager(StateManagerProtocol):
         """Check if a client operation has already been processed."""
         return await self.operations.is_operation_processed(client_op_id)
 
-    async def mark_operation_processed(self, client_op_id: str, result: Optional[Any] = None) -> None:
+    async def mark_operation_processed(self, client_op_id: str, result: Any | None = None) -> None:
         """Mark a client operation as processed with optional result caching."""
         await self.operations.mark_operation_processed(client_op_id, result)
 
-    async def get_operation_result(self, client_op_id: str) -> Optional[Any]:
+    async def get_operation_result(self, client_op_id: str) -> Any | None:
         """Get cached result for a processed operation."""
         return await self.operations.get_operation_result(client_op_id)
 
@@ -137,9 +140,9 @@ class UnifiedStateManager(StateManagerProtocol):
     async def broadcast_state_change(
         self,
         event_type: StateEventType,
-        data: Dict[str, Any],
-        playlist_id: Optional[str] = None,
-        room: Optional[str] = None,
+        data: dict[str, Any],
+        playlist_id: str | None = None,
+        room: str | None = None,
         immediate: bool = False,
     ) -> dict:
         """Broadcast a state change to all subscribed clients."""
@@ -148,8 +151,8 @@ class UnifiedStateManager(StateManagerProtocol):
         ))
 
     async def broadcast_position_update(
-        self, position_ms: int, track_id: str, is_playing: bool, duration_ms: Optional[int] = None
-    ) -> Optional[dict]:
+        self, position_ms: int, track_id: str, is_playing: bool, duration_ms: int | None = None
+    ) -> dict | None:
         """Broadcast a lightweight position update with throttling."""
         return await self.event_coordinator.broadcast_position_update(
             position_ms, track_id, is_playing, duration_ms
@@ -163,8 +166,8 @@ class UnifiedStateManager(StateManagerProtocol):
         self,
         client_op_id: str,
         success: bool,
-        data: Optional[Dict[str, Any]] = None,
-        client_id: Optional[str] = None,
+        data: dict[str, Any] | None = None,
+        client_id: str | None = None,
     ) -> None:
         """Send acknowledgment for a client operation."""
         await self.event_coordinator.send_acknowledgment(
@@ -194,7 +197,7 @@ class UnifiedStateManager(StateManagerProtocol):
         """Stop the periodic cleanup task."""
         await self.lifecycle_service.stop_lifecycle_management()
 
-    async def get_health_metrics(self) -> Dict[str, Any]:
+    async def get_health_metrics(self) -> dict[str, Any]:
         """Get health metrics from all components."""
         base_metrics = await self.lifecycle_service.get_health_metrics()
 
@@ -220,15 +223,15 @@ class UnifiedStateManager(StateManagerProtocol):
         """Set current playback state."""
         self.state_manager.set_state(state)
 
-    def get_state_dict(self) -> Dict[str, Any]:
+    def get_state_dict(self) -> dict[str, Any]:
         """Get complete state as dictionary."""
         return self.state_manager.get_state_dict()
 
-    def update_track_info(self, track_info: Dict[str, Any]) -> None:
+    def update_track_info(self, track_info: dict[str, Any]) -> None:
         """Update current track information."""
         self.state_manager.update_track_info(track_info)
 
-    def update_playlist_info(self, playlist_info: Dict[str, Any]) -> None:
+    def update_playlist_info(self, playlist_info: dict[str, Any]) -> None:
         """Update current playlist information."""
         self.state_manager.update_playlist_info(playlist_info)
 
@@ -248,33 +251,33 @@ class UnifiedStateManager(StateManagerProtocol):
         """Clear error state."""
         self.state_manager.clear_error()
 
-    def get_last_error(self) -> Optional[str]:
+    def get_last_error(self) -> str | None:
         """Get last error message."""
         return self.state_manager.get_last_error()
 
     # Extended state management methods (delegate to PlaybackStateManager)
-    def get_current_playlist(self) -> Optional[Dict[str, Any]]:
+    def get_current_playlist(self) -> dict[str, Any] | None:
         """Get current playlist information."""
         return self.state_manager.get_current_playlist()
 
-    def set_current_playlist(self, playlist: Optional[Dict[str, Any]]) -> None:
+    def set_current_playlist(self, playlist: dict[str, Any] | None) -> None:
         """Set current playlist information."""
         self.state_manager.set_current_playlist(playlist)
 
-    def get_current_track_number(self) -> Optional[int]:
+    def get_current_track_number(self) -> int | None:
         """Get current track number in playlist."""
         return self.state_manager.get_current_track_number()
 
-    def set_current_track_number(self, track_number: Optional[int]) -> None:
+    def set_current_track_number(self, track_number: int | None) -> None:
         """Set current track number in playlist."""
         self.state_manager.set_current_track_number(track_number)
 
     # Convenience methods for backward compatibility
-    def _serialize_playlist(self, playlist) -> Dict[str, Any]:
+    def _serialize_playlist(self, playlist) -> dict[str, Any]:
         """Serialize a playlist object or dict for transmission."""
         return cast(dict[str, Any], self.serialization_service.serialize_playlist(playlist))
 
-    def _serialize_track(self, track) -> Dict[str, Any]:
+    def _serialize_track(self, track) -> dict[str, Any]:
         """Serialize a track object or dict for transmission."""
         return cast(dict[str, Any], self.serialization_service.serialize_track(track))
 

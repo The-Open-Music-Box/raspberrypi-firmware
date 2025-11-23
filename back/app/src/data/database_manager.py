@@ -9,10 +9,13 @@ Infrastructure service that provides database connectivity following DDD princip
 Implements the domain's PersistenceServiceProtocol using SQLite.
 """
 
-from app.src.infrastructure.database.sqlite_database_service import SQLiteDatabaseService
-from app.src.monitoring import get_logger
+from typing import Any
+
 from app.src.config import config
-from typing import Optional, Any
+from app.src.infrastructure.database.sqlite_database_service import (
+    SQLiteDatabaseService,
+)
+from app.src.monitoring import get_logger
 
 # Optional migration support - will be None if not available
 MigrationRunner: Any = None
@@ -32,7 +35,7 @@ class DatabaseManager:
     Singleton lifecycle is managed by the DI container.
     """
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         """Initialize DatabaseManager.
 
         Args:

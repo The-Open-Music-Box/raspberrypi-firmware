@@ -4,10 +4,11 @@
 
 """Event bus protocol for domain events."""
 
-from typing import Protocol, Any, Callable, Type
 from abc import abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Protocol
 
 
 @dataclass
@@ -35,7 +36,7 @@ class EventBusProtocol(Protocol):
         ...
 
     @abstractmethod
-    def subscribe(self, event_type: Type[AudioEvent], handler: Callable[[AudioEvent], Any]) -> None:
+    def subscribe(self, event_type: type[AudioEvent], handler: Callable[[AudioEvent], Any]) -> None:
         """Subscribe to an event type.
 
         Args:
@@ -45,7 +46,7 @@ class EventBusProtocol(Protocol):
         ...
 
     @abstractmethod
-    def unsubscribe(self, event_type: Type[AudioEvent], handler: Callable[[AudioEvent], Any]) -> None:
+    def unsubscribe(self, event_type: type[AudioEvent], handler: Callable[[AudioEvent], Any]) -> None:
         """Unsubscribe from an event type.
 
         Args:

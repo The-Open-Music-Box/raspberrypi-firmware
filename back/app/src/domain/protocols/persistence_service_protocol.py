@@ -12,8 +12,8 @@ must implement this protocol.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
 from contextlib import contextmanager
+from typing import Any
 
 
 class PersistenceServiceProtocol(ABC):
@@ -47,9 +47,9 @@ class PersistenceServiceProtocol(ABC):
     def execute_query(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: tuple | dict | None = None,
         operation_name: str = "query"
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Execute a SELECT query and return results.
 
         Args:
@@ -66,9 +66,9 @@ class PersistenceServiceProtocol(ABC):
     def execute_single(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: tuple | dict | None = None,
         operation_name: str = "query_single"
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """Execute a SELECT query and return single result.
 
         Args:
@@ -85,7 +85,7 @@ class PersistenceServiceProtocol(ABC):
     def execute_command(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: tuple | dict | None = None,
         operation_name: str = "command"
     ) -> int:
         """Execute an INSERT/UPDATE/DELETE command.
@@ -104,7 +104,7 @@ class PersistenceServiceProtocol(ABC):
     def execute_insert(
         self,
         query: str,
-        params: Optional[Union[tuple, dict]] = None,
+        params: tuple | dict | None = None,
         operation_name: str = "insert"
     ) -> str:
         """Execute an INSERT command and return the new row ID.
@@ -122,9 +122,9 @@ class PersistenceServiceProtocol(ABC):
     @abstractmethod
     def execute_batch(
         self,
-        operations: List[Dict[str, Any]],
+        operations: list[dict[str, Any]],
         operation_name: str = "batch"
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Execute multiple operations in a single transaction.
 
         Args:
@@ -137,7 +137,7 @@ class PersistenceServiceProtocol(ABC):
         pass
 
     @abstractmethod
-    def get_health_info(self) -> Dict[str, Any]:
+    def get_health_info(self) -> dict[str, Any]:
         """Get database health information.
 
         Returns:

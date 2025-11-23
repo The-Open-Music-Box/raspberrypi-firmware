@@ -9,8 +9,8 @@ This module defines the protocol interface for NFC services,
 promoting loose coupling and testability in the domain layer.
 """
 
-from typing import Protocol, Dict, Any, Optional, List
 from abc import abstractmethod
+from typing import Any, Protocol
 
 
 class NFCServiceProtocol(Protocol):
@@ -24,7 +24,7 @@ class NFCServiceProtocol(Protocol):
     @abstractmethod
     async def start_association(
         self, playlist_id: str, _timeout_s: int = 60, _override: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Start an NFC tag association session.
 
         Args:
@@ -50,7 +50,7 @@ class NFCServiceProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def get_session_status(self, assoc_id: str) -> Optional[Dict[str, Any]]:
+    async def get_session_status(self, assoc_id: str) -> dict[str, Any] | None:
         """Get the current status of an association session.
 
         Args:
@@ -72,7 +72,7 @@ class NFCServiceProtocol(Protocol):
 
     @abstractmethod
     async def handle_tag_detected(
-        self, tag_id: str, tag_data: Optional[Dict[str, Any]] = None
+        self, tag_id: str, tag_data: dict[str, Any] | None = None
     ) -> None:
         """Handle detection of an NFC tag.
 
@@ -101,7 +101,7 @@ class NFCServiceProtocol(Protocol):
         ...
 
     @abstractmethod
-    def load_mapping(self, mapping: List[Dict[str, Any]]) -> None:
+    def load_mapping(self, mapping: list[dict[str, Any]]) -> None:
         """Load playlist mapping data into the service.
 
         Args:
@@ -150,7 +150,7 @@ class NFCHardwareProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def read_tag(self) -> Optional[Dict[str, Any]]:
+    async def read_tag(self) -> dict[str, Any] | None:
         """Read data from an NFC tag.
 
         Returns:
@@ -159,7 +159,7 @@ class NFCHardwareProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def write_tag(self, tag_id: str, data: Dict[str, Any]) -> bool:
+    async def write_tag(self, tag_id: str, data: dict[str, Any]) -> bool:
         """Write data to an NFC tag.
 
         Args:

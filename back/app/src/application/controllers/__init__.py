@@ -26,25 +26,25 @@ Usage:
     coordinator.start_playlist()
 """
 
-from .playlist_state_manager_controller import PlaylistStateManager, Playlist, Track
-from .track_resolver_controller import TrackResolver
 from .audio_player_controller import AudioPlayer, PlaybackState
-from .playlist_controller import PlaylistController
-from .playback_coordinator_controller import PlaybackCoordinator
-from .playback_controller import PlaybackController
-from .upload_controller import UploadController
 from .physical_controls_controller import PhysicalControlsManager
+from .playback_controller import PlaybackController
+from .playback_coordinator_controller import PlaybackCoordinator
+from .playlist_controller import PlaylistController
+from .playlist_state_manager_controller import Playlist, PlaylistStateManager, Track
+from .track_resolver_controller import TrackResolver
+from .upload_controller import UploadController
 
 __all__ = [
-    "PlaylistStateManager",
+    "AudioPlayer",
+    "PhysicalControlsManager",
+    "PlaybackController",
+    "PlaybackCoordinator",
+    "PlaybackState",
     "Playlist",
+    "PlaylistController",
+    "PlaylistStateManager",
     "Track",
     "TrackResolver",
-    "AudioPlayer",
-    "PlaybackState",
-    "PlaylistController",
-    "PlaybackCoordinator",
-    "PlaybackController",
     "UploadController",
-    "PhysicalControlsManager",
 ]

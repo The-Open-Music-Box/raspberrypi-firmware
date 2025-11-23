@@ -9,10 +9,13 @@ This controller provides audio control functionality using clean DDD AudioPlayer
 Maintains full AudioController API while following proper DDD architecture patterns.
 """
 
-from typing import Dict, Any, Optional, cast
 import logging
+from typing import Any, cast
 
-from app.src.application.controllers.audio_player_controller import AudioPlayer, PlaybackState
+from app.src.application.controllers.audio_player_controller import (
+    AudioPlayer,
+    PlaybackState,
+)
 from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = logging.getLogger(__name__)
@@ -47,7 +50,7 @@ class AudioController:
                 self._backend = audio_service
 
         # Initialize DDD AudioPlayer
-        self._audio_player: Optional[AudioPlayer]
+        self._audio_player: AudioPlayer | None
         if self._backend:
             self._audio_player = AudioPlayer(self._backend)
             logger.info("AudioController initialized with DDD AudioPlayer")
@@ -118,11 +121,10 @@ class AudioController:
         current_state = self._audio_player.get_state()
         if current_state == PlaybackState.PLAYING:
             return self.pause()
-        elif current_state == PlaybackState.PAUSED:
+        if current_state == PlaybackState.PAUSED:
             return self.resume()
-        else:
-            logger.warning("Cannot toggle: no audio currently loaded")
-            return False
+        logger.warning("Cannot toggle: no audio currently loaded")
+        return False
 
     def toggle_playback(self) -> bool:
         """Alias for toggle_play_pause for backward compatibility."""
@@ -155,11 +157,10 @@ class AudioController:
         # Handle both dict (real AudioPlayer) and PlaybackState enum (mocked tests)
         if isinstance(state, dict):
             return cast(str, state.get("state", "stopped"))
-        elif hasattr(state, "value"):
+        if hasattr(state, "value"):
             # PlaybackState enum
             return cast(str, state.value)
-        else:
-            return "stopped"
+        return "stopped"
 
     @handle_errors("set_volume")
     def set_volume(self, volume: int) -> bool:
@@ -240,7 +241,7 @@ class AudioController:
 
         return self._audio_player.get_duration()
 
-    async def get_playback_status(self) -> Dict[str, Any]:
+    async def get_playback_status(self) -> dict[str, Any]:
         """Get comprehensive playback status for API responses."""
         try:
             current_position = self.get_current_position()
@@ -287,7 +288,7 @@ class AudioController:
             if isinstance(state, PlaybackState):
                 return state
             # If it's a dict (real AudioPlayer), extract the state
-            elif isinstance(state, dict) and 'state' in state:
+            if isinstance(state, dict) and 'state' in state:
                 state_str = state['state']
                 # Convert string to PlaybackState enum
                 for ps in PlaybackState:
@@ -301,14 +302,14 @@ class AudioController:
 
         return PlaybackState.STOPPED
 
-    def get_current_file(self) -> Optional[str]:
+    def get_current_file(self) -> str | None:
         """Get currently loaded file path."""
         if not self._audio_player:
             return None
 
         # Try to call get_current_file() method if it exists (mocked tests)
         if hasattr(self._audio_player, 'get_current_file') and callable(self._audio_player.get_current_file):
-            return cast(Optional[str], self._audio_player.get_current_file())
+            return cast(str | None, self._audio_player.get_current_file())
 
         # Fall back to direct attribute access
         if hasattr(self._audio_player, '_current_file'):
