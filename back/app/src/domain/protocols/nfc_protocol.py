@@ -23,7 +23,7 @@ class NFCServiceProtocol(Protocol):
 
     @abstractmethod
     async def start_association(
-        self, playlist_id: str, timeout_s: int = 60, override: bool = False
+        self, playlist_id: str, _timeout_s: int = 60, _override: bool = False
     ) -> Dict[str, Any]:
         """Start an NFC tag association session.
 

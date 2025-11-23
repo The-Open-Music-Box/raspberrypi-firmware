@@ -197,7 +197,6 @@ class DomainBootstrap:
         if not self._is_initialized:
             logger.error("❌ DomainBootstrap not initialized")
             raise RuntimeError("DomainBootstrap not initialized")
-            return
 
         # Initialize LED system with retry (hardware may not be ready on first boot)
         if self._led_manager and self._led_event_handler:
