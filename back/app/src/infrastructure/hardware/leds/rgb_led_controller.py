@@ -124,7 +124,7 @@ class RGBLEDController(IndicatorLightsProtocol):
                         try:
                             GPIO_Direct.cleanup(pin)
                         except Exception:
-                            pass
+                            pass  # nosec B110 - GPIO cleanup, pin might not be initialized
                     logger.debug("GPIO pins cleaned before LED initialization")
                 except Exception as e:
                     logger.debug(f"GPIO cleanup attempt: {e}")

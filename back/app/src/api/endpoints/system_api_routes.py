@@ -198,7 +198,7 @@ class SystemAPIRoutes:
                             "memory_percent": memory.percent,
                         })
                     except Exception:
-                        pass
+                        pass  # nosec B110 - optional psutil data, OK to skip on failure
 
                 # Get server_seq from state manager (required by contract v3.1.0)
                 container = getattr(request.app, "container", None)
@@ -218,7 +218,7 @@ class SystemAPIRoutes:
                         with open(version_file, 'r') as f:
                             version = f.read().strip()
                 except Exception:
-                    pass  # Use default version on error
+                    pass  # nosec B110 - use default version on error, non-critical
 
                 # Build capabilities for RPI
                 capabilities = {
@@ -293,9 +293,11 @@ class SystemAPIRoutes:
                 logs_data: Dict[str, Any] = {"logs": [], "log_files_available": []}
 
                 # Search for log files
+                # Using /tmp is intentional for IoT device log collection - these are
+                # predefined paths for application logs, not user-controlled input
                 possible_log_paths = [
                     "/var/log/tomb-rpi/*.log",
-                    "/tmp/tomb-rpi*.log",
+                    "/tmp/tomb-rpi*.log",  # nosec B108 - intentional tmp usage for IoT device logs
                     "logs/*.log",
                     "*.log",
                 ]

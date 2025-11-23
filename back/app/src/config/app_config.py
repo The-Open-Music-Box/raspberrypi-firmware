@@ -259,7 +259,9 @@ class AppConfig:
         """
         Host for Socket.IO server.
         """
-        return cast(str, self._values.get("socketio_host", "0.0.0.0"))
+        # Binding to 0.0.0.0 is intentional for IoT device - needs to be accessible
+        # on local network for mobile app connectivity
+        return cast(str, self._values.get("socketio_host", "0.0.0.0"))  # nosec B104
 
     @property
     def socketio_port(self) -> int:

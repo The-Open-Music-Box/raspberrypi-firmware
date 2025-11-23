@@ -10,7 +10,7 @@ a smooth runtime experience by catching missing dependencies early.
 """
 
 import shutil
-import subprocess
+import subprocess  # nosec B404 - subprocess required for system dependency verification
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -33,7 +33,8 @@ class SystemDependencyChecker:
             return DependencyError(name="ffmpeg", message="FFmpeg binary not found in PATH")
 
         try:
-            subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, check=True)
+            # Hardcoded ffmpeg command for version check, not user input
+            subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, check=True)  # nosec B603 B607
             return None
         except Exception as e:
             return DependencyError(name="ffmpeg", message=f"Error executing FFmpeg: {str(e)}")
