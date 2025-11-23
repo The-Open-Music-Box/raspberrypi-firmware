@@ -193,7 +193,7 @@ class AcknowledgmentContext:
         self.state_manager = state_manager
         self.client_op_id = client_op_id
         self.success = False
-        self.data = None
+        self.data: Optional[Any] = None
         self._completed = False
 
     def set_success(self, data: Optional[Any] = None):
@@ -216,7 +216,7 @@ class AcknowledgmentContext:
             error_data: Optional additional error data
         """
         self.success = False
-        error_payload = error_data or {}
+        error_payload: Dict[str, Any] = error_data.copy() if error_data else {}
         error_payload["message"] = error_message
         self.data = error_payload
         self._completed = True

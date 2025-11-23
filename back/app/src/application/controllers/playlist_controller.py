@@ -13,7 +13,7 @@ This controller manages ONLY playlist operations:
 NO audio control, NO file path resolution.
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, cast
 import logging
 from .playlist_state_manager_controller import PlaylistStateManager, Playlist, Track
 from .track_resolver_controller import TrackResolver
@@ -122,7 +122,7 @@ class PlaylistController:
         try:
             # Domain service returns data directly (no wrapper dict)
             playlist_data = await self._playlist_service.get_playlist(playlist_id)
-            return playlist_data
+            return cast(dict[str, Any] | None, playlist_data)
         except Exception as e:
             logger.error(f"Error getting playlist data from domain service: {e}")
             return None
@@ -319,7 +319,7 @@ class PlaylistController:
     def has_tracks(self) -> bool:
         """Check if current playlist has tracks."""
         state = self._state_manager.get_state()
-        return state["total_tracks"] > 0
+        return cast(bool, state["total_tracks"] > 0)
 
     def load_playlist_data(self, playlist: Playlist) -> bool:
         """

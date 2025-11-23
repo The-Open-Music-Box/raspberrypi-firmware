@@ -10,7 +10,7 @@ operations without requiring real hardware.
 """
 
 import time
-from typing import Optional, Any
+from typing import Optional, Any, cast
 import logging
 
 from app.src.config import config
@@ -71,7 +71,7 @@ class MockAudioBackend(BaseAudioBackend):
     @handle_errors("play")
     async def play(self, file_path: str) -> bool:
         """Play an audio file (AudioBackendProtocol interface)."""
-        return self.play_file(file_path)
+        return cast(bool, self.play_file(file_path))
 
     @handle_errors("pause")
     async def pause(self) -> bool:

@@ -27,8 +27,8 @@ def mock_backend():
     backend.pause = Mock(return_value=True)
     backend.resume = Mock(return_value=True)
     backend.stop = Mock(return_value=True)
-    backend.set_volume = Mock(return_value=True)
-    backend.get_volume = Mock(return_value=50)
+    backend.set_volume = AsyncMock(return_value=True)
+    backend.get_volume = AsyncMock(return_value=50)
     backend.seek = AsyncMock(return_value=True)
     backend.is_playing = Mock(return_value=False)
     backend.cleanup = Mock()
@@ -166,7 +166,7 @@ class TestPlaybackOperations:
         result = await audio_engine.play_file("/music/test.mp3")
 
         assert result is True
-        mock_backend.play_file.assert_called_once_with("/music/test.mp3")
+        mock_backend.play.assert_called_once_with("/music/test.mp3")
         assert mock_event_bus.publish.called
 
     @pytest.mark.asyncio
@@ -254,7 +254,7 @@ class TestPlaylistOperations:
         result = await audio_engine.play_playlist(mock_playlist)
 
         assert result is True
-        mock_backend.play_file.assert_called()
+        mock_backend.play.assert_called()
 
     @pytest.mark.asyncio
     async def test_play_empty_playlist(self, audio_engine):
@@ -396,7 +396,7 @@ class TestErrorHandling:
     async def test_handles_backend_play_error(self, audio_engine, mock_backend):
         """Test handles backend play error."""
         await audio_engine.start()
-        mock_backend.play_file.side_effect = Exception("Backend error")
+        mock_backend.play.side_effect = Exception("Backend error")
 
         result = await audio_engine.play_file("/music/test.mp3")
 

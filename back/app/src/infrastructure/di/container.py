@@ -8,7 +8,7 @@ Enhanced DI container with protocol support and proper lifecycle management.
 Eliminates dynamic imports in favor of explicit registration.
 """
 
-from typing import Dict, Any, Callable, TypeVar, Type
+from typing import Dict, Any, Callable, TypeVar, Type, cast
 from enum import Enum
 import logging
 
@@ -134,7 +134,7 @@ class DependencyContainer:
             raise KeyError(f"Protocol '{protocol.__name__}' not registered")
 
         service_name = self._protocol_map[protocol]
-        return self.get(service_name)
+        return cast(T, self.get(service_name))
 
     def has(self, service_name: str) -> bool:
         """Check if a service is registered.

@@ -9,6 +9,7 @@ Pure Domain-Driven Design implementation replacing PlaylistRoutesState.
 Single Responsibility: Route registration and dependency coordination.
 """
 
+from typing import Optional, Any
 from fastapi import FastAPI
 from socketio import AsyncServer
 
@@ -128,17 +129,19 @@ class PlaylistRoutesDDD:
         self.operations_service = PlaylistOperationsService(self._playlist_app_service)
 
         # Initialize API routes with dependencies (will be set after upload controller is ready)
-        self.api_routes = None
+        self.api_routes: Optional[PlaylistAPIRoutes] = None
 
         logger.info("✅ DDD components initialized")
 
     def _initialize_specialized_services(self):
         """Initialize specialized services for uploads and other features."""
         # Initialize TrackProgressService for auto-advance
-        try:
-            from app.src.services.track_progress_service import TrackProgressService
-            from app.src.dependencies import get_playback_coordinator
+        from app.src.services.track_progress_service import TrackProgressService
+        from app.src.dependencies import get_playback_coordinator
 
+        self.progress_service: Optional[TrackProgressService] = None
+
+        try:
             playback_coordinator = get_playback_coordinator()
             self.progress_service = TrackProgressService(
                 state_manager=self.state_manager,
@@ -194,7 +197,8 @@ class PlaylistRoutesDDD:
     def register(self):
         """Register all routes and services with the FastAPI app."""
         # Register API routes
-        self.app.include_router(self.api_routes.get_router())
+        if self.api_routes is not None:
+            self.app.include_router(self.api_routes.get_router())
 
         # Register WebSocket handlers
         self.websocket_handlers.register()
@@ -226,7 +230,9 @@ class PlaylistRoutesDDD:
 
     def get_router(self):
         """Get the API router for testing purposes."""
-        return self.api_routes.get_router()
+        if self.api_routes is not None:
+            return self.api_routes.get_router()
+        return None
 
     def get_state_manager(self):
         """Get the state manager instance."""

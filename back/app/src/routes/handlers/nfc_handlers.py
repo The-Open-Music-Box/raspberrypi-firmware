@@ -12,14 +12,13 @@ This module handles NFC association operations:
 """
 
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from datetime import datetime
 
 import socketio
 
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_http_errors
-from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
 
 logger = get_logger(__name__)
@@ -37,7 +36,7 @@ class NFCHandlers:
     def __init__(
         self,
         sio: socketio.AsyncServer,
-        state_manager: StateManager,
+        state_manager: Any,
         nfc_service: Any,
     ):
         """Initialize the NFC handlers.
@@ -129,7 +128,7 @@ class NFCHandlers:
                         "playlist_id": data.get("playlist_id") if isinstance(data, dict) else None,
                         "operation": "start_nfc_link",
                     },
-                    exc_info=True
+                    exc_info=e
                 )
                 raise
 
@@ -200,7 +199,7 @@ class NFCHandlers:
                         "playlist_id": data.get("playlist_id") if isinstance(data, dict) else None,
                         "operation": "stop_nfc_link",
                     },
-                    exc_info=True
+                    exc_info=e
                 )
                 raise
 
@@ -260,7 +259,7 @@ class NFCHandlers:
                         "tag_id": data.get("tag_id") if isinstance(data, dict) else None,
                         "operation": "override_nfc_tag",
                     },
-                    exc_info=True
+                    exc_info=e
                 )
                 raise
 
@@ -326,7 +325,7 @@ class NFCHandlers:
                 },
             )
 
-        return session_id
+        return cast(str, session_id)
 
     def _calculate_expires_at(self, timeout_at: Optional[str]) -> float:
         """Calculate expiration timestamp for frontend countdown.

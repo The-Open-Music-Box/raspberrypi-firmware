@@ -52,8 +52,8 @@ class NFCHandlerAdapter:
         """
         self._hardware = hardware
         self._is_mock = hardware.__class__.__name__ == "MockNFCHardware"
-        self._tag_callbacks = []
-        self._tag_removed_callbacks = []
+        self._tag_callbacks: list = []
+        self._tag_removed_callbacks: list = []
 
         # Subscribe to hardware tag events if available
         if hasattr(hardware, "tag_subject"):
@@ -66,7 +66,10 @@ class NFCHandlerAdapter:
     @property
     def tag_subject(self):
         """Get the RxPy Subject for tag detection events."""
-        return self._hardware.tag_subject
+        # Access tag_subject if available (not in Protocol but used by implementations)
+        if hasattr(self._hardware, "tag_subject"):
+            return getattr(self._hardware, "tag_subject")
+        return None
 
     def is_running(self) -> bool:
         """Check if NFC handler is running."""

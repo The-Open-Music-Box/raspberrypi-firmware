@@ -21,7 +21,7 @@ class ImprovedLogger:
     unified monitoring configuration.
     """
 
-    _error_counts = {}
+    _error_counts: Dict[str, int] = {}
     MAX_REPEATED_ERRORS = 1
 
     # Log level mapping from string to logging level
@@ -40,7 +40,7 @@ class ImprovedLogger:
             name: Logger name (typically module __name__)
         """
         self.logger = _logging.getLogger(name)
-        self.context = {}
+        self.context: Dict[str, Any] = {}
         self.name = name
         # Basic configuration; rely on root logger formatters configured elsewhere
         if not _logging.getLogger().handlers:
@@ -186,7 +186,7 @@ class LoggerContext:
     def __init__(self, logger: ImprovedLogger, context: Dict[str, Any]):
         self.logger = logger
         self.context = context
-        self.original_context = {}
+        self.original_context: Dict[str, Any] = {}
 
     def __enter__(self):
         # Save original context and update with new context

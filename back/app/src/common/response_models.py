@@ -102,7 +102,7 @@ class ClientOperationRequest(BaseModel):
     """Base model for requests that include client operation tracking."""
 
     client_op_id: Optional[str] = Field(
-        None,
+        default=None,
         max_length=100,
         pattern=r"^[a-zA-Z0-9_-]*$",
         description="Client operation identifier for request tracking",
@@ -118,11 +118,11 @@ class PaginationParams(BaseModel):
 
 # Response utility functions
 def create_success_response(
-    message: str, data: Optional[T] = None, server_seq: Optional[int] = None
+    message: str, data: Optional[Any] = None, server_seq: Optional[int] = None
 ) -> Dict[str, Any]:
     """Create a standardized success response."""
-    return SuccessResponse[type(data) if data is not None else Any](
-        message=message, data=data, server_seq=server_seq
+    return SuccessResponse[Any](
+        status=ResponseStatus.SUCCESS, message=message, data=data, server_seq=server_seq
     ).model_dump(exclude_none=True)
 
 
@@ -130,14 +130,14 @@ def create_error_response(
     message: str, error_type: ErrorType, details: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """Create a standardized error response."""
-    return ErrorResponse(message=message, error_type=error_type, details=details).model_dump(
-        exclude_none=True
-    )
+    return ErrorResponse(
+        status=ResponseStatus.ERROR, message=message, error_type=error_type, details=details
+    ).model_dump(exclude_none=True)
 
 
 def create_paginated_response(
     message: str,
-    items: List[T],
+    items: List[Any],
     page: int,
     limit: int,
     total: int,
@@ -146,12 +146,12 @@ def create_paginated_response(
     """Create a standardized paginated response."""
     total_pages = (total + limit - 1) // limit  # Ceiling division
 
-    paginated_data = PaginatedData[type(items[0]) if items else Any](
+    paginated_data = PaginatedData[Any](
         items=items, page=page, limit=limit, total=total, total_pages=total_pages
     )
 
-    return PaginatedResponse[type(items[0]) if items else Any](
-        message=message, data=paginated_data, server_seq=server_seq
+    return PaginatedResponse[Any](
+        status=ResponseStatus.SUCCESS, message=message, data=paginated_data, server_seq=server_seq
     ).model_dump(exclude_none=True)
 
 

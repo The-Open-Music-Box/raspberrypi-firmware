@@ -14,7 +14,7 @@ import asyncio
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, cast
 
 try:
     import pygame
@@ -23,12 +23,10 @@ except ImportError:
     PYGAME_AVAILABLE = False
 
 try:
-    import mutagen
     from mutagen import File as MutagenFile
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
-    mutagen = None
     MutagenFile = None
 
 from app.src.monitoring import get_logger
@@ -252,7 +250,7 @@ class WM8960AudioBackend(BaseAudioBackend):
                 if not self._init_pygame_simple():
                     logger.error("🔊 WM8960: Failed to initialize pygame mixer")
                     return False
-            return self._play_with_pygame(str(path), duration_ms)
+            return cast(bool, self._play_with_pygame(str(path), duration_ms))
 
     @handle_errors("_play_with_pygame")
     def _play_with_pygame(self, file_path: str, duration_ms: Optional[int] = None) -> bool:
@@ -383,7 +381,7 @@ class WM8960AudioBackend(BaseAudioBackend):
             elif position > 7200:  # More than 2 hours is suspicious
                 logger.warning(f"🔊 WM8960: Suspiciously large position ({position:.2f}s), might indicate timing issue",
                                )
-            return position
+            return cast(float, position)
 
     @handle_errors("set_position")
     def set_position(self, position: float) -> bool:
@@ -435,6 +433,9 @@ class WM8960AudioBackend(BaseAudioBackend):
                     pygame.mixer.music.play()
                     seek_success = False
                     logger.warning(f"🔊 WM8960: Seek failed, playing from start: {e}")
+
+                return seek_success
+            return False
 
     @handle_errors("set_volume_sync")
     def set_volume_sync(self, volume: int) -> bool:
@@ -535,29 +536,29 @@ class WM8960AudioBackend(BaseAudioBackend):
             return self._is_playing
 
     # Async methods required by AudioBackendProtocol
-    async def pause(self) -> bool:
+    async def pause(self) -> bool:  # type: ignore[override]
         """Async wrapper for pause method.
 
         Returns:
             bool: True if pause was successful
         """
-        return self.pause_sync()
+        return cast(bool, self.pause_sync())
 
-    async def resume(self) -> bool:
+    async def resume(self) -> bool:  # type: ignore[override]
         """Async wrapper for resume method.
 
         Returns:
             bool: True if resume was successful
         """
-        return self.resume_sync()
+        return cast(bool, self.resume_sync())
 
-    async def stop(self) -> bool:
+    async def stop(self) -> bool:  # type: ignore[override]
         """Async wrapper for stop method.
 
         Returns:
             bool: True if stop was successful
         """
-        return self.stop_sync()
+        return cast(bool, self.stop_sync())
 
     async def set_volume(self, volume: int) -> bool:
         """Async wrapper for set_volume method.
@@ -568,9 +569,9 @@ class WM8960AudioBackend(BaseAudioBackend):
         Returns:
             bool: True if volume was set successfully
         """
-        return self.set_volume_sync(volume)
+        return cast(bool, self.set_volume_sync(volume))
 
-    async def get_position(self) -> Optional[int]:
+    async def get_position(self) -> Optional[int]:  # type: ignore[override]
         """Get current playback position.
 
         Returns:
@@ -610,7 +611,7 @@ class WM8960AudioBackend(BaseAudioBackend):
             bool: True if seek was successful
         """
         position_s = position_ms / 1000.0
-        return self.set_position(position_s)
+        return cast(bool, self.set_position(position_s))
 
     def get_duration(self) -> float:
         """Get duration of current track in seconds (for unified_audio_player compatibility).
@@ -620,7 +621,7 @@ class WM8960AudioBackend(BaseAudioBackend):
         """
         if self._current_file_duration and self._current_file_duration > 0:
             logger.debug(f"🔊 WM8960: Returning duration: {self._current_file_duration:.1f}s")
-            return self._current_file_duration
+            return cast(float, self._current_file_duration)
         return 0.0
 
     async def get_duration_ms(self) -> Optional[int]:

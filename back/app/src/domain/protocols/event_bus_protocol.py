@@ -4,7 +4,7 @@
 
 """Event bus protocol for domain events."""
 
-from typing import Protocol, Any, Callable
+from typing import Protocol, Any, Callable, Type
 from abc import abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -26,17 +26,16 @@ class EventBusProtocol(Protocol):
     """
 
     @abstractmethod
-    async def publish(self, event_type: str, event_data: Any) -> None:
+    async def publish(self, event: AudioEvent) -> None:
         """Publish an event.
 
         Args:
-            event_type: Type of the event
-            event_data: Event payload
+            event: The event to publish
         """
         ...
 
     @abstractmethod
-    def subscribe(self, event_type: str, handler: Callable) -> None:
+    def subscribe(self, event_type: Type[AudioEvent], handler: Callable[[AudioEvent], Any]) -> None:
         """Subscribe to an event type.
 
         Args:
@@ -46,7 +45,7 @@ class EventBusProtocol(Protocol):
         ...
 
     @abstractmethod
-    def unsubscribe(self, event_type: str, handler: Callable) -> None:
+    def unsubscribe(self, event_type: Type[AudioEvent], handler: Callable[[AudioEvent], Any]) -> None:
         """Unsubscribe from an event type.
 
         Args:

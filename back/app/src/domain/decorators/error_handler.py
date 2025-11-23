@@ -11,7 +11,7 @@ Pure domain error handling without infrastructure dependencies.
 import asyncio
 import functools
 import traceback
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, cast
 from datetime import datetime
 
 import logging
@@ -25,7 +25,7 @@ def handle_domain_errors(
     log_level: int = logging.ERROR,
     include_trace: bool = False,
     reraise: bool = True,
-    default_return: Any = None,
+    default_return: Optional[Any] = None,
 ) -> Callable:
     """
     Pure domain layer error handler decorator.
@@ -43,7 +43,7 @@ def handle_domain_errors(
     """
 
     def decorator(func: Callable) -> Callable:
-        func_component = component or getattr(func, "__module__", "unknown")
+        func_component = component or cast(str, getattr(func, "__module__", "unknown"))
         func_operation = operation_name or func.__name__
 
         if asyncio.iscoroutinefunction(func):

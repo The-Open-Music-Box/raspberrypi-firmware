@@ -9,7 +9,7 @@ Single responsibility: Serializes domain objects for transport layer.
 Clean separation following Domain-Driven Design principles.
 """
 
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 import logging
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -35,7 +35,7 @@ class StateSerializationApplicationService:
     - Transport (handled by Socket.IO layer)
     """
 
-    def __init__(self, sequences: SequenceGenerator = None):
+    def __init__(self, sequences: Optional[SequenceGenerator] = None):
         """Initialize state serialization service.
 
         Args:
@@ -66,7 +66,7 @@ class StateSerializationApplicationService:
                 "created_at": playlist.get("created_at"),
                 "updated_at": playlist.get("updated_at"),
                 "server_seq": self.sequences.get_current_global_seq(),
-                "playlist_seq": self.sequences.get_current_playlist_seq(playlist.get("id")),
+                "playlist_seq": self.sequences.get_current_playlist_seq(playlist.get("id") or ""),
             }
 
             if include_tracks:
@@ -157,11 +157,11 @@ class StateSerializationApplicationService:
     def serialize_playback_state(
         self,
         state: str,
-        track_info: Dict[str, Any] = None,
-        playlist_info: Dict[str, Any] = None,
+        track_info: Optional[Dict[str, Any]] = None,
+        playlist_info: Optional[Dict[str, Any]] = None,
         position: float = 0.0,
         volume: int = 50,
-        error: str = None,
+        error: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Serialize current playback state for broadcasting.

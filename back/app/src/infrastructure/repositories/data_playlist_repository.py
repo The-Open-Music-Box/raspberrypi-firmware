@@ -4,7 +4,7 @@
 
 """Data domain playlist repository implementation."""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, cast
 
 from app.src.monitoring import get_logger
 from app.src.domain.data.protocols.repository_protocol import PlaylistRepositoryProtocol
@@ -31,7 +31,13 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
         """Get all playlists with pagination."""
         playlists = await self._repo.find_all(limit=limit, offset=skip)
         # Convert Playlist domain objects to dictionaries, filter out None values
-        return [self._playlist_to_dict(playlist) for playlist in playlists if playlist is not None]
+        result: List[Dict[str, Any]] = []
+        for playlist in playlists:
+            if playlist is not None:
+                playlist_dict = self._playlist_to_dict(playlist)
+                if playlist_dict is not None:
+                    result.append(playlist_dict)
+        return result
 
     async def get_by_id(self, playlist_id: str) -> Optional[Dict[str, Any]]:
         """Get a playlist by its ID."""
@@ -55,7 +61,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
             tracks=[]
         )
         saved_playlist = await self._repo.save(playlist)
-        return saved_playlist.id
+        return cast(str, saved_playlist.id)
 
     async def update(self, playlist_id: str, playlist_data: Dict[str, Any]) -> bool:
         """Update an existing playlist."""
@@ -78,7 +84,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
 
     async def delete(self, playlist_id: str) -> bool:
         """Delete a playlist."""
-        return await self._repo.delete(playlist_id)
+        return cast(bool, await self._repo.delete(playlist_id))
 
     async def exists(self, playlist_id: str) -> bool:
         """Check if a playlist exists."""
@@ -87,7 +93,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
 
     async def count(self) -> int:
         """Count total playlists."""
-        return await self._repo.count()
+        return cast(int, await self._repo.count())
 
     def _playlist_to_dict(self, playlist) -> Optional[Dict[str, Any]]:
         """Convert Playlist domain object to dictionary."""
@@ -99,12 +105,12 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
             'title': playlist.title,
             'description': playlist.description or '',  # Ensure empty string instead of None
             'nfc_tag_id': playlist.nfc_tag_id or '',  # Ensure empty string instead of None
-            'tracks': [self._track_to_dict(track) for track in playlist.tracks if track is not None],
+            'tracks': [t for t in [self._track_to_dict(track) for track in playlist.tracks if track is not None] if t is not None],
             'created_at': getattr(playlist, 'created_at', '') or '',  # Ensure empty string instead of None
             'updated_at': getattr(playlist, 'updated_at', '') or ''  # Ensure empty string instead of None
         }
 
-    def _track_to_dict(self, track) -> Dict[str, Any]:
+    def _track_to_dict(self, track: Any) -> Optional[Dict[str, Any]]:
         """Convert Track domain object to dictionary."""
         if not track:
             return None

@@ -10,7 +10,7 @@ Implements StateManagerProtocol while following DDD principles.
 """
 
 import logging
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional, Set, cast
 
 # Direct imports - no more dynamic imports
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -124,7 +124,7 @@ class UnifiedStateManager(StateManagerProtocol):
         """Check if a client operation has already been processed."""
         return await self.operations.is_operation_processed(client_op_id)
 
-    async def mark_operation_processed(self, client_op_id: str, result: Any = None) -> None:
+    async def mark_operation_processed(self, client_op_id: str, result: Optional[Any] = None) -> None:
         """Mark a client operation as processed with optional result caching."""
         await self.operations.mark_operation_processed(client_op_id, result)
 
@@ -143,9 +143,9 @@ class UnifiedStateManager(StateManagerProtocol):
         immediate: bool = False,
     ) -> dict:
         """Broadcast a state change to all subscribed clients."""
-        return await self.event_coordinator.broadcast_state_change(
+        return cast(dict[Any, Any], await self.event_coordinator.broadcast_state_change(
             event_type, data, playlist_id, room, immediate
-        )
+        ))
 
     async def broadcast_position_update(
         self, position_ms: int, track_id: str, is_playing: bool, duration_ms: Optional[int] = None
@@ -272,11 +272,11 @@ class UnifiedStateManager(StateManagerProtocol):
     # Convenience methods for backward compatibility
     def _serialize_playlist(self, playlist) -> Dict[str, Any]:
         """Serialize a playlist object or dict for transmission."""
-        return self.serialization_service.serialize_playlist(playlist)
+        return cast(dict[str, Any], self.serialization_service.serialize_playlist(playlist))
 
     def _serialize_track(self, track) -> Dict[str, Any]:
         """Serialize a track object or dict for transmission."""
-        return self.serialization_service.serialize_track(track)
+        return cast(dict[str, Any], self.serialization_service.serialize_track(track))
 
     # Legacy compatibility methods for smooth migration
     async def _send_state_snapshot(self, client_id: str, room: str) -> None:

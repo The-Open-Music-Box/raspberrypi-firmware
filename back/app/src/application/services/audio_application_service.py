@@ -9,7 +9,7 @@ This service coordinates audio operations between the domain layer
 and external services, implementing audio use cases without containing business logic.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, cast
 import logging
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
@@ -52,7 +52,7 @@ class AudioApplicationService:
         # Get playlist through injected application service
         playlist_result = await self._playlist_service.get_playlist_use_case(playlist_id)
         if playlist_result["status"] != "success":
-            return playlist_result
+            return cast(dict[str, Any], playlist_result)
         playlist_data = playlist_result["playlist"]
         # Validate playlist has tracks
         if not playlist_data.get("tracks") or len(playlist_data["tracks"]) == 0:

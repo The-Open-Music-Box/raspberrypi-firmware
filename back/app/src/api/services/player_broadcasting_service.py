@@ -8,9 +8,8 @@ Player Broadcasting Service (DDD Architecture)
 Single Responsibility: Real-time state broadcasting for player operations.
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 import logging
-from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.common.socket_events import StateEventType
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -36,7 +35,7 @@ class PlayerBroadcastingService:
     - Data persistence (delegated to repositories)
     """
 
-    def __init__(self, state_manager: StateManager):
+    def __init__(self, state_manager: Any):
         """Initialize player broadcasting service.
 
         Args:
@@ -85,7 +84,7 @@ class PlayerBroadcastingService:
             }
 
             await self._state_manager.broadcast_state_change(
-                StateEventType.TRACK_CHANGED,
+                StateEventType.TRACK_SNAPSHOT,
                 event_data
             )
 
@@ -132,7 +131,7 @@ class PlayerBroadcastingService:
             }
 
             await self._state_manager.broadcast_state_change(
-                StateEventType.POSITION_CHANGED,
+                StateEventType.TRACK_POSITION,
                 event_data
             )
 
@@ -178,7 +177,7 @@ class PlayerBroadcastingService:
             }
 
             await self._state_manager.broadcast_state_change(
-                StateEventType.PROGRESS_UPDATE,
+                StateEventType.TRACK_PROGRESS,
                 event_data
             )
 
@@ -203,7 +202,7 @@ class PlayerBroadcastingService:
             }
 
             await self._state_manager.broadcast_state_change(
-                StateEventType.PLAYER_ERROR,
+                StateEventType.ERROR,
                 event_data
             )
 
@@ -218,4 +217,4 @@ class PlayerBroadcastingService:
         Returns:
             Current global sequence number
         """
-        return self._state_manager.get_global_sequence()
+        return cast(int, self._state_manager.get_global_sequence())

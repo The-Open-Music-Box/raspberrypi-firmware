@@ -10,9 +10,13 @@ hardware controls and the audio controller.
 """
 
 
-from typing import Optional, Union, List
+from typing import Optional, Union, List, TYPE_CHECKING
+from asyncio import AbstractEventLoop
 
 from app.src.application.controllers.audio_controller import AudioController
+
+if TYPE_CHECKING:
+    from app.src.application.services.playback_coordinator import PlaybackCoordinator
 from app.src.domain.protocols.physical_controls_protocol import (
     PhysicalControlsProtocol,
     PhysicalControlEvent,
@@ -76,12 +80,12 @@ class PhysicalControlsManager:
 
         # Store reference to main event loop for GPIO callbacks (which run in different threads)
         import asyncio
+        self._main_loop: Optional[AbstractEventLoop] = None
         try:
             self._main_loop = asyncio.get_running_loop()
             logger.debug(f"✅ Captured main event loop: {self._main_loop}")
         except RuntimeError:
             # No running loop yet - will be set during initialize()
-            self._main_loop = None
             logger.debug("⚠️ No running loop yet - will capture during initialize()")
 
         # Create physical controls implementation with button configs
@@ -95,7 +99,7 @@ class PhysicalControlsManager:
         if self._controller_type == "PlaybackCoordinator":
             self._button_dispatcher = ButtonActionDispatcher(
                 self._button_configs,
-                self.audio_controller,
+                self.audio_controller,  # type: ignore[arg-type]
                 main_loop=self._main_loop  # Pass main loop for cross-thread async calls
             )
             logger.info("✅ ButtonActionDispatcher created with configurable button support")
@@ -159,7 +163,7 @@ class PhysicalControlsManager:
                 event = getattr(PhysicalControlEvent, f"BUTTON_{button_id}")
                 self._physical_controls.set_event_handler(
                     event,
-                    lambda bid=button_id: self._handle_configurable_button(bid)
+                    lambda bid=button_id: self._handle_configurable_button(bid)  # type: ignore[misc]
                 )
             logger.info("✅ Configurable button handlers registered (BUTTON_0 through BUTTON_4)")
 
@@ -240,6 +244,9 @@ class PhysicalControlsManager:
             direction: Direction for logging ("up" or "down")
         """
         try:
+            if self.audio_controller is None:
+                logger.error("❌ No audio controller available - cannot set volume")
+                return
             success = await self.audio_controller.set_volume(volume)
             if success:
                 logger.info(f"✅ Volume {direction} to {volume}% via PlaybackCoordinator")
@@ -252,6 +259,10 @@ class PhysicalControlsManager:
     def handle_play_pause(self) -> None:
         """Handle play/pause control for domain architecture."""
         logger.info(f"🎮 Physical Control: Play/Pause button pressed (controller: {self._controller_type})")
+
+        if self.audio_controller is None:
+            logger.warning("⚠️ No audio controller available for play/pause")
+            return
 
         # Try PlaybackCoordinator methods first (preferred)
         if hasattr(self.audio_controller, "toggle_pause"):
@@ -279,6 +290,10 @@ class PhysicalControlsManager:
             direction: Volume change direction ("up" or "down")
         """
         logger.info(f"🎮 Physical Control: Volume {direction} encoder rotated (controller: {self._controller_type})")
+
+        if self.audio_controller is None:
+            logger.warning("⚠️ No audio controller available for volume change")
+            return
 
         # Try PlaybackCoordinator methods first
         if hasattr(self.audio_controller, "get_volume") and hasattr(self.audio_controller, "set_volume"):
@@ -328,6 +343,10 @@ class PhysicalControlsManager:
         """Handle next track control for domain architecture."""
         logger.info(f"🎮 Physical Control: Next track button pressed (controller: {self._controller_type})")
 
+        if self.audio_controller is None:
+            logger.warning("⚠️ No audio controller available for next track")
+            return
+
         # Try PlaybackCoordinator method first (same name, different behavior)
         if hasattr(self.audio_controller, "next_track"):
             # Both controllers have next_track, but check which type we have
@@ -355,6 +374,10 @@ class PhysicalControlsManager:
     def handle_previous_track(self) -> None:
         """Handle previous track control for domain architecture."""
         logger.info(f"🎮 Physical Control: Previous track button pressed (controller: {self._controller_type})")
+
+        if self.audio_controller is None:
+            logger.warning("⚠️ No audio controller available for previous track")
+            return
 
         # Try PlaybackCoordinator method first (same name, different behavior)
         if hasattr(self.audio_controller, "previous_track"):

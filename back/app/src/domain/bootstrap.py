@@ -8,7 +8,7 @@ This module provides the main entry point for initializing the domain-driven arc
 and provides compatibility layers for legacy code.
 """
 
-from typing import Any, Dict
+from typing import Optional, Any, Dict
 import logging
 
 # Direct imports instead of dynamic imports
@@ -35,7 +35,7 @@ class DomainBootstrap:
         self._is_stopping = False
 
     @handle_errors(operation_name="initialize", component="domain.bootstrap")
-    def initialize(self, existing_backend: Any = None) -> None:
+    def initialize(self, existing_backend: Optional[Any] = None) -> None:
         """Initialize the domain-driven architecture.
 
         Args:

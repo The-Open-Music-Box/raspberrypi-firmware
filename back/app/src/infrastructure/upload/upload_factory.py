@@ -5,6 +5,7 @@
 """Upload Factory for creating configured upload services."""
 
 
+from typing import Union
 from app.src.domain.upload.services.upload_validation_service import UploadValidationService
 # UploadApplicationService moved to Application layer - use ApplicationContainer
 from .adapters.file_storage_adapter import LocalFileStorageAdapter
@@ -36,6 +37,7 @@ class UploadFactory:
         file_storage = LocalFileStorageAdapter(temp_folder)
 
         # Create metadata extractor
+        metadata_extractor: Union[MockMetadataExtractor, MutagenMetadataExtractor]
         if use_mock_metadata:
             metadata_extractor = MockMetadataExtractor()
         else:

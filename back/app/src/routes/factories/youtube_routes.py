@@ -9,6 +9,7 @@ Bootstrap/factory class for YouTube integration routes.
 Single Responsibility: Initialize and register YouTube API routes with dependencies.
 """
 
+from typing import Optional
 from fastapi import FastAPI
 from socketio import AsyncServer
 
@@ -43,7 +44,7 @@ class YouTubeRoutes:
         """
         self.app = app
         self.socketio = socketio
-        self.api_routes = None
+        self.api_routes: Optional[YouTubeAPIRoutes] = None
 
     @handle_errors("youtube_routes_init", return_response=False)
     def initialize(self):
@@ -71,5 +72,6 @@ class YouTubeRoutes:
             self.initialize()
 
         # Register the router
-        self.app.include_router(self.api_routes.get_router())
+        if self.api_routes is not None:
+            self.app.include_router(self.api_routes.get_router())
         logger.info("✅ YouTube routes registered successfully")

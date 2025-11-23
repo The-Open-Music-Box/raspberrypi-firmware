@@ -7,7 +7,7 @@
 import uuid
 import shutil
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from datetime import datetime
 from dataclasses import asdict
 import logging
@@ -158,7 +158,7 @@ class PlaylistService:
             raise RuntimeError(f"Failed to update playlist {playlist_id}")
 
         logger.info(f"✅ Updated playlist {playlist_id}")
-        return await self.get_playlist(playlist_id)
+        return cast(dict[str, Any], await self.get_playlist(playlist_id))
 
     @handle_domain_errors(operation_name="delete_playlist")
     async def delete_playlist(self, playlist_id: str) -> bool:
@@ -192,7 +192,7 @@ class PlaylistService:
         else:
             logger.warning(f"Failed to delete playlist {playlist_id}")
 
-        return success
+        return cast(bool, success)
 
     async def _cleanup_playlist_folder(self, playlist: Playlist) -> None:
         """Clean up the filesystem directory for a deleted playlist.
@@ -241,7 +241,7 @@ class PlaylistService:
         if success:
             logger.info(f"✅ Associated NFC tag {nfc_tag_id} with playlist {playlist_id}")
 
-        return success
+        return cast(bool, success)
 
     @handle_domain_errors(operation_name="get_playlist_by_nfc")
     async def get_playlist_by_nfc(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
@@ -467,7 +467,7 @@ class PlaylistService:
         """
         import shutil
 
-        stats = {
+        stats: Dict[str, Any] = {
             'folders_scanned': 0,
             'folders_removed': 0,
             'removed_paths': []
@@ -495,7 +495,7 @@ class PlaylistService:
             if not folder.is_dir():
                 continue
 
-            stats['folders_scanned'] += 1
+            stats['folders_scanned'] = int(stats['folders_scanned']) + 1
             folder_name = folder.name
 
             # Check if folder corresponds to any playlist (by path or title)
@@ -508,8 +508,10 @@ class PlaylistService:
                 # Orphaned folder - remove it
                 try:
                     shutil.rmtree(folder)
-                    stats['folders_removed'] += 1
-                    stats['removed_paths'].append(str(folder))
+                    stats['folders_removed'] = int(stats['folders_removed']) + 1
+                    removed_paths = stats['removed_paths']
+                    if isinstance(removed_paths, list):
+                        removed_paths.append(str(folder))
                     logger.info(f"🗑️ Removed orphaned folder: {folder}")
                 except Exception as e:
                     logger.error(f"Failed to remove orphaned folder {folder}: {e}")

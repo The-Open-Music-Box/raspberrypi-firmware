@@ -4,7 +4,7 @@
 
 """Pure audio playback controller - no data management."""
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, cast
 from dataclasses import dataclass
 
 from app.src.monitoring import get_logger
@@ -64,7 +64,7 @@ class PlaybackController:
                 self._state.is_playing = True
                 self._state.current_track_id = track_id
                 logger.info(f"✅ Playing track: {track_id}")
-            return success
+            return cast(bool, success)
         except Exception as e:
             logger.error(f"❌ Failed to play track {track_id}: {e}")
             return False
@@ -77,7 +77,7 @@ class PlaybackController:
             if success:
                 self._state.is_playing = False
                 logger.info("⏸️ Playback paused")
-            return success
+            return cast(bool, success)
         except Exception as e:
             logger.error(f"❌ Failed to pause: {e}")
             return False
@@ -90,7 +90,7 @@ class PlaybackController:
             if success:
                 self._state.is_playing = True
                 logger.info("▶️ Playback resumed")
-            return success
+            return cast(bool, success)
         except Exception as e:
             logger.error(f"❌ Failed to resume: {e}")
             return False
@@ -105,7 +105,7 @@ class PlaybackController:
                 self._state.current_track_id = None
                 self._state.position_ms = 0
                 logger.info("⏹️ Playback stopped")
-            return success
+            return cast(bool, success)
         except Exception as e:
             logger.error(f"❌ Failed to stop: {e}")
             return False
@@ -126,7 +126,7 @@ class PlaybackController:
             if success:
                 self._state.volume = volume
                 logger.info(f"🔊 Volume set to {volume}")
-            return success
+            return cast(bool, success)
         except Exception as e:
             logger.error(f"❌ Failed to set volume: {e}")
             return False
@@ -146,7 +146,7 @@ class PlaybackController:
             if success:
                 self._state.position_ms = position_ms
                 logger.info(f"⏭️ Seeked to position {position_ms}ms")
-            return success
+            return cast(bool, success)
         except Exception as e:
             logger.error(f"❌ Failed to seek: {e}")
             return False
@@ -179,7 +179,7 @@ class PlaybackController:
             position = await self._backend.get_position()
             if position is not None:
                 self._state.position_ms = position
-            return position
+            return cast(int | None, position)
         except Exception as e:
             logger.error(f"❌ Failed to get position: {e}")
             return None

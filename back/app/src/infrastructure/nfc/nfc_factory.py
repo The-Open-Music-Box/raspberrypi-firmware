@@ -47,6 +47,7 @@ class NfcFactory:
         nfc_repository = repository or NfcMemoryRepository()
 
         # Create hardware adapter
+        nfc_hardware: NfcHardwareProtocol
         if use_mock_hardware:
             nfc_hardware = MockNfcHardwareAdapter()
         else:

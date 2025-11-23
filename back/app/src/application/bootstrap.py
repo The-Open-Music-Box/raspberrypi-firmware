@@ -60,7 +60,7 @@ class DomainBootstrap:
             logger.warning("⚠️ DomainBootstrap created WITHOUT PhysicalControlsManager")
 
     @handle_errors(operation_name="initialize", component="domain.bootstrap")
-    def initialize(self, existing_backend: Any = None) -> None:
+    def initialize(self, existing_backend: Optional[Any] = None) -> None:
         """Initialize the domain-driven architecture.
 
         Args:
@@ -100,6 +100,11 @@ class DomainBootstrap:
             retry_delay: Delay in seconds between retries
         """
         import asyncio
+
+        # Guard clause - this method should only be called when LED system is available
+        if not self._led_manager or not self._led_event_handler:
+            logger.warning("⚠️ LED system not available, skipping initialization")
+            return
 
         for attempt in range(1, max_retries + 1):
             try:
@@ -159,6 +164,11 @@ class DomainBootstrap:
             retry_delay: Delay in seconds between retries
         """
         import asyncio
+
+        # Guard clause - this method should only be called when physical controls manager is available
+        if not self._physical_controls_manager:
+            logger.warning("⚠️ Physical controls manager not available, skipping initialization")
+            return
 
         for attempt in range(1, max_retries + 1):
             try:

@@ -12,7 +12,7 @@ Clean separation of concerns following DDD principles.
 import json
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 import logging
 
 from app.src.common.socket_events import SocketEventType, get_event_room, SocketEventBuilder, StateEventType
@@ -43,7 +43,7 @@ class StateEventCoordinator:
     - Operation tracking (delegated to OperationTracker)
     """
 
-    def __init__(self, socketio_server=None, outbox: EventOutbox = None, sequences: SequenceGenerator = None):
+    def __init__(self, socketio_server=None, outbox: Optional[EventOutbox] = None, sequences: Optional[SequenceGenerator] = None):
         """Initialize state event coordinator.
 
         Args:
@@ -106,12 +106,16 @@ class StateEventCoordinator:
 
         if playlist_id:
             envelope["playlist_id"] = playlist_id
-            envelope["playlist_seq"] = data.get("playlist_seq")
+            playlist_seq = data.get("playlist_seq")
+            if playlist_seq is not None:
+                envelope["playlist_seq"] = playlist_seq
 
         # Add to outbox for reliable delivery
+        event_id = envelope["event_id"]
+        event_type_str = envelope["event_type"]
         await self.outbox.add_event(
-            event_id=envelope["event_id"],
-            event_type=envelope["event_type"],
+            event_id=str(event_id) if not isinstance(event_id, str) else event_id,
+            event_type=str(event_type_str) if not isinstance(event_type_str, str) else event_type_str,
             payload=envelope,
             server_seq=server_seq,
             playlist_id=playlist_id,
@@ -157,7 +161,7 @@ class StateEventCoordinator:
         ):
             return None
 
-        self._last_position_emit_time = current_time
+        self._last_position_emit_time = int(current_time)
 
         # Log every 10 seconds (10 events at 1000ms interval)
         self._position_log_counter += 1
@@ -174,9 +178,9 @@ class StateEventCoordinator:
             data["duration_ms"] = duration_ms
 
         # Broadcast with immediate processing for real-time updates
-        return await self.broadcast_state_change(
+        return cast(dict[Any, Any] | None, await self.broadcast_state_change(
             StateEventType.TRACK_POSITION, data, immediate=True
-        )
+        ))
 
     async def emit_playlists_index_update(self, updates: list) -> dict:
         """
@@ -191,9 +195,9 @@ class StateEventCoordinator:
         """
         data = {"updates": updates}
 
-        return await self.broadcast_state_change(
+        return cast(dict[Any, Any], await self.broadcast_state_change(
             StateEventType.PLAYLISTS_INDEX_UPDATE, data, immediate=True
-        )
+        ))
 
     @handle_service_errors("state_event_coordinator")
     async def send_acknowledgment(
@@ -291,9 +295,6 @@ class StateEventCoordinator:
 
         socket_event_type = conversion_map.get(state_event_type.value)
         if socket_event_type is None:
-            # For unknown event types, create a mock object that has the expected interface
-            class MockSocketEventType:
-                def __init__(self, value):
-                    self.value = value
-            return MockSocketEventType(state_event_type.value)
+            # For unknown event types, default to STATE_TRACK as fallback
+            return SocketEventType.STATE_TRACK
         return socket_event_type

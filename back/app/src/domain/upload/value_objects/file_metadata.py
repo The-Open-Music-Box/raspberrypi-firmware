@@ -25,7 +25,7 @@ class FileMetadata:
     duration_seconds: Optional[float] = None
     bitrate: Optional[int] = None
     sample_rate: Optional[int] = None
-    extra_attributes: Dict[str, Any] = None
+    extra_attributes: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         """Validate metadata on creation."""
@@ -100,7 +100,7 @@ class FileMetadata:
             "sample_rate": self.sample_rate,
             "file_extension": self.file_extension,
             "display_name": self.display_name,
-            "extra_attributes": dict(self.extra_attributes),
+            "extra_attributes": dict(self.extra_attributes) if self.extra_attributes else {},
         }
 
     @classmethod

@@ -30,7 +30,7 @@ class ClientSubscriptionManager:
 
         logger.info("ClientSubscriptionManager initialized")
 
-    async def subscribe_client(self, client_id: str, room: str) -> None:
+    async def subscribe_client(self, client_id: str, room: str) -> bool:
         """Subscribe a client to a specific room."""
         if client_id not in self._client_subscriptions:
             self._client_subscriptions[client_id] = set()
@@ -96,7 +96,7 @@ class ClientSubscriptionManager:
 
     def get_stats(self) -> dict:
         """Get subscription statistics for monitoring."""
-        room_counts = {}
+        room_counts: Dict[str, int] = {}
         for client_id, rooms in self._client_subscriptions.items():
             for room in rooms:
                 room_counts[room] = room_counts.get(room, 0) + 1

@@ -12,7 +12,8 @@ import sqlite3
 import importlib.util
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, cast
+from types import ModuleType
 import re
 
 from app.src.monitoring import get_logger
@@ -27,24 +28,31 @@ class Migration:
         self.version = version
         self.name = name
         self.file_path = file_path
-        self._module = None
+        self._module: Optional[ModuleType] = None
 
     @property
-    def module(self):
+    def module(self) -> ModuleType:
         """Lazy load the migration module."""
         if self._module is None:
             spec = importlib.util.spec_from_file_location(
                 f"migration_{self.version}", self.file_path
             )
-            self._module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(self._module)
+            if spec is None or spec.loader is None:
+                raise ImportError(f"Cannot load migration module from {self.file_path}")
+
+            module = importlib.util.module_from_spec(spec)
+            if module is None:
+                raise ImportError(f"Cannot create module from spec for {self.file_path}")
+
+            spec.loader.exec_module(module)
+            self._module = module
         return self._module
 
     def migrate(self, db_path: str) -> bool:
         """Execute the migration."""
         try:
             if hasattr(self.module, "migrate_database"):
-                return self.module.migrate_database(db_path)
+                return cast(bool, self.module.migrate_database(db_path))
             else:
                 logger.error(f"Migration {self.version} missing migrate_database function"
                              )
@@ -57,7 +65,7 @@ class Migration:
         """Verify the migration was successful."""
         try:
             if hasattr(self.module, "verify_migration"):
-                return self.module.verify_migration(db_path)
+                return cast(bool, self.module.verify_migration(db_path))
             else:
                 # No verification function, assume success
                 return True

@@ -234,7 +234,7 @@ class TestLogEvent:
         assert event.logger_name == "app.audio"
         assert event.level == "INFO"
         assert event.message == "Playback started"
-        assert event.timestamp == timestamp
+        assert event.log_timestamp == timestamp
 
     def test_log_levels(self):
         """Test different log levels."""

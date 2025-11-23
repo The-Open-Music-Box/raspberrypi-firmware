@@ -8,7 +8,7 @@ Playlist Broadcasting Service (DDD Architecture)
 Single Responsibility: Real-time state broadcasting for playlist operations.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, cast
 import logging
 from app.src.application.services.unified_state_manager import UnifiedStateManager
 from app.src.common.socket_events import StateEventType
@@ -209,7 +209,7 @@ class PlaylistBroadcastingService:
 
             if playlist_data:
                 # Broadcast as PLAYLISTS_SNAPSHOT so frontend state:playlists listener picks it up
-                event_data = {
+                event_data: Dict[str, Any] = {
                     "playlists": [playlist_data],  # Array format for state:playlists
                     "operation": "reorder_tracks"
                 }
@@ -222,7 +222,7 @@ class PlaylistBroadcastingService:
                 logger.info(f"✅ Broadcasted track reorder as playlists snapshot: {playlist_id}")
             else:
                 # Fallback to old event type if repository not available
-                event_data = {
+                fallback_data: Dict[str, Any] = {
                     "playlist_id": playlist_id,
                     "track_order": track_order,
                     "operation": "reorder_tracks"
@@ -230,7 +230,7 @@ class PlaylistBroadcastingService:
 
                 await self._state_manager.broadcast_state_change(
                     StateEventType.TRACKS_REORDERED,
-                    event_data
+                    fallback_data
                 )
 
                 logger.warning(f"No repository - using old tracks_reordered event for {playlist_id}")
@@ -239,7 +239,7 @@ class PlaylistBroadcastingService:
             logger.error(f"❌ Failed to broadcast tracks reordering: {str(e)}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_playlist_started(self, playlist_id: str, track_data: Dict[str, Any] = None):
+    async def broadcast_playlist_started(self, playlist_id: str, track_data: Optional[Dict[str, Any]] = None):
         """Broadcast playlist playback started event.
 
         Args:
@@ -253,7 +253,7 @@ class PlaylistBroadcastingService:
             }
 
             if track_data:
-                event_data["current_track"] = track_data
+                event_data["current_track"] = track_data  # type: ignore[assignment]
 
             await self._state_manager.broadcast_state_change(
                 StateEventType.PLAYLIST_STARTED,
@@ -355,7 +355,7 @@ class PlaylistBroadcastingService:
                 return None
 
             # Ensure playlist has all required fields
-            return playlist_dict
+            return cast(dict[str, Any] | None, playlist_dict)
 
         except Exception as e:
             logger.error(f"Failed to fetch full playlist data for {playlist_id}: {str(e)}")

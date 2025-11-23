@@ -11,6 +11,7 @@ from playlist titles and other user inputs.
 
 import re
 import unicodedata
+from typing import Optional
 
 
 def normalize_folder_name(name: str) -> str:
@@ -65,7 +66,7 @@ def normalize_folder_name(name: str) -> str:
     return normalized
 
 
-def get_playlist_folder_path(config, playlist_name: str, playlist_id: str = None) -> str:
+def get_playlist_folder_path(config, playlist_name: str, playlist_id: Optional[str] = None) -> str:
     """Get the complete folder path for a playlist.
 
     Args:

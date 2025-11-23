@@ -370,7 +370,7 @@ class UnifiedResponseService:
         if message is None:
             message = f"{service} service is currently unavailable"
 
-        details = {"service": service}
+        details: Dict[str, Any] = {"service": service}
         if retry_after:
             details["retry_after"] = retry_after
 

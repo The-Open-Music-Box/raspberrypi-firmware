@@ -9,7 +9,7 @@ Extended playlist operations that combine multiple application services.
 Single Responsibility: Complex playlist workflows and orchestration.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, cast
 import logging
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -174,7 +174,7 @@ class PlaylistOperationsService:
             True if successful, False otherwise
         """
         try:
-            return await self._repository_adapter.update_playlist(playlist_id, updates)
+            return cast(bool, await self._repository_adapter.update_playlist(playlist_id, updates))
 
         except Exception as e:
             logger.error(f"Error in update_playlist_use_case: {str(e)}")
@@ -191,7 +191,7 @@ class PlaylistOperationsService:
             True if successful, False otherwise
         """
         try:
-            return await self._repository_adapter.delete_playlist(playlist_id)
+            return cast(bool, await self._repository_adapter.delete_playlist(playlist_id))
 
         except Exception as e:
             logger.error(f"Error in delete_playlist_use_case: {str(e)}")
@@ -209,7 +209,7 @@ class PlaylistOperationsService:
             True if successful, False otherwise
         """
         try:
-            return await self._repository_adapter.update_playlist(playlist_id, {"nfc_tag_id": nfc_tag_id})
+            return cast(bool, await self._repository_adapter.update_playlist(playlist_id, {"nfc_tag_id": nfc_tag_id}))
 
         except Exception as e:
             logger.error(f"Error in associate_nfc_tag_use_case: {str(e)}")
@@ -226,7 +226,7 @@ class PlaylistOperationsService:
             True if successful, False otherwise
         """
         try:
-            return await self._repository_adapter.update_playlist(playlist_id, {"nfc_tag_id": None})
+            return cast(bool, await self._repository_adapter.update_playlist(playlist_id, {"nfc_tag_id": None}))
 
         except Exception as e:
             logger.error(f"Error in disassociate_nfc_tag_use_case: {str(e)}")
@@ -249,7 +249,7 @@ class PlaylistOperationsService:
 
             for playlist in playlists:
                 if playlist.get("nfc_tag_id") == nfc_tag_id:
-                    return playlist
+                    return cast(dict[str, Any] | None, playlist)
 
             return None
 

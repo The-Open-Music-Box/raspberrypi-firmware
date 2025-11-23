@@ -9,10 +9,9 @@ This service centralizes all Socket.IO broadcasting patterns to eliminate
 the 15+ duplicated broadcasting patterns across route handlers.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, cast
 import logging
 
-from app.src.domain.audio.engine.state_manager import StateManager
 from app.src.common.socket_events import StateEventType
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -29,7 +28,7 @@ class UnifiedBroadcastingService:
     - Broadcasting manuel dans chaque handler
     """
 
-    def __init__(self, state_manager: StateManager):
+    def __init__(self, state_manager: Any):
         """
         Initialize broadcasting service.
 
@@ -128,7 +127,7 @@ class UnifiedBroadcastingService:
                 event_type, broadcast_data, room=f"playlist:{playlist_id}"
             )
 
-        return success
+        return cast(bool, success)
 
     async def broadcast_player_state(
         self,
@@ -156,12 +155,12 @@ class UnifiedBroadcastingService:
             state_data = state_data.copy()
             state_data.pop("position_ms", None)
 
-        return await self.broadcast_with_acknowledgment(
+        return cast(bool, await self.broadcast_with_acknowledgment(
             event_type=StateEventType.PLAYER_STATE,
             data=state_data,
             client_op_id=client_op_id,
             room="player",
-        )
+        ))
 
     @handle_service_errors("unified_broadcasting")
     async def broadcast_track_progress(
@@ -191,9 +190,9 @@ class UnifiedBroadcastingService:
         }
 
         if track_id:
-            progress_data["track_id"] = track_id
+            progress_data["track_id"] = track_id  # type: ignore[assignment]
         if playlist_id:
-            progress_data["playlist_id"] = playlist_id
+            progress_data["playlist_id"] = playlist_id  # type: ignore[assignment]
 
         # Broadcast without acknowledgment for performance
         await self.state_manager.broadcast_state_change(
@@ -362,7 +361,7 @@ class UnifiedBroadcastingService:
         return {
             "total_broadcasts": self._broadcast_count,
             "total_acknowledgments": self._acknowledgment_count,
-            "average_per_minute": self._calculate_average_rate(),
+            "average_per_minute": int(self._calculate_average_rate()),
         }
 
     def _get_timestamp(self) -> float:

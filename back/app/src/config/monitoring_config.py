@@ -4,7 +4,10 @@
 
 """Configuration for the unified monitoring system."""
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.src.config.app_config import AppConfig
 
 
 class MonitoringConfig:
@@ -13,7 +16,7 @@ class MonitoringConfig:
     Uses dependency injection to get app config.
     """
 
-    def __init__(self, app_config=None):
+    def __init__(self, app_config: Optional["AppConfig"] = None):
         """Initialize monitoring config with app config injection.
 
         Args:
@@ -23,9 +26,9 @@ class MonitoringConfig:
             # For backward compatibility during transition, create a new instance
             from app.src.config.app_config import AppConfig
             app_config = AppConfig()
-        self._app_config = app_config
+        self._app_config: "AppConfig" = app_config
 
-    def _get_config(self):
+    def _get_config(self) -> "AppConfig":
         """Get the app config."""
         return self._app_config
 

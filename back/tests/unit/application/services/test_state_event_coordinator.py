@@ -207,13 +207,14 @@ class TestStateEventCoordinator:
         result = coordinator._convert_state_event_type_to_socket_event_type(StateEventType.PLAYLISTS_SNAPSHOT)
         assert result.value == "state:playlists"
 
-        # Test unknown event type (should create new SocketEventType)
+        # Test unknown event type (should fallback to STATE_TRACK)
         from enum import Enum
+        from app.src.common.socket_events import SocketEventType
         class CustomEventType(Enum):
             CUSTOM = "custom:event"
 
         result = coordinator._convert_state_event_type_to_socket_event_type(CustomEventType.CUSTOM)
-        assert result.value == "custom:event"
+        assert result == SocketEventType.STATE_TRACK  # Fallback for unknown types
 
     @pytest.mark.asyncio
     async def test_broadcast_event_to_specific_room(self, coordinator, mock_socketio):

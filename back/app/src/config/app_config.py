@@ -12,7 +12,7 @@ modules.
 import logging
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import Optional, Any, List, cast
 
 from dotenv import load_dotenv
 from app.src.config.audio_config import AudioConfig
@@ -213,7 +213,7 @@ class AppConfig:
             logger.error("Error converting value '%s': %s", value, e)
             return value
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
         """
         Get a configuration value.
 
@@ -245,21 +245,21 @@ class AppConfig:
         """
         Whether debug mode is enabled.
         """
-        return self._values.get("debug", False)
+        return cast(bool, self._values.get("debug", False))
 
     @property
     def use_reloader(self) -> bool:
         """
         Whether to use auto-reloader.
         """
-        return self._values.get("use_reloader", False)
+        return cast(bool, self._values.get("use_reloader", False))
 
     @property
     def socketio_host(self) -> str:
         """
         Host for Socket.IO server.
         """
-        return self._values.get("socketio_host", "0.0.0.0")
+        return cast(str, self._values.get("socketio_host", "0.0.0.0"))
 
     @property
     def socketio_port(self) -> int:
@@ -360,37 +360,44 @@ class AppConfig:
         """
         Logging format.
         """
-        return self._values.get(
+        return cast(str, self._values.get(
             "log_format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        ))
 
     @property
     def log_file(self) -> str:
         """
         Path to log file.
         """
-        return self._values.get("log_file", "logs/app.log")
+        return cast(str, self._values.get("log_file", "logs/app.log"))
+
+    @property
+    def log_level(self) -> str:
+        """
+        Logging level.
+        """
+        return cast(str, self._values.get("log_level", "INFO"))
 
     @property
     def use_mock_hardware(self) -> bool:
         """
         Whether to use mock hardware.
         """
-        return self._values.get("use_mock_hardware", False)
+        return cast(bool, self._values.get("use_mock_hardware", False))
 
     @property
     def app_module(self) -> str:
         """
         ASGI app module for Uvicorn.
         """
-        return self._values.get("app_module", "app.main:app_sio")
+        return cast(str, self._values.get("app_module", "app.main:app_sio"))
 
     @property
     def uvicorn_reload(self) -> bool:
         """
         Whether to enable Uvicorn reload.
         """
-        return self._values.get("uvicorn_reload", False)
+        return cast(bool, self._values.get("uvicorn_reload", False))
 
     # mDNS/zeroconf properties
     @property
@@ -400,7 +407,7 @@ class AppConfig:
 
         Returns the service type string.
         """
-        return self._values.get("mdns_service_type", "_http._tcp.local.")
+        return cast(str, self._values.get("mdns_service_type", "_http._tcp.local."))
 
     @property
     def mdns_service_name(self) -> str:
@@ -412,7 +419,7 @@ class AppConfig:
         """
         value = self._values.get("mdns_service_name")
         if value:
-            return value
+            return cast(str, value)
         import socket
 
         hostname = socket.gethostname()
@@ -428,7 +435,7 @@ class AppConfig:
         """
         value = self._values.get("mdns_service_hostname")
         if value:
-            return value
+            return cast(str, value)
         import socket
 
         hostname = socket.gethostname()
@@ -439,14 +446,14 @@ class AppConfig:
         """
         Path property for mDNS/zeroconf service (e.g. /api).
         """
-        return self._values.get("mdns_service_path", "/api")
+        return cast(str, self._values.get("mdns_service_path", "/api"))
 
     @property
     def mdns_service_version(self) -> str:
         """
         Version property for mDNS/zeroconf service (e.g. 1.0).
         """
-        return self._values.get("mdns_service_version", "1.0")
+        return cast(str, self._values.get("mdns_service_version", "1.0"))
 
     @property
     def mdns_service_friendly_name(self) -> str:
@@ -455,7 +462,7 @@ class AppConfig:
 
         The name is used to identify the service in a user-friendly way.
         """
-        return self._values.get("mdns_service_friendly_name", "The Open Music Box")
+        return cast(str, self._values.get("mdns_service_friendly_name", "The Open Music Box"))
 
     # Feature flags for paginated playlists optimization
     # Clean architecture - paginated index removed for simplicity
@@ -468,7 +475,7 @@ class AppConfig:
         When True, continues to emit state:playlists with full playlist data.
         When False, only emits state:playlists_index_update for optimization.
         """
-        return self._values.get("FEATURE_LEGACY_PLAYLISTS_SNAPSHOT", False)
+        return cast(bool, self._values.get("FEATURE_LEGACY_PLAYLISTS_SNAPSHOT", False))
 
     # === Monitoring Configuration ===
 
@@ -481,7 +488,7 @@ class AppConfig:
         """
         if not self.debug:
             return False
-        return self._values.get("enable_event_monitoring", True)
+        return cast(bool, self._values.get("enable_event_monitoring", True))
 
     @property
     def enable_performance_monitoring(self) -> bool:
@@ -492,21 +499,21 @@ class AppConfig:
         """
         if not self.debug:
             return False
-        return self._values.get("enable_performance_monitoring", True)
+        return cast(bool, self._values.get("enable_performance_monitoring", True))
 
     @property
     def monitoring_trace_history_size(self) -> int:
         """
         Maximum events to keep in trace history.
         """
-        return self._values.get("monitoring_trace_history_size", 1000)
+        return cast(int, self._values.get("monitoring_trace_history_size", 1000))
 
     @property
     def monitoring_file_logging(self) -> bool:
         """
         Whether to enable monitoring-specific file logging.
         """
-        return self._values.get("monitoring_file_logging", False)
+        return cast(bool, self._values.get("monitoring_file_logging", False))
 
     def _load_subconfig_overrides(self) -> None:
         """

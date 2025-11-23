@@ -13,6 +13,7 @@ from fastapi import APIRouter, Body, Request
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class PlaylistPlaybackAPI:
 
         @router.post("/{playlist_id}/start")
         @handle_http_errors()
-        async def start_playlist(playlist_id: str, body: dict = Body(...), request: Request = None):
+        async def start_playlist(playlist_id: str, body: dict = Body(...), request: Request = None):  # type: ignore[assignment]
             """Start playlist playback."""
             try:
                 client_op_id = body.get("client_op_id")

@@ -41,8 +41,8 @@ class StateManagerLifecycleApplicationService:
 
     def __init__(
         self,
-        operation_tracker: OperationTracker = None,
-        event_outbox: EventOutbox = None,
+        operation_tracker: Optional[OperationTracker] = None,
+        event_outbox: Optional[EventOutbox] = None,
         cleanup_interval: int = 300,  # 5 minutes
     ):
         """Initialize state manager lifecycle service.
@@ -174,7 +174,7 @@ class StateManagerLifecycleApplicationService:
 
         except Exception as e:
             logger.error(f"Error collecting health metrics: {e}")
-            metrics["error"] = str(e)
+            metrics["error"] = str(e)  # type: ignore[assignment]
 
         return metrics
 
@@ -186,7 +186,7 @@ class StateManagerLifecycleApplicationService:
         """
         logger.info("Forcing immediate cleanup of state management components")
 
-        cleanup_results = {
+        cleanup_results: Dict[str, Any] = {
             "timestamp": time.time(),
             "operations_cleaned": 0,
             "outbox_processed": False,
