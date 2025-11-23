@@ -9,21 +9,19 @@ Real hardware implementation using gpiozero for buttons and rotary encoder.
 """
 
 import os
-from typing import Callable, Dict, Optional, List
+from typing import Dict, Optional, List, Any
 from datetime import datetime
 from threading import Lock
 
-from app.src.domain.protocols.physical_controls_protocol import (
-    PhysicalControlsProtocol,
-    PhysicalControlEvent,
-)
+from .base_controls_implementation import BaseControlsImplementation
+from app.src.domain.protocols.physical_controls_protocol import PhysicalControlEvent
 from app.src.domain.events.physical_control_events import (
     ButtonPressedEvent,
     EncoderRotatedEvent,
     PhysicalControlErrorEvent,
 )
-from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
-from typing import Any
+from app.src.config.button_actions_config import ButtonActionConfig
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -86,21 +84,27 @@ else:
     GPIO_AVAILABLE = False
 
 
-class GPIOPhysicalControls(PhysicalControlsProtocol):
-    """GPIO-based implementation of physical controls with configurable buttons."""
+class GPIOPhysicalControls(BaseControlsImplementation):
+    """GPIO-based implementation of physical controls with configurable buttons.
 
-    def __init__(self, hardware_config: Any, button_configs: Optional[List[ButtonActionConfig]] = None):
+    Inherits common controls functionality from BaseControlsImplementation.
+    """
+
+    def __init__(
+        self,
+        hardware_config: Any,
+        button_configs: Optional[List[ButtonActionConfig]] = None
+    ):
         """Initialize GPIO physical controls.
 
         Args:
             hardware_config: Hardware configuration with pin assignments
-            button_configs: Optional list of button configurations (uses DEFAULT_BUTTON_CONFIGS if None)
+            button_configs: Optional list of button configurations
         """
-        self.config = hardware_config
-        self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
-        self._is_initialized = False
-        self._event_handlers: Dict[PhysicalControlEvent, Callable[[], None]] = {}
-        self._devices: Dict[str, Any] = {}
+        super().__init__(hardware_config, button_configs)
+
+        # GPIO-specific state
+        self._devices = {}
         self._lock = Lock()
 
         # Encoder state tracking
@@ -180,7 +184,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 try:
                     GPIO_Direct.cleanup(pin)
                 except Exception:
-                    pass  # nosec B110 - GPIO cleanup, pin might not be initialized
+                    pass  # Pin might not have been initialized
 
             logger.debug(f"GPIO pins cleaned before initialization: {pins_to_use}")
         except Exception as e:
@@ -247,7 +251,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 GPIO_Direct.setwarnings(False)
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_sw)
             except Exception:
-                pass  # nosec B110 - GPIO cleanup, pin might not be initialized
+                pass
 
             # Initialize the encoder switch as a button
             self._devices['encoder_switch'] = Button(
@@ -283,7 +287,7 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_clk)
                 GPIO_Direct.cleanup(self.config.gpio_volume_encoder_dt)
             except Exception:
-                pass  # nosec B110 - GPIO cleanup, pins might not be initialized
+                pass
 
             # Try to initialize the rotary encoder
             self._devices['volume_encoder'] = RotaryEncoder(
@@ -401,12 +405,6 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
             logger.warning(f"⚠️ [GPIO] No handler registered for event: {event_type}")
             logger.warning(f"⚠️ [GPIO] Available handlers: {list(self._event_handlers.keys())}")
 
-    def set_event_handler(self, event_type: PhysicalControlEvent, handler: Callable[[], None]) -> None:
-        """Set event handler for a specific control event."""
-        with self._lock:
-            self._event_handlers[event_type] = handler
-            logger.debug(f"Event handler set for: {event_type}")
-
     async def cleanup(self) -> None:
         """Clean up GPIO resources."""
         try:
@@ -434,21 +432,13 @@ class GPIOPhysicalControls(PhysicalControlsProtocol):
         except Exception as e:
             logger.error(f"❌ Error during GPIO controls cleanup: {e}")
 
-    def is_initialized(self) -> bool:
-        """Check if GPIO controls are initialized."""
-        return self._is_initialized
-
     def get_status(self) -> dict:
-        """Get current status of GPIO controls."""
-        # Build button configuration info
-        button_info = {}
-        for config in self._button_configs:
-            if config.enabled:
-                button_info[f"button_{config.button_id}"] = {
-                    "gpio_pin": config.gpio_pin,
-                    "action": config.action_name,
-                    "description": config.description,
-                }
+        """Get current status of GPIO controls.
+
+        Uses base class helper for button info.
+        """
+        # Get button info from base class helper
+        button_info = self._build_button_info()
 
         return {
             "initialized": self._is_initialized,

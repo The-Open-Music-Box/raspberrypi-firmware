@@ -185,27 +185,3 @@ def create_mock_response(
 
     # Type is guaranteed to be Callable[..., Dict[str, Any]] at this point
     return creator(**kwargs)
-
-
-# Legacy function names for backward compatibility
-# These can be removed once all callers are updated
-def is_test_data(
-    playlist_id: Optional[str] = None,
-    tag_id: Optional[str] = None,
-    client_op_id: Optional[str] = None,
-) -> bool:
-    """
-    Deprecated: Use is_test_request() instead.
-
-    Args:
-        playlist_id: Optional playlist identifier to check
-        tag_id: Optional NFC tag identifier to check
-        client_op_id: Optional client operation ID to check
-
-    Returns:
-        True if test data is detected, False otherwise
-    """
-    logger.warning(
-        "is_test_data() is deprecated, use is_test_request() instead"
-    )
-    return is_test_request(playlist_id, tag_id, client_op_id)

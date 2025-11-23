@@ -7,25 +7,21 @@
 import asyncio
 import time
 from typing import Optional, Dict, Any
-from rx.subject import Subject
 import logging
 
-from .nfc_hardware_interface import NFCHardwareInterface
-from app.src.services.error.unified_error_decorator import handle_errors
+from .base_nfc_hardware import BaseNFCHardware, _handle_errors
 
 logger = logging.getLogger(__name__)
 
 
-def _handle_errors(operation_name: str):
-    return handle_errors(operation_name)
-
-
-class PN532NFCHardware(NFCHardwareInterface):
+class PN532NFCHardware(BaseNFCHardware):
     """PN532 NFC hardware implementation for Raspberry Pi.
 
     This implementation provides real NFC tag detection using the PN532 chip
     over I2C communication. It handles hardware initialization, scanning,
     and event emission for actual NFC tag detection.
+
+    Inherits common NFC hardware functionality from BaseNFCHardware.
     """
 
     def __init__(self, bus_lock: asyncio.Lock, config: Optional[Any] = None):
@@ -35,27 +31,25 @@ class PN532NFCHardware(NFCHardwareInterface):
             bus_lock: Asyncio lock for I2C bus synchronization
             config: NFC configuration parameters
         """
+        super().__init__()
+
+        # PN532-specific state
         self._bus_lock = bus_lock
         if config is None:
             from app.src.config.nfc_config import NFCConfig
             self._config = NFCConfig()
         else:
             self._config = config
-        self._tag_subject = Subject()
-        self._running = False
-        self._reader_task = None
-        self._stop_event = asyncio.Event()
+
         self._pn532 = None
-        self._last_tag_uid = None
+        self._last_tag_uid: Optional[str] = None
         self._tag_present = False
         self._consecutive_errors = 0
 
-        logger.info("🔧 PN532 NFC Hardware initializing...")
+        # PN532 has longer stop timeout
+        self._stop_timeout = 2.0
 
-    @property
-    def tag_subject(self) -> Subject:
-        """Get the RxPy Subject for tag detection events."""
-        return self._tag_subject
+        logger.info("🔧 PN532 NFC Hardware initializing...")
 
     @_handle_errors("initialize")
     async def initialize(self) -> None:
@@ -70,56 +64,32 @@ class PN532NFCHardware(NFCHardwareInterface):
         # Initialize PN532 with I2C
         self._pn532 = PN532_I2C(i2c, debug=False, reset=None, irq=None)
         # Configure PN532
-        if self._pn532:
-            ic, ver, rev, support = self._pn532.firmware_version
-            logger.info(f"✅ PN532 found - Firmware version: {ver}.{rev}, IC: 0x{ic:02x}")
-            # Configure the PN532 for NFC card detection
-            self._pn532.SAM_configuration()
+        ic, ver, rev, support = self._pn532.firmware_version
+        logger.info(f"✅ PN532 found - Firmware version: {ver}.{rev}, IC: 0x{ic:02x}")
+        # Configure the PN532 for NFC card detection
+        self._pn532.SAM_configuration()
         logger.info("🚀 PN532 NFC Hardware initialized successfully")
 
     async def start_nfc_reader(self) -> None:
-        """Start the PN532 NFC reader scanning process."""
-        if self._running:
-            logger.warning("⚠️ PN532 NFC reader already running")
-            return
+        """Start the PN532 NFC reader scanning process.
 
+        Extends base class to ensure hardware initialization before starting.
+        """
         if not self._pn532:
             await self.initialize()
 
-        self._stop_event.clear()
-        self._running = True
+        # Reset error counter when starting
         self._consecutive_errors = 0
-        self._reader_task = asyncio.create_task(self._scan_loop())  # type: ignore[assignment]
 
-        logger.info("🚀 PN532 NFC Reader started - scanning for tags...")
-
-    async def stop_nfc_reader(self) -> None:
-        """Stop the PN532 NFC reader scanning process."""
-        if not self._running:
-            return
-
-        self._stop_event.set()
-        self._running = False
-
-        if self._reader_task and not self._reader_task.done():
-            try:
-                await asyncio.wait_for(self._reader_task, timeout=2.0)
-            except asyncio.TimeoutError:
-                self._reader_task.cancel()
-                try:
-                    await self._reader_task
-                except asyncio.CancelledError:
-                    pass
-
-        logger.info("⏹️ PN532 NFC Reader stopped")
-
-    def is_running(self) -> bool:
-        """Check if the PN532 reader is running."""
-        return self._running
+        # Call base class implementation
+        await super().start_nfc_reader()
 
     @_handle_errors("read_nfc")
     async def read_nfc(self) -> Optional[Dict[str, Any]]:
-        """Read NFC tag data directly from PN532."""
+        """Read NFC tag data directly from PN532.
+
+        Uses the base class _create_tag_data() helper for standardized tag structure.
+        """
         if not self._pn532:
             return None
 
@@ -128,25 +98,27 @@ class PN532NFCHardware(NFCHardwareInterface):
             uid = self._pn532.read_passive_target(timeout=self._config.read_timeout)
             if uid:
                 tag_uid = "".join([f"{b:02x}" for b in uid])
-                return {
-                    "uid": tag_uid,
-                    "present": True,
-                    "timestamp": time.time(),
-                    "hardware": "PN532",
-                    "raw_uid": uid.hex(),
-                }
+                return self._create_tag_data(
+                    uid=tag_uid,
+                    present=True,
+                    hardware_name="PN532",
+                    raw_uid=uid.hex(),
+                )
         return None
 
     def cleanup(self) -> None:
-        """Clean up PN532 hardware resources."""
-        if self._running:
-            asyncio.create_task(self.stop_nfc_reader())
+        """Clean up PN532 hardware resources.
 
+        Extends base class cleanup to also release hardware reference.
+        """
+        # Call base class cleanup (handles stop_nfc_reader)
+        super().cleanup()
+
+        # PN532-specific cleanup
         self._pn532 = None
-        logger.info("🧹 PN532 NFC Hardware cleaned up")
 
-    @_handle_errors("_scan_loop")
-    async def _scan_loop(self) -> None:
+    @_handle_errors("_scan_loop_impl")
+    async def _scan_loop_impl(self) -> None:
         """Main scanning loop for PN532 tag detection."""
         logger.info("🔄 PN532 scanning loop started")
         last_status_log = 0
@@ -169,27 +141,29 @@ class PN532NFCHardware(NFCHardwareInterface):
                 logger.debug(
                     f"📡 PN532: {status} (scans: {scan_count}, errors: {self._consecutive_errors})",
                 )
-                last_status_log = now  # type: ignore[assignment]
+                last_status_log = now
             # Short delay between scans
             await asyncio.sleep(self._config.debounce_time)
 
     @_handle_errors("_read_tag_with_retry")
     async def _read_tag_with_retry(self) -> Optional[Dict[str, Any]]:
-        """Read tag data with retry logic."""
+        """Read tag data with retry logic.
+
+        Uses the base class _create_tag_data() helper for standardized tag structure.
+        """
         for attempt in range(self._config.max_retries):
             async with self._bus_lock:
                 # Try to read a MIFARE Classic card
-                uid = self._pn532.read_passive_target(timeout=self._config.read_timeout) if self._pn532 else None
+                uid = self._pn532.read_passive_target(timeout=self._config.read_timeout)
                 if uid:
                     tag_uid = "".join([f"{b:02x}" for b in uid])
-                    return {
-                        "uid": tag_uid,
-                        "present": True,
-                        "timestamp": time.time(),
-                        "hardware": "PN532",
-                        "raw_uid": uid.hex(),
-                        "attempt": attempt + 1,
-                    }
+                    return self._create_tag_data(
+                        uid=tag_uid,
+                        present=True,
+                        hardware_name="PN532",
+                        raw_uid=uid.hex(),
+                        attempt=attempt + 1,
+                    )
         return None
 
     @_handle_errors("_handle_tag_present")
@@ -211,7 +185,10 @@ class PN532NFCHardware(NFCHardwareInterface):
 
     @_handle_errors("_handle_tag_absent")
     async def _handle_tag_absent(self) -> None:
-        """Handle when no tag is detected."""
+        """Handle when no tag is detected.
+
+        Uses the base class _create_tag_data() helper for standardized tag structure.
+        """
         if self._tag_present:
             # Tag was present but now absent
             self._tag_present = False
@@ -221,13 +198,12 @@ class PN532NFCHardware(NFCHardwareInterface):
             logger.info(f"🚫 PN532 tag removed: {old_tag_uid}")
 
             # Emit tag absence event
-            absence_data = {
-                "uid": old_tag_uid,
-                "present": False,
-                "absence": True,
-                "timestamp": time.time(),
-                "hardware": "PN532",
-            }
+            absence_data = self._create_tag_data(
+                uid=old_tag_uid or "",
+                present=False,
+                hardware_name="PN532",
+                absence=True,
+            )
             self._tag_subject.on_next(absence_data)
             logger.debug("📤 Tag absence event emitted successfully")
 

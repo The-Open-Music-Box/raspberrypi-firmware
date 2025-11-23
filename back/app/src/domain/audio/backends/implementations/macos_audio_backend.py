@@ -113,6 +113,19 @@ class MacOSAudioBackend(BaseAudioBackend):
             logger.info(f"🎵 macOS: Started playing {path.name}")
             return True
 
+    def _reset_playback_state(self) -> None:
+        """Reset all playback state variables to initial values.
+
+        Note: Must be called within self._state_lock context.
+        """
+        self._is_playing = False
+        self._current_file_path = None
+        self._current_file_duration = None
+        # Reset timing
+        self._play_start_time = None
+        self._pause_time = None
+        self._is_paused = False
+
     @handle_errors("stop")
     def _stop_impl(self) -> bool:
         """Stop playback.
@@ -127,13 +140,7 @@ class MacOSAudioBackend(BaseAudioBackend):
                 time.sleep(0.05)
             # Properly unload to free resources
             pygame.mixer.music.unload()
-            self._is_playing = False
-            self._current_file_path = None
-            self._current_file_duration = None
-            # Reset timing
-            self._play_start_time = None
-            self._pause_time = None
-            self._is_paused = False
+            self._reset_playback_state()
         logger.info("⏹️ macOS: Playback stopped")
         return True
 
@@ -261,13 +268,7 @@ class MacOSAudioBackend(BaseAudioBackend):
         with self._state_lock:
             if self._mixer_initialized:
                 pygame.mixer.music.stop()
-            self._is_playing = False
-            self._current_file_path = None
-            self._current_file_duration = None
-            # Reset timing
-            self._play_start_time = None
-            self._pause_time = None
-            self._is_paused = False
+            self._reset_playback_state()
         if self._mixer_initialized:
             pygame.mixer.quit()
             self._mixer_initialized = False

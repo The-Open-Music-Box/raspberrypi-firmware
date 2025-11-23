@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
-from uuid import uuid4
 
+from app.src.domain.base.base_session_entity import BaseSessionEntity
 from ..value_objects.tag_identifier import TagIdentifier
 
 
@@ -26,38 +26,32 @@ class SessionState(Enum):
 
 
 @dataclass
-class AssociationSession:
+class AssociationSession(BaseSessionEntity):
     """Domain entity for managing NFC tag-playlist association sessions.
 
     Handles the lifecycle of associating an NFC tag with a playlist,
     including timeout management and conflict resolution.
+
+    Inherits common session patterns from BaseSessionEntity.
     """
 
-    playlist_id: str
-    session_id: str = field(default_factory=lambda: str(uuid4()))
+    playlist_id: str = ""
     state: SessionState = SessionState.LISTENING
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    timeout_seconds: int = 60
+    timeout_seconds: int = 60  # Override base class default
     detected_tag: Optional[TagIdentifier] = None
     conflict_playlist_id: Optional[str] = None
     error_message: Optional[str] = None
     override_mode: bool = False  # If True, force association even if tag is already associated
 
+    @property
+    def started_at(self) -> datetime:
+        """Alias for created_at for backwards compatibility."""
+        return self.created_at
+
     def __post_init__(self):
         """Validate session on creation."""
         if not self.playlist_id:
             raise ValueError("Playlist ID is required for association session")
-
-    @property
-    def timeout_at(self) -> datetime:
-        """Calculate when this session times out."""
-        return datetime.fromtimestamp(
-            self.started_at.timestamp() + self.timeout_seconds, tz=timezone.utc
-        )
-
-    def is_expired(self) -> bool:
-        """Check if this session has expired."""
-        return datetime.now(timezone.utc) > self.timeout_at
 
     def is_active(self) -> bool:
         """Check if this session is active.
@@ -128,25 +122,20 @@ class AssociationSession:
         self.state = SessionState.ERROR
         self.error_message = error_message
 
-    def get_remaining_seconds(self) -> int:
-        """Get remaining seconds before timeout."""
-        if self.is_expired():
-            return 0
-
-        remaining = self.timeout_at - datetime.now(timezone.utc)
-        return max(0, int(remaining.total_seconds()))
-
     def to_dict(self) -> dict:
         """Convert session to dictionary for serialization."""
-        return {
-            "session_id": self.session_id,
+        # Start with base class common fields
+        result = self._base_dict_fields()
+
+        # Add domain-specific fields
+        result.update({
             "playlist_id": self.playlist_id,
             "state": self.state.value,
-            "started_at": self.started_at.isoformat(),
-            "timeout_at": self.timeout_at.isoformat(),
-            "remaining_seconds": self.get_remaining_seconds(),
+            "started_at": self.started_at.isoformat(),  # For backwards compatibility
             "detected_tag": str(self.detected_tag) if self.detected_tag else None,
             "conflict_playlist_id": self.conflict_playlist_id,
             "error_message": self.error_message,
             "override_mode": self.override_mode,
-        }
+        })
+
+        return result

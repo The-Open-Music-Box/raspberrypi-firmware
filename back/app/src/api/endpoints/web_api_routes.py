@@ -47,6 +47,23 @@ class WebAPIRoutes:
         if not self.static_dir.exists() or not self.static_dir.is_dir():
             logger.warning(f"Static directory not found: {self.static_dir}")
 
+    def _serve_index_or_404(self):
+        """Serve index.html or raise 404 if not found.
+
+        Returns:
+            FileResponse for index.html
+
+        Raises:
+            HTTPException: If index.html not found
+        """
+        index_path = self.static_dir / "index.html"
+        if index_path.exists():
+            return FileResponse(str(index_path))
+        else:
+            logger.error("index.html not found in static directory")
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Frontend not available")
+
     def register_with_app(self, app):
         """Register web routes directly with FastAPI app.
 
@@ -71,13 +88,7 @@ class WebAPIRoutes:
             @app.get("/")
             async def serve_spa_index():
                 """Serve SPA index.html for root path."""
-                index_path = self.static_dir / "index.html"
-                if index_path.exists():
-                    return FileResponse(str(index_path))
-                else:
-                    logger.error("index.html not found in static directory")
-                    from fastapi import HTTPException
-                    raise HTTPException(status_code=404, detail="Frontend not available")
+                return self._serve_index_or_404()
 
             # Catch-all route for SPA client-side routing
             @app.get("/{full_path:path}", include_in_schema=False)
@@ -99,13 +110,7 @@ class WebAPIRoutes:
                     return FileResponse(str(requested_file))
 
                 # Return index.html for SPA routing
-                index_path = self.static_dir / "index.html"
-                if index_path.exists():
-                    return FileResponse(str(index_path))
-                else:
-                    logger.error("index.html not found in static directory")
-                    from fastapi import HTTPException
-                    raise HTTPException(status_code=404, detail="Frontend not available")
+                return self._serve_index_or_404()
 
             logger.info("SPA routing configured successfully")
 

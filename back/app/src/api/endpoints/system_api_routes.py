@@ -11,17 +11,18 @@ Single Responsibility: HTTP route handling for system operations.
 
 from typing import Dict, Any
 from fastapi import APIRouter, Request
-import logging
 import platform
 import time
+import logging
 
+from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
 
 logger = logging.getLogger(__name__)
 
 
-class SystemAPIRoutes:
+class SystemAPIRoutes(BaseAPIRoutes):
     """
     Pure API routes handler for system operations.
 
@@ -36,6 +37,8 @@ class SystemAPIRoutes:
     - Actual system operations (delegated to system services)
     - Service lifecycle management (delegated to application layer)
     - Resource monitoring (delegated to monitoring services)
+
+    Inherits common API functionality from BaseAPIRoutes.
     """
 
     def __init__(self, playback_coordinator_getter, led_event_handler_getter=None):
@@ -46,9 +49,65 @@ class SystemAPIRoutes:
             led_event_handler_getter: Optional callable that returns LED event handler from request
         """
         self.router = APIRouter(prefix="/api", tags=["system"])
+        super().__init__(router=self.router)
         self._get_coordinator = playback_coordinator_getter
         self._get_led_handler = led_event_handler_getter
         self._register_routes()
+
+    def _get_server_seq_from_container(self, container) -> int:
+        """Extract server_seq from container's state manager.
+
+        Args:
+            container: Application container
+
+        Returns:
+            Server sequence number, or 0 if unavailable
+        """
+        if not container:
+            return 0
+
+        state_manager = getattr(container, "state_manager", None)
+        if state_manager and hasattr(state_manager, "get_global_sequence"):
+            return state_manager.get_global_sequence()
+
+        return 0
+
+    def _create_no_cache_response(self, content: dict, status_code: int = 200):
+        """Create JSONResponse with anti-cache headers.
+
+        Args:
+            content: Response content dictionary
+            status_code: HTTP status code
+
+        Returns:
+            JSONResponse with no-cache headers
+        """
+        from fastapi.responses import JSONResponse
+
+        response = JSONResponse(content=content, status_code=status_code)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    def _check_led_handler_available(self, request: Request):
+        """Check if LED handler is available and return error if not.
+
+        Args:
+            request: FastAPI request
+
+        Returns:
+            Tuple of (led_handler, error_response) where error_response is None if available
+        """
+        led_handler = self._get_led_handler(request)
+        if not led_handler:
+            error_response = UnifiedResponseService.error(
+                message="LED event handler not available",
+                error_type="service_unavailable",
+                status_code=503
+            )
+            return None, error_response
+        return led_handler, None
 
     def _register_routes(self):
         """Register all system-related API routes."""
@@ -67,21 +126,16 @@ class SystemAPIRoutes:
                     )
 
                 playback_state = coordinator.get_playback_status()
-                logger.info("API: Responding with playback state")
+                self.log_operation("API: Responding with playback state")
 
                 # Create response with anti-cache headers
-                from fastapi.responses import JSONResponse
-                response = JSONResponse(content=playback_state, status_code=200)
-                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                response.headers["Pragma"] = "no-cache"
-                response.headers["Expires"] = "0"
-                return response
+                return self._create_no_cache_response(playback_state)
 
             except Exception as e:
-                logger.error(f"Error getting playback status: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to get playback status",
-                    operation="get_playback_status"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="get_playback_status",
+                    message="Failed to get playback status"
                 )
 
         @self.router.get("/health")
@@ -89,7 +143,7 @@ class SystemAPIRoutes:
         async def health_check(request: Request):
             """Perform system health check."""
             try:
-                logger.info("API /api/health: Health check requested")
+                self.log_operation("API /api/health: Health check requested")
 
                 # Get container from app state
                 container = getattr(request.app, "container", None)
@@ -138,12 +192,7 @@ class SystemAPIRoutes:
                         health_status = "unhealthy"
 
                 # Get server_seq from state manager (required by contract v3.1.0)
-                state_manager = None
-                server_seq = 0
-                if container:
-                    state_manager = getattr(container, "state_manager", None)
-                    if state_manager and hasattr(state_manager, "get_global_sequence"):
-                        server_seq = state_manager.get_global_sequence()
+                server_seq = self._get_server_seq_from_container(container)
 
                 health_data = {
                     "status": health_status,
@@ -159,10 +208,10 @@ class SystemAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Error during health check: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Health check failed",
-                    operation="health_check"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="health_check",
+                    message="Health check failed"
                 )
 
         @self.router.get("/system/info")
@@ -170,7 +219,7 @@ class SystemAPIRoutes:
         async def get_system_info(request: Request):
             """Get system information."""
             try:
-                logger.info("API /api/system/info: System info requested")
+                self.log_operation("API /api/system/info: System info requested")
 
                 # Try to import psutil
                 try:
@@ -202,12 +251,7 @@ class SystemAPIRoutes:
 
                 # Get server_seq from state manager (required by contract v3.1.0)
                 container = getattr(request.app, "container", None)
-                state_manager = None
-                server_seq = 0
-                if container:
-                    state_manager = getattr(container, "state_manager", None)
-                    if state_manager and hasattr(state_manager, "get_global_sequence"):
-                        server_seq = state_manager.get_global_sequence()
+                server_seq = self._get_server_seq_from_container(container)
 
                 # Read application version from VERSION file
                 import os
@@ -241,9 +285,9 @@ class SystemAPIRoutes:
                         try:
                             # For now, just check if service exists
                             capabilities["nfc_available"] = True
-                            logger.info("NFC service detected and available")
+                            self.log_operation("NFC service detected and available")
                         except Exception as e:
-                            logger.warning(f"NFC service exists but not functional: {e}")
+                            self._logger.warning(f"NFC service exists but not functional: {e}")
                             capabilities["nfc_available"] = False
 
                     # Detect LED service availability
@@ -251,12 +295,12 @@ class SystemAPIRoutes:
                     if led_service:
                         try:
                             capabilities["led_control"] = True
-                            logger.info("LED control service detected and available")
+                            self.log_operation("LED control service detected and available")
                         except Exception as e:
-                            logger.warning(f"LED service exists but not functional: {e}")
+                            self._logger.warning(f"LED service exists but not functional: {e}")
                             capabilities["led_control"] = False
 
-                logger.info(f"Capabilities detected: {capabilities}")
+                self.log_operation(f"Capabilities detected: {capabilities}")
 
                 from fastapi.responses import JSONResponse
                 return JSONResponse(content={
@@ -276,10 +320,10 @@ class SystemAPIRoutes:
                 })
 
             except Exception as e:
-                logger.error(f"Error getting system info: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to get system information",
-                    operation="get_system_info"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="get_system_info",
+                    message="Failed to get system information"
                 )
 
         @self.router.get("/system/logs")
@@ -287,7 +331,7 @@ class SystemAPIRoutes:
         async def get_system_logs():
             """Get system logs."""
             try:
-                logger.info("API /api/system/logs: Logs requested")
+                self.log_operation("API /api/system/logs: Logs requested")
 
                 import glob
                 logs_data: Dict[str, Any] = {"logs": [], "log_files_available": []}
@@ -327,10 +371,10 @@ class SystemAPIRoutes:
                 })
 
             except Exception as e:
-                logger.error(f"Error getting system logs: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to get system logs",
-                    operation="get_system_logs"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="get_system_logs",
+                    message="Failed to get system logs"
                 )
 
         @self.router.post("/system/restart")
@@ -338,7 +382,7 @@ class SystemAPIRoutes:
         async def restart_system():
             """Restart the system."""
             try:
-                logger.info("API /api/system/restart: Restart requested")
+                self.log_operation("API /api/system/restart: Restart requested")
 
                 import asyncio
                 import os
@@ -347,7 +391,7 @@ class SystemAPIRoutes:
                 # Schedule restart after response is sent
                 async def delayed_restart():
                     await asyncio.sleep(2)
-                    logger.info("Restarting application...")
+                    self.log_operation("Restarting application...")
                     os.kill(os.getpid(), signal.SIGTERM)
 
                 # Start delayed restart task
@@ -365,17 +409,13 @@ class SystemAPIRoutes:
                     message="System restart scheduled successfully",
                     data=response_data
                 )
-                response = JSONResponse(content=standardized_response, status_code=200)
-                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                response.headers["Pragma"] = "no-cache"
-                response.headers["Expires"] = "0"
-                return response
+                return self._create_no_cache_response(standardized_response)
 
             except Exception as e:
-                logger.error(f"Error restarting system: {str(e)}")
-                return UnifiedResponseService.internal_error(
-                    message="Failed to restart system",
-                    operation="restart_system"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="restart_system",
+                    message="Failed to restart system"
                 )
 
         # LED control endpoints
@@ -390,15 +430,11 @@ class SystemAPIRoutes:
             async def set_led_brightness(request: Request, body: SetBrightnessRequest):
                 """Set LED brightness level."""
                 try:
-                    logger.info(f"API /api/system/led/brightness: Set brightness to {body.brightness:.1%}")
+                    self.log_operation(f"API /api/system/led/brightness: Set brightness to {body.brightness:.1%}")
 
-                    led_handler = self._get_led_handler(request)
-                    if not led_handler:
-                        return UnifiedResponseService.error(
-                            message="LED event handler not available",
-                            error_type="service_unavailable",
-                            status_code=503
-                        )
+                    led_handler, error = self._check_led_handler_available(request)
+                    if error:
+                        return error
 
                     success = await led_handler.set_brightness(body.brightness)
 
@@ -415,10 +451,10 @@ class SystemAPIRoutes:
                         )
 
                 except Exception as e:
-                    logger.error(f"Error setting LED brightness: {str(e)}")
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to set LED brightness",
-                        operation="set_led_brightness"
+                    return self.handle_endpoint_error(
+                        e,
+                        operation="set_led_brightness",
+                        message="Failed to set LED brightness"
                     )
 
             @self.router.post("/system/led/reload-config")
@@ -426,15 +462,11 @@ class SystemAPIRoutes:
             async def reload_led_config(request: Request):
                 """Reload LED brightness from hardware configuration."""
                 try:
-                    logger.info("API /api/system/led/reload-config: Reloading LED brightness from config")
+                    self.log_operation("API /api/system/led/reload-config: Reloading LED brightness from config")
 
-                    led_handler = self._get_led_handler(request)
-                    if not led_handler:
-                        return UnifiedResponseService.error(
-                            message="LED event handler not available",
-                            error_type="service_unavailable",
-                            status_code=503
-                        )
+                    led_handler, error = self._check_led_handler_available(request)
+                    if error:
+                        return error
 
                     success = await led_handler.reload_brightness_from_config()
 
@@ -455,10 +487,10 @@ class SystemAPIRoutes:
                         )
 
                 except Exception as e:
-                    logger.error(f"Error reloading LED config: {str(e)}")
-                    return UnifiedResponseService.internal_error(
-                        message="Failed to reload LED config",
-                        operation="reload_led_config"
+                    return self.handle_endpoint_error(
+                        e,
+                        operation="reload_led_config",
+                        message="Failed to reload LED config"
                     )
 
     def get_router(self) -> APIRouter:

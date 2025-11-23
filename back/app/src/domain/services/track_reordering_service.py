@@ -65,6 +65,19 @@ class TrackReorderingService:
         """Initialize the track reordering service."""
         pass
 
+    def _get_current_track_order(self, tracks: List[Track]) -> List[int]:
+        """Get the current track order sorted by track number.
+
+        Args:
+            tracks: List of tracks
+
+        Returns:
+            List of track numbers in current order
+        """
+        return [
+            track.track_number for track in sorted(tracks, key=lambda t: t.track_number)
+        ]
+
     def validate_reordering_command(
         self, command: ReorderingCommand, tracks: List[Track]
     ) -> List[str]:
@@ -149,9 +162,7 @@ class TrackReorderingService:
 
         elif command.strategy == ReorderingStrategy.MOVE_TO_POSITION:
             # More complex logic for moving specific tracks to positions
-            current_order = [
-                track.track_number for track in sorted(tracks, key=lambda t: t.track_number)
-            ]
+            current_order = self._get_current_track_order(tracks)
             new_order = current_order.copy()
 
             # For now, implement as bulk reorder (can be enhanced later)
@@ -164,9 +175,7 @@ class TrackReorderingService:
             if len(command.track_numbers) != 2:
                 raise ValueError("Swap strategy requires exactly 2 track numbers")
 
-            current_order = [
-                track.track_number for track in sorted(tracks, key=lambda t: t.track_number)
-            ]
+            current_order = self._get_current_track_order(tracks)
             new_order = current_order.copy()
 
             # Find positions and swap
@@ -231,9 +240,7 @@ class TrackReorderingService:
             ReorderingResult with operation details and any errors
         """
         # Store original order for rollback/audit purposes
-        original_order = [
-            track.track_number for track in sorted(tracks, key=lambda t: t.track_number)
-        ]
+        original_order = self._get_current_track_order(tracks)
 
         # Validate the command
         validation_errors = self.validate_reordering_command(command, tracks)

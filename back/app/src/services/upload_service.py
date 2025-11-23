@@ -19,11 +19,12 @@ from werkzeug.utils import secure_filename
 from app.src.infrastructure.error_handling.unified_error_handler import InvalidFileError
 import logging
 from app.src.services.error.unified_error_decorator import handle_service_errors
+from app.src.services.base_upload_service import BaseUploadService
 
 logger = logging.getLogger(__name__)
 
 
-class UploadService:
+class UploadService(BaseUploadService):
     """
     Service for handling audio file uploads and metadata extraction.
 
@@ -35,15 +36,9 @@ class UploadService:
         """
         Initialize the UploadService with application config.
         """
+        super().__init__(set(config.upload_allowed_extensions))
         self.upload_folder = Path(config.upload_folder)
-        self.allowed_extensions = set(config.upload_allowed_extensions)
         self.max_file_size = config.upload_max_size
-
-    def _allowed_file(self, filename: str) -> bool:
-        """
-        Return True if the filename is an allowed audio type.
-        """
-        return "." in filename and filename.rsplit(".", 1)[1].lower() in self.allowed_extensions
 
     async def _check_file_size(self, file) -> bool:
         """

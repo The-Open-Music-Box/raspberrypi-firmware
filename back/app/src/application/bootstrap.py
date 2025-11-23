@@ -2,221 +2,156 @@
 # This file is part of TheOpenMusicBox and is licensed for non-commercial use only.
 # See the LICENSE file for details.
 
-"""Domain-driven architecture bootstrap.
+"""Application-level bootstrap with hardware management.
 
-This module provides the main entry point for initializing the domain-driven architecture
-and provides compatibility layers for legacy code.
+This module extends the domain bootstrap with application-specific concerns:
+- LED management and visual feedback
+- Physical controls (buttons and encoder)
+- Hardware initialization with retry logic for Raspberry Pi boot reliability
 """
 
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING
 import logging
 
-# Direct imports instead of dynamic imports
+# Domain imports
+from app.src.domain.bootstrap import DomainBootstrap
 from app.src.domain.audio.container import audio_domain_container
-from app.src.domain.audio.factory import AudioDomainFactory
-from app.src.domain.decorators.error_handler import handle_domain_errors
+from app.src.application.utils.hardware_retry import retry_hardware_init
+
+if TYPE_CHECKING:
+    from app.src.application.services.led_state_manager_application_service import LEDStateManager
+    from app.src.application.services.led_event_handler_application_service import LEDEventHandler
+    from app.src.application.controllers.physical_controls_controller import PhysicalControlsManager
 
 logger = logging.getLogger(__name__)
 
 
-def handle_errors(*dargs, **dkwargs):
-    """Proxy to domain error handler for backward compatibility."""
-    return handle_domain_errors(*dargs, **dkwargs)
+class ApplicationBootstrap(DomainBootstrap):
+    """Application-level bootstrap extending domain bootstrap.
 
+    Adds application-specific features:
+    - LED system management for visual feedback
+    - Physical controls (buttons + rotary encoder)
+    - Hardware initialization retry logic (critical for Raspberry Pi first boot)
 
-class DomainBootstrap:
-    """Bootstrap class for domain-driven architecture."""
+    Inherits domain-level audio and lifecycle management from DomainBootstrap.
+    """
 
     # MARK: - Initialization
 
-    def __init__(self, led_manager: Optional[Any] = None, led_event_handler: Optional[Any] = None, physical_controls_manager: Optional[Any] = None):
-        """Initialize the bootstrap.
+    def __init__(
+        self,
+        led_manager: 'LEDStateManager | None' = None,
+        led_event_handler: 'LEDEventHandler | None' = None,
+        physical_controls_manager: 'PhysicalControlsManager | None' = None
+    ):
+        """Initialize the application bootstrap with hardware components.
 
         Args:
             led_manager: Optional LED state manager (injected via DI)
             led_event_handler: Optional LED event handler (injected via DI)
             physical_controls_manager: Optional physical controls manager (injected via DI)
         """
-        self._is_initialized = False
-        self._is_stopping = False
+        # Initialize domain bootstrap (audio, lifecycle)
+        super().__init__()
 
-        # LED management (injected dependencies)
+        # Application-specific: LED management
         self._led_manager = led_manager
         self._led_event_handler = led_event_handler
 
-        # Physical controls management (injected dependency)
+        # Application-specific: Physical controls
         self._physical_controls_manager = physical_controls_manager
 
-        # Log LED component injection status
+        # Log component injection status
         if led_manager and led_event_handler:
-            logger.info(f"✅ DomainBootstrap created WITH LED components: manager={type(led_manager).__name__}, handler={type(led_event_handler).__name__}")
+            logger.info(
+                f"✅ ApplicationBootstrap created WITH LED components: "
+                f"manager={type(led_manager).__name__}, "
+                f"handler={type(led_event_handler).__name__}"
+            )
         else:
-            logger.warning(f"⚠️ DomainBootstrap created WITHOUT LED components: manager={led_manager}, handler={led_event_handler}")
-
-        # Log physical controls injection status
-        if physical_controls_manager:
-            logger.info(f"✅ DomainBootstrap created WITH PhysicalControlsManager: {type(physical_controls_manager).__name__}")
-        else:
-            logger.warning("⚠️ DomainBootstrap created WITHOUT PhysicalControlsManager")
-
-    @handle_errors(operation_name="initialize", component="domain.bootstrap")
-    def initialize(self, existing_backend: Optional[Any] = None) -> None:
-        """Initialize the domain-driven architecture.
-
-        Args:
-            existing_backend: Existing audio backend to adapt
-        """
-        if self._is_initialized:
-            logger.warning("DomainBootstrap already initialized")
-            return
-
-        logger.info("🚀 Initializing domain architecture...")
-        if existing_backend:
-            audio_domain_container.initialize(existing_backend)
-            logger.debug(f"Audio domain initialized with {type(existing_backend).__name__}")
-        else:
-            default_backend = AudioDomainFactory.create_default_backend()
-            audio_domain_container.initialize(default_backend)
-            logger.debug(
-                f"Pure domain audio initialized with {type(default_backend).__name__}"
+            logger.warning(
+                f"⚠️ ApplicationBootstrap created WITHOUT LED components: "
+                f"manager={led_manager}, handler={led_event_handler}"
             )
 
-        # LED system already injected via constructor (if available)
-        if self._led_manager and self._led_event_handler:
-            logger.info("✅ LED system available (injected via DI)")
+        if physical_controls_manager:
+            logger.info(
+                f"✅ ApplicationBootstrap created WITH PhysicalControlsManager: "
+                f"{type(physical_controls_manager).__name__}"
+            )
         else:
-            logger.debug("LED system not available (not injected)")
+            logger.warning("⚠️ ApplicationBootstrap created WITHOUT PhysicalControlsManager")
 
-        self._is_initialized = True
-        logger.info("✅ Domain bootstrap initialized")
+    # MARK: - Lifecycle Management (Override)
 
-    # MARK: - Hardware Initialization with Retry
-
-    async def _initialize_led_with_retry(self, max_retries: int = 3, retry_delay: float = 2.0) -> None:
-        """Initialize LED system with retry logic for first boot.
-
-        Args:
-            max_retries: Maximum number of retry attempts
-            retry_delay: Delay in seconds between retries
-        """
-        import asyncio
-
-        # Guard clause - this method should only be called when LED system is available
-        if not self._led_manager or not self._led_event_handler:
-            logger.warning("⚠️ LED system not available, skipping initialization")
-            return
-
-        for attempt in range(1, max_retries + 1):
-            try:
-                logger.info(f"💡 Initializing LED system (attempt {attempt}/{max_retries})...")
-                await self._led_manager.initialize()
-                logger.info("💡 LED manager initialized")
-                await self._led_event_handler.initialize()
-                logger.info("💡 LED event handler initialized")
-                await self._led_event_handler.on_system_starting()
-                logger.info("💡 LED system started - showing STARTING state (white blinking)")
-                return  # Success!
-            except Exception as e:
-                if attempt < max_retries:
-                    logger.warning(f"⚠️ LED initialization attempt {attempt} failed: {e}")
-                    logger.info(f"🔄 Retrying in {retry_delay}s... (hardware may not be ready yet)")
-                    await asyncio.sleep(retry_delay)
-                else:
-                    logger.error(f"❌ LED system start failed after {max_retries} attempts: {e}", exc_info=True)
-                    logger.warning("⚠️ Continuing without LED system (non-critical)")
-
-    async def _initialize_audio_with_retry(self, max_retries: int = 3, retry_delay: float = 2.0) -> None:
-        """Initialize audio domain with retry logic for first boot.
-
-        Args:
-            max_retries: Maximum number of retry attempts
-            retry_delay: Delay in seconds between retries
-        """
-        import asyncio
-
-        for attempt in range(1, max_retries + 1):
-            try:
-                logger.info(f"🎵 Starting audio domain (attempt {attempt}/{max_retries})...")
-                await audio_domain_container.start()
-                logger.info("✅ Audio domain started successfully")
-                return  # Success!
-            except Exception as e:
-                if attempt < max_retries:
-                    logger.warning(f"⚠️ Audio initialization attempt {attempt} failed: {e}")
-                    logger.info(f"🔄 Retrying in {retry_delay}s... (hardware may not be ready yet)")
-                    await asyncio.sleep(retry_delay)
-                else:
-                    logger.error(f"❌ Audio domain start failed after {max_retries} attempts: {e}", exc_info=True)
-                    # Show boot hardware error LED (slow blink red)
-                    if self._led_event_handler:
-                        try:
-                            await self._led_event_handler.on_boot_error(f"Audio initialization failed: {str(e)}")
-                        except Exception as led_error:
-                            logger.warning(f"LED boot error indication failed: {led_error}")
-                    # Re-raise to prevent app from starting with broken audio
-                    raise
-
-    async def _initialize_physical_controls_with_retry(self, max_retries: int = 3, retry_delay: float = 2.0) -> None:
-        """Initialize physical controls with retry logic for first boot.
-
-        Args:
-            max_retries: Maximum number of retry attempts
-            retry_delay: Delay in seconds between retries
-        """
-        import asyncio
-
-        # Guard clause - this method should only be called when physical controls manager is available
-        if not self._physical_controls_manager:
-            logger.warning("⚠️ Physical controls manager not available, skipping initialization")
-            return
-
-        for attempt in range(1, max_retries + 1):
-            try:
-                logger.info(f"🎮 Initializing physical controls (attempt {attempt}/{max_retries})...")
-                success = await self._physical_controls_manager.initialize()
-                if success:
-                    logger.info("✅ Physical controls initialized successfully (buttons + encoder)")
-                    return  # Success!
-                else:
-                    raise RuntimeError("Physical controls initialization returned False")
-            except Exception as e:
-                if attempt < max_retries:
-                    logger.warning(f"⚠️ Physical controls initialization attempt {attempt} failed: {e}")
-                    logger.info(f"🔄 Retrying in {retry_delay}s... (GPIO hardware may not be ready yet)")
-                    await asyncio.sleep(retry_delay)
-                else:
-                    logger.error(f"❌ Physical controls failed after {max_retries} attempts: {e}", exc_info=True)
-                    logger.warning("⚠️ Continuing without physical controls (non-critical)")
-                    # Don't raise - physical controls are non-critical, app can run without them
-
-    # MARK: - Lifecycle Management
-
-    @handle_errors(operation_name="start", component="domain.bootstrap")
     async def start(self) -> None:
-        """Start all domain services with hardware retry logic."""
+        """Start all services with hardware retry logic.
+
+        Overrides domain start() to add:
+        - LED system initialization with retry
+        - Physical controls initialization with retry
+        - Visual feedback for system state
+
+        Raises:
+            RuntimeError: If bootstrap not initialized or critical hardware fails
+        """
         if not self._is_initialized:
-            logger.error("❌ DomainBootstrap not initialized")
-            raise RuntimeError("DomainBootstrap not initialized")
+            logger.error("❌ ApplicationBootstrap not initialized")
+            raise RuntimeError("ApplicationBootstrap not initialized")
 
-        # Initialize LED system with retry (hardware may not be ready on first boot)
+        # Initialize LED system (non-critical)
         if self._led_manager and self._led_event_handler:
-            await self._initialize_led_with_retry()
+            success, _ = await retry_hardware_init(
+                "LED system",
+                self._init_led_system,
+                max_retries=3,
+                retry_delay=2.0,
+                critical=False
+            )
+            if not success:
+                logger.warning("⚠️ LED system unavailable - continuing without visual feedback")
         else:
-            logger.warning("⚠️ LED system NOT available - skipping LED initialization")
+            logger.warning("⚠️ LED system NOT injected - skipping LED initialization")
 
-        # Start audio domain with retry (critical hardware)
+        # Start audio domain (critical hardware)
         if audio_domain_container.is_initialized:
-            await self._initialize_audio_with_retry()
+            try:
+                success, _ = await retry_hardware_init(
+                    "Audio domain",
+                    audio_domain_container.start,
+                    max_retries=3,
+                    retry_delay=2.0,
+                    critical=True
+                )
+            except RuntimeError as e:
+                # Show boot error on LED if available
+                if self._led_event_handler:
+                    try:
+                        await self._led_event_handler.on_boot_error(
+                            f"Audio initialization failed: {e}"
+                        )
+                    except Exception as led_error:
+                        logger.warning(f"LED boot error indication failed: {led_error}")
+                raise  # Re-raise to prevent app from starting without audio
         else:
             logger.warning("⚠️ Audio domain not initialized, skipping start")
 
-        # Initialize physical controls (buttons + encoder) with retry
+        # Initialize physical controls (non-critical)
         if self._physical_controls_manager:
-            await self._initialize_physical_controls_with_retry()
+            success, _ = await retry_hardware_init(
+                "Physical controls",
+                self._physical_controls_manager.initialize,
+                max_retries=3,
+                retry_delay=2.0,
+                critical=False
+            )
+            if not success:
+                logger.warning("⚠️ Physical controls unavailable - app accessible via web only")
         else:
-            logger.warning("⚠️ Physical controls NOT available - skipping initialization")
+            logger.warning("⚠️ Physical controls NOT injected - skipping initialization")
 
-        # Clear STARTING state and set to IDLE when ready
+        # Set system ready state
         if self._led_event_handler:
             try:
                 logger.info("💡 System ready - transitioning LED to IDLE state...")
@@ -225,137 +160,86 @@ class DomainBootstrap:
             except Exception as e:
                 logger.error(f"❌ LED ready state failed: {e}", exc_info=True)
 
-        # Note: unified_controller has been moved to application layer
-        logger.info("🚀 Domain services started")
+        logger.info("🚀 Application services started")
 
-    @handle_errors(operation_name="stop", component="domain.bootstrap")
     async def stop(self) -> None:
-        """Stop all domain services."""
+        """Stop all services including LED cleanup.
+
+        Extends domain stop() to add LED system cleanup.
+        """
         if not self._is_initialized or self._is_stopping:
             return
 
-        self._is_stopping = True
-        try:
-            # Note: unified_controller has been moved to application layer
-            if audio_domain_container.is_initialized:
-                await audio_domain_container.stop()
+        # Call parent stop (domain services)
+        await super().stop()
 
-            # Cleanup LED
-            if self._led_manager:
-                try:
-                    await self._led_manager.cleanup()
-                    logger.info("💡 LED system cleaned up")
-                except Exception as e:
-                    logger.warning(f"⚠️ LED cleanup failed: {e}")
+        # Application-specific: Cleanup LED
+        if self._led_manager:
+            try:
+                await self._led_manager.cleanup()
+                logger.info("💡 LED system cleaned up")
+            except Exception as e:
+                logger.warning(f"⚠️ LED cleanup failed: {e}")
 
-            logger.debug("Domain services stopped")
-        except Exception as e:
-            logger.error(f"Error stopping domain services: {e}")
-            # Don't re-raise during shutdown to prevent recursion
-        finally:
-            self._is_stopping = False
+    # MARK: - Hardware Initialization Helpers
 
-    @handle_errors(operation_name="cleanup", component="domain.bootstrap")
-    def cleanup(self) -> None:
-        """Cleanup all resources."""
-        if not self._is_initialized:
-            return
+    async def _init_led_system(self) -> None:
+        """Initialize LED system components.
 
-        # Note: unified_controller has been moved to application layer
-        audio_domain_container.cleanup()
-        self._is_initialized = False
-        logger.debug("Domain cleanup completed")
+        Returns:
+            None (success indicated by not raising exception)
+
+        Raises:
+            Exception: If LED initialization fails
+        """
+        if not self._led_manager or not self._led_event_handler:
+            raise RuntimeError("LED components not available")
+
+        logger.info("💡 Initializing LED manager...")
+        await self._led_manager.initialize()
+        logger.info("💡 LED manager initialized")
+
+        logger.info("💡 Initializing LED event handler...")
+        await self._led_event_handler.initialize()
+        logger.info("💡 LED event handler initialized")
+
+        logger.info("💡 Setting STARTING state...")
+        await self._led_event_handler.on_system_starting()
+        logger.info("💡 LED system started - showing STARTING state (white blinking)")
 
     # MARK: - Public Properties
 
     @property
-    def is_initialized(self) -> bool:
-        """Check if bootstrap is initialized."""
-        return self._is_initialized
+    def led_event_handler(self) -> 'LEDEventHandler | None':
+        """Get LED event handler for application use.
 
-    @property
-    def led_event_handler(self) -> Optional[Any]:
-        """Get LED event handler for application use."""
+        Returns:
+            LED event handler instance or None if not available
+        """
         return self._led_event_handler
 
-    def set_physical_controls_manager(self, physical_controls_manager: Optional[Any]) -> None:
+    def set_physical_controls_manager(
+        self,
+        physical_controls_manager: 'PhysicalControlsManager | None'
+    ) -> None:
         """Set physical controls manager after bootstrap creation.
 
-        This method allows injecting PhysicalControlsManager after DomainBootstrap
+        This method allows injecting PhysicalControlsManager after bootstrap
         is created, avoiding circular dependencies in the DI container.
 
         Args:
-            physical_controls_manager: PhysicalControlsManager instance to inject
+            physical_controls_manager: PhysicalControlsManager instance to inject or None
         """
         self._physical_controls_manager = physical_controls_manager
         if physical_controls_manager:
-            logger.info(f"✅ PhysicalControlsManager injected into DomainBootstrap: {type(physical_controls_manager).__name__}")
+            logger.info(
+                f"✅ PhysicalControlsManager injected into ApplicationBootstrap: "
+                f"{type(physical_controls_manager).__name__}"
+            )
         else:
-            logger.warning("⚠️ PhysicalControlsManager set to None in DomainBootstrap")
-
-    # MARK: - System Status
-
-    def get_system_status(self) -> Dict[str, Any]:
-        """Get comprehensive system status."""
-        return {
-            "domain_bootstrap": {
-                "initialized": self._is_initialized,
-                "architecture": "pure_domain",
-            },
-            "audio_domain": {
-                "initialized": audio_domain_container.is_initialized,
-                "running": (
-                    audio_domain_container.audio_engine.is_running
-                    if audio_domain_container.is_initialized
-                    else False
-                ),
-            },
-        }
-
-    # MARK: Internal Methods
-
-    def _setup_error_callbacks(self) -> None:
-        """Setup error handling callbacks (domain-level only)."""
-        # Domain-level error handling without infrastructure dependencies
-        logger.debug("Domain error callbacks setup completed")
-
-    def _handle_audio_error(self, error_record) -> None:
-        """Handle audio-specific errors with recovery strategies."""
-        logger.warning(f"🎵 Audio error handled: {error_record.message}")
-
-        # Implement audio recovery strategies based on error type
-        if "connection" in error_record.message.lower():
-            logger.info("🔄 Attempting audio backend reconnection...")
-            # Note: Actual recovery would require access to audio container
-            # In a real implementation, we'd inject recovery service here
-        elif "timeout" in error_record.message.lower():
-            logger.info("⏱️ Audio timeout detected, attempting restart...")
-        else:
-            logger.info("🛠️ General audio error recovery initiated...")
-
-    def _handle_critical_error(self, error_record) -> None:
-        """Handle critical errors with emergency procedures."""
-        logger.error(f"🔥 Critical error handled: {error_record.message}")
-
-        # Implement emergency procedures for critical errors
-        logger.error("🚨 Initiating emergency procedures...")
-
-        # Log critical error for administrator notification
-        logger.critical(f"ALERT: Critical system error - {error_record.message}")
-
-        # Attempt to save current state before potential shutdown
-        try:
-            logger.info("💾 Attempting to save current application state...")
-            # Note: State saving would require access to state services
-            # In a real implementation, we'd inject state persistence service here
-        except Exception as e:
-            logger.error(f"❌ Failed to save state: {e}")
-
-        # Consider graceful degradation rather than immediate shutdown
-        logger.warning("🔒 Entering safe mode operation...")
+            logger.warning("⚠️ PhysicalControlsManager set to None in ApplicationBootstrap")
 
 
 # MARK: - Removed Global Instance
-# domain_bootstrap global instance has been removed in favor of dependency injection
-# Use: container.get("domain_bootstrap") or get_domain_bootstrap()
-# Migration completed: All code now uses DI
+# Bootstrap instances now managed by dependency injection
+# Use: container.get("application_bootstrap") or get_application_bootstrap()

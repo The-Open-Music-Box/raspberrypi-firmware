@@ -29,6 +29,44 @@ class UnifiedResponseService:
     """
 
     @staticmethod
+    def _create_error_with_retry_after(
+        message: str,
+        error_type: str,
+        status_code: int,
+        details: Dict[str, Any],
+        retry_after: Optional[int],
+        client_op_id: Optional[str],
+    ) -> JSONResponse:
+        """Helper to create error response with Retry-After header.
+
+        Args:
+            message: Error message
+            error_type: Type of error
+            status_code: HTTP status code
+            details: Error details dictionary
+            retry_after: Seconds before retry (adds header if provided)
+            client_op_id: Client operation ID
+
+        Returns:
+            JSONResponse with Retry-After header if retry_after is set
+        """
+        if retry_after:
+            details["retry_after"] = retry_after
+
+        response = UnifiedResponseService.error(
+            message=message,
+            error_type=error_type,
+            status_code=status_code,
+            details=details,
+            client_op_id=client_op_id,
+        )
+
+        if retry_after:
+            response.headers["Retry-After"] = str(retry_after)
+
+        return response
+
+    @staticmethod
     def success(
         message: str,
         data: Optional[Any] = None,
@@ -331,22 +369,14 @@ class UnifiedResponseService:
         Returns:
             JSONResponse 429
         """
-        details = {}
-        if retry_after:
-            details["retry_after"] = retry_after
-
-        response = UnifiedResponseService.error(
+        return UnifiedResponseService._create_error_with_retry_after(
             message=message,
             error_type="rate_limit",
             status_code=429,
-            details=details,
+            details={},
+            retry_after=retry_after,
             client_op_id=client_op_id,
         )
-
-        if retry_after:
-            response.headers["Retry-After"] = str(retry_after)
-
-        return response
 
     @staticmethod
     def service_unavailable(
@@ -370,22 +400,14 @@ class UnifiedResponseService:
         if message is None:
             message = f"{service} service is currently unavailable"
 
-        details: Dict[str, Any] = {"service": service}
-        if retry_after:
-            details["retry_after"] = retry_after
-
-        response = UnifiedResponseService.error(
+        return UnifiedResponseService._create_error_with_retry_after(
             message=message,
             error_type="service_unavailable",
             status_code=503,
-            details=details,
+            details={"service": service},
+            retry_after=retry_after,
             client_op_id=client_op_id,
         )
-
-        if retry_after:
-            response.headers["Retry-After"] = str(retry_after)
-
-        return response
 
     @staticmethod
     def internal_error(

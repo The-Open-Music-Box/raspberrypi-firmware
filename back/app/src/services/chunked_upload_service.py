@@ -13,17 +13,18 @@ import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Any, cast
+from typing import Dict, Optional, Tuple
 
 from app.src.infrastructure.error_handling.unified_error_handler import InvalidFileError
 import logging
 from app.src.services.upload_service import UploadService
 from app.src.services.error.unified_error_decorator import handle_service_errors
+from app.src.services.base_upload_service import BaseUploadService
 
 logger = logging.getLogger(__name__)
 
 
-class ChunkedUploadService:
+class ChunkedUploadService(BaseUploadService):
     """
     Service for handling chunked file uploads.
 
@@ -35,29 +36,24 @@ class ChunkedUploadService:
         """
         Initialize the ChunkedUploadService with application config.
 
-        Args:     config: Application configuration object     upload_service: Optional
-        UploadService instance for metadata extraction
+        Args:
+            config: Application configuration object
+            upload_service: Optional UploadService instance for metadata extraction
         """
+        super().__init__(set(config.upload_allowed_extensions))
         self.temp_folder = Path(config.upload_folder) / "temp"
         self.temp_folder.mkdir(parents=True, exist_ok=True)
         self.upload_service = upload_service or UploadService(config)
         self.max_file_size = config.upload_max_size
-        self.allowed_extensions = set(config.upload_allowed_extensions)
-        self.active_uploads: Dict[str, Dict[str, Any]] = (
+        self.active_uploads = (
             {}
         )  # Dictionary to track active uploads: {session_id: {filename, chunks, total_size, etc}}
-
-    def _allowed_file(self, filename: str) -> bool:
-        """
-        Return True if the filename is an allowed audio type.
-        """
-        return "." in filename and filename.rsplit(".", 1)[1].lower() in self.allowed_extensions
 
     def _check_file_size(self, current_size: int, chunk_size: int) -> bool:
         """
         Return True if the file size is within the allowed maximum.
         """
-        return cast(bool, (current_size + chunk_size) <= self.max_file_size)
+        return (current_size + chunk_size) <= self.max_file_size
 
     def create_session(
         self, filename: str, total_chunks: int, total_size: int, playlist_id: str

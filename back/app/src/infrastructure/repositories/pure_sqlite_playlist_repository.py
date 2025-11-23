@@ -45,6 +45,41 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         self._db_service = self._database_manager.database_service
         logger.info("✅ Pure DDD SQLite Playlist Repository initialized")
 
+    def _fetch_tracks_for_playlist(self, playlist_id: str):
+        """Fetch all tracks for a given playlist ID.
+
+        Args:
+            playlist_id: The playlist ID to fetch tracks for
+
+        Returns:
+            List of track rows from database
+        """
+        tracks_query = """
+            SELECT * FROM tracks
+            WHERE playlist_id = ?
+            ORDER BY track_number
+        """
+        return self._db_service.execute_query(
+            tracks_query,
+            (playlist_id,),
+            f"find_tracks_for_playlist_{playlist_id}"
+        )
+
+    def _build_playlist_or_none(self, playlist_row):
+        """Build playlist from row or return None if row is None.
+
+        Args:
+            playlist_row: Database row for playlist or None
+
+        Returns:
+            Playlist entity or None
+        """
+        if not playlist_row:
+            return None
+
+        track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
+        return self._build_playlist_from_rows(playlist_row, track_rows)
+
     @_handle_repository_errors("playlist")
     async def save(self, playlist: Playlist) -> Playlist:
         """Save a playlist using pure DDD principles.
@@ -197,22 +232,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"find_playlist_by_name_{name}"
         )
 
-        if not playlist_row:
-            return None
-
-        # Get tracks for this playlist
-        tracks_query = """
-            SELECT * FROM tracks
-            WHERE playlist_id = ?
-            ORDER BY track_number
-        """
-        track_rows = self._db_service.execute_query(
-            tracks_query,
-            (playlist_row["id"],),
-            f"find_tracks_for_playlist_{playlist_row['id']}"
-        )
-
-        return self._build_playlist_from_rows(playlist_row, track_rows)
+        return self._build_playlist_or_none(playlist_row)
 
     @_handle_repository_errors("playlist")
     async def find_by_nfc_tag(self, nfc_tag_id: str) -> Optional[Playlist]:
@@ -231,22 +251,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"find_playlist_by_nfc_{nfc_tag_id}"
         )
 
-        if not playlist_row:
-            return None
-
-        # Get tracks for this playlist
-        tracks_query = """
-            SELECT * FROM tracks
-            WHERE playlist_id = ?
-            ORDER BY track_number
-        """
-        track_rows = self._db_service.execute_query(
-            tracks_query,
-            (playlist_row["id"],),
-            f"find_tracks_for_playlist_{playlist_row['id']}"
-        )
-
-        return self._build_playlist_from_rows(playlist_row, track_rows)
+        return self._build_playlist_or_none(playlist_row)
 
     @_handle_repository_errors("playlist")
     async def find_all(self, limit: Optional[int] = None, offset: int = 0) -> List[Playlist]:
@@ -276,24 +281,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"find_all_playlists_limit_{limit}_offset_{offset}"
         )
 
-        playlists = []
-        for playlist_row in playlist_rows:
-            # Get tracks for each playlist
-            tracks_query = """
-                SELECT * FROM tracks
-                WHERE playlist_id = ?
-                ORDER BY track_number
-            """
-            track_rows = self._db_service.execute_query(
-                tracks_query,
-                (playlist_row["id"],),
-                f"find_tracks_for_playlist_{playlist_row['id']}"
-            )
-
-            playlist = self._build_playlist_from_rows(playlist_row, track_rows)
-            playlists.append(playlist)
-
-        return playlists
+        return self._build_playlists_from_rows(playlist_rows)
 
     async def update(self, playlist: Playlist) -> Playlist:
         """Update existing playlist using pure DDD principles.
@@ -369,24 +357,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"search_playlists_{query}"
         )
 
-        playlists = []
-        for playlist_row in playlist_rows:
-            # Get tracks for each playlist
-            tracks_query = """
-                SELECT * FROM tracks
-                WHERE playlist_id = ?
-                ORDER BY track_number
-            """
-            track_rows = self._db_service.execute_query(
-                tracks_query,
-                (playlist_row["id"],),
-                f"find_tracks_for_playlist_{playlist_row['id']}"
-            )
-
-            playlist = self._build_playlist_from_rows(playlist_row, track_rows)
-            playlists.append(playlist)
-
-        return playlists
+        return self._build_playlists_from_rows(playlist_rows)
 
     @_handle_repository_errors("playlist")
     async def update_nfc_tag_association(self, playlist_id: str, nfc_tag_id: str) -> bool:
@@ -527,15 +498,31 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                          )
             return False
 
-    def _build_playlist_from_rows(self, playlist_row, track_rows) -> Playlist:
-        """Build playlist domain entity from database rows.
+    def _build_playlists_from_rows(self, playlist_rows) -> List[Playlist]:
+        """Build multiple playlists from rows by fetching tracks for each.
 
         Args:
-            playlist_row: SQLite playlist row
-            track_rows: List of SQLite track rows
+            playlist_rows: List of playlist rows from database
 
         Returns:
-            Playlist domain entity
+            List of Playlist entities
+        """
+        playlists = []
+        for playlist_row in playlist_rows:
+            track_rows = self._fetch_tracks_for_playlist(playlist_row["id"])
+            playlist = self._build_playlist_from_rows(playlist_row, track_rows)
+            playlists.append(playlist)
+        return playlists
+
+    def _build_tracks_from_rows(self, track_rows, playlist_folder: str = "unknown") -> List[Track]:
+        """Build track entities from database rows with file_path generation.
+
+        Args:
+            track_rows: List of track rows from database
+            playlist_folder: Folder name for file path generation
+
+        Returns:
+            List of Track entities
         """
         tracks = []
         for track_row in track_rows:
@@ -544,16 +531,10 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             filename = track_row["filename"] if track_row["filename"] else ""
 
             if not file_path and filename:
-                # Use playlist path (UUID) to generate file_path
-                playlist_folder = (
-                    playlist_row["path"]
-                    if playlist_row["path"]
-                    else "Unknown"
-                )
+                # Use playlist folder to generate file_path
                 try:
                     from app.src.config import config
                     from pathlib import Path
-
                     file_path = str(Path(config.upload_folder) / playlist_folder / filename)
                 except Exception:
                     # Fallback if config not available
@@ -570,6 +551,21 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
                 album=track_row["album"] if track_row["album"] else None,
             )
             tracks.append(track)
+        return tracks
+
+    def _build_playlist_from_rows(self, playlist_row, track_rows) -> Playlist:
+        """Build playlist domain entity from database rows.
+
+        Args:
+            playlist_row: SQLite playlist row
+            track_rows: List of SQLite track rows
+
+        Returns:
+            Playlist domain entity
+        """
+        # Get playlist folder for file path generation
+        playlist_folder = playlist_row["path"] if playlist_row["path"] else "Unknown"
+        tracks = self._build_tracks_from_rows(track_rows, playlist_folder)
 
         # Build playlist domain entity
         playlist = Playlist(
@@ -618,33 +614,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             f"get_tracks_by_playlist_{playlist_id}"
         )
 
-        tracks = []
-        for track_row in track_rows:
-            # Generate file_path if missing but filename exists
-            file_path = track_row["file_path"] if track_row["file_path"] else ""
-            filename = track_row["filename"] if track_row["filename"] else ""
-
-            if not file_path and filename:
-                # Fallback path generation
-                try:
-                    from app.src.config import config
-                    from pathlib import Path
-                    file_path = str(Path(config.upload_folder) / "unknown" / filename)
-                except Exception:
-                    file_path = f"./uploads/unknown/{filename}"
-
-            track = Track(
-                id=track_row["id"],
-                track_number=track_row["track_number"] if track_row["track_number"] else 1,
-                title=track_row["title"] if track_row["title"] else "Unknown",
-                filename=filename,
-                file_path=file_path,
-                duration_ms=track_row["duration_ms"] if track_row["duration_ms"] else None,
-                artist=track_row["artist"] if track_row["artist"] else None,
-                album=track_row["album"] if track_row["album"] else None,
-            )
-            tracks.append(track)
-
+        tracks = self._build_tracks_from_rows(track_rows, "unknown")
         logger.info(f"✅ Retrieved {len(tracks)} tracks for playlist {playlist_id}")
         return tracks
 

@@ -8,20 +8,19 @@ Playlist Track API - Track Management Operations
 Single Responsibility: Handle HTTP requests for playlist track operations.
 """
 
-import logging
 from fastapi import APIRouter, Body
 
+from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
 
-logger = logging.getLogger(__name__)
 
-
-class PlaylistTrackAPI:
+class PlaylistTrackAPI(BaseAPIRoutes):
     """
     Handles track-related operations within playlists.
 
     Single Responsibility: HTTP operations for managing tracks within playlists.
+    Inherits common API functionality from BaseAPIRoutes.
     """
 
     def __init__(self, playlist_service, broadcasting_service, router: APIRouter, operations_service=None):
@@ -33,6 +32,12 @@ class PlaylistTrackAPI:
             router: Parent FastAPI router to register routes on
             operations_service: Service for complex playlist operations
         """
+        super().__init__(
+            router=router,
+            playlist_service=playlist_service,
+            broadcasting_service=broadcasting_service,
+            operations_service=operations_service
+        )
         self._playlist_service = playlist_service
         self._broadcasting_service = broadcasting_service
         self._operations_service = operations_service
@@ -79,21 +84,14 @@ class PlaylistTrackAPI:
                     )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in reorder_tracks: {str(e)}",
-                    extra={
-                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
-                        "operation": "reorder_tracks",
-                        "playlist_id": playlist_id,
-                        "track_count": len(track_order) if isinstance(track_order, list) else None,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to reorder tracks", operation="reorder_tracks"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="reorder_tracks",
+                    message="Failed to reorder tracks",
+                    client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
+                    playlist_id=playlist_id,
+                    track_count=len(track_order) if isinstance(track_order, list) else None
                 )
 
         @router.delete("/{playlist_id}/tracks")
@@ -110,8 +108,9 @@ class PlaylistTrackAPI:
                         message="track_numbers must be a non-empty list",
                         client_op_id=client_op_id
                     )
-                logger.debug(
-                    f"Deleting tracks from playlist {playlist_id}: {len(track_numbers)} tracks"
+                self.log_operation(
+                    f"Deleting tracks from playlist {playlist_id}: {len(track_numbers)} tracks",
+                    level="debug"
                 )
 
                 # Use application service
@@ -133,21 +132,14 @@ class PlaylistTrackAPI:
                     )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in delete_tracks: {str(e)}",
-                    extra={
-                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
-                        "operation": "delete_tracks",
-                        "playlist_id": playlist_id,
-                        "track_count": len(track_numbers) if isinstance(track_numbers, list) else None,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to delete tracks", operation="delete_tracks"
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="delete_tracks",
+                    message="Failed to delete tracks",
+                    client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
+                    playlist_id=playlist_id,
+                    track_count=len(track_numbers) if isinstance(track_numbers, list) else None
                 )
 
         @router.post("/move-track")
@@ -167,11 +159,10 @@ class PlaylistTrackAPI:
                         client_op_id=client_op_id
                     )
 
-                if not self._operations_service:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Playlist operations",
-                        message="Operations service not available"
-                    )
+                # Use base class helper for service availability check
+                service_check = self.check_service_available("Playlist operations", self._operations_service)
+                if service_check:
+                    return service_check
 
                 # Use operations service for track movement
                 result = await self._operations_service.move_track_between_playlists_use_case(
@@ -189,21 +180,13 @@ class PlaylistTrackAPI:
                     )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in move_track_between_playlists: {str(e)}",
-                    extra={
-                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
-                        "operation": "move_track_between_playlists",
-                        "source_playlist_id": body.get("source_playlist_id") if isinstance(body, dict) else None,
-                        "target_playlist_id": body.get("target_playlist_id") if isinstance(body, dict) else None,
-                        "track_number": body.get("track_number") if isinstance(body, dict) else None,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
+                # Use base class helper for error handling
+                return self.handle_endpoint_error(
+                    e,
+                    operation="move_track_between_playlists",
                     message="Failed to move track",
-                    operation="move_track_between_playlists"
+                    client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
+                    source_playlist_id=body.get("source_playlist_id") if isinstance(body, dict) else None,
+                    target_playlist_id=body.get("target_playlist_id") if isinstance(body, dict) else None,
+                    track_number=body.get("track_number") if isinstance(body, dict) else None
                 )

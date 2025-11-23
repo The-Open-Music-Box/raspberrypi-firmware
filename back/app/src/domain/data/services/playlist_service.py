@@ -14,12 +14,13 @@ import logging
 
 from app.src.domain.decorators.error_handler import handle_domain_errors
 from app.src.domain.data.models.playlist import Playlist
+from app.src.domain.base.base_domain_service import BaseDomainService
 from app.src.config import config as app_config
 
 logger = logging.getLogger(__name__)
 
 
-class PlaylistService:
+class PlaylistService(BaseDomainService):
     """Service for managing playlist data operations."""
 
     def __init__(
@@ -33,6 +34,7 @@ class PlaylistService:
             playlist_repository: Repository for playlist operations
             track_repository: Repository for track operations
         """
+        super().__init__()
         self._playlist_repo = playlist_repository
         self._track_repo = track_repository
         logger.info("✅ PlaylistService initialized in data domain")
@@ -59,12 +61,7 @@ class PlaylistService:
         for playlist_entity in playlist_entities:
             if playlist_entity is None:
                 continue
-            playlist_dict = asdict(playlist_entity)
-            # Add track count for each playlist
-            playlist_dict['track_count'] = len(playlist_entity.tracks)
-            # Ensure title field exists (for API compatibility)
-            if 'title' not in playlist_dict and 'name' in playlist_dict:
-                playlist_dict['title'] = playlist_dict['name']
+            playlist_dict = self._convert_entity_to_dict_with_track_count(playlist_entity)
             playlists.append(playlist_dict)
 
         return {
@@ -90,13 +87,7 @@ class PlaylistService:
             return None
 
         # Convert entity to dict
-        playlist_dict = asdict(playlist_entity)
-        # Add track count
-        playlist_dict['track_count'] = len(playlist_entity.tracks)
-        # Ensure title field exists (for API compatibility)
-        if 'title' not in playlist_dict and 'name' in playlist_dict:
-            playlist_dict['title'] = playlist_dict['name']
-
+        playlist_dict = self._convert_entity_to_dict_with_track_count(playlist_entity)
         return playlist_dict
 
     @handle_domain_errors(operation_name="create_playlist")
@@ -123,11 +114,7 @@ class PlaylistService:
         logger.info(f"✅ Created playlist: {name} (ID: {playlist_id})")
 
         # Convert to dict for return
-        playlist_dict = asdict(playlist_entity)
-        playlist_dict['track_count'] = 0  # New playlists start with no tracks
-        # Ensure title field exists (for API compatibility)
-        if 'title' not in playlist_dict and 'name' in playlist_dict:
-            playlist_dict['title'] = playlist_dict['name']
+        playlist_dict = self._convert_entity_to_dict_with_track_count(playlist_entity, track_count=0)
         return playlist_dict
 
     @handle_domain_errors(operation_name="update_playlist")
@@ -259,13 +246,7 @@ class PlaylistService:
             return None
 
         # Convert entity to dict (tracks are already included in entity)
-        from dataclasses import asdict
-        playlist_dict = asdict(playlist_entity)
-        playlist_dict['track_count'] = len(playlist_entity.tracks)
-        # Ensure title field exists (for API compatibility)
-        if 'title' not in playlist_dict and 'name' in playlist_dict:
-            playlist_dict['title'] = playlist_dict['name']
-
+        playlist_dict = self._convert_entity_to_dict_with_track_count(playlist_entity)
         return playlist_dict
 
     @handle_domain_errors(operation_name="sync_with_filesystem")

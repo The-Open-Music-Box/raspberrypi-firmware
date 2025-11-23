@@ -83,6 +83,41 @@ class AppConfig:
         # Validate all configurations
         self._validate_configs()
 
+    # MARK: - Helper Methods (Extract duplication)
+
+    def _resolve_path(self, value: str, config_key: str) -> str:
+        """Resolve a configuration path to an absolute path.
+
+        Extracted helper to eliminate duplication in upload_folder and db_file properties.
+
+        Args:
+            value: The path value from configuration
+            config_key: The configuration key name (for logging)
+
+        Returns:
+            Absolute path as string
+
+        Raises:
+            ValueError: If value is empty or None
+        """
+        if not value:
+            raise ValueError(
+                f"Critical config missing: '{config_key}' must be set in config/environment."
+            )
+
+        # Get the app directory path (parent of src)
+        app_dir = Path(__file__).parent.parent.parent
+
+        # If value is a relative path, make it absolute from app_dir
+        path = Path(value)
+        if not path.is_absolute():
+            path = app_dir / path
+
+        # Log the absolute path for debugging
+        logger.debug("Resolved %s path: %s", config_key, path)
+
+        return str(path)
+
     def _validate_required_keys(self) -> None:
         """
         Validate that all required configuration keys are present.
@@ -284,23 +319,7 @@ class AppConfig:
         regardless of the working directory at runtime.
         """
         value = self._values.get("upload_folder")
-        if not value:
-            raise ValueError(
-                "Critical config missing: 'upload_folder' must be set in config/environment."
-            )
-
-        # Get the app directory path (parent of src)
-        app_dir = Path(__file__).parent.parent.parent
-
-        # If value is a relative path, make it absolute from app_dir
-        path = Path(value)
-        if not path.is_absolute():
-            path = app_dir / path
-
-        # Log the absolute path for debugging
-        logger.debug("Resolved upload_folder path: %s", path)
-
-        return str(path)
+        return self._resolve_path(value, "upload_folder")
 
     @property
     def upload_allowed_extensions(self) -> List[str]:
@@ -339,23 +358,7 @@ class AppConfig:
         regardless of the working directory at runtime.
         """
         value = self._values.get("db_file")
-        if not value:
-            raise ValueError(
-                "Critical config missing: 'db_file' must be set in config/environment."
-            )
-
-        # Get the app directory path (parent of src)
-        app_dir = Path(__file__).parent.parent.parent
-
-        # If value is a relative path, make it absolute from app_dir
-        path = Path(value)
-        if not path.is_absolute():
-            path = app_dir / path
-
-        # Log the absolute path for debugging
-        logger.debug("Resolved db_file path: %s", path)
-
-        return str(path)
+        return self._resolve_path(value, "db_file")
 
     @property
     def log_format(self) -> str:

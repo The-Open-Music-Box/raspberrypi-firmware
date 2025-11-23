@@ -10,11 +10,12 @@ import logging
 from datetime import datetime
 
 from app.src.domain.decorators.error_handler import handle_domain_errors
+from app.src.domain.base.base_domain_service import BaseDomainService
 
 logger = logging.getLogger(__name__)
 
 
-class TrackService:
+class TrackService(BaseDomainService):
     """Service for managing track data operations."""
 
     def __init__(
@@ -28,6 +29,7 @@ class TrackService:
             track_repository: Repository for track operations
             playlist_repository: Repository for playlist operations
         """
+        super().__init__()
         self._track_repo = track_repository
         self._playlist_repo = playlist_repository
         logger.info("✅ TrackService initialized in data domain")
@@ -231,12 +233,7 @@ class TrackService:
             return cast(dict[str, Any] | None, tracks[0])
 
         # Find current track index
-        current_index = None
-        for i, track in enumerate(tracks):
-            track_id = track.id if hasattr(track, 'id') else track['id']
-            if track_id == current_track_id:
-                current_index = i
-                break
+        current_index = self._find_track_index(tracks, current_track_id)
 
         if current_index is None:
             # Current track not found, return first track
@@ -273,12 +270,7 @@ class TrackService:
             return cast(dict[str, Any] | None, tracks[-1])
 
         # Find current track index
-        current_index = None
-        for i, track in enumerate(tracks):
-            track_id = track.id if hasattr(track, 'id') else track['id']
-            if track_id == current_track_id:
-                current_index = i
-                break
+        current_index = self._find_track_index(tracks, current_track_id)
 
         if current_index is None:
             # Current track not found, return last track

@@ -71,6 +71,50 @@ class PlaylistStateManager:
 
         logger.info("✅ PlaylistStateManager initialized")
 
+    def _has_valid_playlist(self) -> bool:
+        """Check if current playlist is valid and has tracks.
+
+        Returns:
+            bool: True if playlist is valid
+        """
+        return bool(self._current_playlist and self._current_playlist.tracks)
+
+    def _can_navigate_with_repeat(self) -> bool:
+        """Check if navigation is allowed based on repeat modes.
+
+        Returns:
+            bool: True if repeat mode allows navigation
+        """
+        return self._repeat_mode in ["one", "all"]
+
+    def _navigate_shuffle(self, direction: int) -> bool:
+        """Navigate in shuffle mode.
+
+        Args:
+            direction: 1 for next, -1 for previous
+
+        Returns:
+            bool: True if navigation successful, False if at boundary
+        """
+        current_shuffle_pos = self._shuffle_order.index(self._current_track_index)
+        new_shuffle_pos = current_shuffle_pos + direction
+
+        # Check if new position is valid
+        if 0 <= new_shuffle_pos < len(self._shuffle_order):
+            self._current_track_index = self._shuffle_order[new_shuffle_pos]
+            return True
+
+        # Handle repeat all mode
+        if self._repeat_mode == "all":
+            if direction > 0:  # Next
+                self._current_track_index = self._shuffle_order[0]
+            else:  # Previous
+                self._current_track_index = self._shuffle_order[-1]
+            return True
+
+        # At boundary with no repeat
+        return False
+
     # --- Playlist Management ---
 
     def set_playlist(self, playlist: Playlist, start_index: int = 0) -> bool:
@@ -131,7 +175,7 @@ class PlaylistStateManager:
         Returns:
             Optional[Track]: Next track or None if at end
         """
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return None
 
         total_tracks = len(self._current_playlist.tracks)
@@ -142,14 +186,7 @@ class PlaylistStateManager:
 
         # Calculate next index
         if self._shuffle_enabled and self._shuffle_order:
-            current_shuffle_pos = self._shuffle_order.index(self._current_track_index)
-            next_shuffle_pos = current_shuffle_pos + 1
-
-            if next_shuffle_pos < len(self._shuffle_order):
-                self._current_track_index = self._shuffle_order[next_shuffle_pos]
-            elif self._repeat_mode == "all":
-                self._current_track_index = self._shuffle_order[0]
-            else:
+            if not self._navigate_shuffle(1):
                 return None  # End of playlist
         else:
             next_index = self._current_track_index + 1
@@ -174,7 +211,7 @@ class PlaylistStateManager:
         Returns:
             Optional[Track]: Previous track or None if at beginning
         """
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return None
 
         total_tracks = len(self._current_playlist.tracks)
@@ -185,14 +222,7 @@ class PlaylistStateManager:
 
         # Calculate previous index
         if self._shuffle_enabled and self._shuffle_order:
-            current_shuffle_pos = self._shuffle_order.index(self._current_track_index)
-            prev_shuffle_pos = current_shuffle_pos - 1
-
-            if prev_shuffle_pos >= 0:
-                self._current_track_index = self._shuffle_order[prev_shuffle_pos]
-            elif self._repeat_mode == "all":
-                self._current_track_index = self._shuffle_order[-1]
-            else:
+            if not self._navigate_shuffle(-1):
                 return None  # Beginning of playlist
         else:
             prev_index = self._current_track_index - 1
@@ -258,20 +288,20 @@ class PlaylistStateManager:
 
     def can_go_next(self) -> bool:
         """Check if can move to next track."""
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return False
 
-        if self._repeat_mode in ["one", "all"]:
+        if self._can_navigate_with_repeat():
             return True
 
         return self._current_track_index < len(self._current_playlist.tracks) - 1
 
     def can_go_previous(self) -> bool:
         """Check if can move to previous track."""
-        if not self._current_playlist or not self._current_playlist.tracks:
+        if not self._has_valid_playlist():
             return False
 
-        if self._repeat_mode in ["one", "all"]:
+        if self._can_navigate_with_repeat():
             return True
 
         return self._current_track_index > 0

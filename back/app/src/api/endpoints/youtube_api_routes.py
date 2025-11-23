@@ -51,6 +51,23 @@ class YouTubeAPIRoutes:
         self._create_youtube_service = youtube_service_factory
         self._register_routes()
 
+    def _check_container_available(self, request: Request):
+        """Check if application container is available.
+
+        Args:
+            request: FastAPI request object
+
+        Returns:
+            Error response if container unavailable, None if available
+        """
+        container = getattr(request.app, "container", None)
+        if not container:
+            return UnifiedResponseService.service_unavailable(
+                service="Application container",
+                message="Application container not available"
+            )
+        return None
+
     def _register_routes(self):
         """Register all YouTube-related API routes."""
 
@@ -83,13 +100,10 @@ class YouTubeAPIRoutes:
                         }
                     )
 
-                # Get container from app state
-                container = getattr(request.app, "container", None)
-                if not container:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Application container",
-                        message="Application container not available"
-                    )
+                # Check container availability
+                container_check = self._check_container_available(request)
+                if container_check:
+                    return container_check
 
                 # Create YouTube service and process download
                 service = self._create_youtube_service(request)
@@ -142,13 +156,10 @@ class YouTubeAPIRoutes:
                         }
                     )
 
-                # Get container from app state
-                container = getattr(request.app, "container", None)
-                if not container:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Application container",
-                        message="Application container not available"
-                    )
+                # Check container availability
+                container_check = self._check_container_available(request)
+                if container_check:
+                    return container_check
 
                 # Create YouTube service and search
                 service = self._create_youtube_service(request)
@@ -181,13 +192,10 @@ class YouTubeAPIRoutes:
                         message="Task ID is required"
                     )
 
-                # Get container from app state
-                container = getattr(request.app, "container", None)
-                if not container:
-                    return UnifiedResponseService.service_unavailable(
-                        service="Application container",
-                        message="Application container not available"
-                    )
+                # Check container availability
+                container_check = self._check_container_available(request)
+                if container_check:
+                    return container_check
 
                 # Create YouTube service and get task status
                 service = self._create_youtube_service(request)

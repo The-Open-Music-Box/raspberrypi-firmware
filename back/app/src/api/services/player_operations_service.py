@@ -51,6 +51,36 @@ class PlayerOperationsService:
         self._player_service = player_service
         self._rate_limit_store: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"count": 0, "window_start": 0.0})
 
+    def _handle_navigation_result(
+        self,
+        result: Dict[str, Any],
+        operation_name: str,
+        default_failure_message: str
+    ) -> Dict[str, Any]:
+        """Handle navigation operation result with consistent logging and response.
+
+        Args:
+            result: Result from player service
+            operation_name: Name of navigation operation for logging
+            default_failure_message: Default message if result doesn't have one
+
+        Returns:
+            Standardized response dictionary
+        """
+        if result.get("success"):
+            logger.info(f"✅ Successfully navigated to {operation_name}")
+            return {
+                "success": True,
+                "track": result.get("track"),
+                "status": result.get("status", {})
+            }
+        else:
+            logger.warning(f"⚠️ Failed to navigate to {operation_name}: {result.get('message')}")
+            return {
+                "success": False,
+                "message": result.get("message", default_failure_message)
+            }
+
     @handle_service_errors("player_operations")
     async def check_rate_limit_use_case(self, request: Request) -> Dict[str, Any]:
         """Check rate limiting for player operations.
@@ -99,20 +129,11 @@ class PlayerOperationsService:
         try:
             # Use player service for navigation
             result = await self._player_service.next_track_use_case()
-
-            if result.get("success"):
-                logger.info("✅ Successfully navigated to next track")
-                return {
-                    "success": True,
-                    "track": result.get("track"),
-                    "status": result.get("status", {})
-                }
-            else:
-                logger.warning(f"⚠️ Failed to navigate to next track: {result.get('message')}")
-                return {
-                    "success": False,
-                    "message": result.get("message", "Failed to navigate to next track")
-                }
+            return self._handle_navigation_result(
+                result,
+                "next track",
+                "Failed to navigate to next track"
+            )
 
         except Exception as e:
             logger.error(f"Error in next_track_use_case: {str(e)}")
@@ -131,20 +152,11 @@ class PlayerOperationsService:
         try:
             # Use player service for navigation
             result = await self._player_service.previous_track_use_case()
-
-            if result.get("success"):
-                logger.info("✅ Successfully navigated to previous track")
-                return {
-                    "success": True,
-                    "track": result.get("track"),
-                    "status": result.get("status", {})
-                }
-            else:
-                logger.warning(f"⚠️ Failed to navigate to previous track: {result.get('message')}")
-                return {
-                    "success": False,
-                    "message": result.get("message", "Failed to navigate to previous track")
-                }
+            return self._handle_navigation_result(
+                result,
+                "previous track",
+                "Failed to navigate to previous track"
+            )
 
         except Exception as e:
             logger.error(f"Error in previous_track_use_case: {str(e)}")

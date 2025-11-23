@@ -46,6 +46,25 @@ class UploadAPIRoutes:
         self._get_upload_controller = upload_controller_getter
         self._register_routes()
 
+    def _check_upload_controller_available(self, request: Request):
+        """Check if upload controller is available and return error if not.
+
+        Args:
+            request: FastAPI request object
+
+        Returns:
+            Tuple of (upload_controller, error_response) where error_response is None if available
+        """
+        upload_controller = self._get_upload_controller(request)
+        if not upload_controller:
+            error_response = UnifiedResponseService.error(
+                message="Upload service not available",
+                error_type="service_unavailable",
+                status_code=503
+            )
+            return None, error_response
+        return upload_controller, None
+
     def _register_routes(self):
         """Register all upload session management routes."""
 
@@ -58,14 +77,10 @@ class UploadAPIRoutes:
         ):
             """List all upload sessions with optional filtering."""
             try:
-                # Get upload controller
-                upload_controller = self._get_upload_controller(request)
-                if not upload_controller:
-                    return UnifiedResponseService.error(
-                        message="Upload service not available",
-                        error_type="service_unavailable",
-                        status_code=503
-                    )
+                # Check upload controller availability
+                upload_controller, error_response = self._check_upload_controller_available(request)
+                if error_response:
+                    return error_response
 
                 # Get all active sessions
                 sessions_data = []
@@ -119,14 +134,10 @@ class UploadAPIRoutes:
         async def delete_upload_session(session_id: str, request: Request):
             """Delete a specific upload session."""
             try:
-                # Get upload controller
-                upload_controller = self._get_upload_controller(request)
-                if not upload_controller:
-                    return UnifiedResponseService.error(
-                        message="Upload service not available",
-                        error_type="service_unavailable",
-                        status_code=503
-                    )
+                # Check upload controller availability
+                upload_controller, error_response = self._check_upload_controller_available(request)
+                if error_response:
+                    return error_response
 
                 # Try to remove the session
                 if hasattr(upload_controller, "chunked") and upload_controller.chunked:
@@ -164,14 +175,10 @@ class UploadAPIRoutes:
         ):
             """Cleanup stale upload sessions older than specified age."""
             try:
-                # Get upload controller
-                upload_controller = self._get_upload_controller(request)
-                if not upload_controller:
-                    return UnifiedResponseService.error(
-                        message="Upload service not available",
-                        error_type="service_unavailable",
-                        status_code=503
-                    )
+                # Check upload controller availability
+                upload_controller, error_response = self._check_upload_controller_available(request)
+                if error_response:
+                    return error_response
 
                 from datetime import datetime, timedelta
 

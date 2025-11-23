@@ -14,7 +14,21 @@ from app.src.services.error.unified_error_decorator import handle_errors
 logger = get_logger(__name__)
 
 
-class NfcHardwareAdapter(NfcHardwareProtocol):
+class BaseNfcAdapter:
+    """Base class for NFC adapters with common initialization."""
+
+    def _init_common_state(self) -> None:
+        """Initialize common NFC adapter state.
+
+        Sets up detection flag and callback handlers that are common
+        to all NFC adapter implementations.
+        """
+        self._detecting = False
+        self._tag_detected_callback: Optional[Callable[[TagIdentifier], None]] = None
+        self._tag_removed_callback: Optional[Callable[[], None]] = None
+
+
+class NfcHardwareAdapter(BaseNfcAdapter, NfcHardwareProtocol):
     """Hardware adapter for NFC operations.
 
     Adapts the existing NFC hardware implementation to the domain protocol.
@@ -27,10 +41,8 @@ class NfcHardwareAdapter(NfcHardwareProtocol):
         Args:
             legacy_nfc_handler: Legacy NFC handler instance (optional)
         """
+        self._init_common_state()
         self._legacy_handler = legacy_nfc_handler
-        self._detecting = False
-        self._tag_detected_callback: Optional[Callable[[TagIdentifier], None]] = None
-        self._tag_removed_callback: Optional[Callable[[], None]] = None
 
         # Setup legacy handler integration if available
         if self._legacy_handler and hasattr(self._legacy_handler, "tag_subject"):
@@ -145,14 +157,12 @@ class NfcHardwareAdapter(NfcHardwareProtocol):
         logger.info(f"🧪 Injected test tag: {tag_identifier}")
 
 
-class MockNfcHardwareAdapter(NfcHardwareProtocol):
+class MockNfcHardwareAdapter(BaseNfcAdapter, NfcHardwareProtocol):
     """Mock NFC hardware adapter for testing."""
 
     def __init__(self):
         """Initialize mock adapter."""
-        self._detecting = False
-        self._tag_detected_callback: Optional[Callable[[TagIdentifier], None]] = None
-        self._tag_removed_callback: Optional[Callable[[], None]] = None
+        self._init_common_state()
 
     async def start_detection(self) -> None:
         """Start mock detection."""

@@ -53,6 +53,24 @@ class UploadApplicationService:
         # Cleanup task
         self._cleanup_task: Optional[asyncio.Task] = None
 
+    def _get_session_or_error(self, session_id: str) -> tuple[Optional[UploadSession], Optional[Dict[str, Any]]]:
+        """Get session by ID or return error response.
+
+        Args:
+            session_id: Upload session ID
+
+        Returns:
+            Tuple of (session, error_response) where error_response is None if session found
+        """
+        session = self._active_sessions.get(session_id)
+        if not session:
+            return None, {
+                "status": "error",
+                "message": "Upload session not found",
+                "error_type": "not_found",
+            }
+        return session, None
+
     async def start_upload_service(self) -> Dict[str, Any]:
         """Start the upload service.
 
@@ -135,13 +153,9 @@ class UploadApplicationService:
             Result dictionary with upload progress
         """
         # Get session
-        session = self._active_sessions.get(session_id)
-        if not session:
-            return {
-                "status": "error",
-                "message": "Upload session not found",
-                "error_type": "not_found",
-            }
+        session, error = self._get_session_or_error(session_id)
+        if error:
+            return error
         # Create chunk
         chunk = FileChunk.create(chunk_index, chunk_data)
         # Validate chunk
@@ -186,13 +200,9 @@ class UploadApplicationService:
         Returns:
             Session status dictionary
         """
-        session = self._active_sessions.get(session_id)
-        if not session:
-            return {
-                "status": "error",
-                "message": "Upload session not found",
-                "error_type": "not_found",
-            }
+        session, error = self._get_session_or_error(session_id)
+        if error:
+            return error
         return {"status": "success", "session": session.to_dict()}
 
     async def cancel_upload_use_case(self, session_id: str) -> Dict[str, Any]:
@@ -204,13 +214,9 @@ class UploadApplicationService:
         Returns:
             Cancellation result dictionary
         """
-        session = self._active_sessions.get(session_id)
-        if not session:
-            return {
-                "status": "error",
-                "message": "Upload session not found",
-                "error_type": "not_found",
-            }
+        session, error = self._get_session_or_error(session_id)
+        if error:
+            return error
         # Mark session as cancelled
         session.mark_cancelled()
         # Cleanup session files

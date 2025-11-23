@@ -370,14 +370,17 @@ class TestSystemRoutes:
         assert response.headers["Pragma"] == "no-cache"
         assert response.headers["Expires"] == "0"
 
-    @patch('app.src.api.endpoints.system_api_routes.logger')
-    def test_logging_in_routes(self, mock_logger, test_client):
+    def test_logging_in_routes(self, test_client, caplog):
         """Test that routes log appropriate messages."""
-        test_client.get("/api/health")
+        import logging
+        caplog.set_level(logging.INFO)
 
-        # Verify that logging was called in the API endpoints (new architecture)
-        # The API endpoints module (not bootstrap) does the actual logging
-        mock_logger.info.assert_called()
+        response = test_client.get("/api/health")
+
+        # Verify endpoint works and logging occurred (visible in caplog)
+        assert response.status_code == 200
+        # Logging happens through BaseAPIRoutes._logger which is captured by caplog
+        assert len(caplog.records) > 0
 
     def test_dependency_injection(self, mock_app):
         """Test that dependency injection is set up correctly."""

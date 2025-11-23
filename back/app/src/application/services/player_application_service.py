@@ -91,6 +91,54 @@ class PlayerApplicationService:
 
         return complete_status
 
+    def _get_complete_status(self) -> Dict[str, Any]:
+        """Get complete player status with all required fields.
+
+        Returns:
+            Complete PlayerState dictionary
+        """
+        status = self._coordinator.get_playback_status()
+        return self._ensure_complete_player_state(status)
+
+    def _build_success_response(self, message: str, **extra_fields) -> Dict[str, Any]:
+        """Build standard success response for player operations.
+
+        Args:
+            message: Success message
+            **extra_fields: Additional fields to include (e.g., track)
+
+        Returns:
+            Success response dictionary with PlayerState
+        """
+        complete_status = self._get_complete_status()
+        response = {
+            "success": True,
+            "message": message,
+            "status": complete_status
+        }
+        response.update(extra_fields)
+        return response
+
+    def _build_error_response(self, error: Exception, operation: str, fallback_message: str) -> Dict[str, Any]:
+        """Build standard error response for player operations.
+
+        Args:
+            error: The exception that occurred
+            operation: Name of the operation for logging
+            fallback_message: Fallback message for user
+
+        Returns:
+            Error response dictionary with PlayerState
+        """
+        logger.error(f"❌ Error in {operation}: {str(error)}")
+        # Even on error, return valid PlayerState
+        complete_status = self._get_complete_status()
+        return {
+            "success": True,
+            "message": fallback_message,
+            "status": complete_status
+        }
+
     @handle_service_errors("player_application")
     async def play_use_case(self) -> Dict[str, Any]:
         """Use case: Start/resume playback.
@@ -100,8 +148,6 @@ class PlayerApplicationService:
         """
         try:
             success = self._coordinator.play()
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
 
             if success:
                 logger.info("✅ Playback started successfully")
@@ -110,23 +156,10 @@ class PlayerApplicationService:
                 logger.warning("⚠️ Failed to start playback (no active playlist)")
                 message = "Playback unavailable - no active playlist"
 
-            # Always return success with valid PlayerState for contract compliance
-            return {
-                "success": True,
-                "message": message,
-                "status": complete_status
-            }
+            return self._build_success_response(message)
 
         except Exception as e:
-            logger.error(f"❌ Error in play_use_case: {str(e)}")
-            # Even on error, return valid PlayerState
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
-            return {
-                "success": True,
-                "message": "Playback unavailable",
-                "status": complete_status
-            }
+            return self._build_error_response(e, "play_use_case", "Playback unavailable")
 
     @handle_service_errors("player_application")
     async def pause_use_case(self) -> Dict[str, Any]:
@@ -137,8 +170,6 @@ class PlayerApplicationService:
         """
         try:
             success = self._coordinator.pause()
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
 
             if success:
                 logger.info("✅ Playback paused successfully")
@@ -147,23 +178,10 @@ class PlayerApplicationService:
                 logger.warning("⚠️ Failed to pause playback (not playing)")
                 message = "Pause unavailable - not playing"
 
-            # Always return success with valid PlayerState for contract compliance
-            return {
-                "success": True,
-                "message": message,
-                "status": complete_status
-            }
+            return self._build_success_response(message)
 
         except Exception as e:
-            logger.error(f"❌ Error in pause_use_case: {str(e)}")
-            # Even on error, return valid PlayerState
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
-            return {
-                "success": True,
-                "message": "Pause unavailable",
-                "status": complete_status
-            }
+            return self._build_error_response(e, "pause_use_case", "Pause unavailable")
 
     @handle_service_errors("player_application")
     async def stop_use_case(self) -> Dict[str, Any]:
@@ -174,8 +192,6 @@ class PlayerApplicationService:
         """
         try:
             success = self._coordinator.stop()
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
 
             if success:
                 logger.info("✅ Playback stopped successfully")
@@ -184,23 +200,10 @@ class PlayerApplicationService:
                 logger.warning("⚠️ Failed to stop playback (not playing)")
                 message = "Stop completed - not playing"
 
-            # Always return success with valid PlayerState for contract compliance
-            return {
-                "success": True,
-                "message": message,
-                "status": complete_status
-            }
+            return self._build_success_response(message)
 
         except Exception as e:
-            logger.error(f"❌ Error in stop_use_case: {str(e)}")
-            # Even on error, return valid PlayerState
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
-            return {
-                "success": True,
-                "message": "Stop completed",
-                "status": complete_status
-            }
+            return self._build_error_response(e, "stop_use_case", "Stop completed")
 
     @handle_service_errors("player_application")
     async def next_track_use_case(self) -> Dict[str, Any]:
@@ -211,9 +214,7 @@ class PlayerApplicationService:
         """
         try:
             success = self._coordinator.next_track()
-
             status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
             current_track = status.get("current_track")
 
             if success:
@@ -223,24 +224,10 @@ class PlayerApplicationService:
                 logger.warning("⚠️ End of playlist reached")
                 message = "End of playlist reached"
 
-            # Always return success with valid PlayerState for contract compliance
-            return {
-                "success": True,
-                "message": message,
-                "track": current_track,
-                "status": complete_status
-            }
+            return self._build_success_response(message, track=current_track)
 
         except Exception as e:
-            logger.error(f"❌ Error in next_track_use_case: {str(e)}")
-            # Even on error, return valid PlayerState
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
-            return {
-                "success": True,
-                "message": "Navigation unavailable",
-                "status": complete_status
-            }
+            return self._build_error_response(e, "next_track_use_case", "Navigation unavailable")
 
     @handle_service_errors("player_application")
     async def previous_track_use_case(self) -> Dict[str, Any]:
@@ -251,9 +238,7 @@ class PlayerApplicationService:
         """
         try:
             success = self._coordinator.previous_track()
-
             status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
             current_track = status.get("current_track")
 
             if success:
@@ -263,24 +248,10 @@ class PlayerApplicationService:
                 logger.warning("⚠️ Beginning of playlist reached")
                 message = "Beginning of playlist reached"
 
-            # Always return success with valid PlayerState for contract compliance
-            return {
-                "success": True,
-                "message": message,
-                "track": current_track,
-                "status": complete_status
-            }
+            return self._build_success_response(message, track=current_track)
 
         except Exception as e:
-            logger.error(f"❌ Error in previous_track_use_case: {str(e)}")
-            # Even on error, return valid PlayerState
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
-            return {
-                "success": True,
-                "message": "Navigation unavailable",
-                "status": complete_status
-            }
+            return self._build_error_response(e, "previous_track_use_case", "Navigation unavailable")
 
     @handle_service_errors("player_application")
     async def seek_use_case(self, position_ms: int) -> Dict[str, Any]:
@@ -295,18 +266,9 @@ class PlayerApplicationService:
         try:
             # Validate position
             if position_ms < 0:
-                # Return valid PlayerState even for validation errors
-                status = self._coordinator.get_playback_status()
-                complete_status = self._ensure_complete_player_state(status)
-                return {
-                    "success": True,
-                    "message": "Position cannot be negative",
-                    "status": complete_status
-                }
+                return self._build_success_response("Position cannot be negative")
 
             success = self._coordinator.seek_to_position(position_ms)
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
 
             if success:
                 logger.info(f"✅ Successfully seeked to {position_ms}ms")
@@ -315,24 +277,10 @@ class PlayerApplicationService:
                 logger.warning(f"⚠️ Failed to seek to {position_ms}ms")
                 message = "Seek unavailable"
 
-            # Always return success with valid PlayerState for contract compliance
-            return {
-                "success": True,
-                "message": message,
-                "position_ms": position_ms,
-                "status": complete_status
-            }
+            return self._build_success_response(message, position_ms=position_ms)
 
         except Exception as e:
-            logger.error(f"❌ Error in seek_use_case: {str(e)}")
-            # Even on error, return valid PlayerState
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
-            return {
-                "success": True,
-                "message": "Seek unavailable",
-                "status": complete_status
-            }
+            return self._build_error_response(e, "seek_use_case", "Seek unavailable")
 
     @handle_service_errors("player_application")
     async def set_volume_use_case(self, volume: int) -> Dict[str, Any]:
@@ -388,24 +336,11 @@ class PlayerApplicationService:
             Result dictionary with player status - always success for contract compliance
         """
         try:
-            status = self._coordinator.get_playback_status()
-            complete_status = self._ensure_complete_player_state(status)
             logger.debug("✅ Player status retrieved")
-            return {
-                "success": True,
-                "message": "Player status retrieved successfully",
-                "status": complete_status
-            }
+            return self._build_success_response("Player status retrieved successfully")
 
         except Exception as e:
-            logger.error(f"❌ Error in get_status_use_case: {str(e)}")
-            # Even on error, return valid default PlayerState
-            complete_status = self._ensure_complete_player_state({})
-            return {
-                "success": True,
-                "message": "Player status retrieved",
-                "status": complete_status
-            }
+            return self._build_error_response(e, "get_status_use_case", "Player status retrieved")
 
 
 # Global instance - will be properly initialized by dependency injection
