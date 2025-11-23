@@ -75,6 +75,7 @@ jobs:
         source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
+        export PYTHONPATH=$PWD
         # Run unit tests with coverage
         pytest app/tests/unit/ -v \
           --cov=app \
@@ -89,6 +90,7 @@ jobs:
         source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
+        export PYTHONPATH=$PWD
         # Run contract tests with coverage (allow to pass if no tests found)
         pytest app/tests/contracts/ -v \
           --cov=app \
@@ -116,6 +118,7 @@ jobs:
         source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
+        export PYTHONPATH=$PWD
         # Run WebSocket integration tests
         pytest tests/integration/websocket/ -v \
           --cov=app \
@@ -132,6 +135,7 @@ jobs:
         source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
+        export PYTHONPATH=$PWD
         # Run E2E integration tests (excluding hardware and websocket)
         pytest tests/integration/ -v \
           --ignore=tests/integration/websocket \
