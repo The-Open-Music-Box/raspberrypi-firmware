@@ -367,13 +367,13 @@ class GPIOPhysicalControls(BaseControlsImplementation):
 
     def _on_volume_up(self) -> None:
         """Handle volume encoder rotation clockwise (volume up)."""
-        logger.debug("🔊 Volume encoder: UP")
+        logger.info("🔊 [GPIO] Volume encoder: UP - HARDWARE EVENT DETECTED")
         self._emit_encoder_event("up", self.config.gpio_volume_encoder_clk)
         self._trigger_event(PhysicalControlEvent.ENCODER_VOLUME_UP)
 
     def _on_volume_down(self) -> None:
         """Handle volume encoder rotation counter-clockwise (volume down)."""
-        logger.debug("🔉 Volume encoder: DOWN")
+        logger.info("🔉 [GPIO] Volume encoder: DOWN - HARDWARE EVENT DETECTED")
         self._emit_encoder_event("down", self.config.gpio_volume_encoder_dt)
         self._trigger_event(PhysicalControlEvent.ENCODER_VOLUME_DOWN)
 
