@@ -33,34 +33,35 @@ GPIO_FALLBACK_REASON: str | None = None  # Track why GPIO is not available
 
 if not USE_MOCK_HARDWARE:
     # Try different GPIO backends in order of preference
+    # lgpio is tried first as it's more modern and doesn't have RPi.GPIO's edge detection locking issues
     gpio_backend_initialized = False
 
-    # First try gpiozero with native pin factory (RPi.GPIO backend)
+    # First try lgpio (modern, recommended backend)
     try:
         from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
-        from gpiozero.pins.rpigpio import RPiGPIOFactory
-        Device.pin_factory = RPiGPIOFactory()
-        logger.info("✅ GPIO hardware available - using RPi.GPIO backend")
+        from gpiozero.pins.lgpio import LGPIOFactory
+        Device.pin_factory = LGPIOFactory()
+        logger.info("✅ GPIO hardware available - using lgpio backend")
         GPIO_AVAILABLE = True
         gpio_backend_initialized = True
     except ImportError as e:
-        logger.debug(f"RPi.GPIO backend not available: {e}")
+        logger.debug(f"lgpio backend not available: {e}")
     except Exception as e:
-        logger.debug(f"RPi.GPIO initialization failed: {e}")
+        logger.debug(f"lgpio initialization failed: {e}")
 
-    # If RPi.GPIO didn't work, try lgpio
+    # If lgpio didn't work, try RPi.GPIO (legacy backend)
     if not gpio_backend_initialized:
         try:
             from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
-            from gpiozero.pins.lgpio import LgpioFactory
-            Device.pin_factory = LgpioFactory()
-            logger.info("✅ GPIO hardware available - using lgpio backend")
+            from gpiozero.pins.rpigpio import RPiGPIOFactory
+            Device.pin_factory = RPiGPIOFactory()
+            logger.info("✅ GPIO hardware available - using RPi.GPIO backend")
             GPIO_AVAILABLE = True
             gpio_backend_initialized = True
         except ImportError as e:
-            logger.debug(f"lgpio backend not available: {e}")
+            logger.debug(f"RPi.GPIO backend not available: {e}")
         except Exception as e:
-            logger.warning(f"⚠️ lgpio initialization failed: {e}")
+            logger.debug(f"RPi.GPIO initialization failed: {e}")
 
     # If neither worked, try pigpio (requires pigpiod daemon)
     if not gpio_backend_initialized:
@@ -142,6 +143,17 @@ class GPIOPhysicalControls(BaseControlsImplementation):
                     return True
 
                 logger.info("🔌 Initializing GPIO physical controls...")
+
+                # Aggressive GPIO cleanup before initialization
+                # This helps recover from crashed processes that left GPIO in bad state
+                try:
+                    import RPi.GPIO as GPIO_Direct
+                    GPIO_Direct.setwarnings(False)
+                    logger.debug("🧹 Cleaning up all GPIO pins before initialization...")
+                    GPIO_Direct.cleanup()  # Clean ALL pins
+                    logger.debug("✅ GPIO cleanup completed")
+                except Exception as e:
+                    logger.debug(f"GPIO cleanup attempt (may be expected): {e}")
 
                 # Count successful initializations
                 initial_device_count = len(self._devices)
