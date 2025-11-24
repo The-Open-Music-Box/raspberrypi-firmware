@@ -5,7 +5,7 @@ and properly integrate with the data service layer.
 """
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 from fastapi import FastAPI
 from socketio import AsyncServer
 
@@ -134,28 +134,24 @@ class TestUploadEndpointsContract:
             return_value={"status": "success", "track": mock_track}
         )
 
-        # Mock the add_track_use_case (returns track dict directly, not wrapped)
-        mock_add_track = AsyncMock(return_value={"id": "track-123", "title": "Test Track"})
-        with patch(
-            'app.src.routes.factories.playlist_routes_ddd.get_data_application_service'
-        ) as mock_get_service:
-            mock_service = Mock()
-            mock_service.add_track_use_case = mock_add_track
-            mock_get_service.return_value = mock_service
+        # Mock the add_track_use_case directly on the routes object (already instantiated)
+        routes._playlist_app_service.add_track_use_case = AsyncMock(
+            return_value={"id": "track-123", "title": "Test Track"}
+        )
 
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.post(
-                    "/api/playlists/test-playlist-id/uploads/test-session-123/finalize",
-                    json={
-                        "file_hash": "abc123",
-                        "client_op_id": "client-op-456",
-                    },
-                )
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/playlists/test-playlist-id/uploads/test-session-123/finalize",
+                json={
+                    "file_hash": "abc123",
+                    "client_op_id": "client-op-456",
+                },
+            )
 
-                assert response.status_code == 200
-                data = response.json()
-                assert data["status"] == "success"
-                assert "data" in data
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
+            assert "data" in data
 
     async def test_finalize_upload_with_nonexistent_playlist(self, app_with_upload_routes):
         """Test finalize upload returns error when playlist doesn't exist.
@@ -324,25 +320,21 @@ class TestUploadEndpointsContract:
         # Mock broadcasting service
         routes.broadcasting_service.broadcast_track_added = AsyncMock()
 
-        # Mock the add_track_use_case (returns track dict directly, not wrapped)
-        mock_add_track = AsyncMock(return_value={"id": "track-123", "title": "Test Track"})
-        with patch(
-            'app.src.routes.factories.playlist_routes_ddd.get_data_application_service'
-        ) as mock_get_service:
-            mock_service = Mock()
-            mock_service.add_track_use_case = mock_add_track
-            mock_get_service.return_value = mock_service
+        # Mock the add_track_use_case directly on the routes object (already instantiated)
+        routes._playlist_app_service.add_track_use_case = AsyncMock(
+            return_value={"id": "track-123", "title": "Test Track"}
+        )
 
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.post(
-                    "/api/playlists/test-playlist-id/uploads/test-session/finalize",
-                    json={},
-                )
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/playlists/test-playlist-id/uploads/test-session/finalize",
+                json={},
+            )
 
-                assert response.status_code == 200
+            assert response.status_code == 200
 
-                # Verify broadcast was called
-                routes.broadcasting_service.broadcast_track_added.assert_called_once()
-                call_args = routes.broadcasting_service.broadcast_track_added.call_args
-                assert call_args[0][0] == "test-playlist-id"  # playlist_id
-                assert "title" in call_args[0][1]  # track_entry
+            # Verify broadcast was called
+            routes.broadcasting_service.broadcast_track_added.assert_called_once()
+            call_args = routes.broadcasting_service.broadcast_track_added.call_args
+            assert call_args[0][0] == "test-playlist-id"  # playlist_id
+            assert "title" in call_args[0][1]  # track_entry

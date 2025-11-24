@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # Check if we're in mock mode or if GPIO is available
 USE_MOCK_HARDWARE = os.getenv("USE_MOCK_HARDWARE", "false").lower() == "true"
 GPIO_AVAILABLE = False
+GPIO_FALLBACK_REASON: str | None = None  # Track why GPIO is not available
 
 if not USE_MOCK_HARDWARE:
     # Try different GPIO backends in order of preference
@@ -77,10 +78,15 @@ if not USE_MOCK_HARDWARE:
 
     # If still no backend available, fall back to mock
     if not gpio_backend_initialized:
-        logger.warning("⚠️ No GPIO backend available - falling back to mock mode")
+        GPIO_FALLBACK_REASON = "No GPIO backend available (gpiozero, RPi.GPIO, lgpio, pigpio all failed)"
+        logger.warning(
+            f"⚠️ {GPIO_FALLBACK_REASON} - PHYSICAL BUTTONS WILL NOT WORK! "
+            "Install GPIO libraries or set USE_MOCK_HARDWARE=true to suppress this warning."
+        )
         GPIO_AVAILABLE = False
 else:
-    logger.info("🧪 Mock hardware mode enabled")
+    GPIO_FALLBACK_REASON = "USE_MOCK_HARDWARE=true (intentional)"
+    logger.info("🧪 Mock hardware mode enabled (USE_MOCK_HARDWARE=true)")
     GPIO_AVAILABLE = False
 
 
@@ -106,6 +112,7 @@ class GPIOPhysicalControls(BaseControlsImplementation):
         # GPIO-specific state
         self._devices = {}
         self._lock = Lock()
+        self._mock_mode_active = False  # Track if running in mock mode
 
         # Encoder state tracking
         self._encoder_last_position = 0
@@ -122,8 +129,16 @@ class GPIOPhysicalControls(BaseControlsImplementation):
                 self.config.validate()
 
                 if not GPIO_AVAILABLE:
-                    logger.info("🧪 Mock mode: GPIO controls initialized (no real hardware)")
+                    # Log at WARNING level if this is an unintentional fallback
+                    if USE_MOCK_HARDWARE:
+                        logger.info("🧪 Mock mode: GPIO controls initialized (USE_MOCK_HARDWARE=true)")
+                    else:
+                        logger.warning(
+                            "⚠️ GPIO UNAVAILABLE - Physical controls running in mock mode! "
+                            f"Reason: {GPIO_FALLBACK_REASON}. Buttons/encoder will NOT respond to input."
+                        )
                     self._is_initialized = True
+                    self._mock_mode_active = True
                     return True
 
                 logger.info("🔌 Initializing GPIO physical controls...")
@@ -442,7 +457,9 @@ class GPIOPhysicalControls(BaseControlsImplementation):
 
         return {
             "initialized": self._is_initialized,
-            "mock_mode": not GPIO_AVAILABLE,
+            "mock_mode": self._mock_mode_active,
+            "mock_mode_intentional": USE_MOCK_HARDWARE,
+            "fallback_reason": GPIO_FALLBACK_REASON,
             "devices_count": len(self._devices),
             "event_handlers_count": len(self._event_handlers),
             "gpio_available": GPIO_AVAILABLE,

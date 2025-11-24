@@ -186,6 +186,103 @@ class TestPhysicalControlsIntegration:
         await manager.cleanup()
 
 
+class TestGPIOFallbackBehavior:
+    """Tests for GPIO fallback behavior and status reporting.
+
+    These tests verify that when GPIO hardware is unavailable:
+    1. The system logs appropriate warnings
+    2. Status correctly indicates mock mode vs intentional mock
+    3. Fallback reason is properly reported
+    """
+
+    @pytest.fixture
+    def hardware_config_mock(self):
+        """Config with mock_hardware=True (intentional mock)."""
+        return HardwareConfig(
+            gpio_button_bt0=23,
+            gpio_volume_encoder_sw=16,
+            gpio_volume_encoder_clk=13,
+            gpio_volume_encoder_dt=26,
+            mock_hardware=True
+        )
+
+    @pytest.fixture
+    def mock_audio_controller(self):
+        """Create mock audio controller."""
+        controller = Mock()
+        controller.next_track = AsyncMock(return_value=True)
+        controller.previous_track = AsyncMock(return_value=True)
+        controller.toggle_pause = AsyncMock(return_value=True)
+        controller.get_volume = Mock(return_value=50)
+        controller.set_volume = AsyncMock(return_value=True)
+        return controller
+
+    @pytest.mark.asyncio
+    async def test_status_includes_mock_mode_fields(self, hardware_config_mock, mock_audio_controller):
+        """Test that status includes mock_mode field from manager."""
+        manager = PhysicalControlsManager(mock_audio_controller, hardware_config_mock)
+
+        try:
+            await manager.initialize()
+            status = manager.get_status()
+
+            # PhysicalControlsManager always includes mock_mode
+            assert "mock_mode" in status
+            # When mock_hardware=True in config, mock_mode should be True
+            assert status["mock_mode"] is True
+        finally:
+            await manager.cleanup()
+
+    @pytest.mark.asyncio
+    async def test_gpio_controls_status_includes_fallback_fields(self, hardware_config_mock):
+        """Test that GPIOPhysicalControls status includes fallback information."""
+        from app.src.infrastructure.hardware.controls.gpio_controls_implementation import (
+            GPIOPhysicalControls,
+        )
+
+        controls = GPIOPhysicalControls(hardware_config_mock)
+
+        try:
+            await controls.initialize()
+            status = controls.get_status()
+
+            # Verify required status fields exist
+            assert "initialized" in status
+            assert "mock_mode" in status
+            assert "mock_mode_intentional" in status
+            assert "fallback_reason" in status
+            assert "gpio_available" in status
+
+            # On non-Pi hardware (like dev machine), GPIO is not available
+            # so mock_mode should be True and fallback_reason should explain why
+            assert status["mock_mode"] is True
+            assert status["gpio_available"] is False
+            # fallback_reason should contain a meaningful message
+            assert status["fallback_reason"] is not None
+            assert "GPIO" in status["fallback_reason"] or "backend" in status["fallback_reason"]
+        finally:
+            await controls.cleanup()
+
+    @pytest.mark.asyncio
+    async def test_gpio_controls_mock_mode_active_flag(self, hardware_config_mock):
+        """Test that _mock_mode_active is set correctly."""
+        from app.src.infrastructure.hardware.controls.gpio_controls_implementation import (
+            GPIOPhysicalControls,
+        )
+
+        controls = GPIOPhysicalControls(hardware_config_mock)
+
+        # Before initialization, mock mode should be False
+        assert controls._mock_mode_active is False
+
+        await controls.initialize()
+
+        # After initialization on non-Pi hardware, mock mode should be True
+        assert controls._mock_mode_active is True
+
+        await controls.cleanup()
+
+
 @pytest.mark.integration
 class TestPhysicalControlsRealHardware:
     """Integration tests for real hardware (when available)."""
