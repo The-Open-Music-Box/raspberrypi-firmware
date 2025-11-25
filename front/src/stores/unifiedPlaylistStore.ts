@@ -412,7 +412,14 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         trackIndexMaps.value.set(playlistId, trackMap)
       }
 
-      // Map track numbers to track IDs (using filename as ID in v3.3.2)
+      // Map track numbers to filenames (used as track IDs in v3.3.2)
+      logger.debug('Mapping track numbers to filenames', {
+        playlistId,
+        newOrder,
+        trackMapSize: trackMap!.size,
+        availableTracks: Array.from(trackMap!.keys())
+      })
+
       const trackIds = newOrder
         .map(num => {
           const track = trackMap!.get(num)
@@ -420,9 +427,17 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
             logger.warn(`Track with number ${num} not found in playlist ${playlistId}`, { availableTracks: playlistTracks.length })
             return null
           }
+          // Use track.filename as track ID (v3.3.2 behavior)
+          if (!track.filename) {
+            logger.error(`Track missing required filename field`, { track })
+            return null
+          }
+          logger.debug(`Mapped track number ${num} to filename: ${track.filename}`)
           return track.filename
         })
         .filter((id): id is string => id !== null)
+
+      logger.info('Track IDs to send to backend', { playlistId, trackIds })
 
       if (trackIds.length === 0) {
         logger.warn('No valid track IDs found for reorder, skipping', { playlistId, newOrder })
@@ -455,11 +470,10 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
       updateTrackIndexMap(playlistId, reorderedTracks)
 
       logger.info('Reordered tracks', { playlistId, newOrder })
-      
-      // CRITICAL FIX: Clear drag operation immediately after successful API call
-      // to allow WebSocket broadcast to update the UI properly
+
+      // Clear drag operation flag - WebSocket update will provide authoritative state
       ongoingDragOperations.value.delete(playlistId)
-      logger.debug('Cleared drag operation flag after successful reorder', { playlistId })
+      logger.debug('Cleared drag operation flag, waiting for server state', { playlistId })
       
     } catch (err: any) {
       // Use centralized error handling
@@ -625,7 +639,8 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         logger.debug('Updated tracks with WebSocket data', {
           playlistId: playlist.id,
           tracksCount: sortedTracks.length,
-          firstTrackNumber: sortedTracks[0] ? getTrackNumber(sortedTracks[0]) : 0
+          firstTrackNumber: sortedTracks[0] ? getTrackNumber(sortedTracks[0]) : 0,
+          trackTitles: sortedTracks.slice(0, 3).map((t: any) => ({ number: getTrackNumber(t), title: t.title, filename: t.filename }))
         })
       }
     }

@@ -692,8 +692,12 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         )
 
         # Convert Track entity to dictionary
+        # OpenAPI contract uses 'number', but Track entity uses 'track_number'
         from dataclasses import asdict
-        return asdict(track)
+        track_dict = asdict(track)
+        # Map track_number → number for API contract compliance
+        track_dict['number'] = track_dict.pop('track_number')
+        return track_dict
 
     @_handle_repository_errors("track")
     async def add_track_to_playlist(self, playlist_id: str, track_data: dict) -> str:
@@ -832,6 +836,8 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             logger.warning("Empty track orders list provided")
             return False
 
+        logger.debug(f"Reordering tracks - received {len(track_orders)} track_orders: {track_orders[:3] if len(track_orders) > 3 else track_orders}")
+
         # Prepare batch operations for atomic transaction
         operations = []
         for order in track_orders:
@@ -841,6 +847,8 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             if not track_id or track_number is None:
                 logger.warning(f"Invalid track order entry: {order}")
                 continue
+
+            logger.debug(f"Will update track {track_id} to position {track_number}")
 
             update_command = """
                 UPDATE tracks

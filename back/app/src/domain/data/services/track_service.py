@@ -191,17 +191,34 @@ class TrackService(BaseDomainService):
 
         # Verify all tracks belong to the playlist
         existing_tracks = await self._track_repo.get_by_playlist(playlist_id)
-        existing_track_ids = {t.id if hasattr(t, 'id') else t['id'] for t in existing_tracks}
+
+        # Per OpenAPI contract v3.3.2: track_ids are filenames (Track schema has no 'id' field)
+        existing_filenames = {
+            t.filename if hasattr(t, 'filename') else t.get('filename')
+            for t in existing_tracks
+        }
 
         for track_id in track_ids:
-            if track_id not in existing_track_ids:
+            if track_id not in existing_filenames:
                 raise ValueError(f"Track {track_id} does not belong to playlist {playlist_id}")
 
-        # Create track order updates
-        track_orders = [
-            {'track_id': track_id, 'track_number': idx + 1}
-            for idx, track_id in enumerate(track_ids)
-        ]
+        # Map filenames to internal UUIDs for repository operations
+        filename_to_uuid = {}
+        for t in existing_tracks:
+            t_uuid = t.id if hasattr(t, 'id') else t.get('id')
+            t_filename = t.filename if hasattr(t, 'filename') else t.get('filename')
+            filename_to_uuid[t_filename] = t_uuid
+
+        logger.debug(f"Filename to UUID mapping has {len(filename_to_uuid)} entries")
+        logger.debug(f"Track IDs received (filenames): {track_ids[:3] if len(track_ids) > 3 else track_ids}")
+
+        # Create track order updates using internal UUIDs
+        track_orders = []
+        for idx, filename in enumerate(track_ids):
+            internal_uuid = filename_to_uuid[filename]
+            new_position = idx + 1
+            track_orders.append({'track_id': internal_uuid, 'track_number': new_position})
+            logger.debug(f"Position {new_position}: {filename} → UUID {internal_uuid}")
 
         success = await self._track_repo.reorder(playlist_id, track_orders)
         if success:

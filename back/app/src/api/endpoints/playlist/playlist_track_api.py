@@ -55,23 +55,24 @@ class PlaylistTrackAPI(BaseAPIRoutes):
         async def reorder_tracks(playlist_id: str, body: dict = Body(...)):
             """Reorder tracks in a playlist."""
             try:
-                track_order = body.get("track_order")
+                # Accept both 'track_ids' (OpenAPI contract) and 'track_order' (legacy)
+                track_ids = body.get("track_ids") or body.get("track_order")
                 client_op_id = body.get("client_op_id")
 
-                # Validate track_order
-                if not track_order or not isinstance(track_order, list):
+                # Validate track_ids
+                if not track_ids or not isinstance(track_ids, list):
                     return UnifiedResponseService.bad_request(
-                        message="track_order must be a non-empty list",
+                        message="track_ids must be a non-empty list",
                         client_op_id=client_op_id
                     )
 
                 # Use application service
-                result = await self._playlist_service.reorder_tracks_use_case(playlist_id, track_order)
+                result = await self._playlist_service.reorder_tracks_use_case(playlist_id, track_ids)
 
                 if result.get("status") == "success":
                     # Broadcast state change
                     await self._broadcasting_service.broadcast_tracks_reordered(
-                        playlist_id, track_order
+                        playlist_id, track_ids
                     )
 
                     return UnifiedResponseService.success(
@@ -90,7 +91,7 @@ class PlaylistTrackAPI(BaseAPIRoutes):
                     message="Failed to reorder tracks",
                     client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
                     playlist_id=playlist_id,
-                    track_count=len(track_order) if isinstance(track_order, list) else None
+                    track_count=len(track_ids) if isinstance(track_ids, list) else None
                 )
 
         @router.delete("/{playlist_id}/tracks")

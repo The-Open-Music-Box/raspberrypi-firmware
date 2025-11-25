@@ -169,11 +169,12 @@ class TestTrackService:
     async def test_reorder_tracks_success(self, service, mock_track_repo, mock_playlist_repo):
         """Test reordering tracks successfully."""
         playlist_id = 'playlist-1'
-        track_ids = ['track-2', 'track-1', 'track-3']
+        # Per OpenAPI contract v3.3.2: track_ids are filenames
+        track_ids = ['file2.mp3', 'file1.mp3', 'file3.mp3']
         existing_tracks = [
-            {'id': 'track-1', 'track_number': 1},
-            {'id': 'track-2', 'track_number': 2},
-            {'id': 'track-3', 'track_number': 3}
+            {'id': 'track-1', 'track_number': 1, 'filename': 'file1.mp3'},
+            {'id': 'track-2', 'track_number': 2, 'filename': 'file2.mp3'},
+            {'id': 'track-3', 'track_number': 3, 'filename': 'file3.mp3'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -197,13 +198,14 @@ class TestTrackService:
     async def test_reorder_tracks_invalid_track(self, service, mock_track_repo, mock_playlist_repo):
         """Test reordering tracks with a track that doesn't belong to the playlist."""
         playlist_id = 'playlist-1'
-        track_ids = ['track-1', 'track-invalid']
-        existing_tracks = [{'id': 'track-1', 'track_number': 1}]
+        # Per OpenAPI contract v3.3.2: track_ids are filenames
+        track_ids = ['file1.mp3', 'invalid.mp3']
+        existing_tracks = [{'id': 'track-1', 'track_number': 1, 'filename': 'file1.mp3'}]
 
         mock_playlist_repo.exists.return_value = True
         mock_track_repo.get_by_playlist.return_value = existing_tracks
 
-        with pytest.raises(ValueError, match="Track track-invalid does not belong to playlist"):
+        with pytest.raises(ValueError, match="Track invalid.mp3 does not belong to playlist"):
             await service.reorder_tracks(playlist_id, track_ids)
 
     @pytest.mark.asyncio

@@ -142,18 +142,19 @@ class TestNfcIntegration:
         mock_track_repo.reorder.return_value = True
 
         # Test reorder_tracks with Track objects
-        result = await service.reorder_tracks('playlist-1', ['track-1', 'track-2'])
+        # Per OpenAPI contract v3.3.2: track_ids are filenames
+        result = await service.reorder_tracks('playlist-1', ['track1.mp3', 'track2.mp3'])
         assert result is True
 
         # Test with dictionary objects (for backward compatibility)
         dict_tracks = [
-            {'id': 'track-1', 'track_number': 1},
-            {'id': 'track-2', 'track_number': 2}
+            {'id': 'track-1', 'track_number': 1, 'filename': 'track1.mp3'},
+            {'id': 'track-2', 'track_number': 2, 'filename': 'track2.mp3'}
         ]
 
         mock_track_repo.get_by_playlist.return_value = dict_tracks
 
-        result = await service.reorder_tracks('playlist-1', ['track-1', 'track-2'])
+        result = await service.reorder_tracks('playlist-1', ['track1.mp3', 'track2.mp3'])
         assert result is True
 
     def test_toggle_pause_starts_playback_when_inactive(self):

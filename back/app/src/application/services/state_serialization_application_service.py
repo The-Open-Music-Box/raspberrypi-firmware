@@ -112,19 +112,21 @@ class StateSerializationApplicationService:
                 **track,
                 "server_seq": self.sequences.get_current_global_seq(),
             }
-        # Handle domain object
-        return {
-            "id": track.id,
-            "title": track.title,
-            "filename": track.filename,
-            "duration_ms": int((track.duration or 0) * 1000),
-            "artist": getattr(track, "artist", None),
-            "album": getattr(track, "album", None),
-            "track_number": getattr(track, "number", None),
-            "play_count": getattr(track, "play_count", 0),
-            "created_at": getattr(track, "created_at", None),
-            "server_seq": self.sequences.get_current_global_seq(),
-        }
+        else:
+            # Handle domain object
+            # OpenAPI contract uses 'number', not 'track_number'
+            return {
+                "id": track.id,
+                "title": track.title,
+                "filename": track.filename,
+                "duration_ms": int((track.duration or 0) * 1000),
+                "artist": getattr(track, "artist", None),
+                "album": getattr(track, "album", None),
+                "number": getattr(track, "number", None),  # Fixed: 'number' not 'track_number'
+                "play_count": getattr(track, "play_count", 0),
+                "created_at": getattr(track, "created_at", None),
+                "server_seq": self.sequences.get_current_global_seq(),
+            }
 
     @handle_service_errors("state_serialization_service")
     def serialize_playlists_collection(self, playlists: list) -> list[dict[str, Any]]:
