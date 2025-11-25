@@ -270,7 +270,7 @@ class TestVolumeHandling:
         # Give async task time to execute
         await asyncio.sleep(0.01)
 
-        coordinator.set_volume.assert_called_with(55)  # +5%
+        coordinator.set_volume.assert_called_with(60)  # +10% (default volume_step from config)
 
     @pytest.mark.asyncio
     async def test_handle_volume_down_with_coordinator(self):
@@ -289,7 +289,7 @@ class TestVolumeHandling:
 
         await asyncio.sleep(0.01)
 
-        coordinator.set_volume.assert_called_with(45)  # -5%
+        coordinator.set_volume.assert_called_with(40)  # -10% (default volume_step from config)
 
     @pytest.mark.asyncio
     async def test_volume_up_max_limit(self):
