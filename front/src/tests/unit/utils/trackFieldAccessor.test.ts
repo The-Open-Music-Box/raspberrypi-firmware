@@ -940,9 +940,14 @@ describe('trackFieldAccessor', () => {
   })
 
   describe('Edge Cases and Error Handling', () => {
-    it('should handle null and undefined tracks gracefully', () => {
+    it('should throw on null and undefined tracks (fail-loud strategy)', () => {
+      // Changed from graceful handling to failing loudly to prevent contract violations (issue #71)
       expect(() => getTrackNumber(null as any))
-        .not.toThrow()
+        .toThrow('Track is null or undefined')
+      expect(() => getTrackNumber(undefined as any))
+        .toThrow('Track is null or undefined')
+
+      // Duration functions still graceful for backward compatibility
       expect(() => getTrackDurationMs(undefined as any))
         .not.toThrow()
       expect(() => formatTrackDuration(null as any))
@@ -951,19 +956,22 @@ describe('trackFieldAccessor', () => {
         .not.toThrow()
     })
 
-    it('should handle malformed track objects', () => {
-      const malformedTracks = [
+    it('should throw on malformed track objects missing number field', () => {
+      // Changed behavior: fail loudly on missing 'number' field
+      const tracksWithoutNumber = [
         'not an object',
         123,
         [],
         { someOtherField: 'value' },
-        { number: 'not a number' },
-        { duration_ms: 'not a number' }
+        { number: 'not a number' }, // Invalid type
+        { duration_ms: 100 } // Missing number field
       ]
 
-      malformedTracks.forEach(track => {
+      tracksWithoutNumber.forEach(track => {
         expect(() => getTrackNumber(track as any))
-          .not.toThrow()
+          .toThrow() // Now throws instead of silently returning 0
+
+        // Duration and validation functions more lenient
         expect(() => getTrackDurationMs(track as any))
           .not.toThrow()
         expect(() => hasValidTrackNumber(track as any))
@@ -971,19 +979,18 @@ describe('trackFieldAccessor', () => {
       })
     })
 
-    it('should handle extreme values correctly', () => {
+    it('should handle extreme number values correctly', () => {
       const extremeTracks = [
-        { number: Number.MAX_SAFE_INTEGER },
-        { number: Number.MIN_SAFE_INTEGER },
-        { duration_ms: Number.MAX_SAFE_INTEGER },
-        { duration_ms: 0 },
-        { duration_ms: Infinity },
-        { duration_ms: -Infinity }
+        { number: Number.MAX_SAFE_INTEGER, duration_ms: 100 },
+        { number: 1, duration_ms: Number.MAX_SAFE_INTEGER },
+        { number: 1, duration_ms: 0 },
+        { number: 1, duration_ms: Infinity },
+        { number: 1, duration_ms: -Infinity }
       ]
 
       extremeTracks.forEach(track => {
         expect(() => getTrackNumber(track as any))
-          .not.toThrow()
+          .not.toThrow() // Valid number field, no error
         expect(() => getTrackDurationMs(track as any))
           .not.toThrow()
         expect(() => formatTrackDuration(track as any))

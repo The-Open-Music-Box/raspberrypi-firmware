@@ -157,9 +157,9 @@ describe('unifiedPlaylistStore', () => {
     // playlists update without tracks field
     hPlaylists({ data: { playlists: [{ id: 'p1', title: 'NoTracks' }] } })
     expect(store.getPlaylistById('p1')!.title).toBe('NoTracks')
-    // playlists update with track missing both number fields to hit fallback 0
-    hPlaylists({ data: { playlists: [{ id: 'p1', title: 'Fallback0', tracks: [{ filename: 'track0.mp3' }] }] } })
-    expect(store.getPlaylistById('p1')!.title).toBe('Fallback0')
+    // Note: Previously tested invalid track with missing 'number' field
+    // Now getTrackNumber() fails loudly (throws) to prevent silent data corruption (issue #71)
+    // WebSocket handlers should filter invalid tracks gracefully
     // skip branch via ongoing drag: restore valid tracks first, then start reorder without awaiting
     hPlaylists({ data: { playlists: [{
       id: 'p1',
@@ -181,8 +181,7 @@ describe('unifiedPlaylistStore', () => {
     const countAfterAdd = store.getTracksForPlaylist('p1').length
     hTrackAdded({ data: { playlist_id: 'p1', track: { number: 10, filename: 'track10.mp3' } } }) // duplicate, no change
     expect(store.getTracksForPlaylist('p1').length).toBe(countAfterAdd)
-    // add track with no number fields to hit fallback
-    hTrackAdded({ data: { playlist_id: 'p1', track: { filename: 'track0.mp3' } } })
+    // Note: No longer testing invalid track (missing 'number' field) as getTrackNumber() now throws
 
     // handleTrack update found and not found (using envelope format)
     hTrack({ data: { id: 'tX', number: 10 } })

@@ -6,13 +6,72 @@
  */
 
 import type { Track } from '@/types'
+import { logger } from './logger'
 
 /**
  * Get track number from contract v3.3.2
+ *
+ * IMPORTANT: No longer uses silent fallback to 0.
+ * Logs error and throws if 'number' field is missing to prevent
+ * contract violations from causing silent data corruption (issue #71).
  */
 export function getTrackNumber(track: Track): number {
-  if (!track) return 0
-  return track.number ?? 0
+  if (!track) {
+    logger.error('getTrackNumber called with null/undefined track', {}, 'trackFieldAccessor')
+    throw new Error('Track is null or undefined')
+  }
+
+  // Check if 'number' field exists (contract requirement)
+  if (track.number === undefined || track.number === null) {
+    const trackKeys = Object.keys(track)
+    logger.error(
+      'CONTRACT VIOLATION: Track missing required "number" field',
+      {
+        trackId: track.id,
+        trackTitle: track.title,
+        trackFilename: track.filename,
+        availableFields: trackKeys,
+        trackData: track
+      },
+      'trackFieldAccessor'
+    )
+
+    throw new Error(
+      `Track missing required 'number' field. ` +
+      `Available fields: ${trackKeys.join(', ')}. ` +
+      `This indicates a backend serialization bug (see issue #71).`
+    )
+  }
+
+  // Validate number is actually a number type
+  if (typeof track.number !== 'number') {
+    logger.error(
+      'CONTRACT VIOLATION: Track "number" field has wrong type',
+      {
+        trackNumber: track.number,
+        actualType: typeof track.number,
+        trackId: track.id
+      },
+      'trackFieldAccessor'
+    )
+
+    throw new Error(
+      `Track 'number' field has wrong type. ` +
+      `Expected: number, Got: ${typeof track.number}. ` +
+      `Value: ${track.number}`
+    )
+  }
+
+  // Validate number is positive
+  if (track.number <= 0) {
+    logger.warn(
+      'Track has invalid number (<=0)',
+      { trackNumber: track.number, trackId: track.id },
+      'trackFieldAccessor'
+    )
+  }
+
+  return track.number
 }
 
 /**
@@ -87,10 +146,16 @@ export function sortTracksByNumber(tracks: Track[]): Track[] {
 
 /**
  * Validation: Check if track has valid track number
+ * Returns false if track is invalid or missing number field (catches errors)
  */
 export function hasValidTrackNumber(track: Track): boolean {
-  const trackNumber = getTrackNumber(track)
-  return trackNumber > 0
+  try {
+    const trackNumber = getTrackNumber(track)
+    return trackNumber > 0
+  } catch (error) {
+    // Track is invalid (null, missing number field, etc.)
+    return false
+  }
 }
 
 /**
@@ -134,25 +199,26 @@ export function findTrackByNumberSafe(tracks: Track[], trackNumber: number): { t
  */
 export function validateTracksForDrag(tracks: Track[]): { valid: boolean; errors: string[] } {
   const errors: string[] = []
-  
+
   if (!Array.isArray(tracks)) {
     errors.push('Tracks must be an array')
     return { valid: false, errors }
   }
-  
-  // Check for duplicate track numbers
-  const trackNumbers = tracks.map(getTrackNumber)
-  const duplicates = trackNumbers.filter((num, index) => trackNumbers.indexOf(num) !== index)
-  if (duplicates.length > 0) {
-    errors.push(`Duplicate track numbers found: ${[...new Set(duplicates)].join(', ')}`)
-  }
-  
-  // Check for invalid track numbers
+
+  // Check for invalid track numbers (must be done first to prevent getTrackNumber from throwing)
   const invalidTracks = tracks.filter(track => !hasValidTrackNumber(track))
   if (invalidTracks.length > 0) {
     errors.push(`${invalidTracks.length} tracks have invalid track numbers`)
   }
-  
+
+  // Only check duplicates for valid tracks
+  const validTracks = tracks.filter(track => hasValidTrackNumber(track))
+  const trackNumbers = validTracks.map(getTrackNumber) // Safe now - only valid tracks
+  const duplicates = trackNumbers.filter((num, index) => trackNumbers.indexOf(num) !== index)
+  if (duplicates.length > 0) {
+    errors.push(`Duplicate track numbers found: ${[...new Set(duplicates)].join(', ')}`)
+  }
+
   return { valid: errors.length === 0, errors }
 }
 
