@@ -176,21 +176,21 @@ describe('unifiedPlaylistStore', () => {
     expect(store.getPlaylistById('p1')!.title).not.toBe('Skip')
     deferred.resolve({})
 
-    // handleTrackAdded new and duplicate paths
-    hTrackAdded({ playlist_id: 'p1', track: { number: 10, filename: 'track10.mp3' } })
+    // handleTrackAdded new and duplicate paths (using envelope format)
+    hTrackAdded({ data: { playlist_id: 'p1', track: { number: 10, filename: 'track10.mp3' } } })
     const countAfterAdd = store.getTracksForPlaylist('p1').length
-    hTrackAdded({ playlist_id: 'p1', track: { number: 10, filename: 'track10.mp3' } }) // duplicate, no change
+    hTrackAdded({ data: { playlist_id: 'p1', track: { number: 10, filename: 'track10.mp3' } } }) // duplicate, no change
     expect(store.getTracksForPlaylist('p1').length).toBe(countAfterAdd)
     // add track with no number fields to hit fallback
-    hTrackAdded({ playlist_id: 'p1', track: { filename: 'track0.mp3' } })
+    hTrackAdded({ data: { playlist_id: 'p1', track: { filename: 'track0.mp3' } } })
 
-    // handleTrack update found and not found
-    hTrack({ id: 'tX', number: 10 })
-    hTrack({ id: 'nope', number: 999 }) // no effect
+    // handleTrack update found and not found (using envelope format)
+    hTrack({ data: { id: 'tX', number: 10 } })
+    hTrack({ data: { id: 'nope', number: 999 } }) // no effect
 
-    // handleTrackDeleted present and absent playlist
-    hTrackDeleted({ playlist_id: 'p1', track_numbers: [10] })
-    hTrackDeleted({ playlist_id: 'absent', track_numbers: [1] })
+    // handleTrackDeleted present and absent playlist (using envelope format)
+    hTrackDeleted({ data: { playlist_id: 'p1', track_numbers: [10] } })
+    hTrackDeleted({ data: { playlist_id: 'absent', track_numbers: [1] } })
 
     // playlist created/updated/deleted with/without tracks
     hCreated({ data: { playlist: { id: 'p2', title: 'B' } } })

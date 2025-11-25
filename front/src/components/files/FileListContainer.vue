@@ -184,20 +184,30 @@ const handleDeleteTrack = async ({ playlistId, trackNumber }: { playlistId: stri
  */
 const handleDeleteConfirm = async () => {
   if (!localSelectedTrack.value || !selectedPlaylist.value) return
-  
+
+  const trackNumber = getTrackNumber(localSelectedTrack.value)
+  logger.info('🗑️  DELETE CONFIRM', {
+    playlistId: selectedPlaylist.value.id,
+    trackNumber,
+    trackTitle: localSelectedTrack.value.title
+  })
+
   try {
-    const trackNumber = getTrackNumber(localSelectedTrack.value)
     await deleteTrack(selectedPlaylist.value.id, trackNumber)
+    logger.info('✅ Delete track completed', {
+      playlistId: selectedPlaylist.value.id,
+      trackNumber
+    })
     closeDeleteDialog()
-    
+
     // Show success feedback
     emit('feedback', { type: 'success', message: t('file.trackDeleted') })
-    
+
   } catch (err) {
-    logger.error('Track deletion failed', { 
-      playlistId: selectedPlaylist.value.id, 
+    logger.error('❌ Track deletion failed', {
+      playlistId: selectedPlaylist.value.id,
       trackNumber: getTrackNumber(localSelectedTrack.value),
-      error: err 
+      error: err
     })
     emit('feedback', { type: 'error', message: t('file.errorDeleting') })
   }

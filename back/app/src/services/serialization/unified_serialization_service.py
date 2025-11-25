@@ -213,6 +213,7 @@ class UnifiedSerializationService:
             # API includes all metadata required by frontend
             result.update(
                 {
+                    "number": result["track_number"],  # Frontend compatibility - expects 'number' field
                     "file_path": track_data.get("file_path", ""),
                     "artist": track_data.get("artist"),
                     "album": track_data.get("album"),
