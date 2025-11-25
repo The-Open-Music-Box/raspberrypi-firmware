@@ -46,7 +46,8 @@ class SocketEventType(str, Enum):
     STATE_PLAYLIST_UPDATED = "state:playlist_updated"
     STATE_PLAYLIST_DELETED = "state:playlist_deleted"
     STATE_TRACK_ADDED = "state:track_added"
-    STATE_TRACK_DELETED = "state:track_deleted"
+    STATE_TRACK_DELETED = "state:track_deleted"  # Legacy singular form for compatibility
+    STATE_TRACKS_DELETED = "state:tracks_deleted"  # Current plural form (v3.3.1+)
 
     # Operation acknowledgments
     ACK_OPERATION = "ack:op"
@@ -344,7 +345,8 @@ EVENT_ROOM_MAPPING = {
     SocketEventType.STATE_PLAYLIST_UPDATED: "playlists",
     SocketEventType.STATE_PLAYLIST_DELETED: "playlists",
     SocketEventType.STATE_TRACK_ADDED: "playlist:{playlist_id}",
-    SocketEventType.STATE_TRACK_DELETED: "playlist:{playlist_id}",
+    SocketEventType.STATE_TRACK_DELETED: "playlist:{playlist_id}",  # Legacy singular form
+    SocketEventType.STATE_TRACKS_DELETED: "playlist:{playlist_id}",  # Current plural form
     SocketEventType.NFC_STATUS: "nfc",
     SocketEventType.NFC_ASSOCIATION_STATE: "nfc",
     SocketEventType.UPLOAD_PROGRESS: "playlist:{playlist_id}",

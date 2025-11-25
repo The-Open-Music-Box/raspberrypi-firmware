@@ -528,9 +528,9 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
     
     // Listen for track updates
     socketService.on('state:track', handleTrackUpdate)
-    
-    // Listen for track deletions
-    socketService.on('state:track_deleted', handleTrackDeleted)
+
+    // Listen for track deletions (plural event name per contract v3.3.1)
+    socketService.on('state:tracks_deleted', handleTrackDeleted)
     
     // Note: Track reordering is handled via 'state:playlists' updates
     
@@ -772,7 +772,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
     socketService.off('state:playlists', handlePlaylistsStateUpdate)
     socketService.off('state:track_added', handleTrackAdded)
     socketService.off('state:track', handleTrackUpdate)
-    socketService.off('state:track_deleted', handleTrackDeleted)
+    socketService.off('state:tracks_deleted', handleTrackDeleted)
     // state:tracks_reordered listener removed (handled via state:playlists)
     socketService.off('state:playlist_created', handlePlaylistCreated)
     socketService.off('state:playlist_updated', handlePlaylistUpdated)
