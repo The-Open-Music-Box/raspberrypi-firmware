@@ -570,6 +570,9 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
 
     // Listen for track deletions (plural event name per contract v3.3.1)
     socketService.on('state:tracks_deleted', handleTrackDeleted)
+
+    // Also listen for singular event for backward compatibility
+    socketService.on('state:track_deleted', handleTrackDeleted)
     
     // Note: Track reordering is handled via 'state:playlists' updates
     
