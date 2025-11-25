@@ -23,8 +23,9 @@ describe('trackFieldAccessor', () => {
   it('accessors and fallbacks work', () => {
     expect(getTrackNumber(t({ number: 7 }))).toBe(7)
     expect(getTrackNumber(t({ number: 3 }))).toBe(3)
-    expect(getTrackNumber({} as any)).toBe(0)
-    expect(getTrackNumber(null as any)).toBe(0)
+    // Fail-loud validation: invalid tracks now throw instead of returning 0
+    expect(() => getTrackNumber({} as any)).toThrow()
+    expect(() => getTrackNumber(null as any)).toThrow()
 
     expect(getTrackDurationMs(t({ duration_ms: 5000 }))).toBe(5000)
     expect(getTrackDurationMs(t({ duration_ms: undefined, duration: 5 }))).toBe(5000)

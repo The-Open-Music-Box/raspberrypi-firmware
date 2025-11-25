@@ -72,22 +72,22 @@ describe('trackFieldAccessor', () => {
         .toBe(7)
     })
 
-    it('should return 0 when number field is undefined', () => {
+    it('should throw when number field is undefined (fail-loud)', () => {
       const track: MockTrack = {
         title: 'Test Track'
       }
 
-      expect(getTrackNumber(track as any))
-        .toBe(0)
+      expect(() => getTrackNumber(track as any))
+        .toThrow('Track missing required \'number\' field')
     })
 
-    it('should handle null values correctly', () => {
+    it('should throw on null number values (fail-loud)', () => {
       const track: MockTrack = {
         number: null as any
       }
 
-      expect(getTrackNumber(track as any))
-        .toBe(0)
+      expect(() => getTrackNumber(track as any))
+        .toThrow('Track missing required \'number\' field')
     })
 
     it('should handle zero values correctly', () => {
@@ -99,13 +99,13 @@ describe('trackFieldAccessor', () => {
         .toBe(0)
     })
 
-    it('should handle invalid track objects', () => {
-      expect(getTrackNumber(null as any))
-        .toBe(0)
-      expect(getTrackNumber(undefined as any))
-        .toBe(0)
-      expect(getTrackNumber({} as any))
-        .toBe(0)
+    it('should throw on invalid track objects (fail-loud)', () => {
+      expect(() => getTrackNumber(null as any))
+        .toThrow('Track is null or undefined')
+      expect(() => getTrackNumber(undefined as any))
+        .toThrow('Track is null or undefined')
+      expect(() => getTrackNumber({} as any))
+        .toThrow('Track missing required \'number\' field')
     })
   })
 
@@ -402,15 +402,14 @@ describe('trackFieldAccessor', () => {
         .toBeUndefined()
     })
 
-    it('should handle tracks with no track numbers', () => {
+    it('should throw on tracks with missing number field (fail-loud)', () => {
       const tracksWithoutNumbers = [
         { id: '1', title: 'Track without number' }
       ]
 
-      const found = findTrackByNumber(tracksWithoutNumbers as any, 1)
-
-      expect(found)
-        .toBeUndefined()
+      // Fail-loud: invalid tracks cause immediate errors
+      expect(() => findTrackByNumber(tracksWithoutNumbers as any, 1))
+        .toThrow('Track missing required \'number\' field')
     })
   })
 
@@ -460,17 +459,16 @@ describe('trackFieldAccessor', () => {
         .not.toBe(originalTracks)
     })
 
-    it('should handle tracks with no track numbers (default to 0)', () => {
+    it('should throw on tracks with missing number field (fail-loud)', () => {
       const tracks: MockTrack[] = [
         { id: '1', number: 2 },
         { id: '2', title: 'No number' },
         { id: '3', number: 1 }
       ]
 
-      const sorted = sortTracksByNumber(tracks as any)
-
-      expect(sorted.map(t => getTrackNumber(t as any)))
-        .toEqual([0, 1, 2])
+      // Fail-loud: invalid tracks cause immediate errors during sort
+      expect(() => sortTracksByNumber(tracks as any))
+        .toThrow('Track missing required \'number\' field')
     })
 
     it('should handle empty array', () => {

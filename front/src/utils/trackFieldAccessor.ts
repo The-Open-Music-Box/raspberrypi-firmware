@@ -27,7 +27,7 @@ export function getTrackNumber(track: Track): number {
     logger.error(
       'CONTRACT VIOLATION: Track missing required "number" field',
       {
-        trackId: track.id,
+        trackId: (track as any).id,
         trackTitle: track.title,
         trackFilename: track.filename,
         availableFields: trackKeys,
@@ -50,7 +50,7 @@ export function getTrackNumber(track: Track): number {
       {
         trackNumber: track.number,
         actualType: typeof track.number,
-        trackId: track.id
+        trackId: (track as any).id
       },
       'trackFieldAccessor'
     )
@@ -66,7 +66,7 @@ export function getTrackNumber(track: Track): number {
   if (track.number <= 0) {
     logger.warn(
       'Track has invalid number (<=0)',
-      { trackNumber: track.number, trackId: track.id },
+      { trackNumber: track.number, trackId: (track as any).id },
       'trackFieldAccessor'
     )
   }
