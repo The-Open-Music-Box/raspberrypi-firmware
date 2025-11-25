@@ -299,10 +299,15 @@ class PhysicalControlsManager:
         if hasattr(self.audio_controller, "get_volume") and hasattr(self.audio_controller, "set_volume"):
             # PlaybackCoordinator style - get current volume and adjust
             current_volume = self.audio_controller.get_volume()
+
+            # Get volume_step from config
+            from app.src.config import config
+            volume_step = config.audio.volume_step
+
             if direction == "up":
-                new_volume = min(100, current_volume + 5)  # Increase by 5%
+                new_volume = min(100, current_volume + volume_step)
             else:
-                new_volume = max(0, current_volume - 5)  # Decrease by 5%
+                new_volume = max(0, current_volume - volume_step)
 
             # set_volume is async, need to schedule it in the main event loop
             # GPIO callbacks run in a different thread, so we need run_coroutine_threadsafe

@@ -317,16 +317,22 @@ class GPIOPhysicalControls(BaseControlsImplementation):
                 pass
 
             # Try to initialize the rotary encoder
+            # NOTE: Using wrap=True and max_steps=0 allows tracking individual detent positions
+            # The encoder generates 4 pulses per full rotation but has 16 detents
+            # By monitoring the 'steps' property, we detect each detent click
             self._devices['volume_encoder'] = RotaryEncoder(
                 self.config.gpio_volume_encoder_clk,
                 self.config.gpio_volume_encoder_dt,
-                bounce_time=0.01,  # Small bounce time for encoder
-                max_steps=0  # No step limit
+                bounce_time=0.001,  # 1ms bounce time for maximum responsiveness
+                max_steps=0,  # No step limit - unlimited rotation
+                wrap=False  # Don't wrap around
             )
 
-            # Set encoder event handlers
-            self._devices['volume_encoder'].when_rotated_clockwise = self._on_volume_up
-            self._devices['volume_encoder'].when_rotated_counter_clockwise = self._on_volume_down
+            # Store previous step value to detect any change (not just full pulses)
+            self._encoder_last_value = 0
+
+            # Set encoder event handlers using when_rotated for any rotation
+            self._devices['volume_encoder'].when_rotated = self._on_encoder_rotated
 
             logger.info(
                 f"✅ Volume encoder initialized on GPIO {self.config.gpio_volume_encoder_clk}/"
@@ -377,17 +383,33 @@ class GPIOPhysicalControls(BaseControlsImplementation):
         logger.info(f"🎮 [GPIO] Triggering ENCODER_SWITCH event for play/pause")
         self._trigger_event(PhysicalControlEvent.ENCODER_SWITCH)
 
-    def _on_volume_up(self) -> None:
-        """Handle volume encoder rotation clockwise (volume up)."""
-        logger.info("🔊 [GPIO] Volume encoder: UP - HARDWARE EVENT DETECTED")
-        self._emit_encoder_event("up", self.config.gpio_volume_encoder_clk)
-        self._trigger_event(PhysicalControlEvent.ENCODER_VOLUME_UP)
+    def _on_encoder_rotated(self) -> None:
+        """Handle any encoder rotation by checking step changes.
 
-    def _on_volume_down(self) -> None:
-        """Handle volume encoder rotation counter-clockwise (volume down)."""
-        logger.info("🔉 [GPIO] Volume encoder: DOWN - HARDWARE EVENT DETECTED")
-        self._emit_encoder_event("down", self.config.gpio_volume_encoder_dt)
-        self._trigger_event(PhysicalControlEvent.ENCODER_VOLUME_DOWN)
+        This detects every detent click, not just full pulses.
+        The encoder has 16 detents but only 4 pulses per rotation,
+        so we need to detect fractional step changes.
+        """
+        encoder = self._devices.get('volume_encoder')
+        if not encoder:
+            return
+
+        current_value = encoder.steps
+
+        # Detect direction based on value change
+        if current_value > self._encoder_last_value:
+            # Clockwise rotation (volume up)
+            logger.info(f"🔊 [GPIO] Volume encoder: UP - step {self._encoder_last_value} → {current_value}")
+            self._emit_encoder_event("up", self.config.gpio_volume_encoder_clk)
+            self._trigger_event(PhysicalControlEvent.ENCODER_VOLUME_UP)
+        elif current_value < self._encoder_last_value:
+            # Counter-clockwise rotation (volume down)
+            logger.info(f"🔉 [GPIO] Volume encoder: DOWN - step {self._encoder_last_value} → {current_value}")
+            self._emit_encoder_event("down", self.config.gpio_volume_encoder_dt)
+            self._trigger_event(PhysicalControlEvent.ENCODER_VOLUME_DOWN)
+
+        # Update last value
+        self._encoder_last_value = current_value
 
     def _emit_button_event(self, button_type: str, pin: int) -> None:
         """Emit a button pressed event."""

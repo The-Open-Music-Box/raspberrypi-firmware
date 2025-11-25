@@ -20,7 +20,7 @@ class AudioConfig:
 
     # Volume settings
     default_volume: int = 100  # Default system volume (0-100)
-    volume_step: int = 5  # Volume change step for encoder/buttons
+    volume_step: int = 10  # Volume change step for encoder/buttons (increased for better encoder responsiveness)
     min_volume: int = 0  # Minimum allowed volume
     max_volume: int = 100  # Maximum allowed volume
 
