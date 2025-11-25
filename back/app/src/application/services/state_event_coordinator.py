@@ -296,6 +296,7 @@ class StateEventCoordinator:
             "state:playlist_deleted": SocketEventType.STATE_PLAYLIST_DELETED,
             "state:track_added": SocketEventType.STATE_TRACK_ADDED,
             "state:track_deleted": SocketEventType.STATE_TRACK_DELETED,
+            "state:tracks_deleted": SocketEventType.STATE_TRACKS_DELETED,
         }
 
         socket_event_type = conversion_map.get(state_event_type.value)
