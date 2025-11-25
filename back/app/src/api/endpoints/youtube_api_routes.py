@@ -9,13 +9,13 @@ Clean API routes following Domain-Driven Design principles.
 Single Responsibility: HTTP route handling for YouTube integration.
 """
 
-from fastapi import APIRouter, Request, Query
-from pydantic import BaseModel, Field
 import logging
+
+from fastapi import APIRouter, Query, Request
+from pydantic import BaseModel, Field
 
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
-from app.src.services.serialization.unified_serialization_service import UnifiedSerializationService
 
 logger = logging.getLogger(__name__)
 
@@ -115,9 +115,9 @@ class YouTubeAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Download failed: {str(e)}")
+                logger.error(f"Download failed: {e!s}")
                 return UnifiedResponseService.internal_error(
-                    message=f"Download failed: {str(e)}",
+                    message=f"Download failed: {e!s}",
                     operation="download_youtube"
                 )
 
@@ -174,9 +174,9 @@ class YouTubeAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Search failed: {str(e)}")
+                logger.error(f"Search failed: {e!s}")
                 return UnifiedResponseService.internal_error(
-                    message=f"Search failed: {str(e)}",
+                    message=f"Search failed: {e!s}",
                     operation="search_youtube"
                 )
 
@@ -220,7 +220,7 @@ class YouTubeAPIRoutes:
                 )
 
             except Exception as e:
-                logger.error(f"Status check failed: {str(e)}", exc_info=True)
+                logger.error(f"Status check failed: {e!s}", exc_info=True)
                 return UnifiedResponseService.internal_error(
                     message=str(e),
                     operation="get_youtube_status"

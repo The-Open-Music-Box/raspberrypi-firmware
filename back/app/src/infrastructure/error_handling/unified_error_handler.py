@@ -4,16 +4,19 @@
 
 """Unified error handler that replaces all legacy error handlers."""
 
-import sys
-import traceback
-import time
-from typing import Dict, Any, Optional, Callable, List
-from enum import Enum
-from dataclasses import dataclass
-
-from app.src.monitoring import get_logger
 import logging
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
+import sys
+import time
+import traceback
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
+
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -48,7 +51,7 @@ class ErrorContext:
     operation: str
     category: ErrorCategory = ErrorCategory.GENERAL
     severity: ErrorSeverity = ErrorSeverity.MEDIUM
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -63,9 +66,9 @@ class ErrorRecord:
     error_type: str
     message: str
     context: ErrorContext
-    traceback_str: Optional[str] = None
+    traceback_str: str | None = None
     resolved: bool = False
-    resolution_time: Optional[float] = None
+    resolution_time: float | None = None
 
 
 class UnifiedErrorHandler:
@@ -73,10 +76,10 @@ class UnifiedErrorHandler:
 
     def __init__(self):
         """Initialize the unified error handler."""
-        self._error_records: List[ErrorRecord] = []
-        self._error_callbacks: Dict[ErrorCategory, List[Callable]] = {}
-        self._error_count_by_category: Dict[ErrorCategory, int] = {}
-        self._error_count_by_severity: Dict[ErrorSeverity, int] = {}
+        self._error_records: list[ErrorRecord] = []
+        self._error_callbacks: dict[ErrorCategory, list[Callable]] = {}
+        self._error_count_by_category: dict[ErrorCategory, int] = {}
+        self._error_count_by_severity: dict[ErrorSeverity, int] = {}
         self._max_records = 1000  # Keep last 1000 errors
 
         # Initialize counters
@@ -125,7 +128,7 @@ class UnifiedErrorHandler:
             # Last resort: print to stderr to avoid infinite recursion
             # Cannot use logger here since the logging system may have failed
             # This ensures critical errors are visible even when error handling crashes
-            import sys
+            # Note: sys is imported at module level, no need to re-import
             print(f"CRITICAL: Error handler itself failed: {handler_error}", file=sys.stderr)
             print(f"Original error was: {error}", file=sys.stderr)
 
@@ -259,7 +262,7 @@ class UnifiedErrorHandler:
 
         return False
 
-    def get_error_statistics(self) -> Dict[str, Any]:
+    def get_error_statistics(self) -> dict[str, Any]:
         """Get comprehensive error statistics."""
         recent_errors = [
             r for r in self._error_records if time.time() - r.timestamp < 3600
@@ -276,7 +279,7 @@ class UnifiedErrorHandler:
             "most_common_errors": self._get_most_common_errors(10),
         }
 
-    def get_recent_errors(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_recent_errors(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get recent error records.
 
         Args:
@@ -324,7 +327,7 @@ class UnifiedErrorHandler:
 
         return cleared_count
 
-    def handle_internal_error(self, error: Exception, operation: str) -> Dict[str, Any]:
+    def handle_internal_error(self, error: Exception, operation: str) -> dict[str, Any]:
         """Handle internal server errors and return appropriate response data."""
         # Simple error response without dependencies
         error_response = {
@@ -346,7 +349,7 @@ class UnifiedErrorHandler:
 
         return {"content": error_response, "status_code": 500}
 
-    def handle_http_error(self, error: Exception, message: str) -> Dict[str, Any]:
+    def handle_http_error(self, error: Exception, message: str) -> dict[str, Any]:
         """Handle HTTP errors and return appropriate response data."""
         # Determine error type and status code
         if hasattr(error, 'status_code') and hasattr(error, 'detail'):
@@ -439,7 +442,7 @@ class UnifiedErrorHandler:
         }
         return mapping.get(severity, logging.WARNING)
 
-    def _calculate_average_resolution_time(self) -> Optional[float]:
+    def _calculate_average_resolution_time(self) -> float | None:
         """Calculate average resolution time for resolved errors."""
         resolved_records = [r for r in self._error_records if r.resolved and r.resolution_time is not None]
 
@@ -453,9 +456,9 @@ class UnifiedErrorHandler:
         )
         return total_time / len(resolved_records)
 
-    def _get_most_common_errors(self, limit: int) -> List[Dict[str, Any]]:
+    def _get_most_common_errors(self, limit: int) -> list[dict[str, Any]]:
         """Get most common error types."""
-        error_counts: Dict[str, int] = {}
+        error_counts: dict[str, int] = {}
 
         for record in self._error_records:
             key = f"{record.error_type}:{record.context.component}"

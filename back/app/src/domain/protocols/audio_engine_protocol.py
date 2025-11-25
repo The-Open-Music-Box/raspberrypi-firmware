@@ -4,8 +4,8 @@
 
 """Audio engine protocol for coordinating audio operations."""
 
-from typing import Protocol, Optional, Dict, Any
 from abc import abstractmethod
+from typing import Any, Protocol
 
 
 class AudioEngineProtocol(Protocol):
@@ -16,7 +16,7 @@ class AudioEngineProtocol(Protocol):
     """
 
     @abstractmethod
-    async def play_track_by_path(self, file_path: str, track_id: Optional[str] = None) -> bool:
+    async def play_track_by_path(self, file_path: str, track_id: str | None = None) -> bool:
         """Play a track by file path.
 
         Args:
@@ -68,7 +68,7 @@ class AudioEngineProtocol(Protocol):
         ...
 
     @abstractmethod
-    def get_playback_state(self) -> Dict[str, Any]:
+    def get_playback_state(self) -> dict[str, Any]:
         """Get current playback state.
 
         Returns:

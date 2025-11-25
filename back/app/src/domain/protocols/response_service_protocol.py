@@ -8,7 +8,7 @@ Defines the interface for response formatting services.
 Framework-agnostic protocol - implementations can use any HTTP framework.
 """
 
-from typing import Protocol, Dict, Any, Optional, List
+from typing import Any, Protocol
 
 
 class ResponseServiceProtocol(Protocol):
@@ -22,11 +22,11 @@ class ResponseServiceProtocol(Protocol):
     @staticmethod
     def success(
         message: str,
-        data: Optional[Any] = None,
+        data: Any | None = None,
         status_code: int = 200,
-        server_seq: Optional[int] = None,
-        client_op_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        server_seq: int | None = None,
+        client_op_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Any:
         """Create a standardized success response.
 
@@ -48,8 +48,8 @@ class ResponseServiceProtocol(Protocol):
         message: str,
         error_type: str = "error",
         status_code: int = 500,
-        details: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
         trace: bool = False,
     ) -> Any:
         """Create a standardized error response.
@@ -69,9 +69,9 @@ class ResponseServiceProtocol(Protocol):
 
     @staticmethod
     def validation_error(
-        errors: List[Dict[str, Any]],
+        errors: list[dict[str, Any]],
         message: str = "Validation failed",
-        client_op_id: Optional[str] = None,
+        client_op_id: str | None = None,
     ) -> Any:
         """Create a validation error response.
 
@@ -88,8 +88,8 @@ class ResponseServiceProtocol(Protocol):
     @staticmethod
     def not_found(
         resource: str,
-        resource_id: Optional[str] = None,
-        client_op_id: Optional[str] = None,
+        resource_id: str | None = None,
+        client_op_id: str | None = None,
     ) -> Any:
         """Create a not found error response.
 
@@ -106,8 +106,8 @@ class ResponseServiceProtocol(Protocol):
     @staticmethod
     def internal_error(
         message: str = "Internal server error",
-        operation: Optional[str] = None,
-        client_op_id: Optional[str] = None,
+        operation: str | None = None,
+        client_op_id: str | None = None,
         trace: bool = False,
     ) -> Any:
         """Create an internal error response.
@@ -126,8 +126,8 @@ class ResponseServiceProtocol(Protocol):
     @staticmethod
     def bad_request(
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        client_op_id: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        client_op_id: str | None = None,
     ) -> Any:
         """Create a bad request error response.
 

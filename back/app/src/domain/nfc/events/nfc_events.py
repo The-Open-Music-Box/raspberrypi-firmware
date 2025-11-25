@@ -5,8 +5,8 @@
 """NFC Domain Events."""
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
 from ..value_objects.tag_identifier import TagIdentifier
 
@@ -22,7 +22,7 @@ class NfcDomainEvent:
     def __post_init__(self):
         """Ensure occurred_at is timezone-aware."""
         if self.occurred_at.tzinfo is None:
-            object.__setattr__(self, 'occurred_at', self.occurred_at.replace(tzinfo=timezone.utc))
+            object.__setattr__(self, 'occurred_at', self.occurred_at.replace(tzinfo=UTC))
 
 
 @dataclass(frozen=True)
@@ -31,8 +31,8 @@ class TagDetectedEvent(NfcDomainEvent):
 
     tag_identifier: TagIdentifier
     detection_count: int
-    previously_associated_playlist_id: Optional[str] = None
-    hardware_metadata: Optional[Dict[str, Any]] = None
+    previously_associated_playlist_id: str | None = None
+    hardware_metadata: dict[str, Any] | None = None
 
     @classmethod
     def create(
@@ -40,13 +40,13 @@ class TagDetectedEvent(NfcDomainEvent):
         event_id: str,
         tag_identifier: TagIdentifier,
         detection_count: int = 1,
-        previously_associated_playlist_id: Optional[str] = None,
-        hardware_metadata: Optional[Dict[str, Any]] = None
+        previously_associated_playlist_id: str | None = None,
+        hardware_metadata: dict[str, Any] | None = None
     ) -> "TagDetectedEvent":
         """Create a new tag detected event."""
         return cls(
             event_id=event_id,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             event_type="tag_detected",
             tag_identifier=tag_identifier,
             detection_count=detection_count,
@@ -62,7 +62,7 @@ class TagAssociatedEvent(NfcDomainEvent):
     tag_identifier: TagIdentifier
     playlist_id: str
     session_id: str
-    previous_playlist_id: Optional[str] = None
+    previous_playlist_id: str | None = None
 
     @classmethod
     def create(
@@ -71,12 +71,12 @@ class TagAssociatedEvent(NfcDomainEvent):
         tag_identifier: TagIdentifier,
         playlist_id: str,
         session_id: str,
-        previous_playlist_id: Optional[str] = None
+        previous_playlist_id: str | None = None
     ) -> "TagAssociatedEvent":
         """Create a new tag associated event."""
         return cls(
             event_id=event_id,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             event_type="tag_associated",
             tag_identifier=tag_identifier,
             playlist_id=playlist_id,
@@ -104,7 +104,7 @@ class TagDissociatedEvent(NfcDomainEvent):
         """Create a new tag dissociated event."""
         return cls(
             event_id=event_id,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             event_type="tag_dissociated",
             tag_identifier=tag_identifier,
             previous_playlist_id=previous_playlist_id,
@@ -116,20 +116,20 @@ class TagDissociatedEvent(NfcDomainEvent):
 class TagRemovedEvent(NfcDomainEvent):
     """Event fired when an NFC tag is removed from the reader."""
 
-    tag_identifier: Optional[TagIdentifier]
-    detection_duration_seconds: Optional[float] = None
+    tag_identifier: TagIdentifier | None
+    detection_duration_seconds: float | None = None
 
     @classmethod
     def create(
         cls,
         event_id: str,
-        tag_identifier: Optional[TagIdentifier] = None,
-        detection_duration_seconds: Optional[float] = None
+        tag_identifier: TagIdentifier | None = None,
+        detection_duration_seconds: float | None = None
     ) -> "TagRemovedEvent":
         """Create a new tag removed event."""
         return cls(
             event_id=event_id,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             event_type="tag_removed",
             tag_identifier=tag_identifier,
             detection_duration_seconds=detection_duration_seconds
@@ -155,7 +155,7 @@ class AssociationSessionStartedEvent(NfcDomainEvent):
         """Create a new association session started event."""
         return cls(
             event_id=event_id,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             event_type="association_session_started",
             session_id=session_id,
             playlist_id=playlist_id,
@@ -184,7 +184,7 @@ class AssociationSessionCompletedEvent(NfcDomainEvent):
         """Create a new association session completed event."""
         return cls(
             event_id=event_id,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             event_type="association_session_completed",
             session_id=session_id,
             playlist_id=playlist_id,
@@ -214,7 +214,7 @@ class AssociationSessionExpiredEvent(NfcDomainEvent):
         """Create a new association session expired event."""
         return cls(
             event_id=event_id,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             event_type="association_session_expired",
             session_id=session_id,
             playlist_id=playlist_id,

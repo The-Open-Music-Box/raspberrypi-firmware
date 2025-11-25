@@ -10,23 +10,25 @@ This is the Invoker in the Command Pattern.
 """
 
 import asyncio
-from typing import Dict, List, Optional, Any
 import logging
+from typing import Any
 
+from app.src.config.button_actions_config import ButtonActionConfig
 from app.src.domain.actions.button_actions import (
     ButtonAction,
-    PlayAction,
-    PauseAction,
-    PlayPauseAction,
     NextTrackAction,
+    PauseAction,
+    PlayAction,
+    PlayPauseAction,
     PreviousTrackAction,
-    VolumeUpAction,
-    VolumeDownAction,
-    StopAction,
     PrintDebugAction,
+    StopAction,
+    VolumeDownAction,
+    VolumeUpAction,
 )
-from app.src.domain.protocols.playback_coordinator_protocol import PlaybackCoordinatorProtocol
-from app.src.config.button_actions_config import ButtonActionConfig
+from app.src.domain.protocols.playback_coordinator_protocol import (
+    PlaybackCoordinatorProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ class ButtonActionDispatcher:
     3. Executes actions when buttons are pressed
     """
 
-    def __init__(self, configs: List[ButtonActionConfig], coordinator: PlaybackCoordinatorProtocol, main_loop=None):
+    def __init__(self, configs: list[ButtonActionConfig], coordinator: PlaybackCoordinatorProtocol, main_loop=None):
         """
         Initialize the button action dispatcher.
 
@@ -65,7 +67,7 @@ class ButtonActionDispatcher:
             f"button mappings from {len(self._action_registry)} available actions"
         )
 
-    def _build_action_registry(self) -> Dict[str, ButtonAction]:
+    def _build_action_registry(self) -> dict[str, ButtonAction]:
         """
         Build registry of all available actions.
 
@@ -88,7 +90,7 @@ class ButtonActionDispatcher:
         logger.debug(f"Action registry built with {len(registry)} actions: {list(registry.keys())}")
         return registry
 
-    def _map_buttons_to_actions(self, configs: List[ButtonActionConfig]) -> Dict[int, ButtonAction]:
+    def _map_buttons_to_actions(self, configs: list[ButtonActionConfig]) -> dict[int, ButtonAction]:
         """
         Map button IDs to their configured actions.
 
@@ -184,7 +186,7 @@ class ButtonActionDispatcher:
             logger.error(f"❌ [SYNC_DISPATCH] Error in sync dispatch for button {button_id}: {e}", exc_info=True)
             return False
 
-    def get_button_action(self, button_id: int) -> Optional[ButtonAction]:
+    def get_button_action(self, button_id: int) -> ButtonAction | None:
         """
         Get the action configured for a specific button.
 
@@ -196,7 +198,7 @@ class ButtonActionDispatcher:
         """
         return self._button_to_action.get(button_id)
 
-    def get_configured_buttons(self) -> List[int]:
+    def get_configured_buttons(self) -> list[int]:
         """
         Get list of configured button IDs.
 
@@ -205,7 +207,7 @@ class ButtonActionDispatcher:
         """
         return list(self._button_to_action.keys())
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Get dispatcher status information.
 

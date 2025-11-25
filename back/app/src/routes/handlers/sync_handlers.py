@@ -13,7 +13,7 @@ This module handles state synchronization and connection health:
 """
 
 import time
-from typing import Dict, Any, Optional
+from typing import Any
 
 import socketio
 
@@ -65,7 +65,7 @@ class SyncHandlers:
 
         @self.sio.on("sync:request")
         @handle_http_errors()
-        async def handle_sync_request(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_sync_request(sid: str, data: dict[str, Any]) -> None:
             """Handle client request for state synchronization.
 
             When a client detects it may be out of sync (missed updates, reconnection, etc.),
@@ -111,7 +111,7 @@ class SyncHandlers:
         @self.sio.on("client:request_current_state")
         @handle_http_errors()
         async def handle_request_current_state(
-            sid: str, data: Optional[Dict[str, Any]] = None
+            sid: str, data: dict[str, Any] | None = None
         ) -> None:
             """Handle client request for current player state synchronization.
 
@@ -160,7 +160,7 @@ class SyncHandlers:
 
         @self.sio.on("client_ping")
         @handle_http_errors()
-        async def handle_client_ping(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_client_ping(sid: str, data: dict[str, Any]) -> None:
             """Handle client ping for connection health monitoring.
 
             Clients can periodically send pings to verify the connection is alive
@@ -187,7 +187,7 @@ class SyncHandlers:
 
         @self.sio.on("health_check")
         @handle_http_errors()
-        async def handle_health_check(sid: str, data: Dict[str, Any]) -> None:
+        async def handle_health_check(sid: str, data: dict[str, Any]) -> None:
             """Handle client health check request.
 
             Provides comprehensive system health metrics including state manager
@@ -215,7 +215,7 @@ class SyncHandlers:
 
     def _extract_player_state_info(
         self, player_state: Any
-    ) -> tuple[Dict[str, Any], int, str]:
+    ) -> tuple[dict[str, Any], int, str]:
         """Extract state data from PlayerStateModel or dict.
 
         Args:
@@ -239,7 +239,7 @@ class SyncHandlers:
         return data, server_seq, playlist_title or "None"
 
     async def _emit_player_state(
-        self, sid: str, state_data: Dict[str, Any], server_seq: int
+        self, sid: str, state_data: dict[str, Any], server_seq: int
     ) -> None:
         """Emit player state event to client.
 

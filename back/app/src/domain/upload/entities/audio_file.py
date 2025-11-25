@@ -6,7 +6,6 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from ..value_objects.file_metadata import FileMetadata
 
@@ -20,9 +19,9 @@ class AudioFile:
 
     file_path: Path
     metadata: FileMetadata
-    playlist_id: Optional[str] = None
+    playlist_id: str | None = None
     is_processed: bool = False
-    processing_error: Optional[str] = None
+    processing_error: str | None = None
 
     def __post_init__(self):
         """Validate audio file on creation."""

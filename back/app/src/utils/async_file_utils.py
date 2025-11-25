@@ -10,11 +10,11 @@ to execute synchronous operations in a non-blocking manner.
 """
 
 import asyncio
-import os
-from pathlib import Path
-from typing import Optional, Union, List, cast
-from concurrent.futures import ThreadPoolExecutor
 import functools
+import os
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import cast
 
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
@@ -22,7 +22,7 @@ from app.src.services.error.unified_error_decorator import handle_errors
 logger = get_logger(__name__)
 
 # Thread pool for file operations - managed lifecycle
-_file_executor: Optional[ThreadPoolExecutor] = None
+_file_executor: ThreadPoolExecutor | None = None
 
 
 def get_file_executor() -> ThreadPoolExecutor:
@@ -68,7 +68,7 @@ class AsyncFileUtils:
     """Async file utilities for non-blocking file operations."""
 
     @staticmethod
-    async def exists(path: Union[str, Path]) -> bool:
+    async def exists(path: str | Path) -> bool:
         """Check if a file or directory exists asynchronously.
 
         Args:
@@ -85,7 +85,7 @@ class AsyncFileUtils:
         return cast(bool, await _exists(path))
 
     @staticmethod
-    async def is_file(path: Union[str, Path]) -> bool:
+    async def is_file(path: str | Path) -> bool:
         """Check if a path is a file asynchronously.
 
         Args:
@@ -102,7 +102,7 @@ class AsyncFileUtils:
         return cast(bool, await _is_file(path))
 
     @staticmethod
-    async def is_dir(path: Union[str, Path]) -> bool:
+    async def is_dir(path: str | Path) -> bool:
         """Check if a path is a directory asynchronously.
 
         Args:
@@ -119,7 +119,7 @@ class AsyncFileUtils:
         return cast(bool, await _is_dir(path))
 
     @staticmethod
-    async def mkdir(path: Union[str, Path], parents: bool = False, exist_ok: bool = False) -> None:
+    async def mkdir(path: str | Path, parents: bool = False, exist_ok: bool = False) -> None:
         """Create a directory asynchronously.
 
         Args:
@@ -135,7 +135,7 @@ class AsyncFileUtils:
         await _mkdir(path, parents, exist_ok)
 
     @staticmethod
-    async def unlink(path: Union[str, Path], missing_ok: bool = False) -> None:
+    async def unlink(path: str | Path, missing_ok: bool = False) -> None:
         """Remove a file asynchronously.
 
         Args:
@@ -154,7 +154,7 @@ class AsyncFileUtils:
         await _unlink(path, missing_ok)
 
     @staticmethod
-    async def read_text(path: Union[str, Path], encoding: str = "utf-8") -> str:
+    async def read_text(path: str | Path, encoding: str = "utf-8") -> str:
         """Read text from a file asynchronously.
 
         Args:
@@ -172,7 +172,7 @@ class AsyncFileUtils:
         return cast(str, await _read_text(path, encoding))
 
     @staticmethod
-    async def write_text(path: Union[str, Path], content: str, encoding: str = "utf-8") -> None:
+    async def write_text(path: str | Path, content: str, encoding: str = "utf-8") -> None:
         """Write text to a file asynchronously.
 
         Args:
@@ -188,7 +188,7 @@ class AsyncFileUtils:
         await _write_text(path, content, encoding)
 
     @staticmethod
-    async def read_bytes(path: Union[str, Path]) -> bytes:
+    async def read_bytes(path: str | Path) -> bytes:
         """Read bytes from a file asynchronously.
 
         Args:
@@ -205,7 +205,7 @@ class AsyncFileUtils:
         return cast(bytes, await _read_bytes(path))
 
     @staticmethod
-    async def write_bytes(path: Union[str, Path], content: bytes) -> None:
+    async def write_bytes(path: str | Path, content: bytes) -> None:
         """Write bytes to a file asynchronously.
 
         Args:
@@ -220,7 +220,7 @@ class AsyncFileUtils:
         await _write_bytes(path, content)
 
     @staticmethod
-    async def stat(path: Union[str, Path]) -> os.stat_result:
+    async def stat(path: str | Path) -> os.stat_result:
         """Get file statistics asynchronously.
 
         Args:
@@ -237,7 +237,7 @@ class AsyncFileUtils:
         return cast(os.stat_result, await _stat(path))
 
     @staticmethod
-    async def listdir(path: Union[str, Path]) -> List[str]:
+    async def listdir(path: str | Path) -> list[str]:
         """List directory contents asynchronously.
 
         Args:
@@ -254,7 +254,7 @@ class AsyncFileUtils:
         return cast(list[str], await _listdir(path))
 
     @staticmethod
-    async def glob(path: Union[str, Path], pattern: str) -> List[Path]:
+    async def glob(path: str | Path, pattern: str) -> list[Path]:
         """Glob pattern matching asynchronously.
 
         Args:
@@ -272,7 +272,7 @@ class AsyncFileUtils:
         return cast(list[Path], await _glob(path, pattern))
 
     @staticmethod
-    async def copy_file(src: Union[str, Path], dst: Union[str, Path]) -> None:
+    async def copy_file(src: str | Path, dst: str | Path) -> None:
         """Copy a file asynchronously.
 
         Args:
@@ -289,7 +289,7 @@ class AsyncFileUtils:
         await _copy_file(src, dst)
 
     @staticmethod
-    async def move_file(src: Union[str, Path], dst: Union[str, Path]) -> None:
+    async def move_file(src: str | Path, dst: str | Path) -> None:
         """Move/rename a file asynchronously.
 
         Args:
@@ -306,7 +306,7 @@ class AsyncFileUtils:
         await _move_file(src, dst)
 
     @staticmethod
-    async def get_file_size(path: Union[str, Path]) -> int:
+    async def get_file_size(path: str | Path) -> int:
         """Get file size asynchronously.
 
         Args:
@@ -324,7 +324,7 @@ class AsyncFileUtils:
 
     @staticmethod
     @handle_errors("safe_delete")
-    async def safe_delete(path: Union[str, Path]) -> bool:
+    async def safe_delete(path: str | Path) -> bool:
         """Safely delete a file with error handling.
 
         Args:
@@ -339,7 +339,7 @@ class AsyncFileUtils:
 
     @staticmethod
     @handle_errors("ensure_directory")
-    async def ensure_directory(path: Union[str, Path]) -> bool:
+    async def ensure_directory(path: str | Path) -> bool:
         """Ensure a directory exists, creating it if necessary.
 
         Args:
@@ -354,26 +354,26 @@ class AsyncFileUtils:
 
 
 # Convenience functions for common operations
-async def aexists(path: Union[str, Path]) -> bool:
+async def aexists(path: str | Path) -> bool:
     """Async version of Path.exists()"""
     return await AsyncFileUtils.exists(path)
 
 
-async def ais_file(path: Union[str, Path]) -> bool:
+async def ais_file(path: str | Path) -> bool:
     """Async version of Path.is_file()"""
     return await AsyncFileUtils.is_file(path)
 
 
-async def ais_dir(path: Union[str, Path]) -> bool:
+async def ais_dir(path: str | Path) -> bool:
     """Async version of Path.is_dir()"""
     return await AsyncFileUtils.is_dir(path)
 
 
-async def amkdir(path: Union[str, Path], parents: bool = False, exist_ok: bool = False) -> None:
+async def amkdir(path: str | Path, parents: bool = False, exist_ok: bool = False) -> None:
     """Async version of Path.mkdir()"""
     await AsyncFileUtils.mkdir(path, parents, exist_ok)
 
 
-async def aunlink(path: Union[str, Path], missing_ok: bool = False) -> None:
+async def aunlink(path: str | Path, missing_ok: bool = False) -> None:
     """Async version of Path.unlink()"""
     await AsyncFileUtils.unlink(path, missing_ok)

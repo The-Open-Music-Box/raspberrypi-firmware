@@ -6,7 +6,6 @@ Tests which GPIO backend is available and functional.
 """
 
 import sys
-import os
 
 print("=" * 60)
 print("🔍 GPIO DIAGNOSTIC TOOL")
@@ -20,13 +19,13 @@ print(f"   Platform: {sys.platform}")
 # Check if on Raspberry Pi
 is_rpi = False
 try:
-    with open('/proc/cpuinfo', 'r') as f:
+    with open('/proc/cpuinfo') as f:
         if 'Raspberry' in f.read():
             is_rpi = True
             print("   Hardware: ✅ Raspberry Pi detected")
         else:
             print("   Hardware: ⚠️  Not a Raspberry Pi")
-except:
+except Exception:
     print("   Hardware: ⚠️  Could not determine hardware")
 
 # Test different GPIO backends
@@ -38,7 +37,7 @@ backends_tested = []
 # 1. Test RPi.GPIO
 print("\n1. RPi.GPIO:")
 try:
-    import RPi.GPIO as GPIO
+    from RPi import GPIO
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     # Try to setup a pin (non-destructive test)
@@ -122,9 +121,12 @@ except Exception as e:
 # 4. Check lgpio (the problematic one)
 print("\n4. lgpio:")
 try:
-    import lgpio
-    print(f"   ✅ lgpio imported successfully")
-    backends_tested.append("lgpio")
+    import importlib.util
+    if importlib.util.find_spec("lgpio") is not None:
+        print("   ✅ lgpio imported successfully")
+        backends_tested.append("lgpio")
+    else:
+        raise ImportError("lgpio module not found")
 except ImportError as e:
     if "GLIBC" in str(e):
         print(f"   ❌ GLIBC version mismatch: {e}")

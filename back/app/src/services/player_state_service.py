@@ -11,15 +11,18 @@ Refactored to use standardized data models and error handling.
 """
 
 import logging
-from typing import Optional, Dict, Any, cast
 from datetime import datetime
+from typing import Any, cast
 
-from ..common.data_models import PlayerStateModel, TrackModel, PlaybackState
-from ..monitoring import get_error_handler
-from app.src.infrastructure.error_handling.unified_error_handler import service_unavailable_error
 from app.src.common.socket_events import StateEventType
+from app.src.infrastructure.error_handling.unified_error_handler import (
+    service_unavailable_error,
+)
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
+
+from ..common.data_models import PlaybackState, PlayerStateModel, TrackModel
+from ..monitoring import get_error_handler
 
 logger = get_logger(__name__)
 
@@ -46,7 +49,7 @@ class PlayerStateService:
 
     # MARK: - Helper Methods (Extract duplication)
 
-    def _parse_time_values(self, status: Dict[str, Any]) -> tuple[int, int]:
+    def _parse_time_values(self, status: dict[str, Any]) -> tuple[int, int]:
         """Parse position and duration from status dict with legacy format support.
 
         Extracted helper to eliminate duplication of time parsing logic.
@@ -196,8 +199,8 @@ class PlayerStateService:
     async def build_error_player_state(
         self,
         state_manager=None,
-        error_message: Optional[str] = None,
-        preserve_current_info: Optional[Dict[str, Any]] = None,
+        error_message: str | None = None,
+        preserve_current_info: dict[str, Any] | None = None,
     ) -> PlayerStateModel:
         """
         Build player state for error conditions.
@@ -216,7 +219,7 @@ class PlayerStateService:
     @handle_service_errors("player_state")
     async def build_track_progress_state(
         self, audio_controller=None, state_manager=None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build track progress state for progress events.
 
@@ -260,11 +263,11 @@ class PlayerStateService:
     @handle_service_errors("player_state")
     async def broadcast_playlist_started(
         self,
-        playlist_data: Dict[str, Any],
+        playlist_data: dict[str, Any],
         source: str = "unknown",
-        client_op_id: Optional[str] = None,
-        extra_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        client_op_id: str | None = None,
+        extra_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Legacy method - broadcast playlist start state to all connected clients.
 
         Maintained for backwards compatibility during transition period.
@@ -309,7 +312,7 @@ class PlayerStateService:
         return state_mapping.get(raw_state.lower(), PlaybackState.STOPPED)
 
     @handle_service_errors("player_state")
-    def _build_track_model(self, track_data: Dict[str, Any]) -> Optional[TrackModel]:
+    def _build_track_model(self, track_data: dict[str, Any]) -> TrackModel | None:
         """Build TrackModel from track data dictionary."""
         if not track_data:
             return None
@@ -345,8 +348,8 @@ class PlayerStateService:
     async def _build_error_player_state(
         self,
         state_manager,
-        error_message: Optional[str] = None,
-        preserve_current_info: Optional[Dict[str, Any]] = None,
+        error_message: str | None = None,
+        preserve_current_info: dict[str, Any] | None = None,
     ) -> PlayerStateModel:
         """Internal method to build error player state."""
         server_seq = state_manager.get_global_sequence() if state_manager else 0

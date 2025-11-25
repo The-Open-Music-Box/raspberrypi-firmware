@@ -9,8 +9,9 @@ implemented purely with stdlib logging to avoid cross-layer imports.
 """
 
 import importlib as _il
+
 _logging = _il.import_module('logging')
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class ImprovedLogger:
@@ -21,7 +22,7 @@ class ImprovedLogger:
     unified monitoring configuration.
     """
 
-    _error_counts: Dict[str, int] = {}
+    _error_counts: dict[str, int] = {}
     MAX_REPEATED_ERRORS = 1
 
     # Log level mapping from string to logging level
@@ -40,7 +41,7 @@ class ImprovedLogger:
             name: Logger name (typically module __name__)
         """
         self.logger = _logging.getLogger(name)
-        self.context: Dict[str, Any] = {}
+        self.context: dict[str, Any] = {}
         self.name = name
         # Basic configuration; rely on root logger formatters configured elsewhere
         if not _logging.getLogger().handlers:
@@ -66,7 +67,7 @@ class ImprovedLogger:
             return True
         return False
 
-    def _format_extra(self, extra: Dict[str, Any]) -> str:
+    def _format_extra(self, extra: dict[str, Any]) -> str:
         """Format extra context information.
 
         Args:
@@ -93,7 +94,7 @@ class ImprovedLogger:
         self,
         level: Any,
         message: str,
-        exc_info: Optional[Exception] = None,
+        exc_info: Exception | None = None,
         **kwargs,
     ):
         """Log a message with the specified level.
@@ -148,11 +149,11 @@ class ImprovedLogger:
         """Log a warning message."""
         self.logger.warning(message)
 
-    def error(self, message: str, exc_info: Optional[Exception] = None, **kwargs):
+    def error(self, message: str, exc_info: Exception | None = None, **kwargs):
         """Log an error message."""
         self.logger.error(message)
 
-    def critical(self, message: str, exc_info: Optional[Exception] = None, **kwargs):
+    def critical(self, message: str, exc_info: Exception | None = None, **kwargs):
         """Log a critical message."""
         self.logger.critical(message)
 
@@ -183,10 +184,10 @@ class ImprovedLogger:
 class LoggerContext:
     """Context manager for temporary logger context."""
 
-    def __init__(self, logger: ImprovedLogger, context: Dict[str, Any]):
+    def __init__(self, logger: ImprovedLogger, context: dict[str, Any]):
         self.logger = logger
         self.context = context
-        self.original_context: Dict[str, Any] = {}
+        self.original_context: dict[str, Any] = {}
 
     def __enter__(self):
         # Save original context and update with new context

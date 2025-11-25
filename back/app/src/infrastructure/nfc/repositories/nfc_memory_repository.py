@@ -4,11 +4,10 @@
 
 """In-Memory NFC Repository Implementation."""
 
-from typing import Dict, Optional
 
 from app.src.domain.nfc.entities.nfc_tag import NfcTag
-from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
 from app.src.domain.nfc.protocols.nfc_hardware_protocol import NfcRepositoryProtocol
+from app.src.domain.nfc.value_objects.tag_identifier import TagIdentifier
 
 
 class NfcMemoryRepository(NfcRepositoryProtocol):
@@ -20,7 +19,7 @@ class NfcMemoryRepository(NfcRepositoryProtocol):
 
     def __init__(self):
         """Initialize empty repository."""
-        self._tags: Dict[str, NfcTag] = {}
+        self._tags: dict[str, NfcTag] = {}
 
     async def save_tag(self, tag: NfcTag) -> None:
         """Save an NFC tag.
@@ -30,7 +29,7 @@ class NfcMemoryRepository(NfcRepositoryProtocol):
         """
         self._tags[tag.identifier.uid] = tag
 
-    async def find_by_identifier(self, identifier: TagIdentifier) -> Optional[NfcTag]:
+    async def find_by_identifier(self, identifier: TagIdentifier) -> NfcTag | None:
         """Find tag by identifier.
 
         Args:
@@ -41,7 +40,7 @@ class NfcMemoryRepository(NfcRepositoryProtocol):
         """
         return self._tags.get(identifier.uid)
 
-    async def find_by_playlist_id(self, playlist_id: str) -> Optional[NfcTag]:
+    async def find_by_playlist_id(self, playlist_id: str) -> NfcTag | None:
         """Find tag associated with a playlist.
 
         Args:
@@ -73,6 +72,6 @@ class NfcMemoryRepository(NfcRepositoryProtocol):
         """Clear all tags (for testing)."""
         self._tags.clear()
 
-    def get_all_tags(self) -> Dict[str, NfcTag]:
+    def get_all_tags(self) -> dict[str, NfcTag]:
         """Get all tags (for testing)."""
         return self._tags.copy()

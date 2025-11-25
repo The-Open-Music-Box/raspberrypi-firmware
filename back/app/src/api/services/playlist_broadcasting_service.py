@@ -8,8 +8,9 @@ Playlist Broadcasting Service (DDD Architecture)
 Single Responsibility: Real-time state broadcasting for playlist operations.
 """
 
-from typing import Dict, Any, List, Optional, cast
 import logging
+from typing import Any, cast
+
 from app.src.application.services.unified_state_manager import UnifiedStateManager
 from app.src.common.socket_events import StateEventType
 from app.src.services.error.unified_error_decorator import handle_service_errors
@@ -46,7 +47,7 @@ class PlaylistBroadcastingService:
         self._repository_adapter = repository_adapter
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_playlist_created(self, playlist_id: str, playlist_data: Dict[str, Any]):
+    async def broadcast_playlist_created(self, playlist_id: str, playlist_data: dict[str, Any]):
         """Broadcast playlist creation event.
 
         Args:
@@ -68,10 +69,10 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted playlist creation: {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast playlist creation: {str(e)}")
+            logger.error(f"❌ Failed to broadcast playlist creation: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_playlist_updated(self, playlist_id: str, updates: Dict[str, Any]):
+    async def broadcast_playlist_updated(self, playlist_id: str, updates: dict[str, Any]):
         """Broadcast playlist update event with FULL playlist data.
 
         CRITICAL FIX: Frontend expects full playlist object in data.playlist,
@@ -114,7 +115,7 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted playlist update: {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast playlist update: {str(e)}")
+            logger.error(f"❌ Failed to broadcast playlist update: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
     async def broadcast_playlist_deleted(self, playlist_id: str):
@@ -137,10 +138,10 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted playlist deletion: {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast playlist deletion: {str(e)}")
+            logger.error(f"❌ Failed to broadcast playlist deletion: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_track_added(self, playlist_id: str, track_data: Dict[str, Any]):
+    async def broadcast_track_added(self, playlist_id: str, track_data: dict[str, Any]):
         """Broadcast track addition event.
 
         Args:
@@ -162,10 +163,10 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted track addition to playlist: {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast track addition: {str(e)}")
+            logger.error(f"❌ Failed to broadcast track addition: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_tracks_deleted(self, playlist_id: str, track_numbers: List[int]):
+    async def broadcast_tracks_deleted(self, playlist_id: str, track_numbers: list[int]):
         """Broadcast track deletion event.
 
         Args:
@@ -187,10 +188,10 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted tracks deletion from playlist: {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast tracks deletion: {str(e)}")
+            logger.error(f"❌ Failed to broadcast tracks deletion: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_tracks_reordered(self, playlist_id: str, track_order: List[int]):
+    async def broadcast_tracks_reordered(self, playlist_id: str, track_order: list[int]):
         """Broadcast track reordering with FULL playlist data.
 
         CRITICAL FIX: Frontend removed dedicated state:tracks_reordered listener
@@ -209,7 +210,7 @@ class PlaylistBroadcastingService:
 
             if playlist_data:
                 # Broadcast as PLAYLISTS_SNAPSHOT so frontend state:playlists listener picks it up
-                event_data: Dict[str, Any] = {
+                event_data: dict[str, Any] = {
                     "playlists": [playlist_data],  # Array format for state:playlists
                     "operation": "reorder_tracks"
                 }
@@ -222,7 +223,7 @@ class PlaylistBroadcastingService:
                 logger.info(f"✅ Broadcasted track reorder as playlists snapshot: {playlist_id}")
             else:
                 # Fallback to old event type if repository not available
-                fallback_data: Dict[str, Any] = {
+                fallback_data: dict[str, Any] = {
                     "playlist_id": playlist_id,
                     "track_order": track_order,
                     "operation": "reorder_tracks"
@@ -236,10 +237,10 @@ class PlaylistBroadcastingService:
                 logger.warning(f"No repository - using old tracks_reordered event for {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast tracks reordering: {str(e)}")
+            logger.error(f"❌ Failed to broadcast tracks reordering: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_playlist_started(self, playlist_id: str, track_data: Optional[Dict[str, Any]] = None):
+    async def broadcast_playlist_started(self, playlist_id: str, track_data: dict[str, Any] | None = None):
         """Broadcast playlist playback started event.
 
         Args:
@@ -263,7 +264,7 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted playlist started: {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast playlist started: {str(e)}")
+            logger.error(f"❌ Failed to broadcast playlist started: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
     async def broadcast_nfc_associated(self, playlist_id: str, nfc_tag_id: str):
@@ -288,7 +289,7 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted NFC association: {playlist_id} -> {nfc_tag_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast NFC association: {str(e)}")
+            logger.error(f"❌ Failed to broadcast NFC association: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
     async def broadcast_nfc_disassociated(self, playlist_id: str):
@@ -311,10 +312,10 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted NFC disassociation: {playlist_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast NFC disassociation: {str(e)}")
+            logger.error(f"❌ Failed to broadcast NFC disassociation: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_playlists_synced(self, playlists_data: List[Dict[str, Any]]):
+    async def broadcast_playlists_synced(self, playlists_data: list[dict[str, Any]]):
         """Broadcast playlists synchronization event.
 
         Args:
@@ -334,9 +335,9 @@ class PlaylistBroadcastingService:
             logger.info(f"✅ Broadcasted playlists sync: {len(playlists_data)} playlists")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast playlists sync: {str(e)}")
+            logger.error(f"❌ Failed to broadcast playlists sync: {e!s}")
 
-    async def _get_full_playlist_data(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def _get_full_playlist_data(self, playlist_id: str) -> dict[str, Any] | None:
         """Fetch full playlist data from repository.
 
         Args:
@@ -358,7 +359,7 @@ class PlaylistBroadcastingService:
             return cast(dict[str, Any] | None, playlist_dict)
 
         except Exception as e:
-            logger.error(f"Failed to fetch full playlist data for {playlist_id}: {str(e)}")
+            logger.error(f"Failed to fetch full playlist data for {playlist_id}: {e!s}")
             return None
 
     def get_global_sequence(self) -> int:

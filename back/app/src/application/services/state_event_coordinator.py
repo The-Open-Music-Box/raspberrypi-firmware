@@ -10,14 +10,19 @@ Clean separation of concerns following DDD principles.
 """
 
 import json
+import logging
 import time
 import uuid
-from typing import Any, Dict, Optional, cast
-import logging
+from typing import Any, cast
 
-from app.src.common.socket_events import SocketEventType, get_event_room, SocketEventBuilder, StateEventType
-from app.src.services.error.unified_error_decorator import handle_service_errors
+from app.src.common.socket_events import (
+    SocketEventBuilder,
+    SocketEventType,
+    StateEventType,
+    get_event_room,
+)
 from app.src.config.socket_config import socket_config
+from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.services.event_outbox import EventOutbox
 from app.src.services.sequence_generator import SequenceGenerator
 
@@ -43,7 +48,7 @@ class StateEventCoordinator:
     - Operation tracking (delegated to OperationTracker)
     """
 
-    def __init__(self, socketio_server=None, outbox: Optional[EventOutbox] = None, sequences: Optional[SequenceGenerator] = None):
+    def __init__(self, socketio_server=None, outbox: EventOutbox | None = None, sequences: SequenceGenerator | None = None):
         """Initialize state event coordinator.
 
         Args:
@@ -69,9 +74,9 @@ class StateEventCoordinator:
     async def broadcast_state_change(
         self,
         event_type: StateEventType,
-        data: Dict[str, Any],
-        playlist_id: Optional[str] = None,
-        room: Optional[str] = None,
+        data: dict[str, Any],
+        playlist_id: str | None = None,
+        room: str | None = None,
         immediate: bool = False,
     ) -> dict:
         """
@@ -139,8 +144,8 @@ class StateEventCoordinator:
         return envelope
 
     async def broadcast_position_update(
-        self, position_ms: int, track_id: str, is_playing: bool, duration_ms: Optional[int] = None
-    ) -> Optional[dict]:
+        self, position_ms: int, track_id: str, is_playing: bool, duration_ms: int | None = None
+    ) -> dict | None:
         """
         Broadcast a lightweight position update with throttling.
 
@@ -204,8 +209,8 @@ class StateEventCoordinator:
         self,
         client_op_id: str,
         success: bool,
-        data: Optional[Dict[str, Any]] = None,
-        client_id: Optional[str] = None,
+        data: dict[str, Any] | None = None,
+        client_id: str | None = None,
     ) -> None:
         """Send acknowledgment for a client operation."""
         if not self.socketio:
@@ -242,9 +247,9 @@ class StateEventCoordinator:
     async def _broadcast_event(
         self,
         envelope: dict,
-        room: Optional[str],
+        room: str | None,
         socket_event_type: SocketEventType,
-        playlist_id: Optional[str],
+        playlist_id: str | None,
     ) -> None:
         """Broadcast a state event to clients using standardized envelope format."""
         if not self.socketio:

@@ -14,13 +14,13 @@ Responsibility Principle. Each handler class focuses on a specific domain:
 """
 
 from app.src.routes.handlers.connection_handlers import ConnectionHandlers
-from app.src.routes.handlers.subscription_handlers import SubscriptionHandlers
 from app.src.routes.handlers.nfc_handlers import NFCHandlers
+from app.src.routes.handlers.subscription_handlers import SubscriptionHandlers
 from app.src.routes.handlers.sync_handlers import SyncHandlers
 
 __all__ = [
     "ConnectionHandlers",
-    "SubscriptionHandlers",
     "NFCHandlers",
+    "SubscriptionHandlers",
     "SyncHandlers",
 ]

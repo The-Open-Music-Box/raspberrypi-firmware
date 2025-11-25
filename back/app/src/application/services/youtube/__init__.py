@@ -10,6 +10,7 @@ and the high-level service interface for YouTube integration.
 """
 
 from app.src.infrastructure.youtube.youtube_downloader import YouTubeDownloader
+
 from .youtube_application_service import YouTubeApplicationService
 
 # Backwards compatibility alias

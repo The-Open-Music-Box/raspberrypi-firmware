@@ -5,10 +5,9 @@ Met tous les GPIO à LOW puis alterne HIGH/LOW/HIGH en boucle
 """
 
 import os
+import signal
 import sys
 import time
-import signal
-from typing import List
 
 try:
     from gpiozero import LED, Device
@@ -23,7 +22,7 @@ class SimpleGPIOTester:
     """Testeur GPIO simplifié"""
 
     def __init__(self):
-        self.test_pins: List[int] = list(range(2, 28))  # GPIO 2-27
+        self.test_pins: list[int] = list(range(2, 28))  # GPIO 2-27
         self.running = True
         self.leds = {}
 
@@ -37,7 +36,7 @@ class SimpleGPIOTester:
 
     def _signal_handler(self, signum, frame):
         """Handler pour arrêt propre"""
-        print(f"\n🛑 Arrêt en cours...")
+        print("\n🛑 Arrêt en cours...")
         self.running = False
 
     def print_header(self):
@@ -123,7 +122,7 @@ class SimpleGPIOTester:
             for led in self.leds.values():
                 try:
                     led.close()
-                except:
+                except Exception:
                     pass
 
     def run(self):

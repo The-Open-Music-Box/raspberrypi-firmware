@@ -10,22 +10,22 @@ Pure domain error handling without infrastructure dependencies.
 
 import asyncio
 import functools
-import traceback
-from typing import Callable, Any, Optional, cast
-from datetime import datetime
-
 import logging
+import traceback
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
 
 def handle_domain_errors(
-    operation_name: Optional[str] = None,
-    component: Optional[str] = None,
+    operation_name: str | None = None,
+    component: str | None = None,
     log_level: int = logging.ERROR,
     include_trace: bool = False,
     reraise: bool = True,
-    default_return: Optional[Any] = None,
+    default_return: Any | None = None,
 ) -> Callable:
     """
     Pure domain layer error handler decorator.
@@ -56,16 +56,15 @@ def handle_domain_errors(
                         e, func_operation, func_component, log_level, include_trace, reraise, default_return
                     )
             return async_wrapper
-        else:
-            @functools.wraps(func)
-            def sync_wrapper(*args, **kwargs):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    return _handle_exception_and_return(
-                        e, func_operation, func_component, log_level, include_trace, reraise, default_return
-                    )
-            return sync_wrapper
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                return _handle_exception_and_return(
+                    e, func_operation, func_component, log_level, include_trace, reraise, default_return
+                )
+        return sync_wrapper
 
     return decorator
 
@@ -78,7 +77,7 @@ def _handle_error(
     include_trace: bool
 ) -> None:
     """Handle and log domain errors."""
-    log_message = f"Domain error in {component}.{operation}: {str(error)}"
+    log_message = f"Domain error in {component}.{operation}: {error!s}"
     extra_data = {
         "operation": operation,
         "component": component,

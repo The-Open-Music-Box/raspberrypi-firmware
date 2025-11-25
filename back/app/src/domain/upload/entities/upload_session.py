@@ -5,11 +5,12 @@
 """Upload Session Domain Entity."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Set, Optional, Dict, Any
+from typing import Any
 
 from app.src.domain.base.base_session_entity import BaseSessionEntity
+
 from ..value_objects.file_chunk import FileChunk
 from ..value_objects.file_metadata import FileMetadata
 
@@ -36,18 +37,18 @@ class UploadSession(BaseSessionEntity):
     """
 
     filename: str = ""
-    playlist_id: Optional[str] = None
-    playlist_path: Optional[str] = None
+    playlist_id: str | None = None
+    playlist_path: str | None = None
     total_chunks: int = 0
     total_size_bytes: int = 0
     status: UploadStatus = UploadStatus.CREATED
-    completed_at: Optional[datetime] = None
-    received_chunks: Set[int] = field(default_factory=set)
+    completed_at: datetime | None = None
+    received_chunks: set[int] = field(default_factory=set)
     current_size_bytes: int = 0
-    file_metadata: Optional[FileMetadata] = None
-    error_message: Optional[str] = None
+    file_metadata: FileMetadata | None = None
+    error_message: str | None = None
     timeout_seconds: int = 3600  # 1 hour default (override base class)
-    completion_data: Optional[Dict[str, Any]] = None
+    completion_data: dict[str, Any] | None = None
 
     def __post_init__(self):
         """Validate session on creation."""
@@ -119,7 +120,7 @@ class UploadSession(BaseSessionEntity):
             raise ValueError("Cannot mark incomplete session as completed")
 
         self.status = UploadStatus.COMPLETED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def mark_failed(self, error_message: str) -> None:
         """Mark this session as failed.
@@ -129,17 +130,17 @@ class UploadSession(BaseSessionEntity):
         """
         self.status = UploadStatus.FAILED
         self.error_message = error_message
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def mark_cancelled(self) -> None:
         """Mark this session as cancelled."""
         self.status = UploadStatus.CANCELLED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def mark_expired(self) -> None:
         """Mark this session as expired."""
         self.status = UploadStatus.EXPIRED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def set_metadata(self, metadata: FileMetadata) -> None:
         """Set file metadata for this session.
@@ -149,7 +150,7 @@ class UploadSession(BaseSessionEntity):
         """
         self.file_metadata = metadata
 
-    def get_missing_chunks(self) -> Set[int]:
+    def get_missing_chunks(self) -> set[int]:
         """Get set of missing chunk indices."""
         all_chunks = set(range(self.total_chunks))
         return all_chunks - self.received_chunks
@@ -165,7 +166,7 @@ class UploadSession(BaseSessionEntity):
         """
         return self.current_size_bytes == expected_size
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert session to dictionary for serialization."""
         # Start with base class common fields
         result = self._base_dict_fields()

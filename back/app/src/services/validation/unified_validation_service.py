@@ -9,10 +9,11 @@ This service centralizes all validation logic to eliminate the 45+ duplicated
 validation patterns across routes, services, and domain layers.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
-from pathlib import Path
 import os
 import re
+from pathlib import Path
+from typing import Any
+
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.services.validation.validation_constants import WINDOWS_RESERVED_NAMES
@@ -23,7 +24,7 @@ logger = get_logger(__name__)
 class ValidationError(Exception):
     """Custom validation error."""
 
-    def __init__(self, message: str, field: Optional[str] = None):
+    def __init__(self, message: str, field: str | None = None):
         super().__init__(message)
         self.message = message
         self.field = field
@@ -60,8 +61,8 @@ class UnifiedValidationService:
 
     @staticmethod
     def validate_playlist_data(
-        data: Dict[str, Any], context: str = "api", required_fields: Optional[List[str]] = None
-    ) -> Tuple[bool, List[Dict[str, str]]]:
+        data: dict[str, Any], context: str = "api", required_fields: list[str] | None = None
+    ) -> tuple[bool, list[dict[str, str]]]:
         """
         Valide les données d'une playlist de manière contextuelle.
 
@@ -83,9 +84,7 @@ class UnifiedValidationService:
 
         # Default required fields by context
         if required_fields is None:
-            if context == "api":
-                required_fields = ["title"]
-            elif context == "domain":
+            if context == "api" or context == "domain":
                 required_fields = ["title"]
             elif context == "repository":
                 required_fields = ["title", "id"]
@@ -157,8 +156,8 @@ class UnifiedValidationService:
     @staticmethod
     @handle_service_errors("unified_validation")
     def validate_track_data(
-        data: Dict[str, Any], context: str = "upload", validate_file_exists: bool = True
-    ) -> Tuple[bool, List[Dict[str, str]]]:
+        data: dict[str, Any], context: str = "upload", validate_file_exists: bool = True
+    ) -> tuple[bool, list[dict[str, str]]]:
         """
         Valide les données d'une track.
 
@@ -268,7 +267,7 @@ class UnifiedValidationService:
 
     @staticmethod
     @handle_service_errors("unified_validation")
-    def validate_audio_file(file_path: str, check_content: bool = False) -> Tuple[bool, str]:
+    def validate_audio_file(file_path: str, check_content: bool = False) -> tuple[bool, str]:
         """
         Valide un fichier audio physique.
 
@@ -307,7 +306,7 @@ class UnifiedValidationService:
         return True, ""
 
     @staticmethod
-    def validate_upload_session_data(data: Dict[str, Any]) -> Tuple[bool, List[Dict[str, str]]]:
+    def validate_upload_session_data(data: dict[str, Any]) -> tuple[bool, list[dict[str, str]]]:
         """
         Valide les données d'une session d'upload.
 
@@ -359,7 +358,7 @@ class UnifiedValidationService:
         return len(errors) == 0, errors
 
     @staticmethod
-    def validate_nfc_association_data(data: Dict[str, Any]) -> Tuple[bool, List[Dict[str, str]]]:
+    def validate_nfc_association_data(data: dict[str, Any]) -> tuple[bool, list[dict[str, str]]]:
         """
         Valide les données d'association NFC.
 
@@ -410,10 +409,7 @@ class UnifiedValidationService:
 
         # Check for reserved names on Windows
         name_without_ext = Path(filename).stem.upper()
-        if name_without_ext in WINDOWS_RESERVED_NAMES:
-            return False
-
-        return True
+        return name_without_ext not in WINDOWS_RESERVED_NAMES
 
     @staticmethod
     def _is_valid_id(id_value: str) -> bool:
@@ -445,19 +441,19 @@ class UnifiedValidationService:
             return header[:3] == b"ID3" or header[:2] == b"\xff\xfb" or header[:2] == b"\xff\xf3"
 
         # WAV signature
-        elif extension == ".wav":
+        if extension == ".wav":
             return header[:4] == b"RIFF"
 
         # FLAC signature
-        elif extension == ".flac":
+        if extension == ".flac":
             return header[:4] == b"fLaC"
 
         # OGG signature
-        elif extension == ".ogg":
+        if extension == ".ogg":
             return header[:4] == b"OggS"
 
         # M4A/MP4 signatures
-        elif extension in [".m4a", ".mp4"]:
+        if extension in [".m4a", ".mp4"]:
             return b"ftyp" in header[:16]
 
         # For unknown formats, assume valid

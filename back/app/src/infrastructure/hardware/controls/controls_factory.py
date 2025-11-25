@@ -8,12 +8,12 @@ Physical Controls Factory.
 Factory for creating physical controls implementations based on environment.
 """
 
-import os
-from typing import Optional, Any, List
 import logging
+import os
+from typing import Any
 
-from app.src.domain.protocols.physical_controls_protocol import PhysicalControlsProtocol
 from app.src.config.button_actions_config import ButtonActionConfig
+from app.src.domain.protocols.physical_controls_protocol import PhysicalControlsProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class PhysicalControlsFactory:
     @staticmethod
     def create_controls(
         hardware_config: Any,
-        button_configs: Optional[List[ButtonActionConfig]] = None
+        button_configs: list[ButtonActionConfig] | None = None
     ) -> PhysicalControlsProtocol:
         """Create physical controls implementation based on environment.
 
@@ -43,17 +43,20 @@ class PhysicalControlsFactory:
 
         if use_mock:
             logger.info("🧪 Creating mock physical controls implementation")
-            from app.src.infrastructure.hardware.controls.mock_controls_implementation import MockPhysicalControls
+            from app.src.infrastructure.hardware.controls.mock_controls_implementation import (
+                MockPhysicalControls,
+            )
             return MockPhysicalControls(hardware_config, button_configs)
-        else:
-            logger.info("🔌 Creating GPIO physical controls implementation")
-            from app.src.infrastructure.hardware.controls.gpio_controls_implementation import GPIOPhysicalControls
-            return GPIOPhysicalControls(hardware_config, button_configs)
+        logger.info("🔌 Creating GPIO physical controls implementation")
+        from app.src.infrastructure.hardware.controls.gpio_controls_implementation import (
+            GPIOPhysicalControls,
+        )
+        return GPIOPhysicalControls(hardware_config, button_configs)
 
     @staticmethod
     def create_mock_controls(
         hardware_config: Any,
-        button_configs: Optional[List[ButtonActionConfig]] = None
+        button_configs: list[ButtonActionConfig] | None = None
     ):
         """Create mock controls implementation for testing.
 
@@ -65,5 +68,7 @@ class PhysicalControlsFactory:
             MockPhysicalControls implementation
         """
         logger.info("🧪 Creating mock physical controls for testing")
-        from app.src.infrastructure.hardware.controls.mock_controls_implementation import MockPhysicalControls
+        from app.src.infrastructure.hardware.controls.mock_controls_implementation import (
+            MockPhysicalControls,
+        )
         return MockPhysicalControls(hardware_config, button_configs)

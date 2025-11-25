@@ -8,21 +8,21 @@ GPIO Physical Controls Implementation.
 Real hardware implementation using gpiozero for buttons and rotary encoder.
 """
 
+import logging
 import os
-from typing import Dict, Optional, List, Any
 from datetime import datetime
 from threading import Lock
+from typing import Any
 
-from .base_controls_implementation import BaseControlsImplementation
-from app.src.domain.protocols.physical_controls_protocol import PhysicalControlEvent
+from app.src.config.button_actions_config import ButtonActionConfig
 from app.src.domain.events.physical_control_events import (
     ButtonPressedEvent,
     EncoderRotatedEvent,
     PhysicalControlErrorEvent,
 )
-from app.src.config.button_actions_config import ButtonActionConfig
+from app.src.domain.protocols.physical_controls_protocol import PhysicalControlEvent
 
-import logging
+from .base_controls_implementation import BaseControlsImplementation
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ if not USE_MOCK_HARDWARE:
 
     # First try lgpio (modern, recommended backend)
     try:
-        from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
+        from gpiozero import Button, Device, RotaryEncoder
         from gpiozero.pins.lgpio import LGPIOFactory
         Device.pin_factory = LGPIOFactory()
         logger.info("✅ GPIO hardware available - using lgpio backend")
@@ -52,7 +52,7 @@ if not USE_MOCK_HARDWARE:
     # If lgpio didn't work, try RPi.GPIO (legacy backend)
     if not gpio_backend_initialized:
         try:
-            from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
+            from gpiozero import Button, Device, RotaryEncoder
             from gpiozero.pins.rpigpio import RPiGPIOFactory
             Device.pin_factory = RPiGPIOFactory()
             logger.info("✅ GPIO hardware available - using RPi.GPIO backend")
@@ -66,7 +66,7 @@ if not USE_MOCK_HARDWARE:
     # If neither worked, try pigpio (requires pigpiod daemon)
     if not gpio_backend_initialized:
         try:
-            from gpiozero import Button, RotaryEncoder, Device  # noqa: F811
+            from gpiozero import Button, Device, RotaryEncoder
             from gpiozero.pins.pigpio import PiGPIOFactory
             Device.pin_factory = PiGPIOFactory()
             logger.info("✅ GPIO hardware available - using pigpio backend")
@@ -100,7 +100,7 @@ class GPIOPhysicalControls(BaseControlsImplementation):
     def __init__(
         self,
         hardware_config: Any,
-        button_configs: Optional[List[ButtonActionConfig]] = None
+        button_configs: list[ButtonActionConfig] | None = None
     ):
         """Initialize GPIO physical controls.
 
@@ -185,9 +185,8 @@ class GPIOPhysicalControls(BaseControlsImplementation):
                         f"({final_device_count - initial_device_count} devices)"
                     )
                     return True
-                else:
-                    logger.warning("⚠️ No GPIO devices could be initialized")
-                    return False
+                logger.warning("⚠️ No GPIO devices could be initialized")
+                return False
 
         except Exception as e:
             logger.error(f"❌ Failed to initialize GPIO controls: {e}")
@@ -380,7 +379,7 @@ class GPIOPhysicalControls(BaseControlsImplementation):
         """Handle encoder switch press (play/pause button)."""
         logger.info(f"🎮 [GPIO] Encoder switch pressed - HARDWARE EVENT DETECTED (GPIO {self.config.gpio_volume_encoder_sw})")
         self._emit_button_event("encoder_switch", self.config.gpio_volume_encoder_sw)
-        logger.info(f"🎮 [GPIO] Triggering ENCODER_SWITCH event for play/pause")
+        logger.info("🎮 [GPIO] Triggering ENCODER_SWITCH event for play/pause")
         self._trigger_event(PhysicalControlEvent.ENCODER_SWITCH)
 
     def _on_encoder_rotated(self) -> None:

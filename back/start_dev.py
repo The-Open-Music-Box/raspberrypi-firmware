@@ -34,7 +34,7 @@ os.environ["DEBUG"] = "1"
 try:
     # Display complete configuration info
     hw_mode = "MOCK" if config.hardware.mock_hardware else "REAL"
-    print(f"[TheOpenMusicBox] Configuration details:")
+    print("[TheOpenMusicBox] Configuration details:")
     print(f"  - App module: {config.app_module}")
     print(f"  - Host: {config.socketio_host}")
     print(f"  - Port: {config.socketio_port}")

@@ -10,8 +10,9 @@ as PhysicalControlsProtocol for consistency.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
-from app.src.domain.models.led import LEDColor, LEDAnimation
+from typing import Any
+
+from app.src.domain.models.led import LEDAnimation, LEDColor
 
 
 class IndicatorLightsProtocol(ABC):
@@ -104,7 +105,7 @@ class IndicatorLightsProtocol(ABC):
         pass
 
     @abstractmethod
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Get current status of LED controller.
 

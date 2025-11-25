@@ -10,17 +10,19 @@ and provides a foundation for all audio backend implementations.
 
 import threading
 import time
-from pathlib import Path
-from typing import Optional
 from contextlib import contextmanager
+from pathlib import Path
 
-from app.src.monitoring import get_logger
-from app.src.domain.protocols.notification_protocol import PlaybackNotifierProtocol as PlaybackSubject
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
 
 # Resource manager functionality will be added later if needed
-
 from app.src.domain.protocols.audio_backend_protocol import AudioBackendProtocol
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
+from app.src.domain.protocols.notification_protocol import (
+    PlaybackNotifierProtocol as PlaybackSubject,
+)
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -32,17 +34,17 @@ class BaseAudioBackend(AudioBackendProtocol):
     across all audio backend implementations.
     """
 
-    def __init__(self, playback_subject: Optional[PlaybackSubject] = None):
+    def __init__(self, playback_subject: PlaybackSubject | None = None):
         """Initialize the base audio backend."""
         self._playback_subject = playback_subject
         self._state_lock = threading.RLock()
         self._is_playing = False
-        self._current_file_path: Optional[str] = None
+        self._current_file_path: str | None = None
         self._volume = 70  # Default volume
         self._backend_name = self.__class__.__name__
 
     @handle_errors("_validate_file_path")
-    def _validate_file_path(self, file_path: str) -> Optional[Path]:
+    def _validate_file_path(self, file_path: str) -> Path | None:
         """Validate that the file path exists and is accessible.
 
         Args:
@@ -72,7 +74,7 @@ class BaseAudioBackend(AudioBackendProtocol):
         return max(0, min(100, volume))
 
     @handle_errors("_notify_playback_event")
-    def _notify_playback_event(self, event: str, data: Optional[dict] = None) -> None:
+    def _notify_playback_event(self, event: str, data: dict | None = None) -> None:
         """Notify playback events through the subject.
 
         Args:

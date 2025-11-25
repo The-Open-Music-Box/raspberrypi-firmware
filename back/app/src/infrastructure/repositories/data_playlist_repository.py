@@ -4,13 +4,13 @@
 
 """Data domain playlist repository implementation."""
 
-from typing import List, Optional, Dict, Any, cast
+from typing import Any, cast
 
-from app.src.monitoring import get_logger
 from app.src.domain.data.protocols.repository_protocol import PlaylistRepositoryProtocol
 from app.src.infrastructure.repositories.pure_sqlite_playlist_repository import (
-    PureSQLitePlaylistRepository
+    PureSQLitePlaylistRepository,
 )
+from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -27,11 +27,11 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
         self._repo = sqlite_repository
         logger.info("✅ DataPlaylistRepository initialized")
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_all(self, skip: int = 0, limit: int = 100) -> list[dict[str, Any]]:
         """Get all playlists with pagination."""
         playlists = await self._repo.find_all(limit=limit, offset=skip)
         # Convert Playlist domain objects to dictionaries, filter out None values
-        result: List[Dict[str, Any]] = []
+        result: list[dict[str, Any]] = []
         for playlist in playlists:
             if playlist is not None:
                 playlist_dict = self._playlist_to_dict(playlist)
@@ -39,17 +39,17 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
                     result.append(playlist_dict)
         return result
 
-    async def get_by_id(self, playlist_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, playlist_id: str) -> dict[str, Any] | None:
         """Get a playlist by its ID."""
         playlist = await self._repo.find_by_id(playlist_id)
         return self._playlist_to_dict(playlist) if playlist else None
 
-    async def get_by_nfc_tag(self, nfc_tag_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_nfc_tag(self, nfc_tag_id: str) -> dict[str, Any] | None:
         """Get a playlist by its associated NFC tag."""
         playlist = await self._repo.find_by_nfc_tag(nfc_tag_id)
         return self._playlist_to_dict(playlist) if playlist else None
 
-    async def create(self, playlist_data: Dict[str, Any]) -> str:
+    async def create(self, playlist_data: dict[str, Any]) -> str:
         """Create a new playlist."""
         from app.src.domain.data.models.playlist import Playlist
         # Convert dict to domain object using API compatibility factory
@@ -63,7 +63,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
         saved_playlist = await self._repo.save(playlist)
         return cast(str, saved_playlist.id)
 
-    async def update(self, playlist_id: str, playlist_data: Dict[str, Any]) -> bool:
+    async def update(self, playlist_id: str, playlist_data: dict[str, Any]) -> bool:
         """Update an existing playlist."""
         # Get existing playlist
         existing = await self._repo.find_by_id(playlist_id)
@@ -95,7 +95,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
         """Count total playlists."""
         return cast(int, await self._repo.count())
 
-    def _playlist_to_dict(self, playlist) -> Optional[Dict[str, Any]]:
+    def _playlist_to_dict(self, playlist) -> dict[str, Any] | None:
         """Convert Playlist domain object to dictionary."""
         if not playlist:
             return None
@@ -110,7 +110,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
             'updated_at': getattr(playlist, 'updated_at', '') or ''  # Ensure empty string instead of None
         }
 
-    def _track_to_dict(self, track: Any) -> Optional[Dict[str, Any]]:
+    def _track_to_dict(self, track: Any) -> dict[str, Any] | None:
         """Convert Track domain object to dictionary."""
         if not track:
             return None

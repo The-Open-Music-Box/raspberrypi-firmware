@@ -25,15 +25,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.src.config import config
 from app.src.core.application import Application
+from app.src.infrastructure.error_handling.unified_error_handler import (
+    ErrorCategory,
+    ErrorContext,
+    ErrorSeverity,
+    UnifiedErrorHandler,
+)
 from app.src.monitoring import get_logger
 from app.src.monitoring.logging.log_level import LogLevel
 from app.src.routes.factories.api_routes_state import init_api_routes_state
-from app.src.infrastructure.error_handling.unified_error_handler import (
-    UnifiedErrorHandler,
-    ErrorCategory,
-    ErrorSeverity,
-    ErrorContext,
-)
 from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = get_logger(__name__)
@@ -116,9 +116,11 @@ async def _start_domain_bootstrap():
 
     # Create and inject PhysicalControlsManager (done here to avoid circular dependencies in DI container)
     try:
-        from app.src.application.controllers.physical_controls_controller import PhysicalControlsManager
-        from app.src.dependencies import get_playback_coordinator
+        from app.src.application.controllers.physical_controls_controller import (
+            PhysicalControlsManager,
+        )
         from app.src.config import config
+        from app.src.dependencies import get_playback_coordinator
 
         logger.log(LogLevel.INFO, "🎮 Getting shared PlaybackCoordinator instance for physical controls...")
 
@@ -276,7 +278,7 @@ async def lifespan(fastapi_app):
         logger.log(LogLevel.INFO, "✅ Application shutdown completed")
 
 
-from app.src.config.openapi_config import get_openapi_config, customize_openapi_schema
+from app.src.config.openapi_config import customize_openapi_schema, get_openapi_config
 
 # Create FastAPI app with enhanced OpenAPI configuration
 openapi_config = get_openapi_config()

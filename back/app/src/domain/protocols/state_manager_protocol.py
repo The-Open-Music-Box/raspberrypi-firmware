@@ -4,8 +4,8 @@
 
 """State manager protocol for dependency injection."""
 
-from typing import Protocol, Dict, Any, Optional
 from enum import Enum
+from typing import Any, Protocol
 
 
 class PlaybackState(Enum):
@@ -29,15 +29,15 @@ class StateManagerProtocol(Protocol):
         """Set current playback state."""
         ...
 
-    def get_state_dict(self) -> Dict[str, Any]:
+    def get_state_dict(self) -> dict[str, Any]:
         """Get complete state as dictionary."""
         ...
 
-    def update_track_info(self, track_info: Dict[str, Any]) -> None:
+    def update_track_info(self, track_info: dict[str, Any]) -> None:
         """Update current track information."""
         ...
 
-    def update_playlist_info(self, playlist_info: Dict[str, Any]) -> None:
+    def update_playlist_info(self, playlist_info: dict[str, Any]) -> None:
         """Update current playlist information."""
         ...
 
@@ -57,6 +57,6 @@ class StateManagerProtocol(Protocol):
         """Clear error state."""
         ...
 
-    def get_last_error(self) -> Optional[str]:
+    def get_last_error(self) -> str | None:
         """Get last error message."""
         ...

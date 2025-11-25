@@ -10,8 +10,9 @@ Single Responsibility: Reusable domain service functionality.
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Callable
+from collections.abc import Callable
 from dataclasses import asdict
+from typing import Any
 
 
 class BaseDomainService:
@@ -28,9 +29,9 @@ class BaseDomainService:
 
     def _validate_required_fields(
         self,
-        data: Dict[str, Any],
-        required_fields: List[str]
-    ) -> Optional[str]:
+        data: dict[str, Any],
+        required_fields: list[str]
+    ) -> str | None:
         """
         Common validation logic for required fields.
 
@@ -48,9 +49,9 @@ class BaseDomainService:
 
     def _transform_with_defaults(
         self,
-        data: Dict[str, Any],
-        defaults: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        data: dict[str, Any],
+        defaults: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Common transformation logic combining data with defaults.
 
@@ -69,7 +70,7 @@ class BaseDomainService:
         self,
         operation: Callable,
         operation_name: str,
-        context: Dict[str, Any]
+        context: dict[str, Any]
     ) -> Any:
         """
         Common execution pattern with logging for domain operations.
@@ -97,8 +98,8 @@ class BaseDomainService:
     def _convert_entity_to_dict_with_track_count(
         self,
         entity: Any,
-        track_count: Optional[int] = None
-    ) -> Dict[str, Any]:
+        track_count: int | None = None
+    ) -> dict[str, Any]:
         """
         Common pattern for converting playlist entities to dicts with track count.
 
@@ -133,9 +134,9 @@ class BaseDomainService:
 
     def _find_track_index(
         self,
-        tracks: List[Any],
+        tracks: list[Any],
         track_id: str
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         Common pattern for finding track index by ID.
 

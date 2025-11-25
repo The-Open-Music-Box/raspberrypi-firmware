@@ -4,7 +4,7 @@
 
 """Configuration for the unified monitoring system."""
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.src.config.app_config import AppConfig
@@ -26,7 +26,7 @@ class MonitoringConfig:
             # For backward compatibility during transition, create a new instance
             from app.src.config.app_config import AppConfig
             app_config = AppConfig()
-        self._app_config: "AppConfig" = app_config
+        self._app_config: AppConfig = app_config
 
     def _get_config(self) -> "AppConfig":
         """Get the app config."""
@@ -73,7 +73,7 @@ class MonitoringConfig:
         return self._get_config().log_format
 
     @property
-    def log_file_path(self) -> Optional[str]:
+    def log_file_path(self) -> str | None:
         """Get the log file path."""
         return self._get_config().log_file
 

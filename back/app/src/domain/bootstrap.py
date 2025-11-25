@@ -8,8 +8,8 @@ This module provides the main entry point for initializing the domain-driven arc
 and provides compatibility layers for legacy code.
 """
 
-from typing import Optional, Any, Dict
 import logging
+from typing import Any
 
 # Direct imports instead of dynamic imports
 from app.src.domain.audio.container import audio_domain_container
@@ -35,7 +35,7 @@ class DomainBootstrap:
         self._is_stopping = False
 
     @handle_errors(operation_name="initialize", component="domain.bootstrap")
-    def initialize(self, existing_backend: Optional[Any] = None) -> None:
+    def initialize(self, existing_backend: Any | None = None) -> None:
         """Initialize the domain-driven architecture.
 
         Args:
@@ -113,7 +113,7 @@ class DomainBootstrap:
 
     # MARK: - System Status
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Get comprehensive system status."""
         return {
             "domain_bootstrap": {

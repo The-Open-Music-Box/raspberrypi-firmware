@@ -15,10 +15,12 @@ This follows the Command Pattern:
 - ButtonActionDispatcher = Invoker
 """
 
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
 
-from app.src.domain.protocols.playback_coordinator_protocol import PlaybackCoordinatorProtocol
+from app.src.domain.protocols.playback_coordinator_protocol import (
+    PlaybackCoordinatorProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,7 @@ class PlayAction(ButtonAction):
         return "play"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"▶️  [ACTION:play] Starting playback")
+        logger.info("▶️  [ACTION:play] Starting playback")
         result = coordinator.play()
         logger.debug(f"[ACTION:play] Coordinator.play() returned: {result}")
         return result
@@ -76,7 +78,7 @@ class PauseAction(ButtonAction):
         return "pause"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"⏸️  [ACTION:pause] Pausing playback")
+        logger.info("⏸️  [ACTION:pause] Pausing playback")
         result = coordinator.pause()
         logger.debug(f"[ACTION:pause] Coordinator.pause() returned: {result}")
         return result
@@ -90,7 +92,7 @@ class PlayPauseAction(ButtonAction):
         return "play_pause"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"⏯️  [ACTION:play_pause] Toggling play/pause")
+        logger.info("⏯️  [ACTION:play_pause] Toggling play/pause")
         result = coordinator.toggle_pause()
         logger.debug(f"[ACTION:play_pause] Coordinator.toggle_pause() returned: {result}")
         return result
@@ -104,7 +106,7 @@ class StopAction(ButtonAction):
         return "stop"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"⏹️  [ACTION:stop] Stopping playback")
+        logger.info("⏹️  [ACTION:stop] Stopping playback")
         result = coordinator.stop()
         logger.debug(f"[ACTION:stop] Coordinator.stop() returned: {result}")
         return result
@@ -118,7 +120,7 @@ class NextTrackAction(ButtonAction):
         return "next_track"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"⏭️  [ACTION:next_track] Skipping to next track")
+        logger.info("⏭️  [ACTION:next_track] Skipping to next track")
         result = coordinator.next_track()
         logger.debug(f"[ACTION:next_track] Coordinator.next_track() returned: {result}")
         return result
@@ -132,7 +134,7 @@ class PreviousTrackAction(ButtonAction):
         return "previous_track"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"⏮️  [ACTION:previous_track] Going to previous track")
+        logger.info("⏮️  [ACTION:previous_track] Going to previous track")
         result = coordinator.previous_track()
         logger.debug(f"[ACTION:previous_track] Coordinator.previous_track() returned: {result}")
         return result
@@ -148,7 +150,7 @@ class VolumeUpAction(ButtonAction):
         return "volume_up"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"🔊 [ACTION:volume_up] Increasing volume")
+        logger.info("🔊 [ACTION:volume_up] Increasing volume")
         current_volume = coordinator.get_volume()
         logger.debug(f"[ACTION:volume_up] Current volume: {current_volume}%")
         new_volume = min(100, current_volume + self.VOLUME_STEP)
@@ -161,9 +163,8 @@ class VolumeUpAction(ButtonAction):
             else:
                 logger.warning(f"⚠️  [ACTION:volume_up] Failed to set volume to {new_volume}%")
             return success
-        else:
-            logger.info(f"ℹ️  [ACTION:volume_up] Volume already at maximum (100%)")
-            return True  # Not an error, just at limit
+        logger.info("ℹ️  [ACTION:volume_up] Volume already at maximum (100%)")
+        return True  # Not an error, just at limit
 
 
 class VolumeDownAction(ButtonAction):
@@ -176,7 +177,7 @@ class VolumeDownAction(ButtonAction):
         return "volume_down"
 
     async def execute(self, coordinator: PlaybackCoordinatorProtocol) -> bool:
-        logger.info(f"🔉 [ACTION:volume_down] Decreasing volume")
+        logger.info("🔉 [ACTION:volume_down] Decreasing volume")
         current_volume = coordinator.get_volume()
         logger.debug(f"[ACTION:volume_down] Current volume: {current_volume}%")
         new_volume = max(0, current_volume - self.VOLUME_STEP)
@@ -189,9 +190,8 @@ class VolumeDownAction(ButtonAction):
             else:
                 logger.warning(f"⚠️  [ACTION:volume_down] Failed to set volume to {new_volume}%")
             return success
-        else:
-            logger.info(f"ℹ️  [ACTION:volume_down] Volume already at minimum (0%)")
-            return True  # Not an error, just at limit
+        logger.info("ℹ️  [ACTION:volume_down] Volume already at minimum (0%)")
+        return True  # Not an error, just at limit
 
 
 class PrintDebugAction(ButtonAction):

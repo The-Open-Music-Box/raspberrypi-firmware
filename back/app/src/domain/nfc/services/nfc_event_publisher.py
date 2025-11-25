@@ -5,20 +5,22 @@
 """NFC Event Publisher Domain Service."""
 
 import uuid
-from typing import List, Callable, Dict, Any, Optional
+from collections.abc import Callable
+from typing import Any
+
+from app.src.monitoring import get_logger
 
 from ..events.nfc_events import (
-    NfcDomainEvent,
-    TagDetectedEvent,
-    TagAssociatedEvent,
-    TagDissociatedEvent,
-    TagRemovedEvent,
-    AssociationSessionStartedEvent,
     AssociationSessionCompletedEvent,
     AssociationSessionExpiredEvent,
+    AssociationSessionStartedEvent,
+    NfcDomainEvent,
+    TagAssociatedEvent,
+    TagDetectedEvent,
+    TagDissociatedEvent,
+    TagRemovedEvent,
 )
 from ..value_objects.tag_identifier import TagIdentifier
-from app.src.monitoring import get_logger
 
 logger = get_logger(__name__)
 
@@ -32,8 +34,8 @@ class NfcEventPublisher:
 
     def __init__(self):
         """Initialize the event publisher."""
-        self._event_handlers: Dict[str, List[Callable[[NfcDomainEvent], None]]] = {}
-        self._published_events: List[NfcDomainEvent] = []
+        self._event_handlers: dict[str, list[Callable[[NfcDomainEvent], None]]] = {}
+        self._published_events: list[NfcDomainEvent] = []
 
     def subscribe(self, event_type: str, handler: Callable[[NfcDomainEvent], None]) -> None:
         """Subscribe to a specific event type.
@@ -91,8 +93,8 @@ class NfcEventPublisher:
         self,
         tag_identifier: TagIdentifier,
         detection_count: int = 1,
-        previously_associated_playlist_id: Optional[str] = None,
-        hardware_metadata: Optional[Dict[str, Any]] = None
+        previously_associated_playlist_id: str | None = None,
+        hardware_metadata: dict[str, Any] | None = None
     ) -> TagDetectedEvent:
         """Publish a tag detected event.
 
@@ -121,7 +123,7 @@ class NfcEventPublisher:
         tag_identifier: TagIdentifier,
         playlist_id: str,
         session_id: str,
-        previous_playlist_id: Optional[str] = None
+        previous_playlist_id: str | None = None
     ) -> TagAssociatedEvent:
         """Publish a tag associated event.
 
@@ -173,8 +175,8 @@ class NfcEventPublisher:
 
     def publish_tag_removed(
         self,
-        tag_identifier: Optional[TagIdentifier] = None,
-        detection_duration_seconds: Optional[float] = None
+        tag_identifier: TagIdentifier | None = None,
+        detection_duration_seconds: float | None = None
     ) -> TagRemovedEvent:
         """Publish a tag removed event.
 
@@ -278,7 +280,7 @@ class NfcEventPublisher:
         self.publish(event)
         return event
 
-    def get_published_events(self) -> List[NfcDomainEvent]:
+    def get_published_events(self) -> list[NfcDomainEvent]:
         """Get all published events.
 
         Returns:

@@ -10,21 +10,28 @@ hardware controls and the audio controller.
 """
 
 
-from typing import Optional, Union, List, TYPE_CHECKING
 from asyncio import AbstractEventLoop
+from typing import TYPE_CHECKING, Union
 
 from app.src.application.controllers.audio_controller import AudioController
 
 if TYPE_CHECKING:
     from app.src.application.services.playback_coordinator import PlaybackCoordinator
-from app.src.domain.protocols.physical_controls_protocol import (
-    PhysicalControlsProtocol,
-    PhysicalControlEvent,
+from app.src.application.services.button_action_application_service import (
+    ButtonActionDispatcher,
 )
-from app.src.infrastructure.hardware.controls.controls_factory import PhysicalControlsFactory
-from app.src.application.services.button_action_application_service import ButtonActionDispatcher
+from app.src.config.button_actions_config import (
+    DEFAULT_BUTTON_CONFIGS,
+    ButtonActionConfig,
+)
 from app.src.config.hardware_config import HardwareConfig
-from app.src.config.button_actions_config import ButtonActionConfig, DEFAULT_BUTTON_CONFIGS
+from app.src.domain.protocols.physical_controls_protocol import (
+    PhysicalControlEvent,
+    PhysicalControlsProtocol,
+)
+from app.src.infrastructure.hardware.controls.controls_factory import (
+    PhysicalControlsFactory,
+)
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
 
@@ -40,9 +47,9 @@ class PhysicalControlsManager:
 
     def __init__(
         self,
-        audio_controller: Optional[Union[AudioController, 'PlaybackCoordinator']] = None,
-        hardware_config: Optional[HardwareConfig] = None,
-        button_configs: Optional[List[ButtonActionConfig]] = None
+        audio_controller: Union[AudioController, 'PlaybackCoordinator'] | None = None,
+        hardware_config: HardwareConfig | None = None,
+        button_configs: list[ButtonActionConfig] | None = None
     ):
         """Initialize PhysicalControlsManager with real GPIO integration and configurable buttons.
 
@@ -75,12 +82,12 @@ class PhysicalControlsManager:
         self.hardware_config = hardware_config
         self._button_configs = button_configs or DEFAULT_BUTTON_CONFIGS
         self._is_initialized = False
-        self._physical_controls: Optional[PhysicalControlsProtocol] = None
-        self._button_dispatcher: Optional[ButtonActionDispatcher] = None
+        self._physical_controls: PhysicalControlsProtocol | None = None
+        self._button_dispatcher: ButtonActionDispatcher | None = None
 
         # Store reference to main event loop for GPIO callbacks (which run in different threads)
         import asyncio
-        self._main_loop: Optional[AbstractEventLoop] = None
+        self._main_loop: AbstractEventLoop | None = None
         try:
             self._main_loop = asyncio.get_running_loop()
             logger.debug(f"✅ Captured main event loop: {self._main_loop}")
@@ -432,7 +439,7 @@ class PhysicalControlsManager:
 
         return base_status
 
-    def get_physical_controls(self) -> Optional[PhysicalControlsProtocol]:
+    def get_physical_controls(self) -> PhysicalControlsProtocol | None:
         """Get the physical controls implementation for testing.
 
         Returns:

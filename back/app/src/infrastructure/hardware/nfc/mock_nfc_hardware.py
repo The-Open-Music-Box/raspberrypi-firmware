@@ -5,9 +5,9 @@
 """Mock NFC Hardware Implementation for Testing and Development."""
 
 import asyncio
-import time
-from typing import Optional, Dict, Any
 import logging
+import time
+from typing import Any
 
 from .base_nfc_hardware import BaseNFCHardware, _handle_errors
 
@@ -29,7 +29,7 @@ class MockNFCHardware(BaseNFCHardware):
 
         # Mock-specific state
         self._scan_counter = 0
-        self._last_simulated_tag: Optional[Dict[str, Any]] = None
+        self._last_simulated_tag: dict[str, Any] | None = None
         self._simulation_cycle = 0
 
         # Mock has shorter stop timeout
@@ -41,7 +41,7 @@ class MockNFCHardware(BaseNFCHardware):
         """Initialize the mock hardware (no-op for mock)."""
         logger.info("🔧 Mock NFC Hardware initialized (no-op)")
 
-    async def read_nfc(self) -> Optional[Dict[str, Any]]:
+    async def read_nfc(self) -> dict[str, Any] | None:
         """Simulate reading an NFC tag directly.
 
         This method simulates finding a tag occasionally for direct reads.
@@ -90,7 +90,7 @@ class MockNFCHardware(BaseNFCHardware):
         self._tag_subject.on_next(tag_data)
         logger.debug("📤 Tag detection event emitted successfully")
 
-    def _generate_mock_tag(self) -> Dict[str, Any]:
+    def _generate_mock_tag(self) -> dict[str, Any]:
         """Generate mock NFC tag data.
 
         Uses the base class _create_tag_data() helper for standardized tag structure.

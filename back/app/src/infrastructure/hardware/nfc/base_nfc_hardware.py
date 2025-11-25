@@ -10,14 +10,16 @@ Follows Context7 principles with proper type safety and DDD architecture.
 """
 
 import asyncio
-import time
 import logging
-from typing import Optional, Dict, Any
+import time
 from abc import abstractmethod
+from typing import Any
+
 from rx.subject import Subject
 
-from .nfc_hardware_interface import NFCHardwareInterface
 from app.src.services.error.unified_error_decorator import handle_errors
+
+from .nfc_hardware_interface import NFCHardwareInterface
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,7 @@ class BaseNFCHardware(NFCHardwareInterface):
 
         # Reader state
         self._running = False
-        self._reader_task: Optional[asyncio.Task[None]] = None
+        self._reader_task: asyncio.Task[None] | None = None
         self._stop_event = asyncio.Event()
 
         logger.debug(f"{self.__class__.__name__}: Base NFC hardware state initialized")
@@ -123,7 +125,7 @@ class BaseNFCHardware(NFCHardwareInterface):
                 # Timeout is 1.0s for mock, 2.0s for PN532 - use configurable value
                 timeout = getattr(self, '_stop_timeout', 2.0)
                 await asyncio.wait_for(self._reader_task, timeout=timeout)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Force cancellation if timeout exceeded
                 self._reader_task.cancel()
                 try:
@@ -149,9 +151,9 @@ class BaseNFCHardware(NFCHardwareInterface):
         self,
         uid: str,
         present: bool = True,
-        hardware_name: Optional[str] = None,
+        hardware_name: str | None = None,
         **extra_fields: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create standardized tag data dictionary.
 
         Extracted helper to eliminate duplication of tag data structure
@@ -189,7 +191,7 @@ class BaseNFCHardware(NFCHardwareInterface):
         pass
 
     @abstractmethod
-    async def read_nfc(self) -> Optional[Dict[str, Any]]:
+    async def read_nfc(self) -> dict[str, Any] | None:
         """Read NFC tag data directly.
 
         Must be implemented by subclasses to handle hardware-specific tag reading.

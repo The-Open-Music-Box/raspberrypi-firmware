@@ -5,8 +5,8 @@
 """Data domain events for playlists and tracks."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -21,7 +21,7 @@ class PlaylistCreatedEvent:
 class PlaylistUpdatedEvent:
     """Event raised when a playlist is updated."""
     playlist_id: str
-    updates: Dict[str, Any]
+    updates: dict[str, Any]
     updated_at: datetime
 
 
@@ -48,7 +48,7 @@ class TrackUpdatedEvent:
     """Event raised when a track is updated."""
     track_id: str
     playlist_id: str
-    updates: Dict[str, Any]
+    updates: dict[str, Any]
     updated_at: datetime
 
 
@@ -65,5 +65,5 @@ class TrackDeletedEvent:
 class TracksReorderedEvent:
     """Event raised when tracks are reordered in a playlist."""
     playlist_id: str
-    track_ids: List[str]
+    track_ids: list[str]
     reordered_at: datetime

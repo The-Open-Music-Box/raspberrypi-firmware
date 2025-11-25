@@ -9,11 +9,11 @@ with Core Audio. It implements the AudioBackendProtocol interface and focuses
 purely on audio playback, leaving playlist management to the PlaylistController.
 """
 
-import os
 import asyncio
+import os
 import time
 from pathlib import Path
-from typing import Optional, cast
+from typing import cast
 
 try:
     import pygame
@@ -23,9 +23,13 @@ except ImportError:
     pygame = None
 
 
+from app.src.domain.decorators.error_handler import (
+    handle_domain_errors as handle_errors,
+)
+from app.src.domain.protocols.notification_protocol import (
+    PlaybackNotifierProtocol as PlaybackSubject,
+)
 from app.src.monitoring import get_logger
-from app.src.domain.decorators.error_handler import handle_domain_errors as handle_errors
-from app.src.domain.protocols.notification_protocol import PlaybackNotifierProtocol as PlaybackSubject
 
 from .base_audio_backend import BaseAudioBackend
 
@@ -40,19 +44,19 @@ class MacOSAudioBackend(BaseAudioBackend):
     """
 
     @handle_errors("__init__")
-    def __init__(self, playback_subject: Optional[PlaybackSubject] = None):
+    def __init__(self, playback_subject: PlaybackSubject | None = None):
         """Initialize the macOS audio backend."""
         super().__init__(playback_subject)
         self._mixer_initialized = False
 
         # Time tracking for position calculation
-        self._play_start_time: Optional[float] = None
-        self._pause_time: Optional[float] = None
+        self._play_start_time: float | None = None
+        self._pause_time: float | None = None
         self._is_paused = False
 
         # Track current file and its duration
-        self._current_file_path: Optional[str] = None
-        self._current_file_duration: Optional[float] = None  # in seconds
+        self._current_file_path: str | None = None
+        self._current_file_duration: float | None = None  # in seconds
 
         if not PYGAME_AVAILABLE:
             logger.error("❌ pygame not available for macOS audio backend")
@@ -67,7 +71,7 @@ class MacOSAudioBackend(BaseAudioBackend):
         logger.info("✓ macOS Audio Backend initialized with Core Audio")
 
     @handle_errors("play_file")
-    def play_file(self, file_path: str, duration_ms: Optional[int] = None) -> bool:
+    def play_file(self, file_path: str, duration_ms: int | None = None) -> bool:
         """Play a single audio file.
 
         Args:
@@ -305,7 +309,7 @@ class MacOSAudioBackend(BaseAudioBackend):
         logger.warning("⚠️ macOS: Seek not supported with pygame backend")
         return False
 
-    async def get_duration(self) -> Optional[int]:  # type: ignore[override]
+    async def get_duration(self) -> int | None:  # type: ignore[override]
         """Get duration of current track.
 
         Returns:

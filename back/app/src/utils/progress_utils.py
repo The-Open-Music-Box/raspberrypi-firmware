@@ -9,12 +9,11 @@ Centralized logic for calculating progress percentages.
 This eliminates duplication of progress calculation formulas across the application.
 """
 
-from typing import Union
 
 
 def calculate_progress(
-    current: Union[int, float],
-    total: Union[int, float],
+    current: int | float,
+    total: int | float,
     precision: int = 2,
 ) -> float:
     """
@@ -75,8 +74,8 @@ def calculate_progress(
 
 
 def calculate_progress_safe(
-    current: Union[int, float],
-    total: Union[int, float],
+    current: int | float,
+    total: int | float,
     precision: int = 2,
 ) -> float:
     """
@@ -105,8 +104,8 @@ def calculate_progress_safe(
 
 
 def format_progress(
-    current: Union[int, float],
-    total: Union[int, float],
+    current: int | float,
+    total: int | float,
     precision: int = 2,
 ) -> str:
     """
@@ -133,9 +132,9 @@ def format_progress(
 
 
 def calculate_remaining(
-    current: Union[int, float],
-    total: Union[int, float],
-) -> Union[int, float]:
+    current: int | float,
+    total: int | float,
+) -> int | float:
     """
     Calculate remaining value (total - current).
 
@@ -161,8 +160,8 @@ def calculate_remaining(
 
 
 def is_complete(
-    current: Union[int, float],
-    total: Union[int, float],
+    current: int | float,
+    total: int | float,
 ) -> bool:
     """
     Check if progress is complete.
@@ -186,8 +185,8 @@ def is_complete(
 
 
 def calculate_progress_ratio(
-    current: Union[int, float],
-    total: Union[int, float],
+    current: int | float,
+    total: int | float,
     precision: int = 4,
 ) -> float:
     """

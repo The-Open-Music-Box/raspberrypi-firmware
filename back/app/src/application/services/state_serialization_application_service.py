@@ -9,8 +9,8 @@ Single responsibility: Serializes domain objects for transport layer.
 Clean separation following Domain-Driven Design principles.
 """
 
-from typing import Optional, Any, Dict, List
 import logging
+from typing import Any
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
 from app.src.services.sequence_generator import SequenceGenerator
@@ -35,7 +35,7 @@ class StateSerializationApplicationService:
     - Transport (handled by Socket.IO layer)
     """
 
-    def __init__(self, sequences: Optional[SequenceGenerator] = None):
+    def __init__(self, sequences: SequenceGenerator | None = None):
         """Initialize state serialization service.
 
         Args:
@@ -45,7 +45,7 @@ class StateSerializationApplicationService:
         logger.info("StateSerializationApplicationService initialized with clean DDD architecture")
 
     @handle_service_errors("state_serialization_service")
-    def serialize_playlist(self, playlist, include_tracks: bool = True) -> Dict[str, Any]:
+    def serialize_playlist(self, playlist, include_tracks: bool = True) -> dict[str, Any]:
         """
         Serialize a playlist object or dict for transmission.
 
@@ -97,7 +97,7 @@ class StateSerializationApplicationService:
         return serialized
 
     @handle_service_errors("state_serialization_service")
-    def serialize_track(self, track) -> Dict[str, Any]:
+    def serialize_track(self, track) -> dict[str, Any]:
         """
         Serialize a track object or dict for transmission.
 
@@ -112,23 +112,22 @@ class StateSerializationApplicationService:
                 **track,
                 "server_seq": self.sequences.get_current_global_seq(),
             }
-        else:
-            # Handle domain object
-            return {
-                "id": track.id,
-                "title": track.title,
-                "filename": track.filename,
-                "duration_ms": int((track.duration or 0) * 1000),
-                "artist": getattr(track, "artist", None),
-                "album": getattr(track, "album", None),
-                "track_number": getattr(track, "number", None),
-                "play_count": getattr(track, "play_count", 0),
-                "created_at": getattr(track, "created_at", None),
-                "server_seq": self.sequences.get_current_global_seq(),
-            }
+        # Handle domain object
+        return {
+            "id": track.id,
+            "title": track.title,
+            "filename": track.filename,
+            "duration_ms": int((track.duration or 0) * 1000),
+            "artist": getattr(track, "artist", None),
+            "album": getattr(track, "album", None),
+            "track_number": getattr(track, "number", None),
+            "play_count": getattr(track, "play_count", 0),
+            "created_at": getattr(track, "created_at", None),
+            "server_seq": self.sequences.get_current_global_seq(),
+        }
 
     @handle_service_errors("state_serialization_service")
-    def serialize_playlists_collection(self, playlists: List) -> List[Dict[str, Any]]:
+    def serialize_playlists_collection(self, playlists: list) -> list[dict[str, Any]]:
         """
         Serialize a collection of playlists.
 
@@ -141,7 +140,7 @@ class StateSerializationApplicationService:
         return [self.serialize_playlist(playlist, include_tracks=False) for playlist in playlists]
 
     @handle_service_errors("state_serialization_service")
-    def serialize_tracks_collection(self, tracks: List) -> List[Dict[str, Any]]:
+    def serialize_tracks_collection(self, tracks: list) -> list[dict[str, Any]]:
         """
         Serialize a collection of tracks.
 
@@ -157,12 +156,12 @@ class StateSerializationApplicationService:
     def serialize_playback_state(
         self,
         state: str,
-        track_info: Optional[Dict[str, Any]] = None,
-        playlist_info: Optional[Dict[str, Any]] = None,
+        track_info: dict[str, Any] | None = None,
+        playlist_info: dict[str, Any] | None = None,
         position: float = 0.0,
         volume: int = 50,
-        error: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        error: str | None = None,
+    ) -> dict[str, Any]:
         """
         Serialize current playback state for broadcasting.
 

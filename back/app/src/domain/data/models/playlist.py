@@ -5,7 +5,6 @@
 """Playlist domain entity following Domain-Driven Design principles."""
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from .track import Track
 
@@ -26,14 +25,14 @@ class Playlist:
     """
 
     title: str
-    tracks: List[Track] = field(default_factory=list)
-    description: Optional[str] = None
-    id: Optional[str] = None
-    nfc_tag_id: Optional[str] = None
-    path: Optional[str] = None
+    tracks: list[Track] = field(default_factory=list)
+    description: str | None = None
+    id: str | None = None
+    nfc_tag_id: str | None = None
+    path: str | None = None
 
     @classmethod
-    def from_api_data(cls, title: Optional[str] = None, name: Optional[str] = None, **kwargs) -> "Playlist":
+    def from_api_data(cls, title: str | None = None, name: str | None = None, **kwargs) -> "Playlist":
         """Domain factory method: Create a playlist from API data.
 
         Args:
@@ -55,7 +54,7 @@ class Playlist:
         return cls(title=playlist_title, **kwargs)
 
     @classmethod
-    def from_files(cls, title: str, file_paths: List[str], **kwargs) -> "Playlist":
+    def from_files(cls, title: str, file_paths: list[str], **kwargs) -> "Playlist":
         """Domain factory method: Create a playlist from a list of file paths.
 
         Args:
@@ -69,7 +68,7 @@ class Playlist:
         tracks = [Track.from_file(file_path, idx + 1) for idx, file_path in enumerate(file_paths)]
         return cls(title=title, tracks=tracks, **kwargs)
 
-    def get_track(self, number: int) -> Optional[Track]:
+    def get_track(self, number: int) -> Track | None:
         """Domain service: Get track by number (1-based index).
 
         Args:
@@ -100,7 +99,7 @@ class Playlist:
         # Domain business rule: Sort tracks by number
         self.tracks.sort(key=lambda t: t.track_number)
 
-    def remove_track(self, track_number: int) -> Optional[Track]:
+    def remove_track(self, track_number: int) -> Track | None:
         """Domain behavior: Remove a track by number and return it.
 
         Business rule: Reindex remaining tracks after removal.
@@ -123,7 +122,7 @@ class Playlist:
         """Return the number of tracks in the playlist."""
         return len(self.tracks)
 
-    def get_first_track(self) -> Optional[Track]:
+    def get_first_track(self) -> Track | None:
         """Domain service: Get the first track in the playlist.
 
         This method returns the track at position 0 in the sorted track list,
@@ -138,7 +137,7 @@ class Playlist:
         sorted_tracks = sorted(self.tracks, key=lambda t: t.track_number)
         return sorted_tracks[0]
 
-    def get_track_by_position(self, position: int) -> Optional[Track]:
+    def get_track_by_position(self, position: int) -> Track | None:
         """Domain service: Get track by position (0-based index) in sorted track list.
 
         Args:
@@ -152,7 +151,7 @@ class Playlist:
         sorted_tracks = sorted(self.tracks, key=lambda t: t.track_number)
         return sorted_tracks[position]
 
-    def get_track_numbers(self) -> List[int]:
+    def get_track_numbers(self) -> list[int]:
         """Domain service: Get all track numbers in sorted order.
 
         Returns:
@@ -185,7 +184,7 @@ class Playlist:
         for i, track in enumerate(sorted_tracks, 1):
             track.track_number = i
 
-    def get_min_track_number(self) -> Optional[int]:
+    def get_min_track_number(self) -> int | None:
         """Domain query: Get the minimum track number in the playlist.
 
         Returns:
@@ -195,7 +194,7 @@ class Playlist:
             return None
         return min(t.track_number for t in self.tracks)
 
-    def get_max_track_number(self) -> Optional[int]:
+    def get_max_track_number(self) -> int | None:
         """Domain query: Get the maximum track number in the playlist.
 
         Returns:
@@ -221,7 +220,7 @@ class Playlist:
         """
         return bool(self.title.strip()) and all(track.is_valid() for track in self.tracks)
 
-    def get_total_duration_ms(self) -> Optional[int]:
+    def get_total_duration_ms(self) -> int | None:
         """Domain service: Calculate total duration of all tracks.
 
         Returns:

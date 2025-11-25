@@ -5,14 +5,15 @@
 """NFC Hardware Factory for Domain-Driven Architecture."""
 
 import asyncio
+import logging
 import os
 import sys
-from typing import Optional, Any
-import logging
+from typing import Any
 
-from .nfc_hardware_interface import NFCHardwareInterface
-from .mock_nfc_hardware import MockNFCHardware
 from app.src.services.error.unified_error_decorator import handle_errors
+
+from .mock_nfc_hardware import MockNFCHardware
+from .nfc_hardware_interface import NFCHardwareInterface
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +24,8 @@ def _handle_errors(operation_name: str):
 
 @_handle_errors("create_nfc_hardware")
 async def create_nfc_hardware(
-    bus_lock: Optional[asyncio.Lock] = None,
-    config: Optional[Any] = None,
+    bus_lock: asyncio.Lock | None = None,
+    config: Any | None = None,
     force_mock: bool = False,
 ) -> NFCHardwareInterface:
     """Create appropriate NFC hardware implementation.
@@ -144,5 +145,4 @@ class NFCHardwareSelector:
         """
         if NFCHardwareSelector.should_use_mock():
             return "mock"
-        else:
-            return "pn532"
+        return "pn532"

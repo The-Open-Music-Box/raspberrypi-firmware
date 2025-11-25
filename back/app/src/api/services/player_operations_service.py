@@ -8,11 +8,12 @@ Player Operations Service (DDD Architecture)
 Single Responsibility: Complex player workflow orchestration.
 """
 
-import time
-from typing import Dict, Any
-from collections import defaultdict
-from fastapi import Request
 import logging
+import time
+from collections import defaultdict
+from typing import Any
+
+from fastapi import Request
 
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -49,14 +50,14 @@ class PlayerOperationsService:
             player_service: Application service for basic player operations
         """
         self._player_service = player_service
-        self._rate_limit_store: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"count": 0, "window_start": 0.0})
+        self._rate_limit_store: dict[str, dict[str, Any]] = defaultdict(lambda: {"count": 0, "window_start": 0.0})
 
     def _handle_navigation_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         operation_name: str,
         default_failure_message: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle navigation operation result with consistent logging and response.
 
         Args:
@@ -74,15 +75,14 @@ class PlayerOperationsService:
                 "track": result.get("track"),
                 "status": result.get("status", {})
             }
-        else:
-            logger.warning(f"⚠️ Failed to navigate to {operation_name}: {result.get('message')}")
-            return {
-                "success": False,
-                "message": result.get("message", default_failure_message)
-            }
+        logger.warning(f"⚠️ Failed to navigate to {operation_name}: {result.get('message')}")
+        return {
+            "success": False,
+            "message": result.get("message", default_failure_message)
+        }
 
     @handle_service_errors("player_operations")
-    async def check_rate_limit_use_case(self, request: Request) -> Dict[str, Any]:
+    async def check_rate_limit_use_case(self, request: Request) -> dict[str, Any]:
         """Check rate limiting for player operations.
 
         Args:
@@ -115,12 +115,12 @@ class PlayerOperationsService:
             return {"allowed": True}
 
         except Exception as e:
-            logger.error(f"Error in rate limiting: {str(e)}")
+            logger.error(f"Error in rate limiting: {e!s}")
             # Allow request on error to avoid blocking users
             return {"allowed": True}
 
     @handle_service_errors("player_operations")
-    async def next_track_use_case(self) -> Dict[str, Any]:
+    async def next_track_use_case(self) -> dict[str, Any]:
         """Navigate to next track.
 
         Returns:
@@ -136,14 +136,14 @@ class PlayerOperationsService:
             )
 
         except Exception as e:
-            logger.error(f"Error in next_track_use_case: {str(e)}")
+            logger.error(f"Error in next_track_use_case: {e!s}")
             return {
                 "success": False,
                 "message": "Internal error during track navigation"
             }
 
     @handle_service_errors("player_operations")
-    async def previous_track_use_case(self) -> Dict[str, Any]:
+    async def previous_track_use_case(self) -> dict[str, Any]:
         """Navigate to previous track.
 
         Returns:
@@ -159,14 +159,14 @@ class PlayerOperationsService:
             )
 
         except Exception as e:
-            logger.error(f"Error in previous_track_use_case: {str(e)}")
+            logger.error(f"Error in previous_track_use_case: {e!s}")
             return {
                 "success": False,
                 "message": "Internal error during track navigation"
             }
 
     @handle_service_errors("player_operations")
-    async def toggle_playback_use_case(self) -> Dict[str, Any]:
+    async def toggle_playback_use_case(self) -> dict[str, Any]:
         """Toggle playback state (play/pause).
 
         Returns:
@@ -209,21 +209,20 @@ class PlayerOperationsService:
                     "state": new_state,
                     "status": result.get("status", {})
                 }
-            else:
-                return {
-                    "success": False,
-                    "message": result.get("message", f"Failed to toggle to {new_state}")
-                }
+            return {
+                "success": False,
+                "message": result.get("message", f"Failed to toggle to {new_state}")
+            }
 
         except Exception as e:
-            logger.error(f"Error in toggle_playback_use_case: {str(e)}")
+            logger.error(f"Error in toggle_playback_use_case: {e!s}")
             return {
                 "success": False,
                 "message": "Internal error during playback toggle"
             }
 
     @handle_service_errors("player_operations")
-    async def stop_progress_service_use_case(self, request: Request) -> Dict[str, Any]:
+    async def stop_progress_service_use_case(self, request: Request) -> dict[str, Any]:
         """Stop progress service when playback stops.
 
         Args:
@@ -240,16 +239,15 @@ class PlayerOperationsService:
                 await playlist_routes_ddd.progress_service.stop()
                 logger.info("✅ Progress service stopped")
                 return {"success": True}
-            else:
-                logger.warning("⚠️ Progress service not found")
-                return {"success": False, "message": "Progress service not found"}
+            logger.warning("⚠️ Progress service not found")
+            return {"success": False, "message": "Progress service not found"}
 
         except Exception as e:
-            logger.error(f"Error stopping progress service: {str(e)}")
+            logger.error(f"Error stopping progress service: {e!s}")
             return {"success": False, "message": "Failed to stop progress service"}
 
     @handle_service_errors("player_operations")
-    async def trigger_immediate_progress_use_case(self, request: Request) -> Dict[str, Any]:
+    async def trigger_immediate_progress_use_case(self, request: Request) -> dict[str, Any]:
         """Trigger immediate progress update for UI responsiveness.
 
         Args:
@@ -266,12 +264,11 @@ class PlayerOperationsService:
                 logger.debug("Triggering immediate progress emission for UI responsiveness")
                 await playlist_routes_ddd.progress_service.emit_immediate_position()
                 return {"success": True}
-            else:
-                logger.warning("⚠️ Progress service not found for immediate trigger")
-                return {"success": False, "message": "Progress service not found"}
+            logger.warning("⚠️ Progress service not found for immediate trigger")
+            return {"success": False, "message": "Progress service not found"}
 
         except Exception as e:
-            logger.error(f"Error triggering immediate progress: {str(e)}")
+            logger.error(f"Error triggering immediate progress: {e!s}")
             return {"success": False, "message": "Failed to trigger progress update"}
 
     def _get_client_id(self, request: Request) -> str:

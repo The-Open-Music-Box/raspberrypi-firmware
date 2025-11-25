@@ -78,10 +78,9 @@ class PlaylistTrackAPI(BaseAPIRoutes):
                         message="Tracks reordered successfully",
                         data={"playlist_id": playlist_id, "client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to reorder tracks")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to reorder tracks")
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -126,10 +125,9 @@ class PlaylistTrackAPI(BaseAPIRoutes):
                         message=f"Deleted {len(track_numbers)} tracks successfully",
                         data={"client_op_id": client_op_id}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to delete tracks")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to delete tracks")
+                )
 
             except Exception as e:
                 # Use base class helper for error handling
@@ -174,10 +172,9 @@ class PlaylistTrackAPI(BaseAPIRoutes):
                         message=result.get("message", "Track moved successfully"),
                         data={"client_op_id": client_op_id or ""}
                     )
-                else:
-                    return UnifiedResponseService.internal_error(
-                        message=result.get("message", "Failed to move track")
-                    )
+                return UnifiedResponseService.internal_error(
+                    message=result.get("message", "Failed to move track")
+                )
 
             except Exception as e:
                 # Use base class helper for error handling

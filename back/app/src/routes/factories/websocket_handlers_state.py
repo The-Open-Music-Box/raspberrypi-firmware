@@ -15,20 +15,20 @@ This factory creates and registers handler instances following DDD principles:
 - SyncHandlers: Handles state synchronization and health monitoring
 """
 
+from typing import Any
+
 import socketio
 
-from typing import Any, Optional
-
-from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.dependencies import (
     get_nfc_application_service,
     get_playback_coordinator,
     get_player_state_service,
 )
+from app.src.monitoring import get_logger
 from app.src.routes.handlers.nfc_handlers import NFCHandlers
 from app.src.routes.handlers.subscription_handlers import SubscriptionHandlers
 from app.src.routes.handlers.sync_handlers import SyncHandlers
+from app.src.services.error.unified_error_decorator import handle_http_errors
 
 logger = get_logger(__name__)
 
@@ -52,9 +52,9 @@ class WebSocketStateHandlers:
 
         # Handler instances will be initialized lazily when register() is called
         # This allows tests to set up mocks before handler initialization
-        self.nfc_handlers: Optional[NFCHandlers] = None
-        self.subscription_handlers: Optional[SubscriptionHandlers] = None
-        self.sync_handlers: Optional[SyncHandlers] = None
+        self.nfc_handlers: NFCHandlers | None = None
+        self.subscription_handlers: SubscriptionHandlers | None = None
+        self.sync_handlers: SyncHandlers | None = None
 
         logger.info("WebSocketStateHandlers initialized with server-authoritative architecture")
 

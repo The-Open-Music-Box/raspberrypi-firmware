@@ -4,12 +4,12 @@
 
 """Association Session Domain Entity."""
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from app.src.domain.base.base_session_entity import BaseSessionEntity
+
 from ..value_objects.tag_identifier import TagIdentifier
 
 
@@ -38,9 +38,9 @@ class AssociationSession(BaseSessionEntity):
     playlist_id: str = ""
     state: SessionState = SessionState.LISTENING
     timeout_seconds: int = 60  # Override base class default
-    detected_tag: Optional[TagIdentifier] = None
-    conflict_playlist_id: Optional[str] = None
-    error_message: Optional[str] = None
+    detected_tag: TagIdentifier | None = None
+    conflict_playlist_id: str | None = None
+    error_message: str | None = None
     override_mode: bool = False  # If True, force association even if tag is already associated
 
     @property

@@ -6,13 +6,14 @@
 
 import mimetypes
 from pathlib import Path
-from typing import List, Optional
+from typing import Any as MutagenAny
 
 from mutagen import File as MutagenFile
 from mutagen.id3 import ID3NoHeaderError
-from typing import Any as MutagenAny
 
-from app.src.domain.upload.protocols.file_storage_protocol import MetadataExtractionProtocol
+from app.src.domain.upload.protocols.file_storage_protocol import (
+    MetadataExtractionProtocol,
+)
 from app.src.domain.upload.value_objects.file_metadata import FileMetadata
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_errors
@@ -110,7 +111,7 @@ class MutagenMetadataExtractor(MetadataExtractionProtocol):
             extra_attributes=extra_attributes,
         )
 
-    def _get_tag_value(self, audio_file: MutagenAny, tag_keys: List[str]) -> Optional[str]:
+    def _get_tag_value(self, audio_file: MutagenAny, tag_keys: list[str]) -> str | None:
         """Get tag value trying multiple possible keys.
 
         Args:
@@ -135,7 +136,7 @@ class MutagenMetadataExtractor(MetadataExtractionProtocol):
 
         return None
 
-    def get_supported_formats(self) -> List[str]:
+    def get_supported_formats(self) -> list[str]:
         """Get list of supported audio formats.
 
         Returns:
@@ -199,7 +200,7 @@ class MockMetadataExtractor(MetadataExtractionProtocol):
             sample_rate=44100,
         )
 
-    def get_supported_formats(self) -> List[str]:
+    def get_supported_formats(self) -> list[str]:
         """Get mock supported formats."""
         return self._supported_formats.copy()
 

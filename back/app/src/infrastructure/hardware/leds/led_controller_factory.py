@@ -8,13 +8,13 @@ LED Controller Factory (Infrastructure Layer).
 Factory for creating LED controller implementations based on environment.
 """
 
-import os
 import logging
+import os
 from typing import Any
 
 from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
-from app.src.infrastructure.hardware.leds.rgb_led_controller import RGBLEDController
 from app.src.infrastructure.hardware.leds.mock_led_controller import MockLEDController
+from app.src.infrastructure.hardware.leds.rgb_led_controller import RGBLEDController
 
 logger = logging.getLogger(__name__)
 

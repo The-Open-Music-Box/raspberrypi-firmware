@@ -12,7 +12,7 @@ This module handles client connection lifecycle events including:
 """
 
 import time
-from typing import Dict, Any
+from typing import Any
 
 import socketio
 
@@ -51,7 +51,7 @@ class ConnectionHandlers:
 
         @self.sio.event
         @handle_http_errors()
-        async def connect(sid: str, environ: Dict[str, Any]) -> None:
+        async def connect(sid: str, environ: dict[str, Any]) -> None:
             """Handle client connection and send initial state sync.
 
             When a client connects, this handler:

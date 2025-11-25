@@ -8,13 +8,12 @@ Custom exception hierarchy for track management operations.
 This module defines specific exceptions for track management operations,
 providing better error handling and debugging capabilities.
 """
-from typing import Optional
 
 
 class TrackManagementError(Exception):
     """Base exception for track management operations."""
 
-    def __init__(self, message: str, playlist_id: Optional[str] = None, track_numbers: Optional[list] = None):
+    def __init__(self, message: str, playlist_id: str | None = None, track_numbers: list | None = None):
         super().__init__(message)
         self.playlist_id = playlist_id
         self.track_numbers = track_numbers
@@ -40,7 +39,7 @@ class TrackNotFoundError(TrackManagementError):
 class FileOperationError(TrackManagementError):
     """Raised when file system operations fail."""
 
-    def __init__(self, message: str, file_path: Optional[str] = None, playlist_id: Optional[str] = None):
+    def __init__(self, message: str, file_path: str | None = None, playlist_id: str | None = None):
         super().__init__(message, playlist_id=playlist_id)
         self.file_path = file_path
 
@@ -48,7 +47,7 @@ class FileOperationError(TrackManagementError):
 class DatabaseOperationError(TrackManagementError):
     """Raised when database operations fail."""
 
-    def __init__(self, message: str, playlist_id: Optional[str] = None, operation: Optional[str] = None):
+    def __init__(self, message: str, playlist_id: str | None = None, operation: str | None = None):
         super().__init__(message, playlist_id=playlist_id)
         self.operation = operation
 
@@ -66,6 +65,6 @@ class InvalidTrackOrderError(TrackManagementError):
 class TrackValidationError(TrackManagementError):
     """Raised when track validation fails."""
 
-    def __init__(self, message: str, playlist_id: Optional[str] = None, track_number: Optional[int] = None):
+    def __init__(self, message: str, playlist_id: str | None = None, track_number: int | None = None):
         super().__init__(message, playlist_id=playlist_id)
         self.track_number = track_number

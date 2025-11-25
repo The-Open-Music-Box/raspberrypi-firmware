@@ -5,14 +5,14 @@
 """Audio backend implementations for domain-driven architecture."""
 
 # Import all implementations for easy access
-from .macos_audio_backend import MacOSAudioBackend
-from .wm8960_audio_backend import WM8960AudioBackend
-from .mock_audio_backend import MockAudioBackend
 from .base_audio_backend import BaseAudioBackend
+from .macos_audio_backend import MacOSAudioBackend
+from .mock_audio_backend import MockAudioBackend
+from .wm8960_audio_backend import WM8960AudioBackend
 
 __all__ = [
-    "MacOSAudioBackend",
-    "WM8960AudioBackend",
-    "MockAudioBackend",
     "BaseAudioBackend",
+    "MacOSAudioBackend",
+    "MockAudioBackend",
+    "WM8960AudioBackend",
 ]

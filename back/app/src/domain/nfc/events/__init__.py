@@ -5,23 +5,23 @@
 """NFC Domain Events Module."""
 
 from .nfc_events import (
-    NfcDomainEvent,
-    TagDetectedEvent,
-    TagAssociatedEvent,
-    TagDissociatedEvent,
-    AssociationSessionStartedEvent,
     AssociationSessionCompletedEvent,
     AssociationSessionExpiredEvent,
+    AssociationSessionStartedEvent,
+    NfcDomainEvent,
+    TagAssociatedEvent,
+    TagDetectedEvent,
+    TagDissociatedEvent,
     TagRemovedEvent,
 )
 
 __all__ = [
-    "NfcDomainEvent",
-    "TagDetectedEvent",
-    "TagAssociatedEvent",
-    "TagDissociatedEvent",
-    "AssociationSessionStartedEvent",
     "AssociationSessionCompletedEvent",
     "AssociationSessionExpiredEvent",
+    "AssociationSessionStartedEvent",
+    "NfcDomainEvent",
+    "TagAssociatedEvent",
+    "TagDetectedEvent",
+    "TagDissociatedEvent",
     "TagRemovedEvent",
 ]

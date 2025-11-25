@@ -9,11 +9,12 @@ This module defines consistent event structures, naming conventions,
 and envelope formats for all WebSocket communications.
 """
 
-from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field
-from enum import Enum
 import time
 import uuid
+from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 class SocketEventType(str, Enum):
@@ -115,7 +116,7 @@ class StateEventEnvelope(BaseModel):
 
     event_type: SocketEventType = Field(..., description="Type of state event")
     server_seq: int = Field(..., description="Global server sequence number")
-    data: Dict[str, Any] = Field(..., description="Event payload data")
+    data: dict[str, Any] = Field(..., description="Event payload data")
     timestamp: int = Field(
         default_factory=lambda: int(time.time() * 1000),
         description="Event timestamp in milliseconds",
@@ -125,8 +126,8 @@ class StateEventEnvelope(BaseModel):
     )
 
     # Optional fields for specific event types
-    playlist_id: Optional[str] = Field(None, description="Playlist ID for playlist-specific events")
-    playlist_seq: Optional[int] = Field(None, description="Playlist-specific sequence number")
+    playlist_id: str | None = Field(None, description="Playlist ID for playlist-specific events")
+    playlist_seq: int | None = Field(None, description="Playlist-specific sequence number")
 
 
 class ConnectionStatusPayload(BaseModel):
@@ -145,11 +146,11 @@ class RoomAcknowledgmentPayload(BaseModel):
 
     room: str = Field(..., description="Room name that was joined/left")
     success: bool = Field(..., description="Whether operation was successful")
-    server_seq: Optional[int] = Field(None, description="Current server sequence number")
-    playlist_seq: Optional[int] = Field(
+    server_seq: int | None = Field(None, description="Current server sequence number")
+    playlist_seq: int | None = Field(
         None, description="Playlist sequence if joining playlist room"
     )
-    message: Optional[str] = Field(None, description="Optional status message")
+    message: str | None = Field(None, description="Optional status message")
 
 
 class OperationAcknowledgmentPayload(BaseModel):
@@ -158,18 +159,18 @@ class OperationAcknowledgmentPayload(BaseModel):
     client_op_id: str = Field(..., description="Client operation identifier")
     success: bool = Field(..., description="Whether operation succeeded")
     server_seq: int = Field(..., description="Current server sequence number")
-    data: Optional[Dict[str, Any]] = Field(None, description="Operation result data")
-    message: Optional[str] = Field(None, description="Success/error message")
+    data: dict[str, Any] | None = Field(None, description="Operation result data")
+    message: str | None = Field(None, description="Success/error message")
 
 
 class SyncRequestPayload(BaseModel):
     """Payload for sync:request events from clients."""
 
-    last_global_seq: Optional[int] = Field(None, description="Last known global sequence number")
-    last_playlist_seqs: Optional[Dict[str, int]] = Field(
+    last_global_seq: int | None = Field(None, description="Last known global sequence number")
+    last_playlist_seqs: dict[str, int] | None = Field(
         None, description="Last known playlist sequence numbers"
     )
-    requested_rooms: Optional[list[str]] = Field(None, description="Rooms client wants to sync")
+    requested_rooms: list[str] | None = Field(None, description="Rooms client wants to sync")
 
 
 class UploadProgressPayload(BaseModel):
@@ -177,11 +178,11 @@ class UploadProgressPayload(BaseModel):
 
     playlist_id: str = Field(..., description="Target playlist ID")
     session_id: str = Field(..., description="Upload session ID")
-    chunk_index: Optional[int] = Field(None, description="Current chunk index")
+    chunk_index: int | None = Field(None, description="Current chunk index")
     progress: float = Field(..., ge=0.0, le=100.0, description="Upload progress percentage")
     complete: bool = Field(False, description="Whether upload is complete")
-    filename: Optional[str] = Field(None, description="Filename being uploaded")
-    error: Optional[str] = Field(None, description="Error message if upload failed")
+    filename: str | None = Field(None, description="Filename being uploaded")
+    error: str | None = Field(None, description="Error message if upload failed")
 
 
 class NFCStatusPayload(BaseModel):
@@ -190,8 +191,8 @@ class NFCStatusPayload(BaseModel):
     assoc_id: str = Field(..., description="Association session ID")
     state: str = Field(..., description="Association state")
     playlist_id: str = Field(..., description="Target playlist ID")
-    tag_id: Optional[str] = Field(None, description="Detected NFC tag ID")
-    conflict_playlist_id: Optional[str] = Field(
+    tag_id: str | None = Field(None, description="Detected NFC tag ID")
+    conflict_playlist_id: str | None = Field(
         None, description="Conflicting playlist ID if duplicate"
     )
     started_at: str = Field(..., description="Session start time")
@@ -204,10 +205,10 @@ class NFCAssociationStatePayload(BaseModel):
 
     state: str = Field(..., description="Association state")
     playlist_id: str = Field(..., description="Target playlist ID")
-    tag_id: Optional[str] = Field(None, description="NFC tag ID")
-    message: Optional[str] = Field(None, description="User-friendly message")
-    expires_at: Optional[str] = Field(None, description="Session expiration time")
-    existing_playlist: Optional[Dict[str, str]] = Field(
+    tag_id: str | None = Field(None, description="NFC tag ID")
+    message: str | None = Field(None, description="User-friendly message")
+    expires_at: str | None = Field(None, description="Session expiration time")
+    existing_playlist: dict[str, str] | None = Field(
         None, description="Existing playlist info if conflict"
     )
     server_seq: int = Field(..., description="Server sequence number")
@@ -218,12 +219,12 @@ class YouTubeProgressPayload(BaseModel):
 
     task_id: str = Field(..., description="Download task ID")
     status: str = Field(..., description="Download status")
-    progress_percent: Optional[float] = Field(
+    progress_percent: float | None = Field(
         None, ge=0.0, le=100.0, description="Progress percentage"
     )
-    current_step: Optional[str] = Field(None, description="Current processing step")
-    estimated_time_remaining: Optional[int] = Field(None, description="ETA in seconds")
-    error_message: Optional[str] = Field(None, description="Error message if failed")
+    current_step: str | None = Field(None, description="Current processing step")
+    estimated_time_remaining: int | None = Field(None, description="ETA in seconds")
+    error_message: str | None = Field(None, description="Error message if failed")
 
 
 class SocketEventBuilder:
@@ -237,11 +238,11 @@ class SocketEventBuilder:
     @staticmethod
     def create_state_event(
         event_type: SocketEventType,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         server_seq: int,
-        playlist_id: Optional[str] = None,
-        playlist_seq: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        playlist_id: str | None = None,
+        playlist_seq: int | None = None,
+    ) -> dict[str, Any]:
         """
         Create a standardized state event with envelope.
 
@@ -266,7 +267,7 @@ class SocketEventBuilder:
         return envelope.model_dump(exclude_none=True)
 
     @staticmethod
-    def create_connection_status_event(sid: str, server_seq: int) -> Dict[str, Any]:
+    def create_connection_status_event(sid: str, server_seq: int) -> dict[str, Any]:
         """Create connection status event."""
         payload = ConnectionStatusPayload(status="connected", sid=sid, server_seq=server_seq)
         return payload.model_dump()
@@ -275,10 +276,10 @@ class SocketEventBuilder:
     def create_room_ack_event(
         room: str,
         success: bool,
-        server_seq: Optional[int] = None,
-        playlist_seq: Optional[int] = None,
-        message: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        server_seq: int | None = None,
+        playlist_seq: int | None = None,
+        message: str | None = None,
+    ) -> dict[str, Any]:
         """Create room acknowledgment event."""
         payload = RoomAcknowledgmentPayload(
             room=room,
@@ -294,9 +295,9 @@ class SocketEventBuilder:
         client_op_id: str,
         success: bool,
         server_seq: int,
-        data: Optional[Dict[str, Any]] = None,
-        message: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        data: dict[str, Any] | None = None,
+        message: str | None = None,
+    ) -> dict[str, Any]:
         """Create operation acknowledgment event."""
         payload = OperationAcknowledgmentPayload(
             client_op_id=client_op_id,
@@ -313,10 +314,10 @@ class SocketEventBuilder:
         session_id: str,
         progress: float,
         complete: bool = False,
-        chunk_index: Optional[int] = None,
-        filename: Optional[str] = None,
-        error: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        chunk_index: int | None = None,
+        filename: str | None = None,
+        error: str | None = None,
+    ) -> dict[str, Any]:
         """Create upload progress event."""
         payload = UploadProgressPayload(
             playlist_id=playlist_id,
@@ -355,7 +356,7 @@ EVENT_ROOM_MAPPING = {
 }
 
 
-def get_event_room(event_type: SocketEventType, playlist_id: Optional[str] = None) -> str:
+def get_event_room(event_type: SocketEventType, playlist_id: str | None = None) -> str:
     """
     Get the appropriate room for an event type.
 

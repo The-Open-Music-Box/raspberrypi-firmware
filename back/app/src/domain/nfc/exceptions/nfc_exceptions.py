@@ -4,13 +4,12 @@
 
 """NFC Domain Exceptions."""
 
-from typing import Optional
 
 
 class NfcDomainError(Exception):
     """Base exception for all NFC domain errors."""
 
-    def __init__(self, message: str, error_code: Optional[str] = None):
+    def __init__(self, message: str, error_code: str | None = None):
         """Initialize NFC domain error.
 
         Args:

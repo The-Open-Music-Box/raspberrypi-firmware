@@ -6,10 +6,10 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from ..value_objects.file_chunk import FileChunk
 from ..entities.upload_session import UploadSession
+from ..value_objects.file_chunk import FileChunk
 
 if TYPE_CHECKING:
     from ..value_objects.file_metadata import FileMetadata
@@ -76,7 +76,7 @@ class FileStorageProtocol(ABC):
         pass
 
     @abstractmethod
-    async def get_chunk_info(self, session_id: str, chunk_index: int) -> Optional[dict]:
+    async def get_chunk_info(self, session_id: str, chunk_index: int) -> dict | None:
         """Get information about a stored chunk.
 
         Args:
@@ -121,7 +121,7 @@ class MetadataExtractionProtocol(ABC):
         pass
 
     @abstractmethod
-    def get_supported_formats(self) -> List[str]:
+    def get_supported_formats(self) -> list[str]:
         """Get list of supported audio formats.
 
         Returns:

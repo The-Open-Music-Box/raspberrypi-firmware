@@ -19,12 +19,12 @@ Benefits:
 
 from fastapi import APIRouter
 
-from .playlist_read_api import PlaylistReadAPI
-from .playlist_write_api import PlaylistWriteAPI
-from .playlist_track_api import PlaylistTrackAPI
-from .playlist_upload_api import PlaylistUploadAPI
 from .playlist_nfc_api import PlaylistNfcAPI
 from .playlist_playback_api import PlaylistPlaybackAPI
+from .playlist_read_api import PlaylistReadAPI
+from .playlist_track_api import PlaylistTrackAPI
+from .playlist_upload_api import PlaylistUploadAPI
+from .playlist_write_api import PlaylistWriteAPI
 
 
 class PlaylistAPIRoutes:

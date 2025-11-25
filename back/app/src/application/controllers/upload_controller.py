@@ -11,17 +11,23 @@ emitting progress/completion events and updating playlists upon finalization.
 
 from math import ceil
 from pathlib import Path
-from typing import Dict, Optional, cast, Any
+from typing import Any, cast
 
 from socketio import AsyncServer
 
+from app.src.application.services.upload_application_service import (
+    UploadApplicationService,
+)
+from app.src.infrastructure.upload.adapters.file_storage_adapter import (
+    LocalFileStorageAdapter,
+)
+from app.src.infrastructure.upload.adapters.metadata_extractor import (
+    MutagenMetadataExtractor,
+)
+
 # PURE DOMAIN ARCHITECTURE - No Legacy Services
 from app.src.monitoring import get_logger
-from app.src.application.services.upload_application_service import UploadApplicationService
-from app.src.infrastructure.upload.adapters.file_storage_adapter import LocalFileStorageAdapter
-from app.src.infrastructure.upload.adapters.metadata_extractor import MutagenMetadataExtractor
 from app.src.services.error.unified_error_decorator import handle_errors
-
 
 logger = get_logger(__name__)
 
@@ -35,7 +41,7 @@ class UploadController:
         self,
         config,
         data_application_service,
-        socketio: Optional[AsyncServer] = None
+        socketio: AsyncServer | None = None
     ):
         """Initialize UploadController with proper dependency injection.
 
@@ -74,8 +80,8 @@ class UploadController:
         filename: str,
         file_size: int,
         chunk_size: int,
-        file_hash: Optional[str] = None,
-    ) -> Dict:
+        file_hash: str | None = None,
+    ) -> dict:
         """
         Initialize a chunked upload session.
         Returns at minimum: session_id, chunk_size, total_chunks.
@@ -116,7 +122,7 @@ class UploadController:
     @handle_errors("upload_chunk")
     async def upload_chunk(
         self, playlist_id: str, session_id: str, chunk_index: int, chunk_data: bytes
-    ) -> Dict:
+    ) -> dict:
         """
         Process a single chunk and emit upload:progress events.
         """
@@ -145,15 +151,14 @@ class UploadController:
                 )
         return result
 
-    async def get_session_status(self, session_id: str) -> Dict:
+    async def get_session_status(self, session_id: str) -> dict:
         """
         Return current status for the given upload session.
         """
         result = await self.upload_app_service.get_upload_status_use_case(session_id)
         if result.get("status") == "success":
             return cast(dict[Any, Any], result.get("session", {}))
-        else:
-            return {"error": result.get("message", "Session not found")}
+        return {"error": result.get("message", "Session not found")}
 
     @handle_errors("finalize_upload")
     @handle_errors("finalize_upload")
@@ -161,9 +166,9 @@ class UploadController:
         self,
         playlist_id: str,
         session_id: str,
-        file_hash: Optional[str] = None,
-        metadata_override: Optional[Dict] = None,
-    ) -> Dict:
+        file_hash: str | None = None,
+        metadata_override: dict | None = None,
+    ) -> dict:
         """
         Finalize the upload: assemble chunks, extract metadata, and add track to playlist.
         Returns: { status: 'success'|'error', track?: {...}, message? }

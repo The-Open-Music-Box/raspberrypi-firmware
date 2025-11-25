@@ -11,4 +11,4 @@ __author__ = "Jonathan Piette"
 
 from .helpers import AppError
 
-__all__ = ["AppError", "__version__", "__app_name__", "__author__"]
+__all__ = ["AppError", "__app_name__", "__author__", "__version__"]

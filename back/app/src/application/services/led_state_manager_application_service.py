@@ -10,17 +10,17 @@ Manages LED indicator states with priority-based stack and automatic timeout han
 
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime
 from dataclasses import dataclass, field
+from datetime import datetime
 from threading import Lock
+from typing import Any
 
-from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
 from app.src.domain.models.led import (
+    DEFAULT_LED_STATE_CONFIGS,
     LEDState,
     LEDStateConfig,
-    DEFAULT_LED_STATE_CONFIGS
 )
+from app.src.domain.protocols.indicator_lights_protocol import IndicatorLightsProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class ActiveLEDState:
         elapsed = (datetime.now() - self.activated_at).total_seconds()
         return elapsed >= self.config.timeout_seconds
 
-    def time_remaining(self) -> Optional[float]:
+    def time_remaining(self) -> float | None:
         """Get remaining time in seconds, or None if no timeout."""
         if self.config.timeout_seconds is None:
             return None
@@ -69,7 +69,7 @@ class LEDStateManager:
     def __init__(
         self,
         led_controller: IndicatorLightsProtocol,
-        state_configs: Optional[Dict[LEDState, LEDStateConfig]] = None
+        state_configs: dict[LEDState, LEDStateConfig] | None = None
     ):
         """
         Initialize LED state manager.
@@ -82,15 +82,15 @@ class LEDStateManager:
         self._state_configs = state_configs or DEFAULT_LED_STATE_CONFIGS
 
         # State stack (sorted by priority, highest first)
-        self._state_stack: List[ActiveLEDState] = []
+        self._state_stack: list[ActiveLEDState] = []
         self._lock = Lock()
 
         # Timeout monitoring
-        self._timeout_task: Optional[asyncio.Task] = None
+        self._timeout_task: asyncio.Task | None = None
         self._is_running = False
 
         # Current displayed state tracking
-        self._current_displayed_state: Optional[LEDState] = None
+        self._current_displayed_state: LEDState | None = None
 
     async def initialize(self) -> bool:
         """
@@ -219,9 +219,8 @@ class LEDStateManager:
                 logger.info(f"LED state cleared: {state.value}")
                 await self._update_display()
                 return True
-            else:
-                logger.debug(f"LED state not in stack: {state.value}")
-                return False
+            logger.debug(f"LED state not in stack: {state.value}")
+            return False
 
         except Exception as e:
             logger.error(f"❌ Error clearing LED state {state}: {e}")
@@ -314,7 +313,7 @@ class LEDStateManager:
         except Exception as e:
             logger.error(f"❌ Error in LED timeout monitor: {e}")
 
-    def get_current_state(self) -> Optional[LEDState]:
+    def get_current_state(self) -> LEDState | None:
         """
         Get currently displayed LED state.
 
@@ -323,7 +322,7 @@ class LEDStateManager:
         """
         return self._current_displayed_state
 
-    def get_state_stack(self) -> List[Dict[str, Any]]:
+    def get_state_stack(self) -> list[dict[str, Any]]:
         """
         Get current state stack for debugging.
 
@@ -344,7 +343,7 @@ class LEDStateManager:
                 for active in self._state_stack
             ]
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Get current status of LED state manager.
 

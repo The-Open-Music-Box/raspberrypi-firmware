@@ -9,11 +9,12 @@ Clean API routes following Domain-Driven Design principles.
 Single Responsibility: HTTP route handling for system operations.
 """
 
-from typing import Dict, Any
-from fastapi import APIRouter, Request
+import logging
 import platform
 import time
-import logging
+from typing import Any
+
+from fastapi import APIRouter, Request
 
 from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
@@ -259,7 +260,7 @@ class SystemAPIRoutes(BaseAPIRoutes):
                 version_file = os.path.join(os.path.dirname(__file__), "../../../../../VERSION")
                 try:
                     if os.path.exists(version_file):
-                        with open(version_file, 'r') as f:
+                        with open(version_file) as f:
                             version = f.read().strip()
                 except Exception:
                     pass  # nosec B110 - use default version on error, non-critical
@@ -334,7 +335,7 @@ class SystemAPIRoutes(BaseAPIRoutes):
                 self.log_operation("API /api/system/logs: Logs requested")
 
                 import glob
-                logs_data: Dict[str, Any] = {"logs": [], "log_files_available": []}
+                logs_data: dict[str, Any] = {"logs": [], "log_files_available": []}
 
                 # Search for log files
                 # Using /tmp is intentional for IoT device log collection - these are
@@ -352,14 +353,14 @@ class SystemAPIRoutes(BaseAPIRoutes):
                         logs_data["log_files_available"].append(log_file)
                         # Read last 100 lines
                         try:
-                            with open(log_file, "r") as f:
+                            with open(log_file) as f:
                                 lines = f.readlines()
                                 last_lines = lines[-100:] if len(lines) > 100 else lines
                                 logs_data["logs"].extend([
                                     {"file": log_file, "line": line.strip()}
                                     for line in last_lines if line.strip()
                                 ])
-                        except (IOError, OSError):
+                        except OSError:
                             pass
 
                 from fastapi.responses import JSONResponse
@@ -402,8 +403,8 @@ class SystemAPIRoutes(BaseAPIRoutes):
                     "message": "Application restart scheduled in 2 seconds",
                 }
 
+
                 from app.src.common.response_models import create_success_response
-                from fastapi.responses import JSONResponse
 
                 standardized_response = create_success_response(
                     message="System restart scheduled successfully",
@@ -443,12 +444,11 @@ class SystemAPIRoutes(BaseAPIRoutes):
                             message=f"LED brightness set to {body.brightness:.1%}",
                             data={"brightness": body.brightness}
                         )
-                    else:
-                        return UnifiedResponseService.error(
-                            message="Failed to set LED brightness",
-                            error_type="operation_failed",
-                            status_code=500
-                        )
+                    return UnifiedResponseService.error(
+                        message="Failed to set LED brightness",
+                        error_type="operation_failed",
+                        status_code=500
+                    )
 
                 except Exception as e:
                     return self.handle_endpoint_error(
@@ -476,15 +476,14 @@ class SystemAPIRoutes(BaseAPIRoutes):
                         brightness = status.get("led_manager_status", {}).get("brightness", 0)
 
                         return UnifiedResponseService.success(
-                            message=f"LED brightness reloaded from config",
+                            message="LED brightness reloaded from config",
                             data={"brightness": brightness}
                         )
-                    else:
-                        return UnifiedResponseService.error(
-                            message="Failed to reload LED brightness from config",
-                            error_type="operation_failed",
-                            status_code=500
-                        )
+                    return UnifiedResponseService.error(
+                        message="Failed to reload LED brightness from config",
+                        error_type="operation_failed",
+                        status_code=500
+                    )
 
                 except Exception as e:
                     return self.handle_endpoint_error(

@@ -9,7 +9,8 @@ This module provides centralized utilities for creating consistent API responses
 with proper headers, error handling, and JSON formatting.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
+
 from fastapi.responses import JSONResponse
 
 
@@ -18,7 +19,7 @@ class ResponseUtils:
 
     @staticmethod
     def create_json_response(
-        data: Dict[str, Any], status_code: int = 200, add_anti_cache_headers: bool = True
+        data: dict[str, Any], status_code: int = 200, add_anti_cache_headers: bool = True
     ) -> JSONResponse:
         """Create a standardized JSON response.
 
@@ -39,7 +40,7 @@ class ResponseUtils:
 
     @staticmethod
     def create_success_response(
-        message: str, data: Optional[Dict[str, Any]] = None, status_code: int = 200
+        message: str, data: dict[str, Any] | None = None, status_code: int = 200
     ) -> JSONResponse:
         """Create a standardized success response.
 
@@ -60,7 +61,7 @@ class ResponseUtils:
 
     @staticmethod
     def create_error_response(
-        error_message: str, status_code: int = 500, error_details: Optional[Dict[str, Any]] = None
+        error_message: str, status_code: int = 500, error_details: dict[str, Any] | None = None
     ) -> JSONResponse:
         """Create a standardized error response.
 
@@ -72,7 +73,7 @@ class ResponseUtils:
         Returns:
             JSONResponse with error format
         """
-        response_data: Dict[str, Any] = {"status": "error", "message": error_message}
+        response_data: dict[str, Any] = {"status": "error", "message": error_message}
 
         if error_details:
             response_data["details"] = error_details

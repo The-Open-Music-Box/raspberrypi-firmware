@@ -10,7 +10,8 @@ that may fail on first boot due to timing or hardware readiness issues.
 
 import asyncio
 import logging
-from typing import Callable, Awaitable, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -74,12 +75,11 @@ async def retry_hardware_init(
                     raise RuntimeError(
                         f"Critical hardware initialization failed: {name}"
                     ) from e
-                else:
-                    logger.error(error_msg, exc_info=True)
-                    logger.warning(
-                        f"⚠️ Continuing without {name} (non-critical component)"
-                    )
-                    return (False, None)
+                logger.error(error_msg, exc_info=True)
+                logger.warning(
+                    f"⚠️ Continuing without {name} (non-critical component)"
+                )
+                return (False, None)
 
     # Should never reach here, but satisfy type checker
     return (False, None)

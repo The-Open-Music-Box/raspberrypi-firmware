@@ -9,10 +9,11 @@ This coordinator combines playlist management and audio control,
 ensuring single source of truth while maintaining separation of concerns.
 """
 
-from typing import Optional, Dict, Any
 import logging
-from .playlist_controller import PlaylistController
+from typing import Any
+
 from .audio_player_controller import AudioPlayer
+from .playlist_controller import PlaylistController
 from .track_resolver_controller import TrackResolver
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ class PlaybackCoordinator:
 
     # --- Main Playback Controls ---
 
-    def play(self, track_id: Optional[str] = None) -> bool:
+    def play(self, track_id: str | None = None) -> bool:
         """
         Start playback or resume if paused.
 
@@ -93,9 +94,8 @@ class PlaybackCoordinator:
                     # Try to start current playlist if available
                     if self._playlist_controller.has_playlist():
                         return self.start_playlist()
-                    else:
-                        logger.warning("No track or playlist to play")
-                        return False
+                    logger.warning("No track or playlist to play")
+                    return False
             else:
                 # Find track in current playlist
                 current_track = self._find_track_by_id(track_id)
@@ -112,15 +112,15 @@ class PlaybackCoordinator:
                     if self._led_event_handler:
                         try:
                             import asyncio
+
                             # Use PlaybackState enum from common.data_models
                             from app.src.common.data_models import PlaybackState
                             asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.PLAYING))
                         except Exception as led_error:
                             logger.warning(f"LED event failed (non-critical): {led_error}")
                 return success
-            else:
-                logger.error(f"Track {current_track.title} has no valid file path")
-                return False
+            logger.error(f"Track {current_track.title} has no valid file path")
+            return False
 
         except Exception as e:
             logger.error(f"Error starting playback: {e}")
@@ -134,6 +134,7 @@ class PlaybackCoordinator:
             if self._led_event_handler:
                 try:
                     import asyncio
+
                     from app.src.common.data_models import PlaybackState
                     asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.PAUSED))
                 except Exception as led_error:
@@ -148,6 +149,7 @@ class PlaybackCoordinator:
             if self._led_event_handler:
                 try:
                     import asyncio
+
                     from app.src.common.data_models import PlaybackState
                     asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.PLAYING))
                 except Exception as led_error:
@@ -162,6 +164,7 @@ class PlaybackCoordinator:
             if self._led_event_handler:
                 try:
                     import asyncio
+
                     from app.src.common.data_models import PlaybackState
                     asyncio.create_task(self._led_event_handler.on_playback_state_changed(PlaybackState.STOPPED))
                 except Exception as led_error:
@@ -174,10 +177,9 @@ class PlaybackCoordinator:
         if self._audio_player.is_playing() or self._audio_player.is_paused():
             # There's active audio, toggle its state
             return self._audio_player.toggle_pause()
-        else:
-            # No active audio, try to start playback
-            logger.info("🔄 No active playback, attempting to start")
-            return self.play()
+        # No active audio, try to start playback
+        logger.info("🔄 No active playback, attempting to start")
+        return self.play()
 
     # --- Playlist Controls ---
 
@@ -226,10 +228,9 @@ class PlaybackCoordinator:
         next_track = self._playlist_controller.next_track()
         if next_track:
             return self.play()
-        else:
-            logger.info("End of playlist reached")
-            self.stop()
-            return False
+        logger.info("End of playlist reached")
+        self.stop()
+        return False
 
     def previous_track(self) -> bool:
         """
@@ -241,9 +242,8 @@ class PlaybackCoordinator:
         prev_track = self._playlist_controller.previous_track()
         if prev_track:
             return self.play()
-        else:
-            logger.info("Beginning of playlist reached")
-            return False
+        logger.info("Beginning of playlist reached")
+        return False
 
     def goto_track(self, track_number: int) -> bool:
         """
@@ -258,9 +258,8 @@ class PlaybackCoordinator:
         track = self._playlist_controller.goto_track(track_number)
         if track:
             return self.play()
-        else:
-            logger.error(f"Invalid track number: {track_number}")
-            return False
+        logger.error(f"Invalid track number: {track_number}")
+        return False
 
     # --- Volume Control ---
 
@@ -300,7 +299,7 @@ class PlaybackCoordinator:
 
     # --- State Queries ---
 
-    def get_playback_status(self) -> Dict[str, Any]:
+    def get_playback_status(self) -> dict[str, Any]:
         """
         Get complete playback status.
 
@@ -344,7 +343,7 @@ class PlaybackCoordinator:
             "auto_advance_enabled": self._auto_advance_enabled
         }
 
-    def get_current_track(self) -> Optional[Dict[str, Any]]:
+    def get_current_track(self) -> dict[str, Any] | None:
         """Get current track information."""
         track = self._playlist_controller.get_current_track()
         return track.to_dict() if track else None
@@ -383,7 +382,7 @@ class PlaybackCoordinator:
 
     # --- Helper Methods ---
 
-    def _find_track_by_id(self, track_id: str) -> Optional[Any]:
+    def _find_track_by_id(self, track_id: str) -> Any | None:
         """Find track by ID in current playlist."""
         state = self._playlist_controller.get_state()
         if not state["playlist"]:
@@ -417,7 +416,7 @@ class PlaybackCoordinator:
 
     # --- NFC Integration ---
 
-    async def handle_tag_scanned(self, tag_uid: str, tag_data: Optional[Dict[str, Any]] = None) -> None:
+    async def handle_tag_scanned(self, tag_uid: str, tag_data: dict[str, Any] | None = None) -> None:
         """Handle NFC tag scanned event.
 
         Args:
@@ -456,7 +455,7 @@ class PlaybackCoordinator:
                         if is_playing:
                             logger.info(f"🔒 Playlist '{playlist_title}' is already playing, ignoring duplicate trigger")
                             return  # Avoid restarting the same playlist
-                        elif is_paused:
+                        if is_paused:
                             logger.info(f"▶️ Playlist '{playlist_title}' is paused, resuming playback")
                             self.resume()
                             return  # Resume instead of restarting
@@ -503,7 +502,9 @@ class PlaybackCoordinator:
 
         try:
             # Import application layer services only (no API layer dependencies)
-            from app.src.application.services.unified_state_manager import UnifiedStateManager
+            from app.src.application.services.unified_state_manager import (
+                UnifiedStateManager,
+            )
             from app.src.common.socket_events import StateEventType
 
             # Create state manager

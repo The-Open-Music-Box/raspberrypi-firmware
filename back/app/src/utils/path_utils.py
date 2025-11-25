@@ -11,7 +11,6 @@ from playlist titles and other user inputs.
 
 import re
 import unicodedata
-from typing import Optional
 
 
 def normalize_folder_name(name: str) -> str:
@@ -66,7 +65,7 @@ def normalize_folder_name(name: str) -> str:
     return normalized
 
 
-def get_playlist_folder_path(config, playlist_name: str, playlist_id: Optional[str] = None) -> str:
+def get_playlist_folder_path(config, playlist_name: str, playlist_id: str | None = None) -> str:
     """Get the complete folder path for a playlist.
 
     Args:
@@ -97,8 +96,8 @@ def migrate_existing_folder(old_path: str, new_path: str) -> bool:
     Returns:
         True if migration successful, False otherwise
     """
-    from pathlib import Path
     import shutil
+    from pathlib import Path
 
     old_folder = Path(old_path)
     new_folder = Path(new_path)
@@ -112,7 +111,7 @@ def migrate_existing_folder(old_path: str, new_path: str) -> bool:
             # Move the folder
             shutil.move(str(old_folder), str(new_folder))
             return True
-        elif old_folder.exists() and new_folder.exists():
+        if old_folder.exists() and new_folder.exists():
             # Both exist - merge contents
             for item in old_folder.iterdir():
                 target = new_folder / item.name

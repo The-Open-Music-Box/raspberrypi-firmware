@@ -8,8 +8,9 @@ Player Broadcasting Service (DDD Architecture)
 Single Responsibility: Real-time state broadcasting for player operations.
 """
 
-from typing import Dict, Any, Optional, cast
 import logging
+from typing import Any, cast
+
 from app.src.common.socket_events import StateEventType
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
@@ -44,7 +45,7 @@ class PlayerBroadcastingService:
         self._state_manager = state_manager
 
     @handle_service_errors("player_broadcasting")
-    async def broadcast_playback_state_changed(self, state: str, player_status: Dict[str, Any]):
+    async def broadcast_playback_state_changed(self, state: str, player_status: dict[str, Any]):
         """Broadcast playback state change event.
 
         Args:
@@ -66,10 +67,10 @@ class PlayerBroadcastingService:
             logger.info(f"✅ Broadcasted playback state change: {state}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast playback state change: {str(e)}")
+            logger.error(f"❌ Failed to broadcast playback state change: {e!s}")
 
     @handle_service_errors("player_broadcasting")
-    async def broadcast_track_changed(self, track_data: Optional[Dict[str, Any]], direction: str):
+    async def broadcast_track_changed(self, track_data: dict[str, Any] | None, direction: str):
         """Broadcast track navigation event.
 
         Args:
@@ -92,7 +93,7 @@ class PlayerBroadcastingService:
             logger.info(f"✅ Broadcasted track change: {direction} -> {track_title}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast track change: {str(e)}")
+            logger.error(f"❌ Failed to broadcast track change: {e!s}")
 
     @handle_service_errors("player_broadcasting")
     async def broadcast_volume_changed(self, volume: int):
@@ -115,7 +116,7 @@ class PlayerBroadcastingService:
             logger.info(f"✅ Broadcasted volume change: {volume}%")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast volume change: {str(e)}")
+            logger.error(f"❌ Failed to broadcast volume change: {e!s}")
 
     @handle_service_errors("player_broadcasting")
     async def broadcast_position_changed(self, position_ms: int):
@@ -138,10 +139,10 @@ class PlayerBroadcastingService:
             logger.debug(f"✅ Broadcasted position change: {position_ms}ms")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast position change: {str(e)}")
+            logger.error(f"❌ Failed to broadcast position change: {e!s}")
 
     @handle_service_errors("player_broadcasting")
-    async def broadcast_player_status(self, status: Dict[str, Any]):
+    async def broadcast_player_status(self, status: dict[str, Any]):
         """Broadcast complete player status update.
 
         Args:
@@ -161,10 +162,10 @@ class PlayerBroadcastingService:
             logger.debug("✅ Broadcasted player status update")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast player status: {str(e)}")
+            logger.error(f"❌ Failed to broadcast player status: {e!s}")
 
     @handle_service_errors("player_broadcasting")
-    async def broadcast_progress_update(self, progress_data: Dict[str, Any]):
+    async def broadcast_progress_update(self, progress_data: dict[str, Any]):
         """Broadcast progress tracking update.
 
         Args:
@@ -184,10 +185,10 @@ class PlayerBroadcastingService:
             logger.debug("✅ Broadcasted progress update")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast progress update: {str(e)}")
+            logger.error(f"❌ Failed to broadcast progress update: {e!s}")
 
     @handle_service_errors("player_broadcasting")
-    async def broadcast_player_error(self, error_message: str, error_context: Optional[Dict[str, Any]] = None):
+    async def broadcast_player_error(self, error_message: str, error_context: dict[str, Any] | None = None):
         """Broadcast player error event.
 
         Args:
@@ -209,7 +210,7 @@ class PlayerBroadcastingService:
             logger.info(f"✅ Broadcasted player error: {error_message}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to broadcast player error: {str(e)}")
+            logger.error(f"❌ Failed to broadcast player error: {e!s}")
 
     def get_global_sequence(self) -> int:
         """Get the current global sequence number for state synchronization.

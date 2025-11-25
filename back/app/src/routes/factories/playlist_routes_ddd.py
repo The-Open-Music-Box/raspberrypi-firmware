@@ -9,26 +9,29 @@ Pure Domain-Driven Design implementation replacing PlaylistRoutesState.
 Single Responsibility: Route registration and dependency coordination.
 """
 
-from typing import Optional, Any
 from fastapi import FastAPI
 from socketio import AsyncServer
-
-from app.src.monitoring import get_logger
-from app.src.services.error.unified_error_decorator import handle_errors
-from app.src.application.services.unified_state_manager import UnifiedStateManager
 
 # DDD Components
 # Updated import: now using modular playlist API (refactored from 898-line monolith)
 from app.src.api.endpoints.playlist import PlaylistAPIRoutes
-from app.src.api.services.playlist_broadcasting_service import PlaylistBroadcastingService
+from app.src.api.services.playlist_broadcasting_service import (
+    PlaylistBroadcastingService,
+)
 from app.src.api.services.playlist_operations_service import PlaylistOperationsService
-
-# Application Services
-from app.src.dependencies import get_data_application_service, get_playlist_repository_adapter
 
 # Upload and other specialized routes
 from app.src.application.controllers.upload_controller import UploadController
+from app.src.application.services.unified_state_manager import UnifiedStateManager
+
+# Application Services
+from app.src.dependencies import (
+    get_data_application_service,
+    get_playlist_repository_adapter,
+)
+from app.src.monitoring import get_logger
 from app.src.routes.factories.websocket_handlers_state import WebSocketStateHandlers
+from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = get_logger(__name__)
 
@@ -85,7 +88,7 @@ class PlaylistRoutesDDD:
         except Exception as e:
             logger.error(f"❌ Failed to get data application service: {e}")
             logger.warning("🔄 Creating mock application service for contract testing compatibility")
-            from unittest.mock import Mock, AsyncMock
+            from unittest.mock import AsyncMock, Mock
             playlist_app_service = Mock()
             playlist_app_service.get_playlists_use_case = AsyncMock(return_value={"playlists": []})
             playlist_app_service.get_playlist_use_case = AsyncMock(return_value=None)
@@ -129,17 +132,17 @@ class PlaylistRoutesDDD:
         self.operations_service = PlaylistOperationsService(self._playlist_app_service)
 
         # Initialize API routes with dependencies (will be set after upload controller is ready)
-        self.api_routes: Optional[PlaylistAPIRoutes] = None
+        self.api_routes: PlaylistAPIRoutes | None = None
 
         logger.info("✅ DDD components initialized")
 
     def _initialize_specialized_services(self):
         """Initialize specialized services for uploads and other features."""
         # Initialize TrackProgressService for auto-advance
-        from app.src.services.track_progress_service import TrackProgressService
         from app.src.dependencies import get_playback_coordinator
+        from app.src.services.track_progress_service import TrackProgressService
 
-        self.progress_service: Optional[TrackProgressService] = None
+        self.progress_service: TrackProgressService | None = None
 
         try:
             playback_coordinator = get_playback_coordinator()
@@ -167,7 +170,7 @@ class PlaylistRoutesDDD:
             else:
                 logger.warning("⚠️ Missing config or upload_folder, creating mock upload controller")
                 # Create mock upload controller for contract testing
-                from unittest.mock import Mock, AsyncMock
+                from unittest.mock import AsyncMock, Mock
                 self.upload_controller = Mock()
                 self.upload_controller.init_upload_session = AsyncMock(return_value={"session_id": "mock-session"})
                 self.upload_controller.upload_chunk = AsyncMock(return_value={"status": "success"})
@@ -176,7 +179,7 @@ class PlaylistRoutesDDD:
         except Exception as e:
             logger.error(f"❌ Failed to initialize upload controller: {e}")
             logger.warning("🔄 Creating mock upload controller")
-            from unittest.mock import Mock, AsyncMock
+            from unittest.mock import AsyncMock, Mock
             self.upload_controller = Mock()
             self.upload_controller.init_upload_session = AsyncMock(return_value={"session_id": "mock-session"})
             self.upload_controller.upload_chunk = AsyncMock(return_value={"status": "success"})
@@ -204,8 +207,8 @@ class PlaylistRoutesDDD:
         self.websocket_handlers.register()
 
         # Set app attributes for compatibility
-        setattr(self.app, "playlist_routes_ddd", self)
-        setattr(self.app, "state_manager", self.state_manager)
+        self.app.playlist_routes_ddd = self
+        self.app.state_manager = self.state_manager
 
         logger.info("✅ Clean DDD playlist routes registered with FastAPI app")
 

@@ -10,7 +10,6 @@ Defines LED states, colors, animations, and priorities for the indicator light s
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Tuple
 
 
 class LEDState(Enum):
@@ -103,7 +102,7 @@ class LEDColor:
             if not 0 <= value <= 255:
                 raise ValueError(f"{component} must be between 0 and 255, got {value}")
 
-    def to_tuple(self) -> Tuple[int, int, int]:
+    def to_tuple(self) -> tuple[int, int, int]:
         """Convert to RGB tuple."""
         return (self.red, self.green, self.blue)
 
@@ -188,7 +187,7 @@ class LEDStateConfig:
     color: LEDColor
     animation: LEDAnimation
     priority: int
-    timeout_seconds: Optional[float] = None  # None = permanent
+    timeout_seconds: float | None = None  # None = permanent
     animation_speed: float = 1.0  # Speed multiplier for animations
 
     def __post_init__(self):
