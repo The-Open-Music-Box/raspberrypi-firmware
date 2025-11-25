@@ -387,7 +387,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         trackIndexMaps.value.set(playlistId, trackMap)
       }
 
-      // Map track numbers to track IDs (using filename as ID in v3.3.2)
+      // Map track numbers to track IDs (use track.id UUID, not filename)
       const trackIds = newOrder
         .map(num => {
           const track = trackMap!.get(num)
@@ -395,7 +395,12 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
             logger.warn(`Track with number ${num} not found in playlist ${playlistId}`, { availableTracks: playlistTracks.length })
             return null
           }
-          return track.filename
+          // Use track.id (UUID) as per OpenAPI contract, not filename
+          if (!track.id) {
+            logger.error(`Track ${track.filename} missing required id field`, { track })
+            return null
+          }
+          return track.id
         })
         .filter((id): id is string => id !== null)
 

@@ -136,11 +136,11 @@ export const playlistApi = {
   /**
    * Reorder tracks in a playlist
    */
-  async reorderTracks(playlistId: string, trackOrder: number[], clientOpId?: string): Promise<any> {
+  async reorderTracks(playlistId: string, trackIds: string[], clientOpId?: string): Promise<any> {
     const response = await apiClient.post(
       API_ROUTES.PLAYLIST_REORDER(playlistId),
       {
-        track_order: trackOrder,
+        track_ids: trackIds,  // Use 'track_ids' (UUID strings) as per OpenAPI contract
         client_op_id: clientOpId || generateClientOpId('api_operation')
       }
     )
