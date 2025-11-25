@@ -320,7 +320,7 @@ class GPIOPhysicalControls(BaseControlsImplementation):
             self._devices['volume_encoder'] = RotaryEncoder(
                 self.config.gpio_volume_encoder_clk,
                 self.config.gpio_volume_encoder_dt,
-                bounce_time=0.002,  # Very small bounce time for better encoder responsiveness (2ms)
+                bounce_time=0.01,  # Small bounce time for encoder
                 max_steps=0  # No step limit
             )
 
