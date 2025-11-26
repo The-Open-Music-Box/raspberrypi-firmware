@@ -1,5 +1,7 @@
 # Backend Services Architecture - TheOpenMusicBox
 
+> **⚠️ Note**: This document may contain outdated service names and file paths. The codebase has evolved to use DDD architecture with services in `app/src/application/services/` and `app/src/domain/`. Please verify file paths before referencing.
+
 ## Vue d'ensemble
 
 TheOpenMusicBox utilise une **architecture Domain-Driven Design (DDD)** avec une approche **server-authoritative**. L'architecture sépare clairement les couches Application, Domaine et Infrastructure, avec 8 services coordonnés pour gérer l'état du player et les mises à jour temps réel.

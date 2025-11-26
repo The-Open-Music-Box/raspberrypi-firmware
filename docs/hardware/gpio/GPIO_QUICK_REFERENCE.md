@@ -3,7 +3,7 @@
 ## How to Override GPIO Pin Configuration
 
 ### Option 1: Using Environment Variables in .env
-Edit `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/.env`:
+Edit `back/.env`:
 
 ```bash
 # Button pins (optional - shows defaults)
@@ -49,7 +49,7 @@ File: `back/app/src/config/button_actions_config.py`
 
 To make LED GPIO pins configurable via environment variables, modify:
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py`
+**File:** `back/app/src/config/app_config.py`
 
 **Add to `_load_subconfig_overrides()` method (after line 550):**
 

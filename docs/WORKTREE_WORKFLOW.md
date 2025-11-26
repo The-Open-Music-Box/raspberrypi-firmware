@@ -51,17 +51,17 @@ Each worktree is completely independent:
 
 ```bash
 # Terminal 1: Create worktree for feature work
-cd /Users/jonathanpiette/github/theopenmusicbox/rpi-firmware
+cd ~/github/theopenmusicbox/rpi-firmware
 ./scripts/worktree.sh create 75 feat "audio-enhancement"
 claude ../rpi-firmware-wt-75
 
 # Terminal 2: Create worktree for bug fix
-cd /Users/jonathanpiette/github/theopenmusicbox/rpi-firmware
+cd ~/github/theopenmusicbox/rpi-firmware
 ./scripts/worktree.sh create 76 fix "memory-leak"
 claude ../rpi-firmware-wt-76
 
 # Terminal 3: Create worktree for refactoring
-cd /Users/jonathanpiette/github/theopenmusicbox/rpi-firmware
+cd ~/github/theopenmusicbox/rpi-firmware
 ./scripts/worktree.sh create 77 refactor "playlist-service"
 claude ../rpi-firmware-wt-77
 ```
@@ -91,9 +91,9 @@ Now each Claude session works in its own directory without conflicts!
 
 Output:
 ```
-/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware         f44e4fcd7 [develop]
-/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware-wt-75  a1b2c3d4e [feat/issue-75-audio-enhancement]
-/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware-wt-76  e5f6g7h8i [fix/issue-76-memory-leak]
+~/github/theopenmusicbox/rpi-firmware         f44e4fcd7 [develop]
+~/github/theopenmusicbox/rpi-firmware-wt-75  a1b2c3d4e [feat/issue-75-audio-enhancement]
+~/github/theopenmusicbox/rpi-firmware-wt-76  e5f6g7h8i [fix/issue-76-memory-leak]
 ```
 
 ### Switch to a worktree
@@ -200,7 +200,7 @@ Your existing workflow (from CLAUDE.md) works perfectly with worktrees:
 5. **After PR is merged**
    ```bash
    # In main repo
-   cd /Users/jonathanpiette/github/theopenmusicbox/rpi-firmware
+   cd ~/github/theopenmusicbox/rpi-firmware
    git checkout develop
    git pull github develop
 

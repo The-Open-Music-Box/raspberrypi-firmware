@@ -38,9 +38,9 @@ When making a significant architectural decision:
 
 ## Related Documentation
 
-- [Architecture Overview](../README.md) (to be created)
-- [Clean Architecture Principles](../../ARCHITECTURE.md) (if exists)
-- [Phase 6 Audit](../../../AUDIT_FIXES_TODO.md)
+- [Backend Services Architecture](../../guides/backend-services-architecture.md)
+- [Developer Guide](../../guides/developer-guide.md)
+- [Worktree Workflow](../../WORKTREE_WORKFLOW.md)
 
 ## Review Process
 

@@ -23,13 +23,13 @@ rsync -avz --delete release_dev/tomb-rpi/ server:/home/admin/tomb/
 ```
 
 The deployment script (`deploy.sh`) automatically:
-1. Loads exclusions from `sync_tmbdev.config`
+1. Loads exclusions from `deploy.config`
 2. Protects `app/data/` and `venv/` directories
 3. Only updates application code
 
 ## Protected Directories
 
-These directories are **excluded from deployment** via `sync_tmbdev.config`:
+These directories are **excluded from deployment** via `deploy.config`:
 
 ```bash
 --exclude=app/data/          # Database and uploads (NEVER delete)
@@ -52,12 +52,12 @@ If you **absolutely must** deploy manually:
 
 ```bash
 # 1. Load exclusions from config
-source sync_tmbdev.config
+source deploy.config
 
 # 2. Deploy with exclusions
 rsync -azP --delete \
     "${RSYNC_EXCLUDES[@]}" \
-    release_dev/tomb-rpi/ \
+    release/back/ \
     server:/home/admin/tomb/
 
 # 3. Restart service
