@@ -234,8 +234,12 @@ class TestGPIOFallbackBehavior:
             await manager.cleanup()
 
     @pytest.mark.asyncio
-    async def test_gpio_controls_status_includes_fallback_fields(self, hardware_config_mock):
-        """Test that GPIOPhysicalControls status includes fallback information."""
+    async def test_gpio_controls_fallback_with_intentional_mock_mode(self, hardware_config_mock):
+        """Test fallback status when mock hardware mode is enabled (USE_MOCK_HARDWARE=true).
+
+        Note: This test runs with the environment as-is. In CI/test environments,
+        USE_MOCK_HARDWARE is typically set to 'true' via .env or environment variables.
+        """
         from app.src.infrastructure.hardware.controls.gpio_controls_implementation import (
             GPIOPhysicalControls,
         )
@@ -253,15 +257,23 @@ class TestGPIOFallbackBehavior:
             assert "fallback_reason" in status
             assert "gpio_available" in status
 
-            # On non-Pi hardware (like dev machine), GPIO is not available
-            # so mock_mode should be True and fallback_reason should explain why
+            # In test environment, mock mode should be active
             assert status["mock_mode"] is True
             assert status["gpio_available"] is False
-            # fallback_reason should contain a meaningful message
+
+            # Fallback reason should be meaningful
             assert status["fallback_reason"] is not None
-            assert "GPIO" in status["fallback_reason"] or "backend" in status["fallback_reason"]
+            assert len(status["fallback_reason"]) > 0
+
+            # If mock mode is intentional, fallback_reason should indicate it
+            if status["mock_mode_intentional"]:
+                assert "MOCK_HARDWARE" in status["fallback_reason"] or "intentional" in status["fallback_reason"]
+            else:
+                # Otherwise it's a forced fallback due to GPIO unavailability
+                assert "GPIO" in status["fallback_reason"] or "backend" in status["fallback_reason"]
         finally:
             await controls.cleanup()
+
 
     @pytest.mark.asyncio
     async def test_gpio_controls_mock_mode_active_flag(self, hardware_config_mock):
