@@ -2,7 +2,7 @@
 
 ## 1. Default GPIO Pin Definitions (Hardcoded)
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py`
+**File:** `back/app/src/config/hardware_config.py`
 
 ```python
 # Lines 21-37
@@ -36,7 +36,7 @@ spi_speed_hz: int = 1000000  # SPI speed in Hz
 
 ## 2. Environment Variable Overrides
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py`
+**File:** `back/app/src/config/app_config.py`
 
 **Lines 532-550 (Button GPIO Overrides):**
 ```python
@@ -65,7 +65,7 @@ if "GPIO_VOLUME_SW" in os.environ:
 
 ## 3. Button Actions Configuration
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/button_actions_config.py`
+**File:** `back/app/src/config/button_actions_config.py`
 
 ```python
 # Lines 48-79 - Default button configuration
@@ -105,7 +105,7 @@ DEFAULT_BUTTON_CONFIGS: List[ButtonActionConfig] = [
 
 ## 4. GPIO Implementation - Button Initialization
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py`
+**File:** `back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py`
 
 ```python
 # Lines 170-240 - Button initialization using configurable pins
@@ -147,7 +147,7 @@ def _init_encoder(self) -> None:
 
 ## 6. LED Implementation
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/leds/rgb_led_controller.py`
+**File:** `back/app/src/infrastructure/hardware/leds/rgb_led_controller.py`
 
 ```python
 # Lines 63-89 - LED controller initialization
@@ -182,7 +182,7 @@ LED pins are NOT overridable - they are only read from hardware_config.
 
 ## 7. NFC Configuration
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/nfc_config.py`
+**File:** `back/app/src/config/nfc_config.py`
 
 ```python
 # Lines 42-43
@@ -196,7 +196,7 @@ These are NOT environment variable overridable.
 
 ## 8. Hardware Validation
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py`
+**File:** `back/app/src/config/hardware_config.py`
 
 ```python
 # Lines 66-99 - Validation at startup
@@ -228,7 +228,7 @@ def validate(self) -> None:
 
 ## 9. Configuration Loading Order
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py`
+**File:** `back/app/src/config/app_config.py`
 
 ```python
 # Lines 65-84 - Initialization order
@@ -252,7 +252,7 @@ def __init__(self):
 
 ## 10. GPIO Backend Selection
 
-**File:** `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py`
+**File:** `back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py`
 
 ```python
 # Lines 33-84 - Backend auto-selection
