@@ -1,6 +1,5 @@
 # tests/conftest.py
-# Merged fixture file combining fixtures from app/tests/conftest.py and
-# tests/conftest.py
+# Unified fixture file for all tests
 
 import os
 import sys

@@ -131,7 +131,7 @@ EOF
 echo ""
 echo "--- pytest (Test Coverage) ---"
 # Run pytest with coverage and extract percentage
-COVERAGE_OUTPUT=$(pytest app/tests --cov=app/src --cov-report=term-missing --no-header -q 2>/dev/null || true)
+COVERAGE_OUTPUT=$(pytest tests/ --cov=app/src --cov-report=term-missing --no-header -q 2>/dev/null || true)
 TEST_COVERAGE=$(echo "$COVERAGE_OUTPUT" | grep "TOTAL" | awk '{print $NF}' | tr -d '%' || echo "0")
 if [ -z "$TEST_COVERAGE" ] || [ "$TEST_COVERAGE" = "0" ]; then
     # Try alternative format
@@ -145,7 +145,7 @@ test_coverage_percent $TEST_COVERAGE
 EOF
 
 # Count tests
-TESTS_TOTAL=$(pytest app/tests --collect-only -q 2>/dev/null | tail -1 | grep -oP '^\d+' || echo "0")
+TESTS_TOTAL=$(pytest tests/ --collect-only -q 2>/dev/null | tail -1 | grep -oP '^\d+' || echo "0")
 echo "tests_total $TESTS_TOTAL"
 cat >> "$METRICS_FILE" << EOF
 # HELP tests_total Total number of tests
