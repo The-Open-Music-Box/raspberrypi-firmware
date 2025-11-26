@@ -8,21 +8,36 @@ import sys
 import signal
 import subprocess
 import time
+import socket
 import pytest
+
+
+def get_free_port():
+    """Find and return a free port on localhost."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+    return port
+
 
 def test_graceful_shutdown():
     """Test the application graceful shutdown to verify background tasks stop properly."""
     print("🚀 Testing TheOpenMusicBox graceful shutdown...")
-    
+
     # Set test environment variables
     os.environ['USE_MOCK_HARDWARE'] = 'true'
-    
+
+    # Get a free port to avoid conflicts
+    port = get_free_port()
+    print(f"📡 Using port {port} for test...")
+
     print("📝 Starting application...")
     process = subprocess.Popen([
-        sys.executable, '-m', 'uvicorn', 
+        sys.executable, '-m', 'uvicorn',
         'app.main:app_sio',
         '--host', '127.0.0.1',
-        '--port', '5005'
+        '--port', str(port)
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     try:
