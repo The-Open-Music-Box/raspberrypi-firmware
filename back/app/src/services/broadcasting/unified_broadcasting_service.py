@@ -100,6 +100,10 @@ class UnifiedBroadcastingService:
         Returns:
             True si broadcast réussi
         """
+        # Validate contract compliance before broadcasting
+        if playlist_data:
+            playlist_data = self._validate_and_fix_contract(playlist_data)
+
         # Prepare broadcast data
         broadcast_data = {
             "playlist_id": playlist_id,
@@ -385,3 +389,91 @@ class UnifiedBroadcastingService:
         # This would need actual time tracking for accuracy
         # For now, return a placeholder
         return 0.0
+
+    def _validate_and_fix_contract(self, playlist_data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Validate and fix contract compliance for playlist data before broadcasting.
+
+        This is a defense-in-depth measure to prevent issue #71 from recurring.
+        It detects and auto-fixes missing 'number' field in tracks.
+
+        Args:
+            playlist_data: Playlist data to validate
+
+        Returns:
+            Validated (and potentially fixed) playlist data
+        """
+        if not isinstance(playlist_data, dict):
+            logger.warning(f"Invalid playlist_data type: {type(playlist_data)}, expected dict")
+            return playlist_data
+
+        # Check if playlist has tracks
+        if 'tracks' not in playlist_data:
+            return playlist_data
+
+        tracks = playlist_data.get('tracks', [])
+        if not isinstance(tracks, list):
+            logger.warning(f"Invalid tracks type: {type(tracks)}, expected list")
+            return playlist_data
+
+        # Validate and fix each track
+        fixed_tracks = []
+        contract_violations_detected = False
+
+        for idx, track in enumerate(tracks):
+            if not isinstance(track, dict):
+                logger.warning(f"Track {idx} is not a dict: {type(track)}")
+                fixed_tracks.append(track)
+                continue
+
+            # Check for 'number' field (required by frontend contract)
+            if 'number' not in track:
+                contract_violations_detected = True
+
+                # Try to fix by using 'track_number' if available
+                if 'track_number' in track:
+                    track['number'] = track['track_number']
+                    logger.warning(
+                        f"CONTRACT VIOLATION FIXED: Track {idx} (ID: {track.get('id')}) "
+                        f"missing 'number' field, auto-fixed from 'track_number'={track['track_number']}. "
+                        f"This indicates a serialization bug (see issue #71). "
+                        f"Track: {track.get('title', 'unknown')}"
+                    )
+                else:
+                    # Cannot fix - log critical error
+                    logger.error(
+                        f"CONTRACT VIOLATION CANNOT FIX: Track {idx} (ID: {track.get('id')}) "
+                        f"missing both 'number' and 'track_number' fields! "
+                        f"Available fields: {', '.join(track.keys())}. "
+                        f"Track: {track.get('title', 'unknown')}. "
+                        f"This will cause frontend errors!"
+                    )
+
+            # Verify 'number' and 'track_number' match if both present
+            if 'number' in track and 'track_number' in track:
+                if track['number'] != track['track_number']:
+                    logger.warning(
+                        f"CONTRACT INCONSISTENCY: Track {idx} has mismatched fields: "
+                        f"number={track['number']} vs track_number={track['track_number']}. "
+                        f"Using track_number as source of truth."
+                    )
+                    track['number'] = track['track_number']
+
+            fixed_tracks.append(track)
+
+        # Log summary if violations were found
+        if contract_violations_detected:
+            playlist_id = playlist_data.get('id', 'unknown')
+            playlist_title = playlist_data.get('title', 'unknown')
+            logger.warning(
+                f"CONTRACT VALIDATION: Playlist '{playlist_title}' (ID: {playlist_id}) "
+                f"had tracks with missing 'number' fields. Auto-fixed before broadcast. "
+                f"This indicates serialization is not using UnifiedSerializationService. "
+                f"See issue #71 for context."
+            )
+
+        # Update playlist data with fixed tracks
+        playlist_data = playlist_data.copy()  # Don't mutate original
+        playlist_data['tracks'] = fixed_tracks
+
+        return playlist_data
