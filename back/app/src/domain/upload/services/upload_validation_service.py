@@ -8,10 +8,10 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from ..constants import WINDOWS_RESERVED_NAMES
 from ..entities.upload_session import UploadSession
 from ..value_objects.file_chunk import FileChunk
 from ..value_objects.file_metadata import FileMetadata
+from app.src.services.validation.validation_constants import WINDOWS_RESERVED_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class UploadValidationService:
 
     def _create_validation_result(
         self, errors: list[str], warnings: list[str], **extra_fields
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """Create standard validation result dictionary.
 
         Args:

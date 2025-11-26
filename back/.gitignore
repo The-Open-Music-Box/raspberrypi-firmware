@@ -22,6 +22,12 @@ ENV/
 *.swo
 *~
 
+# Code quality reports
+.jscpd-report/
+jscpd-report.json
+radon-report.json
+bandit-report.json
+
 # OS
 .DS_Store
 Thumbs.db
