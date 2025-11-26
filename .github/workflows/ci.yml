@@ -85,13 +85,13 @@ jobs:
       - name: Run unit tests
         id: unit-tests
         run: |
-          pytest app/tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
+          pytest tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
         continue-on-error: true
 
       - name: Run contract tests
         id: contract-tests
         run: |
-          pytest app/tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
+          pytest tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
         continue-on-error: true
 
       - name: Upload test results
