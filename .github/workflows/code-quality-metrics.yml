@@ -56,7 +56,7 @@ jobs:
         source venv/bin/activate
         export USE_MOCK_HARDWARE=true
         export ENVIRONMENT=test
-        pytest app/tests/ -v \
+        pytest tests/ -v \
           --cov=app \
           --cov-report=json:coverage.json \
           --cov-report=term-missing || echo "Tests failed but continuing for metrics"
