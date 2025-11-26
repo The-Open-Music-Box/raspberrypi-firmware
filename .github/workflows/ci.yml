@@ -98,14 +98,12 @@ jobs:
         run: |
           source venv/bin/activate
           pytest tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
-        continue-on-error: true
 
       - name: Run contract tests
         id: contract-tests
         run: |
           source venv/bin/activate
           pytest tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
-        continue-on-error: true
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -113,14 +111,6 @@ jobs:
         with:
           name: backend-test-results
           path: back/test-results-*.xml
-
-      - name: Check test results
-        run: |
-          if [[ "${{ steps.unit-tests.outcome }}" != "success" ]] || [[ "${{ steps.contract-tests.outcome }}" != "success" ]]; then
-            echo "::error::Backend tests failed"
-            exit 1
-          fi
-          echo "All backend tests passed"
 
   frontend-tests:
     name: Frontend Tests
