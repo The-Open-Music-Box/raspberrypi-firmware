@@ -3,6 +3,7 @@
 # =========================
 public_release/
 release_dev/
+release/
 .windsurf/
 .claude/
 # =========================
@@ -34,6 +35,7 @@ coverage/
 cypress/videos/
 cypress/screenshots/
 .coverage
+.coverage.*
 .pytest_cache/
 htmlcov/
 contract-validation-reports/

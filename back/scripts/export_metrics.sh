@@ -5,7 +5,7 @@
 
 set -e
 
-PUSHGATEWAY_URL="${1:-http://homesrv.local:9091}"
+PUSHGATEWAY_URL="${1:-http://localhost:9091}"
 JOB_NAME="code_quality"
 INSTANCE="${GITHUB_REPOSITORY:-local}"
 
