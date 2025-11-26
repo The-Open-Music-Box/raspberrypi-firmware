@@ -15,6 +15,7 @@ from typing import Any, cast
 from app.src.domain.data.models.playlist import Playlist
 from app.src.domain.data.models.track import Track
 from app.src.services.error.unified_error_decorator import handle_repository_errors
+from app.src.services.serialization.unified_serialization_service import UnifiedSerializationService
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class PurePlaylistRepositoryAdapter:
         Uses direct container access to avoid circular dependencies.
         """
         self._repository = None  # Will be injected via property
+        self._serializer = UnifiedSerializationService()
         logger.info("✅ Pure DDD Playlist Repository Adapter initialized")
 
     @property
@@ -98,7 +100,7 @@ class PurePlaylistRepositoryAdapter:
         """Get playlist by ID using pure DDD principles."""
         playlist = await self._repo.find_by_id(playlist_id)
         if playlist is not None:
-            return self._domain_to_dict(playlist)
+            return self._serializer.serialize_playlist(playlist)
         return None
 
     @_handle_repository_errors("playlist_adapter")
@@ -106,7 +108,7 @@ class PurePlaylistRepositoryAdapter:
         """Get playlist by NFC tag using pure DDD principles."""
         playlist = await self._repo.find_by_nfc_tag(nfc_tag_id)
         if playlist is not None:
-            return self._domain_to_dict(playlist)
+            return self._serializer.serialize_playlist(playlist)
         return None
 
     @_handle_repository_errors("playlist_adapter")
@@ -128,7 +130,7 @@ class PurePlaylistRepositoryAdapter:
     async def find_all(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
         """Get all playlists using pure DDD principles."""
         playlists = await self._repo.find_all(limit=limit, offset=offset)
-        return [self._domain_to_dict(p) for p in playlists]
+        return [self._serializer.serialize_playlist(p) for p in playlists]
 
     @_handle_repository_errors("playlist_adapter")
     async def count(self) -> int:
@@ -264,7 +266,7 @@ class PurePlaylistRepositoryAdapter:
     async def get_all_playlists(self, limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
         """Get all playlists using pure DDD principles."""
         playlists = await self._repo.find_all(limit=limit, offset=offset)
-        return [self._domain_to_dict(p) for p in playlists]
+        return [self._serializer.serialize_playlist(p) for p in playlists]
 
     @_handle_repository_errors("playlist_adapter")
     async def update_playlist(self, playlist_id: str, updates: dict[str, Any]) -> bool:
@@ -335,30 +337,3 @@ class PurePlaylistRepositoryAdapter:
             )
 
         return cast(bool, success)
-
-    def _domain_to_dict(self, playlist: Playlist) -> dict[str, Any]:
-        """Convert domain model to dict format for API compatibility."""
-        return {
-            "id": playlist.id,
-            "title": playlist.title,  # API compatibility
-            "name": playlist.title,   # Legacy field for backward compatibility
-            "description": playlist.description,
-            "nfc_tag_id": playlist.nfc_tag_id,
-            "path": playlist.path,   # Folder path for uploads
-            "created_at": None,  # Domain model doesn't have timestamps
-            "updated_at": None,  # Domain model doesn't have timestamps
-            "tracks": [self._track_to_dict(track) for track in playlist.tracks],
-        }
-
-    def _track_to_dict(self, track: Track) -> dict[str, Any]:
-        """Convert track domain model to dict format for API compatibility."""
-        return {
-            "id": track.id,
-            "track_number": track.track_number,
-            "title": track.title,
-            "filename": track.filename,
-            "file_path": track.file_path,
-            "duration_ms": track.duration_ms,
-            "artist": track.artist,
-            "album": track.album,
-        }
