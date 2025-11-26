@@ -8,6 +8,8 @@ set -e
 PUSHGATEWAY_URL="${1:-http://localhost:9091}"
 JOB_NAME="code_quality"
 INSTANCE="${GITHUB_REPOSITORY:-local}"
+# Replace slashes in instance name to avoid URL issues
+INSTANCE="${INSTANCE//\//-}"
 
 cd "$(dirname "$0")/.."
 
