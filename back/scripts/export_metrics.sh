@@ -72,7 +72,7 @@ EOF
 
 echo ""
 echo "--- interrogate (Docstring Coverage) ---"
-DOCSTRING_COVERAGE=$(interrogate app/src -v 2>&1 | grep "TOTAL" | awk '{print $NF}' | tr -d '%' || echo "0")
+DOCSTRING_COVERAGE=$(interrogate app/src -v 2>&1 | grep "TOTAL" | grep -oP '\d+\.\d+(?=%)' || echo "0")
 echo "docstring_coverage $DOCSTRING_COVERAGE"
 cat >> "$METRICS_FILE" << EOF
 # HELP docstring_coverage_percent Docstring coverage percentage from interrogate
