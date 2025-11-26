@@ -1,5 +1,18 @@
 # TheOpenMusicBox Deployment Guide
 
+> **⚠️ DEPRECATED**: This guide describes an older deployment system that is no longer in use.
+>
+> **Please use the current deployment documentation:**
+> - **[Deployment Guide](../deployment/DEPLOY_GUIDE.md)** - Current deployment process using `deploy.sh`
+> - **[Deployment Safety](../deployment/DEPLOYMENT_SAFETY.md)** - Critical safety guidelines
+> - **[Release Workflow](../deployment/RELEASE_WORKFLOW.md)** - Version and release management
+>
+> This document is kept for historical reference only.
+
+---
+
+## Historical Documentation (Pre-v0.5.0)
+
 This guide explains the complete deployment process for TheOpenMusicBox application, including both backend and frontend components.
 
 ## Overview

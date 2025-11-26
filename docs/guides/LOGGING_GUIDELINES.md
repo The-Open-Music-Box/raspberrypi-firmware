@@ -593,6 +593,6 @@ class PlaybackStateManager:
 ## References
 
 - [Python Logging Documentation](https://docs.python.org/3/library/logging.html)
-- [TheOpenMusicBox API Contract](../contracts/schemas/openapi.yaml)
-- [Error Handling Decorator](../back/app/src/services/error/unified_error_decorator.py)
-- [Unified Response Service](../back/app/src/services/response/unified_response_service.py)
+- [TheOpenMusicBox API Contract](../../contracts/schemas/openapi.yaml)
+- [Error Handling Decorator](../../back/app/src/services/error/unified_error_decorator.py)
+- [Unified Response Service](../../back/app/src/services/response/unified_response_service.py)

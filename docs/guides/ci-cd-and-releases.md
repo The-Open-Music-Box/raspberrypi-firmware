@@ -164,10 +164,10 @@ echo "0.5.4" > VERSION
 
 ```bash
 # Create annotated tag
-git tag -a v0.5.4 -m "Release v0.5.4"
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
 
 # Push tag to trigger release workflow
-git push origin v0.5.4
+git push origin vX.Y.Z
 ```
 
 #### 6. Monitor Release Build
@@ -193,7 +193,7 @@ Each release includes:
 
 Users can download:
 - **Latest**: `https://github.com/The-Open-Music-Box/raspberrypi-firmware/releases/latest/download/tomb.tar.gz`
-- **Specific**: `https://github.com/The-Open-Music-Box/raspberrypi-firmware/releases/download/v0.5.4/tomb-v0.5.4.tar.gz`
+- **Specific**: `https://github.com/The-Open-Music-Box/raspberrypi-firmware/releases/download/vX.Y.Z/tomb-vX.Y.Z.tar.gz`
 
 ---
 
@@ -292,14 +292,14 @@ Check `release.yml` package step includes all necessary files:
 
 ```bash
 # Delete local tag
-git tag -d v0.5.4
+git tag -d vX.Y.Z
 
 # Delete remote tag
-git push origin :refs/tags/v0.5.4
+git push origin :refs/tags/vX.Y.Z
 
 # Recreate and push
-git tag -a v0.5.4 -m "Release v0.5.4"
-git push origin v0.5.4
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 ---
@@ -327,7 +327,7 @@ ssh your-runner-host "sudo systemctl status actions.runner.*.service"
 gh release list --limit 5
 
 # View release details
-gh release view v0.5.4
+gh release view vX.Y.Z
 
 # Monitor workflows
 gh run list --limit 10
