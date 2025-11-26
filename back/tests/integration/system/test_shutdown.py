@@ -8,6 +8,7 @@ import sys
 import signal
 import subprocess
 import time
+import pytest
 
 def test_graceful_shutdown():
     """Test the application graceful shutdown to verify background tasks stop properly."""
@@ -31,11 +32,11 @@ def test_graceful_shutdown():
         
         # Check if process is still running
         if process.poll() is not None:
-            print(f"❌ ERROR: Process exited during startup with code {process.returncode}")
             stdout, stderr = process.communicate()
+            print(f"❌ ERROR: Process exited during startup with code {process.returncode}")
             print("📝 Startup output:")
             print(stderr[-2000:])  # Last 2000 chars
-            return False
+            pytest.fail(f"Process exited during startup with code {process.returncode}")
         
         print("✅ Application started successfully")
         
@@ -56,14 +57,14 @@ def test_graceful_shutdown():
                 for line in stderr.split('\n')[-15:]:
                     if line.strip() and ('shutdown' in line.lower() or 'cleanup' in line.lower() or 'stopped' in line.lower()):
                         print(f"  {line}")
-                return True
+                # Test passed
             else:
                 print(f"⚠️ WARNING: Application exited with code {process.returncode} after {shutdown_time:.2f}s")
                 print("📝 Last few log lines:")
                 for line in stderr.split('\n')[-10:]:
                     if line.strip():
                         print(f"  {line}")
-                return False
+                pytest.fail(f"Application exited with code {process.returncode}")
                 
         except subprocess.TimeoutExpired:
             shutdown_time = time.time() - shutdown_start
@@ -80,13 +81,16 @@ def test_graceful_shutdown():
             for line in stderr.split('\n')[-15:]:
                 if line.strip():
                     print(f"  {line}")
-            return False
-            
+            pytest.fail("Application did not shut down within 15 seconds")
+
     except Exception as e:
         print(f"💥 Exception during shutdown test: {e}")
         process.kill()
-        return False
+        pytest.fail(f"Exception during shutdown test: {e}")
 
 if __name__ == "__main__":
-    success = test_graceful_shutdown()
-    sys.exit(0 if success else 1)
+    try:
+        test_graceful_shutdown()
+        sys.exit(0)
+    except (AssertionError, Exception):
+        sys.exit(1)
