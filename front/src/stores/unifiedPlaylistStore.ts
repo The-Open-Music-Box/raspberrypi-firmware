@@ -323,26 +323,51 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
    * Delete a track from a playlist
    */
   async function deleteTrack(playlistId: string, trackNumber: number): Promise<void> {
+    logger.info('🗑️  DELETE TRACK CALLED', { playlistId, trackNumber })
+
     try {
-      await apiService.deleteTrack(playlistId, trackNumber)
-      
-      // Remove from local data optimistically using centralized logic
       const playlistTracks = tracks.value.get(playlistId)
+      logger.debug('Tracks before deletion', {
+        playlistId,
+        trackCount: playlistTracks?.length || 0,
+        trackNumbers: playlistTracks?.map(t => getTrackNumber(t)) || [],
+        trackData: playlistTracks?.map(t => ({
+          filename: t.filename,
+          number: t.number,
+          allKeys: Object.keys(t),
+          rawTrack: t
+        })) || []
+      })
+
+      await apiService.deleteTrack(playlistId, trackNumber)
+      logger.debug('API delete call succeeded', { playlistId, trackNumber })
+
+      // Remove from local data optimistically using centralized logic
       if (playlistTracks) {
         const updatedTracks = filterTrackByNumber(playlistTracks, trackNumber)
+        logger.info('🗑️  OPTIMISTIC UPDATE', {
+          playlistId,
+          trackNumber,
+          beforeCount: playlistTracks.length,
+          afterCount: updatedTracks.length,
+          removedCount: playlistTracks.length - updatedTracks.length
+        })
+
         tracks.value.set(playlistId, updatedTracks)
-        
+
         // Update performance index
         updateTrackIndexMap(playlistId, updatedTracks)
 
         // Track count is derived from tracks array length in v3.3.2
         // No need to store it separately
+      } else {
+        logger.warn('No tracks found for playlist during deletion', { playlistId })
       }
-      
-      logger.info('Deleted track', { playlistId, trackNumber })
-      
+
+      logger.info('✅ Deleted track successfully', { playlistId, trackNumber })
+
     } catch (err) {
-      logger.error('Failed to delete track', { playlistId, trackNumber, error: err })
+      logger.error('❌ Failed to delete track', { playlistId, trackNumber, error: err })
       throw err
     }
   }
@@ -528,9 +553,9 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
     
     // Listen for track updates
     socketService.on('state:track', handleTrackUpdate)
-    
-    // Listen for track deletions
-    socketService.on('state:track_deleted', handleTrackDeleted)
+
+    // Listen for track deletions (plural event name per contract v3.3.1)
+    socketService.on('state:tracks_deleted', handleTrackDeleted)
     
     // Note: Track reordering is handled via 'state:playlists' updates
     
@@ -606,10 +631,19 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
     }
   }
 
-  function handleTrackAdded(data: any): void {
-    if (!data.playlist_id || !data.track) return
+  function handleTrackAdded(event: any): void {
+    // CRITICAL FIX: Unwrap envelope - WebSocket events come wrapped
+    const data = 'data' in event ? event.data : event
 
-    logger.debug('Received track added event', { playlistId: data.playlist_id })
+    if (!data.playlist_id || !data.track) {
+      logger.warn('Invalid track added event - missing required fields', { data })
+      return
+    }
+
+    logger.debug('Received track added event', {
+      playlistId: data.playlist_id,
+      trackNumber: getTrackNumber(data.track)
+    })
 
     const playlistTracks = tracks.value.get(data.playlist_id) || []
     const trackNumber = getTrackNumber(data.track)
@@ -621,15 +655,25 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
       )
       tracks.value.set(data.playlist_id, updatedTracks)
 
-      // Update playlist track count
-      const playlist = playlists.value.get(data.playlist_id)
+      logger.info('Track added via WebSocket', {
+        playlistId: data.playlist_id,
+        trackNumber,
+        totalTracks: updatedTracks.length
+      })
+
       // Track count is derived from tracks.length in v3.3.2
       // No need to update playlist separately
     }
   }
 
-  function handleTrackUpdate(trackData: any): void {
-    if (!trackData?.id) return
+  function handleTrackUpdate(event: any): void {
+    // CRITICAL FIX: Unwrap envelope - WebSocket events come wrapped
+    const trackData = 'data' in event ? event.data : event
+
+    if (!trackData?.id) {
+      logger.warn('Invalid track update event - missing track id', { trackData })
+      return
+    }
 
     logger.debug('Received track update', { trackId: trackData.id })
 
@@ -645,32 +689,54 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         const updatedTracks = [...playlistTracks]
         updatedTracks[trackIndex] = trackData
         tracks.value.set(playlistId, updatedTracks)
+
+        logger.info('Track updated via WebSocket', {
+          playlistId,
+          trackNumber: trackDataNumber,
+          trackId: trackData.id
+        })
         break
       }
     }
   }
 
-  function handleTrackDeleted(data: any): void {
-    if (!data.playlist_id || !data.track_numbers) return
-    
-    logger.debug('Received track deleted event', { 
-      playlistId: data.playlist_id, 
-      trackNumbers: data.track_numbers 
+  function handleTrackDeleted(event: any): void {
+    // CRITICAL FIX: Unwrap envelope - WebSocket events come wrapped
+    const data = 'data' in event ? event.data : event
+
+    logger.debug('Received track deleted event (raw)', { event })
+    logger.debug('Received track deleted event (unwrapped)', {
+      playlistId: data.playlist_id,
+      trackNumbers: data.track_numbers,
+      operation: data.operation
     })
-    
+
+    if (!data.playlist_id || !data.track_numbers) {
+      logger.warn('Invalid track deleted event - missing required fields', { data })
+      return
+    }
+
     const playlistTracks = tracks.value.get(data.playlist_id)
     if (playlistTracks) {
+      const beforeCount = playlistTracks.length
       // Use centralized filtering logic for consistency
       const updatedTracks = filterTracksByNumbers(playlistTracks, data.track_numbers)
       tracks.value.set(data.playlist_id, updatedTracks)
-      
+
       // Update performance index
       updateTrackIndexMap(data.playlist_id, updatedTracks)
-      
-      // Update playlist track count
-      const playlist = playlists.value.get(data.playlist_id)
+
+      logger.info('Tracks deleted via WebSocket', {
+        playlistId: data.playlist_id,
+        deletedCount: data.track_numbers.length,
+        beforeCount,
+        afterCount: updatedTracks.length
+      })
+
       // Track count is derived from tracks.length in v3.3.2
       // No need to update playlist separately
+    } else {
+      logger.warn('Playlist not found for track deletion', { playlistId: data.playlist_id })
     }
   }
 
@@ -772,7 +838,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
     socketService.off('state:playlists', handlePlaylistsStateUpdate)
     socketService.off('state:track_added', handleTrackAdded)
     socketService.off('state:track', handleTrackUpdate)
-    socketService.off('state:track_deleted', handleTrackDeleted)
+    socketService.off('state:tracks_deleted', handleTrackDeleted)
     // state:tracks_reordered listener removed (handled via state:playlists)
     socketService.off('state:playlist_created', handlePlaylistCreated)
     socketService.off('state:playlist_updated', handlePlaylistUpdated)

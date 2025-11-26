@@ -196,7 +196,7 @@ export const useServerStateStore = defineStore('serverState', () => {
     window.addEventListener('state:playlist_deleted', (e: Event) => handlePlaylistDeleted((e as CustomEvent<StateEvent>).detail))
     window.addEventListener('state:playlist_created', (e: Event) => handlePlaylistCreated((e as CustomEvent<StateEvent>).detail))
     window.addEventListener('state:playlist_updated', (e: Event) => handlePlaylistUpdated((e as CustomEvent<StateEvent>).detail))
-    window.addEventListener('state:track_deleted', (e: Event) => handleTrackDeleted((e as CustomEvent<StateEvent>).detail))
+    window.addEventListener('state:tracks_deleted', (e: Event) => handleTrackDeleted((e as CustomEvent<StateEvent>).detail))
     window.addEventListener('state:track_added', (e: Event) => handleTrackAdded((e as CustomEvent<StateEvent>).detail))
     window.addEventListener('state:playlists_index_update', (e: Event) => handlePlaylistsIndexUpdate((e as CustomEvent<StateEvent>).detail))
 

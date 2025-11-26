@@ -186,25 +186,27 @@ describe('Socket.IO State Events Contract Tests', () => {
     expect(typeof playlistUpdatedPayload.data.playlist_id).toBe('string')
   })
 
-  it('should validate state:track_deleted event payload structure', () => {
+  it('should validate state:tracks_deleted event payload structure', () => {
     /**
-     * Contract:
-     * - Event: 'state:track_deleted'
-     * - Data: {track_number: number, playlist_id: string}
+     * Contract v3.3.1+:
+     * - Event: 'state:tracks_deleted'
+     * - Data: {track_numbers: number[], playlist_id: string, operation?: string}
      */
     const trackDeletedPayload = {
-      event_type: 'state:track_deleted',
+      event_type: 'state:tracks_deleted',
       data: {
-        track_number: 3,
-        playlist_id: 'playlist-123'
+        track_numbers: [3],
+        playlist_id: 'playlist-123',
+        operation: 'delete_tracks'
       },
       playlist_id: 'playlist-123',
       server_seq: 108,
       timestamp: Date.now()
     }
-    expect(trackDeletedPayload.data).toHaveProperty('track_number')
+    expect(trackDeletedPayload.data).toHaveProperty('track_numbers')
     expect(trackDeletedPayload.data).toHaveProperty('playlist_id')
-    expect(typeof trackDeletedPayload.data.track_number).toBe('number')
+    expect(Array.isArray(trackDeletedPayload.data.track_numbers)).toBe(true)
+    expect(typeof trackDeletedPayload.data.playlist_id).toBe('string')
   })
 
   it('should validate state:track_added event payload structure', () => {

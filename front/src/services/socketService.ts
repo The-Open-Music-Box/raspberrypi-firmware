@@ -42,7 +42,7 @@ export type SocketEventType =
   | 'state:playlist_deleted'
   | 'state:playlist_created'
   | 'state:playlist_updated'
-  | 'state:track_deleted'
+  | 'state:tracks_deleted'
   | 'state:track_added'
   | 'state:volume_changed'
   | 'state:nfc_state'
@@ -79,7 +79,7 @@ export interface EventHandlers {
   'state:playlist_deleted': (data: StateEventEnvelope<{ playlist_id: string; message?: string }>) => void
   'state:playlist_created': (data: StateEventEnvelope<{ playlist: Playlist }>) => void
   'state:playlist_updated': (data: StateEventEnvelope<{ playlist: Playlist }>) => void
-  'state:track_deleted': (data: StateEventEnvelope<{ playlist_id: string; track_numbers: number[] }>) => void
+  'state:tracks_deleted': (data: StateEventEnvelope<{ playlist_id: string; track_numbers: number[]; operation?: string }>) => void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   'state:track_added': (data: StateEventEnvelope<{ playlist_id: string; track: any }>) => void
   'state:volume_changed': (data: StateEventEnvelope<{ volume: number }>) => void
@@ -274,7 +274,7 @@ class SocketService {
     this.setupStateEventHandler('state:playlist_deleted')
     this.setupStateEventHandler('state:playlist_created')
     this.setupStateEventHandler('state:playlist_updated')
-    this.setupStateEventHandler('state:track_deleted')
+    this.setupStateEventHandler('state:tracks_deleted')
     this.setupStateEventHandler('state:track_added')
     
     // System state events

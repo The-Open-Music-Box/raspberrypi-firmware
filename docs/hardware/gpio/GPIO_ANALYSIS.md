@@ -18,17 +18,17 @@ The TheOpenMusicBox project uses GPIO pins for physical controls (buttons), volu
 | BT4 | 5 | Next track | `GPIO_BUTTON_BT4` | Yes |
 
 **Location (Default Values):**
-- `back/app/src/config/hardware_config.py` (lines 23-27)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py` (lines 23-27)
 
 **Location (Button Actions):**
-- `back/app/src/config/button_actions_config.py` (lines 48-79)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/button_actions_config.py` (lines 48-79)
 
 **Configuration Override Mechanism:**
-- Implemented in: `back/app/src/config/app_config.py` (lines 532-542)
+- Implemented in: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py` (lines 532-542)
 - Method: `_load_subconfig_overrides()`
 
 **Hardware Implementation:**
-- `back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py` (lines 170-240)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py` (lines 170-240)
 
 **Button Configuration Details:**
 - Debounce time: 10ms (adjustable via `button_debounce_time` in hardware_config)
@@ -47,14 +47,14 @@ The TheOpenMusicBox project uses GPIO pins for physical controls (buttons), volu
 | SW (Switch) | 16 | Play/Pause button | `GPIO_VOLUME_SW` | Yes |
 
 **Location (Default Values):**
-- `back/app/src/config/hardware_config.py` (lines 30-32)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py` (lines 30-32)
 
 **Configuration Override Mechanism:**
-- Implemented in: `back/app/src/config/app_config.py` (lines 544-550)
+- Implemented in: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py` (lines 544-550)
 - Method: `_load_subconfig_overrides()`
 
 **Hardware Implementation:**
-- `back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py`
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py`
   - Encoder switch initialization: lines 241-274
   - Encoder rotation initialization: lines 276-312
   - Clockwise (volume up) handler: lines 353-357
@@ -77,10 +77,10 @@ The TheOpenMusicBox project uses GPIO pins for physical controls (buttons), volu
 | Blue | 24 | `GPIO_LED_BLUE` | **NO** |
 
 **Location (Default Values):**
-- `back/app/src/config/hardware_config.py` (lines 35-37)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py` (lines 35-37)
 
 **Hardware Implementation:**
-- `back/app/src/infrastructure/hardware/leds/rgb_led_controller.py` (lines 63-141)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/leds/rgb_led_controller.py` (lines 63-141)
 
 **LED Configuration Details:**
 - PWM Frequency: 1000 Hz (default)
@@ -89,7 +89,7 @@ The TheOpenMusicBox project uses GPIO pins for physical controls (buttons), volu
 - Supported animations: SOLID, PULSE, BLINK_SLOW, BLINK_FAST, FLASH, DOUBLE_BLINK
 
 **NOTE:** LED GPIO pins are NOT currently overridable via environment variables. Override would require code changes in:
-- `back/app/src/config/app_config.py` (add to `_load_subconfig_overrides()` method)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py` (add to `_load_subconfig_overrides()` method)
 
 ---
 
@@ -101,15 +101,15 @@ The TheOpenMusicBox project uses GPIO pins for physical controls (buttons), volu
 | PN532 NFC Reader | 1 | 0x24 | Not currently | NO |
 
 **Location (I2C Configuration):**
-- Hardware I2C bus: `back/app/src/config/hardware_config.py` (lines 51-53)
-- NFC I2C bus: `back/app/src/config/nfc_config.py` (lines 42-43)
+- Hardware I2C bus: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py` (lines 51-53)
+- NFC I2C bus: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/nfc_config.py` (lines 42-43)
 
 **Audio DAC Implementation:**
 - Uses direct I2C communication with WM8960 codec
 - Address: 0x1A (7-bit addressing)
 
 **NFC Reader Implementation:**
-- `back/app/src/infrastructure/hardware/nfc/pn532_nfc_hardware.py`
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/nfc/pn532_nfc_hardware.py`
 - Uses Adafruit PN532 library
 - I2C address: 0x24 (PN532 default)
 - Initialization: lines 54-71
@@ -123,7 +123,7 @@ The TheOpenMusicBox project uses GPIO pins for physical controls (buttons), volu
 | NFC (if SPI) | 0 | 0 | 1000000 Hz (1 MHz) | Not currently | NO |
 
 **Location:**
-- `back/app/src/config/hardware_config.py` (lines 55-58)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py` (lines 55-58)
 
 **NOTE:** Currently NFC uses I2C by default (`use_spi: bool = False` in nfc_config.py). SPI configuration exists but is not actively used.
 
@@ -132,7 +132,7 @@ The TheOpenMusicBox project uses GPIO pins for physical controls (buttons), volu
 ## Configuration Mechanism
 
 ### Method 1: Hardcoded Defaults (HardwareConfig Dataclass)
-Location: `back/app/src/config/hardware_config.py`
+Location: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py`
 
 All GPIO pins have hardcoded default values in the `HardwareConfig` dataclass:
 ```python
@@ -150,7 +150,7 @@ gpio_led_blue: int = 24
 ```
 
 ### Method 2: Environment Variable Overrides (AppConfig)
-Location: `back/app/src/config/app_config.py`
+Location: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py`
 Method: `_load_subconfig_overrides()` (lines 514-565)
 
 The following environment variables override the hardcoded defaults:
@@ -172,7 +172,7 @@ GPIO_VOLUME_SW   (overrides gpio_volume_encoder_sw: default 16)
 ```
 
 ### Method 3: .env File
-Location: `back/.env`
+Location: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/.env`
 
 The `.env` file is loaded by `dotenv` library (line 17 in app_config.py).
 Configuration path resolution:
@@ -181,7 +181,7 @@ Configuration path resolution:
 3. `./` (current working directory fallback)
 
 ### Method 4: Hardware Configuration Validation
-Location: `back/app/src/config/hardware_config.py` (lines 66-99)
+Location: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py` (lines 66-99)
 
 The `HardwareConfig.validate()` method ensures:
 - All GPIO pins are in valid range (0-27)
@@ -194,7 +194,7 @@ The `HardwareConfig.validate()` method ensures:
 
 The GPIO implementation supports multiple backends (in order of preference):
 
-Location: `back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py` (lines 33-84)
+Location: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py` (lines 33-84)
 
 1. **RPi.GPIO** (preferred)
    - Uses `RPiGPIOFactory` from gpiozero
@@ -210,7 +210,7 @@ Location: `back/app/src/infrastructure/hardware/controls/gpio_controls_implement
 
 4. **Mock Hardware** (fallback)
    - Used when `USE_MOCK_HARDWARE=true` or GPIO unavailable
-   - Location: `back/app/src/infrastructure/hardware/controls/mock_controls_implementation.py`
+   - Location: `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/mock_controls_implementation.py`
 
 ---
 
@@ -226,7 +226,7 @@ Location: `back/app/src/infrastructure/hardware/controls/gpio_controls_implement
 - NFC reader (alternative implementation exists)
 
 **Controlled by:**
-- `back/app/src/config/app_config.py` (line 525-530)
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py` (line 525-530)
 
 ---
 
@@ -265,19 +265,19 @@ Location: `back/app/src/infrastructure/hardware/controls/gpio_controls_implement
 ## Files Summary
 
 ### Configuration Files:
-- `back/app/src/config/hardware_config.py` - GPIO pin definitions
-- `back/app/src/config/app_config.py` - Configuration loading and overrides
-- `back/app/src/config/button_actions_config.py` - Button action mapping
-- `back/app/src/config/nfc_config.py` - NFC configuration
-- `back/.env` - Environment variables file
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/hardware_config.py` - GPIO pin definitions
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/app_config.py` - Configuration loading and overrides
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/button_actions_config.py` - Button action mapping
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/config/nfc_config.py` - NFC configuration
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/.env` - Environment variables file
 
 ### Implementation Files:
-- `back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py` - Button/encoder implementation
-- `back/app/src/infrastructure/hardware/controls/mock_controls_implementation.py` - Mock implementation
-- `back/app/src/infrastructure/hardware/leds/rgb_led_controller.py` - LED implementation
-- `back/app/src/infrastructure/hardware/leds/led_controller_factory.py` - LED factory
-- `back/app/src/infrastructure/hardware/controls/controls_factory.py` - Controls factory
-- `back/app/src/infrastructure/hardware/nfc/pn532_nfc_hardware.py` - NFC implementation
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/gpio_controls_implementation.py` - Button/encoder implementation
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/mock_controls_implementation.py` - Mock implementation
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/leds/rgb_led_controller.py` - LED implementation
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/leds/led_controller_factory.py` - LED factory
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/controls/controls_factory.py` - Controls factory
+- `/Users/jonathanpiette/github/theopenmusicbox/rpi-firmware/back/app/src/infrastructure/hardware/nfc/pn532_nfc_hardware.py` - NFC implementation
 
 ---
 
