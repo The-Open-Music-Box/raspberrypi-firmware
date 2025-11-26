@@ -11,7 +11,7 @@ testing state broadcasting, client acknowledgments, and event management.
 import asyncio
 from unittest.mock import AsyncMock
 
-from app.tests.mocks.mock_state_manager import MockStateManager
+from tests.mocks.mock_state_manager import MockStateManager
 
 
 class TestStateManager:

@@ -71,27 +71,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+      # Python 3.13 is pre-installed on self-hosted runner
+      # - name: Set up Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
+      #     cache: 'pip'
+
+      - name: Set up Python virtual environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements/dev.txt
+          source venv/bin/activate
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
 
       - name: Run unit tests
         id: unit-tests
         run: |
-          pytest app/tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
+          source venv/bin/activate
+          pytest tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
         continue-on-error: true
 
       - name: Run contract tests
         id: contract-tests
         run: |
-          pytest app/tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
+          source venv/bin/activate
+          pytest tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
         continue-on-error: true
 
       - name: Upload test results
@@ -158,6 +170,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

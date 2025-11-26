@@ -77,7 +77,7 @@ jobs:
         export ENVIRONMENT=test
         export PYTHONPATH=$PWD
         # Run unit tests with coverage
-        pytest app/tests/unit/ -v \
+        pytest tests/unit/ -v \
           --cov=app \
           --cov-report=term-missing \
           --cov-report=html:test-reports/coverage-unit \
@@ -92,7 +92,7 @@ jobs:
         export ENVIRONMENT=test
         export PYTHONPATH=$PWD
         # Run contract tests with coverage (allow to pass if no tests found)
-        pytest app/tests/contracts/ -v \
+        pytest tests/contracts/ -v \
           --cov=app \
           --cov-report=term-missing \
           --cov-report=html:test-reports/coverage-contracts \
