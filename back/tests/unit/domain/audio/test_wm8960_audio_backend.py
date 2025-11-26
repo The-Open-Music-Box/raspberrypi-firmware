@@ -16,9 +16,8 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch, PropertyMock
 from pathlib import Path
 
-# TODO(#83): Fix pygame mocking issues - these tests fail when pygame is not available in CI
-# Skip entire module until issue #83 is resolved
-pytestmark = pytest.mark.skip(reason="pygame mocking issues - see issue #83")
+# NOTE: These tests mock pygame comprehensively to work without actual pygame installation
+# All pygame imports and usage are mocked via fixtures
 
 
 @pytest.fixture
