@@ -43,16 +43,16 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_API
         )
 
-        # CRITICAL: Verify 'number' field exists (frontend compatibility)
+        # CRITICAL: Verify 'number' field exists (per OpenAPI contract v3.3.2)
         assert "number" in result, (
             f"Track serialization missing 'number' field. "
             f"Available fields: {list(result.keys())}"
         )
-        assert result["number"] == 5, "number field should match track_number"
+        assert result["number"] == 5, "number field should match track position"
 
-        # Verify both fields exist and are identical
-        assert result["track_number"] == result["number"], (
-            "track_number and number fields must be identical"
+        # Per OpenAPI contract v3.3.2, only 'number' field should exist
+        assert "track_number" not in result, (
+            "track_number field should not exist - use 'number' per OpenAPI contract"
         )
 
     def test_serialize_track_api_format_all_required_fields(self):
@@ -71,11 +71,10 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_API
         )
 
-        # Required fields per frontend Track interface
+        # Required fields per OpenAPI contract v3.3.2 and frontend Track interface
         required_fields = [
             "id",
-            "number",  # Frontend compatibility
-            "track_number",  # Backend consistency
+            "number",  # Per OpenAPI contract v3.3.2
             "title",
             "filename",
             "duration_ms",
@@ -109,7 +108,6 @@ class TestTrackSerialization:
         )
 
         assert result["number"] > 0, "Track number should never be 0 for valid tracks"
-        assert result["track_number"] > 0, "track_number should never be 0"
 
     def test_serialize_track_websocket_format(self):
         """Verify WebSocket format is minimal and compact."""
@@ -127,8 +125,8 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_WEBSOCKET
         )
 
-        # WebSocket format should be minimal
-        expected_fields = {"id", "track_number", "title", "duration_ms"}
+        # WebSocket format should be minimal (per OpenAPI contract v3.3.2)
+        expected_fields = {"id", "number", "title", "duration_ms"}
         assert set(result.keys()) == expected_fields
 
     def test_serialize_track_from_dict(self):
@@ -289,5 +287,5 @@ class TestContractCompliance:
         # Critical fields must have explicit values, not None or 0
         assert result["number"] is not None
         assert result["number"] != 0
-        assert result["track_number"] is not None
-        assert result["track_number"] != 0
+        assert result["number"] is not None
+        assert result["number"] != 0
