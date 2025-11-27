@@ -27,6 +27,28 @@
       </div>
     </div>
 
+    <!-- Search and Sort Controls -->
+    <div class="playlist-controls" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+      <input
+        v-model="searchQuery"
+        type="text"
+        :placeholder="t('file.searchPlaylists') || 'Search playlists...'"
+        class="search-input"
+        style="flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-onBackground);"
+      />
+      <select
+        v-model="sortOption"
+        class="sort-select"
+        style="padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-onBackground); cursor: pointer;"
+      >
+        <option value="date-newest">{{ t('file.sortNewest') || 'Newest First' }}</option>
+        <option value="date-oldest">{{ t('file.sortOldest') || 'Oldest First' }}</option>
+        <option value="alphabetical">{{ t('file.sortAlphabetical') || 'A-Z' }}</option>
+        <option value="track-count">{{ t('file.sortTrackCount') || 'Most Tracks' }}</option>
+        <option value="last-played">{{ t('file.sortLastPlayed') || 'Last Played' }}</option>
+      </select>
+    </div>
+
     <!-- Error message -->
     <div v-if="error" :class="['text-error', 'py-4']">
       {{ error }}
@@ -44,7 +66,7 @@
     </div>
 
     <!-- Playlists list -->
-    <div v-for="playlist in localPlaylists" :key="playlist.id" class="playlist-item">
+    <div v-for="playlist in filteredAndSortedPlaylists" :key="playlist.id" class="playlist-item">
       <!-- Playlist header (always visible) -->
       <div
         class="playlist-header"
@@ -349,6 +371,24 @@ const toggleEditMode = () => {
   logger.debug('Edit mode toggled', { editMode: isEditMode.value }, 'FilesList')
 }
 
+// Sorting and filtering state
+const searchQuery = ref('')
+const sortOption = ref<'alphabetical' | 'date-newest' | 'date-oldest' | 'track-count' | 'last-played'>('date-newest')
+
+// Load preferences from localStorage
+onMounted(() => {
+  const savedSort = localStorage.getItem('playlistSortOption')
+  if (savedSort) {
+    sortOption.value = savedSort as typeof sortOption.value
+  }
+})
+
+// Save sort preference to localStorage
+watch(sortOption, (newValue) => {
+  localStorage.setItem('playlistSortOption', newValue)
+  logger.debug('Sort preference saved', { sortOption: newValue }, 'FilesList')
+})
+
 // OPTIMIZED DATA SOURCE - with performance improvements
 const localPlaylists = computed(() => {
   // Use props playlists if provided (for backward compatibility)
@@ -356,10 +396,10 @@ const localPlaylists = computed(() => {
   if (props.playlists && props.playlists.length > 0) {
     return props.playlists
   }
-  
+
   // Cache the playlists array to avoid recalculating on every access
   const allPlaylists = unifiedStore.getAllPlaylists
-  
+
   // Use Map for O(1) lookups instead of O(n) for each playlist
   return allPlaylists.map(playlist => {
     const tracks = unifiedStore.getTracksForPlaylist(playlist.id)
@@ -368,6 +408,57 @@ const localPlaylists = computed(() => {
       tracks
     }
   })
+})
+
+// Filtered and sorted playlists
+const filteredAndSortedPlaylists = computed(() => {
+  let playlists = [...localPlaylists.value]
+
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    playlists = playlists.filter(playlist =>
+      playlist.title.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply sorting
+  switch (sortOption.value) {
+    case 'alphabetical':
+      playlists.sort((a, b) => a.title.localeCompare(b.title))
+      break
+    case 'date-newest':
+      playlists.sort((a, b) => {
+        const dateA = new Date(b.updated_at || b.created_at || 0).getTime()
+        const dateB = new Date(a.updated_at || a.created_at || 0).getTime()
+        return dateA - dateB
+      })
+      break
+    case 'date-oldest':
+      playlists.sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime()
+        const dateB = new Date(b.created_at || 0).getTime()
+        return dateA - dateB
+      })
+      break
+    case 'track-count':
+      playlists.sort((a, b) => {
+        const countA = a.track_count || a.tracks?.length || 0
+        const countB = b.track_count || b.tracks?.length || 0
+        return countB - countA
+      })
+      break
+    case 'last-played':
+      playlists.sort((a, b) => {
+        if (!a.last_played && !b.last_played) return 0
+        if (!a.last_played) return 1
+        if (!b.last_played) return -1
+        return new Date(b.last_played).getTime() - new Date(a.last_played).getTime()
+      })
+      break
+  }
+
+  return playlists
 })
 
 const trackLoadingStates = ref<Record<string, boolean>>({})
