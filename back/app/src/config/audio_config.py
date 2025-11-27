@@ -53,7 +53,7 @@ class AudioConfig:
         Initialize default values for mutable fields.
         """
         if self.supported_formats is None:
-            self.supported_formats = ["mp3", "wav", "flac", "ogg", "m4a"]
+            self.supported_formats = ["mp3", "wav", "flac", "ogg", "m4a", "mp4", "aac"]
 
     def validate(self) -> None:
         """

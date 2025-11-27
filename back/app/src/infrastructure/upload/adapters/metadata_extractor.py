@@ -29,7 +29,7 @@ class MutagenMetadataExtractor(MetadataExtractionProtocol):
 
     def __init__(self):
         """Initialize metadata extractor."""
-        self._supported_formats = {"mp3", "wav", "flac", "ogg", "oga", "m4a", "aac", "wma"}
+        self._supported_formats = {"mp3", "wav", "flac", "ogg", "oga", "m4a", "mp4", "aac", "wma"}
 
     @handle_errors("extract_metadata")
     async def extract_metadata(self, file_path: Path) -> FileMetadata:

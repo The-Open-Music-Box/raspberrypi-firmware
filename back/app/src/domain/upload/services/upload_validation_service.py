@@ -40,7 +40,7 @@ class UploadValidationService:
         """
         self.max_file_size = max_file_size
         self.max_chunk_size = max_chunk_size
-        self.allowed_extensions = allowed_extensions or {"mp3", "wav", "flac", "ogg", "m4a", "aac"}
+        self.allowed_extensions = allowed_extensions or {"mp3", "wav", "flac", "ogg", "m4a", "mp4", "aac"}
         self.min_audio_duration = min_audio_duration
 
     def _create_validation_result(
