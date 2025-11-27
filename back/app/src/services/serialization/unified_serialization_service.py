@@ -174,7 +174,11 @@ class UnifiedSerializationService:
         """
         # Handle different input types
         if isinstance(track, dict):
-            track_data = track
+            # Normalize dict to use 'number' field (OpenAPI contract)
+            # Support both 'track_number' (legacy) and 'number' (current)
+            track_data = track.copy()
+            if "track_number" in track_data and "number" not in track_data:
+                track_data["number"] = track_data["track_number"]
         elif hasattr(track, "__dict__"):
             # Domain entity
             track_data = {
