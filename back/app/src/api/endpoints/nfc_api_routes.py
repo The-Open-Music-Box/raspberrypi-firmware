@@ -616,6 +616,110 @@ class NFCAPIRoutes:
                     client_op_id=body.client_op_id
                 )
 
+        @self.router.get("/sessions")
+        @handle_http_errors()
+        async def get_all_sessions(request: Request):
+            """Get all NFC association sessions (active and inactive).
+
+            Returns a list of all sessions with their current state, allowing
+            monitoring and debugging of the association system.
+            """
+            try:
+                # Get services
+                nfc_service, _, error_response = await self._get_services_or_error(request)
+                if error_response:
+                    return error_response
+
+                # Get all sessions
+                result = await nfc_service.get_all_sessions_use_case()
+
+                logger.info(f"Retrieved {result.get('count', 0)} NFC association sessions")
+                return UnifiedResponseService.success(
+                    message="Sessions retrieved successfully",
+                    data={
+                        "sessions": result.get("sessions", []),
+                        "count": result.get("count", 0)
+                    }
+                )
+
+            except Exception as e:
+                logger.error(
+                    f"Error in get_all_sessions: {e!s}",
+                    extra={
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "get_all_sessions",
+                    },
+                    exc_info=True
+                )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to retrieve NFC sessions",
+                    operation="get_all_sessions"
+                )
+
+        @self.router.post("/sessions/cleanup")
+        @handle_http_errors()
+        async def cleanup_sessions(
+            request: Request,
+            body: ClientOperationRequest = ClientOperationRequest(),
+        ):
+            """Clean up NFC association sessions in terminal states.
+
+            This endpoint removes sessions in DUPLICATE, TIMEOUT, ERROR, STOPPED,
+            CANCELLED, and SUCCESS states. Useful for recovering from stuck sessions
+            without requiring a service restart.
+
+            Query parameters:
+            - force_all: If true, removes ALL sessions regardless of state
+            """
+            try:
+                client_op_id = body.client_op_id
+                force_all = request.query_params.get("force_all", "false").lower() == "true"
+
+                # Get services
+                nfc_service, state_manager, error_response = await self._get_services_or_error(
+                    request, client_op_id
+                )
+                if error_response:
+                    return error_response
+
+                logger.info(f"🧹 Cleaning up NFC sessions (force_all={force_all})")
+
+                # Cleanup terminal sessions
+                result = await nfc_service.cleanup_terminal_sessions_use_case(force_all=force_all)
+
+                cleaned_count = result.get("cleaned_count", 0)
+                logger.info(f"✅ Cleaned up {cleaned_count} NFC session(s)")
+
+                # Send acknowledgment
+                if state_manager and client_op_id:
+                    await state_manager.send_acknowledgment(
+                        client_op_id,
+                        True,
+                        {"cleaned_count": cleaned_count}
+                    )
+
+                return UnifiedResponseService.success(
+                    message=result.get("message", "Sessions cleaned up"),
+                    data={"cleaned_count": cleaned_count},
+                    client_op_id=client_op_id
+                )
+
+            except Exception as e:
+                logger.error(
+                    f"Error in cleanup_sessions: {e!s}",
+                    extra={
+                        "client_op_id": body.client_op_id if hasattr(body, 'client_op_id') else None,
+                        "request_id": request.headers.get("X-Request-ID") if request else None,
+                        "operation": "cleanup_sessions",
+                    },
+                    exc_info=True
+                )
+                return UnifiedResponseService.internal_error(
+                    message="Failed to cleanup NFC sessions",
+                    operation="cleanup_sessions",
+                    client_op_id=body.client_op_id
+                )
+
     def get_router(self) -> APIRouter:
         """Get the configured router."""
         return self.router
