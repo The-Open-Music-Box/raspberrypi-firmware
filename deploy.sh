@@ -259,21 +259,22 @@ package_release() {
     # Create release directory
     mkdir -p "$release_dir"
 
-    # Copy backend files
+    # Copy backend files using deployment manifests
     if [ "$VERBOSE" = true ]; then
-        print_status $BLUE "📂 Copying backend files..."
+        print_status $BLUE "📂 Copying backend files using deployment manifests..."
     fi
 
+    # Use deployment manifests for file selection
     rsync -a --delete \
-        --exclude='__pycache__' \
-        --exclude='*.pyc' \
-        --exclude='logs' \
-        --exclude='app.db' \
-        --exclude='venv' \
-        --exclude='.pytest_cache' \
-        "${back_dir}/app/" "${release_dir}/app/"
+        --exclude-from="${back_dir}/.deploy-exclude" \
+        --exclude='app/data/*' \
+        "${back_dir}/" "${release_dir}/"
 
-    # Create flattened requirements.txt
+    # Create empty data directory structure
+    mkdir -p "${release_dir}/app/data"
+    touch "${release_dir}/app/data/.gitkeep"
+
+    # Create flattened requirements.txt for production
     local req_dst="${release_dir}/requirements.txt"
     awk -v src_dir="${back_dir}/requirements" '
       /^-r / {
@@ -289,27 +290,15 @@ package_release() {
     # Remove comments and blank lines
     sed -i.bak "/^\\s*#/d;/^\\s*$/d" "$req_dst" && rm "$req_dst.bak"
 
-    # Copy additional files
-    [ -f "${back_dir}/README.md" ] && cp "${back_dir}/README.md" "${release_dir}/"
-    [ -f "${back_dir}/app.service" ] && cp "${back_dir}/app.service" "${release_dir}/"
-    [ -f "${back_dir}/LICENSE" ] && cp "${back_dir}/LICENSE" "${release_dir}/"
-    [ -f "${back_dir}/setup.sh" ] && cp "${back_dir}/setup.sh" "${release_dir}/"
-    [ -f "${back_dir}/start_app.py" ] && cp "${back_dir}/start_app.py" "${release_dir}/" && chmod +x "${release_dir}/start_app.py"
+    # Set executable permissions
+    chmod +x "${release_dir}/start_app.py" 2>/dev/null || true
+    chmod +x "${release_dir}/tools/"*.py 2>/dev/null || true
 
-    # Copy tools directory
-    if [ -d "${back_dir}/tools" ]; then
-        cp -r "${back_dir}/tools" "${release_dir}/"
-        chmod +x "${release_dir}/tools/"*.py 2>/dev/null || true
-    fi
-
-    # Copy .env file
-    if [ -f "${back_dir}/.env" ]; then
-        cp "${back_dir}/.env" "${release_dir}/.env"
-        if [ "$VERBOSE" = true ]; then
-            print_status $GREEN "✅ Configuration file (.env) included"
-        fi
-    else
-        print_status $YELLOW "⚠️  WARNING: .env file not found!"
+    # Verify .env file exists
+    if [ ! -f "${release_dir}/.env" ]; then
+        print_status $YELLOW "⚠️  WARNING: .env file not found in release!"
+    elif [ "$VERBOSE" = true ]; then
+        print_status $GREEN "✅ Configuration file (.env) included"
     fi
 
     # Copy frontend build
