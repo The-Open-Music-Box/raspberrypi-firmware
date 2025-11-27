@@ -1,0 +1,105 @@
+# TheOpenMusicBox Deployment Exclusions
+# Files to ALWAYS exclude from ALL releases (both dev and prod)
+# This file uses rsync exclude pattern syntax
+
+# Version Control
+.git/
+.gitignore
+.gitattributes
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testing
+tests/
+test_*.py
+*_test.py
+pytest.ini
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.json
+coverage_html_report/
+htmlcov/
+
+# Development Tools & Linters
+.flake8
+.pylintrc
+.jscpd.json
+.pre-commit-config.yaml
+.ruff_cache/
+.mypy_cache/
+
+# Development Requirements
+requirements-test.txt
+requirements/dev.txt
+requirements/test.txt
+
+# Development Scripts
+run_tests.sh
+check_unused_imports.py
+start_dev.py
+start_with_hardware_check.sh
+test_led.py
+test_led_integration.py
+
+# Documentation (not needed in runtime)
+documentation/
+docs/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-Specific Files
+.DS_Store
+Thumbs.db
+
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Build Artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs (created on server)
+logs/
+*.log
+
+# Local Environment Files
+.env.local
+.env.*.local
+.env.development
+.env.test
+
+# Database Files (should be on server only)
+*.db
+*.db-wal
+*.db-shm
+app.db
+
+# Temporary Files
+*.tmp
+.cache/
+tmp/
+
+# Node modules (frontend)
+node_modules/
+
+# Package config (development only)
+pyproject.toml
+setup.py
+setup.cfg
+
+# CI/CD files
+.github/

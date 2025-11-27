@@ -1,0 +1,37 @@
+# TheOpenMusicBox Deployment Inclusions
+# Files to ALWAYS include in ALL releases (both dev and prod)
+# This file lists patterns that should be included
+# Note: rsync processes includes BEFORE excludes
+
+# Core Application
++ app/
++ app/**
+
+# Production Scripts
++ start_app.py
++ setup.sh
+
+# System Service
++ app.service
+
+# Requirements (production)
++ requirements.txt
++ requirements/
++ requirements/base.txt
++ requirements/prod.txt
+
+# Documentation
++ README.md
++ LICENSE
+
+# Diagnostic Tools (useful for production troubleshooting)
++ tools/
++ tools/**
+
+# Environment Configuration
++ .env
+
+# Empty data directory structure (actual data excluded)
++ app/data/
++ app/data/.gitkeep
+- app/data/*
