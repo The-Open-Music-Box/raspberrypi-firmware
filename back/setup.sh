@@ -34,15 +34,19 @@ sudo raspi-config nonint do_i2c 0
 echo "I2C interface enabled"
 
 # Install lgpio from source since it's not available in package manager
-echo -e "${GREEN}Installing lgpio from source...${NC}"
-ORIGINAL_DIR=$(pwd)
-cd /tmp
-wget https://github.com/joan2937/lg/archive/master.zip
-unzip -o master.zip
-cd lg-master
-make
-sudo make install
-cd "$ORIGINAL_DIR"
+if ! ldconfig -p | grep -q liblgpio; then
+  echo -e "${GREEN}Installing lgpio from source...${NC}"
+  ORIGINAL_DIR=$(pwd)
+  cd /tmp
+  wget https://github.com/joan2937/lg/archive/master.zip
+  unzip -o master.zip
+  cd lg-master
+  make
+  sudo make install
+  cd "$ORIGINAL_DIR"
+else
+  echo -e "${GREEN}lgpio already installed, skipping...${NC}"
+fi
 
 # Install WM8960 Audio HAT driver
 echo -e "${GREEN}Installing WM8960 Audio HAT driver...${NC}"
@@ -114,8 +118,9 @@ EOF
 cp "$WM8960_DRIVER_DIR/wm8960-soundcard" /usr/bin/
 chmod +x /usr/bin/wm8960-soundcard
 cp "$WM8960_DRIVER_DIR/wm8960-soundcard.service" /lib/systemd/system/
+systemctl daemon-reload
 systemctl enable wm8960-soundcard.service
-systemctl start wm8960-soundcard.service
+systemctl restart wm8960-soundcard.service
 
 # Add i2c-dev to /etc/modules (only this one, NOT the snd-soc modules to avoid double loading)
 if ! grep -q "^i2c-dev" /etc/modules; then
@@ -140,8 +145,8 @@ fi
 source "$VENV_PATH/bin/activate"
 echo -e "${GREEN}Upgrading pip in venv...${NC}"
 pip install --upgrade pip
-echo -e "${GREEN}Installing Python dependencies from requirements.txt into venv...${NC}"
-pip install -r "$SCRIPT_DIR/requirements.txt"
+echo -e "${GREEN}Installing/Updating Python dependencies from requirements.txt into venv...${NC}"
+pip install --upgrade -r "$SCRIPT_DIR/requirements.txt"
 deactivate
 
 # Fix venv ownership (script runs as root but venv should be owned by admin)
@@ -155,9 +160,9 @@ if [ -f "$SCRIPT_DIR/app.service" ]; then
   sudo cp "$SCRIPT_DIR/app.service" /etc/systemd/system/app.service
   echo -e "${GREEN}Reloading systemd...${NC}"
   sudo systemctl daemon-reload
-  # Enable and start the service
+  # Enable and restart the service (restart handles both new and existing installations)
   sudo systemctl enable app
-  sudo systemctl start app
+  sudo systemctl restart app
 else
   echo -e "${RED}app.service not found in $SCRIPT_DIR. Please ensure it is present.${NC}"
 fi
