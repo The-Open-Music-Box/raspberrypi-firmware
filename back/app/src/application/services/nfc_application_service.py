@@ -501,6 +501,46 @@ class NfcApplicationService:
         for callback in self._tag_detected_callbacks:
             callback(str(tag_identifier))
 
+    async def get_all_sessions_use_case(self) -> dict[str, Any]:
+        """Use case: Get all association sessions (active and inactive).
+
+        Returns:
+            Result dictionary with all sessions
+        """
+        all_sessions = self._association_service.get_all_sessions()
+        return {
+            "status": "success",
+            "sessions": [session.to_dict() for session in all_sessions],
+            "count": len(all_sessions),
+        }
+
+    async def cleanup_terminal_sessions_use_case(self, force_all: bool = False) -> dict[str, Any]:
+        """Use case: Clean up sessions in terminal states.
+
+        Args:
+            force_all: If True, remove ALL sessions regardless of state
+
+        Returns:
+            Result dictionary with cleanup count
+        """
+        cleaned_count = await self._association_service.cleanup_terminal_sessions(force_all)
+
+        # Clear association mode LED if no more active sessions
+        if cleaned_count > 0:
+            active_sessions = self._association_service.get_active_sessions()
+            if len(active_sessions) == 0 and self._led_event_handler:
+                try:
+                    await self._led_event_handler.clear_led_state(LEDState.NFC_ASSOCIATION_MODE)
+                    logger.info("💡 No more active sessions after cleanup, cleared blue pulse LED")
+                except Exception as led_error:
+                    logger.warning(f"LED event failed (non-critical): {led_error}")
+
+        return {
+            "status": "success",
+            "cleaned_count": cleaned_count,
+            "message": f"Cleaned up {cleaned_count} session(s)",
+        }
+
     async def _periodic_cleanup(self) -> None:
         """Periodic cleanup of expired sessions."""
         while True:
