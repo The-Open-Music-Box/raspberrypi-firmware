@@ -204,6 +204,12 @@ class NfcAssociationService:
                     logger.warning(
                         f"🔄 Tag {tag.identifier} already associated with playlist {existing_playlist_id} (same={is_same_playlist})"
                     )
+
+                    # Schedule auto-cleanup of duplicate session after 5 seconds
+                    # This prevents the session from blocking future association attempts
+                    import asyncio
+                    asyncio.create_task(self._cleanup_duplicate_session(session.session_id, delay=5.0))
+                    logger.info(f"⏱️ Scheduled auto-cleanup for duplicate session {session.session_id} in 5 seconds")
                 else:
                     logger.debug(
                         f"🔄 Tag {tag.identifier} re-detected, session already in {session.state} state"
@@ -372,3 +378,84 @@ class NfcAssociationService:
             logger.debug(f"Session {session_id} not cleaned up - state: {session.state}")
         else:
             logger.debug(f"Session {session_id} not found for cleanup")
+
+    async def _cleanup_duplicate_session(self, session_id: str, delay: float = 5.0) -> None:
+        """Clean up a duplicate association session after a delay.
+
+        This prevents duplicate sessions from blocking future association attempts.
+
+        Args:
+            session_id: ID of session to clean up
+            delay: Delay in seconds before cleanup (default: 5.0)
+        """
+        import asyncio
+
+        # Wait for specified delay to allow user to see duplicate state
+        await asyncio.sleep(delay)
+
+        session = self._active_sessions.get(session_id)
+        if session and session.state == SessionState.DUPLICATE:
+            # Remove from active sessions
+            del self._active_sessions[session_id]
+            logger.info(f"🧹 Auto-cleaned up duplicate association session {session_id} after {delay}s")
+        elif session:
+            logger.debug(f"Session {session_id} not cleaned up - state changed to: {session.state}")
+        else:
+            logger.debug(f"Session {session_id} already removed")
+
+    async def cleanup_terminal_sessions(self, force_all: bool = False) -> int:
+        """Clean up sessions in terminal states (DUPLICATE, TIMEOUT, ERROR, STOPPED, CANCELLED).
+
+        Args:
+            force_all: If True, remove ALL sessions regardless of state
+
+        Returns:
+            Number of sessions cleaned up
+        """
+        terminal_states = [
+            SessionState.DUPLICATE,
+            SessionState.TIMEOUT,
+            SessionState.ERROR,
+            SessionState.STOPPED,
+            SessionState.CANCELLED,
+            SessionState.SUCCESS,
+        ]
+
+        cleaned_count = 0
+        sessions_to_remove = []
+
+        for session_id, session in self._active_sessions.items():
+            should_remove = False
+
+            if force_all:
+                should_remove = True
+            elif session.state in terminal_states:
+                should_remove = True
+            elif session.is_expired():
+                should_remove = True
+
+            if should_remove:
+                sessions_to_remove.append(session_id)
+                logger.info(
+                    f"🧹 Cleaning up session {session_id} (state={session.state.value}, expired={session.is_expired()})"
+                )
+
+        # Remove sessions
+        for session_id in sessions_to_remove:
+            del self._active_sessions[session_id]
+            cleaned_count += 1
+
+        if cleaned_count > 0:
+            logger.info(f"🧹 Cleaned up {cleaned_count} terminal session(s)")
+        else:
+            logger.debug("No terminal sessions to clean up")
+
+        return cleaned_count
+
+    def get_all_sessions(self) -> list[AssociationSession]:
+        """Get all association sessions (active and inactive).
+
+        Returns:
+            List of all sessions
+        """
+        return list(self._active_sessions.values())
