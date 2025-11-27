@@ -325,6 +325,138 @@ class SystemAPIRoutes(BaseAPIRoutes):
                     message="Failed to get system information"
                 )
 
+        @self.router.get("/system/hardware_status")
+        @handle_http_errors()
+        async def get_hardware_status(request: Request):
+            """Get detailed hardware status for all subsystems.
+
+            Returns:
+                Hardware status including:
+                - Audio backend status (available, device name, errors)
+                - NFC reader status
+                - LED controller status
+                - Database status
+                - Overall system health
+            """
+            try:
+                self.log_operation("API /api/system/hardware_status: Hardware status requested")
+
+                # Get container from app state
+                container = getattr(request.app, "container", None)
+                server_seq = self._get_server_seq_from_container(container)
+
+                hardware_status = {
+                    "audio": {"available": False, "status": "unknown"},
+                    "nfc": {"available": False, "status": "unknown"},
+                    "led": {"available": False, "status": "unknown"},
+                    "database": {"available": False, "status": "unknown"},
+                    "overall_health": "unknown"
+                }
+
+                if container:
+                    # Check audio backend status
+                    try:
+                        coordinator = self._get_coordinator(request)
+                        if coordinator and hasattr(coordinator, '_audio_backend'):
+                            audio_backend = coordinator._audio_backend
+                            if hasattr(audio_backend, 'get_hardware_status'):
+                                audio_status = audio_backend.get_hardware_status()
+                                hardware_status["audio"] = {
+                                    "available": audio_status.get("available", False),
+                                    "status": "operational" if audio_status.get("available") else "degraded",
+                                    "device": audio_status.get("device"),
+                                    "initialized": audio_status.get("initialized", False),
+                                    "error": audio_status.get("error"),
+                                    "backend_type": audio_status.get("backend_type")
+                                }
+                            elif hasattr(audio_backend, 'is_hardware_available'):
+                                is_available = audio_backend.is_hardware_available()
+                                hardware_status["audio"] = {
+                                    "available": is_available,
+                                    "status": "operational" if is_available else "degraded"
+                                }
+                    except Exception as e:
+                        self._logger.warning(f"Failed to get audio status: {e}")
+                        hardware_status["audio"] = {
+                            "available": False,
+                            "status": "error",
+                            "error": str(e)
+                        }
+
+                    # Check NFC status
+                    try:
+                        nfc_service = getattr(container, "nfc", None)
+                        if nfc_service:
+                            hardware_status["nfc"] = {
+                                "available": True,
+                                "status": "operational"
+                            }
+                    except Exception as e:
+                        self._logger.warning(f"Failed to get NFC status: {e}")
+                        hardware_status["nfc"] = {
+                            "available": False,
+                            "status": "error",
+                            "error": str(e)
+                        }
+
+                    # Check LED status
+                    try:
+                        led_handler = self._get_led_handler(request) if self._get_led_handler else None
+                        if led_handler:
+                            hardware_status["led"] = {
+                                "available": True,
+                                "status": "operational"
+                            }
+                    except Exception as e:
+                        self._logger.warning(f"Failed to get LED status: {e}")
+                        hardware_status["led"] = {
+                            "available": False,
+                            "status": "error",
+                            "error": str(e)
+                        }
+
+                    # Check database status
+                    try:
+                        # Check if database is accessible
+                        db_manager = getattr(container, "database_manager", None)
+                        if db_manager:
+                            hardware_status["database"] = {
+                                "available": True,
+                                "status": "operational"
+                            }
+                    except Exception as e:
+                        self._logger.warning(f"Failed to get database status: {e}")
+                        hardware_status["database"] = {
+                            "available": False,
+                            "status": "error",
+                            "error": str(e)
+                        }
+
+                # Calculate overall health
+                available_systems = sum(1 for sys in hardware_status.values()
+                                      if isinstance(sys, dict) and sys.get("available", False))
+                total_systems = len([k for k in hardware_status.keys() if k != "overall_health"])
+
+                if available_systems == total_systems:
+                    hardware_status["overall_health"] = "healthy"
+                elif available_systems >= total_systems * 0.5:
+                    hardware_status["overall_health"] = "degraded"
+                else:
+                    hardware_status["overall_health"] = "critical"
+
+                return UnifiedResponseService.success(
+                    message=f"Hardware status retrieved - {hardware_status['overall_health']}",
+                    data=hardware_status,
+                    server_seq=server_seq
+                )
+
+            except Exception as e:
+                return self.handle_endpoint_error(
+                    e,
+                    operation="get_hardware_status",
+                    message="Failed to get hardware status"
+                )
+
         @self.router.get("/system/logs")
         @handle_http_errors()
         async def get_system_logs():
