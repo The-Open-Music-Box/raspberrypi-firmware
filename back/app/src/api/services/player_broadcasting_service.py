@@ -25,10 +25,10 @@ class PlayerBroadcastingService:
 
     Responsibilities:
     - Broadcast playback state changes (play/pause/stop)
-    - Broadcast track navigation events
     - Broadcast volume changes
-    - Broadcast position/seek updates
     - Broadcast player status updates
+    - Broadcast progress updates
+    - Broadcast error events
 
     Does NOT handle:
     - HTTP request/response (delegated to API routes)
@@ -70,32 +70,6 @@ class PlayerBroadcastingService:
             logger.error(f"❌ Failed to broadcast playback state change: {e!s}")
 
     @handle_service_errors("player_broadcasting")
-    async def broadcast_track_changed(self, track_data: dict[str, Any] | None, direction: str):
-        """Broadcast track navigation event.
-
-        Args:
-            track_data: Current track information
-            direction: Navigation direction (next/previous)
-        """
-        try:
-            event_data = {
-                "track": track_data,
-                "direction": direction,
-                "operation": "track_change"
-            }
-
-            await self._state_manager.broadcast_state_change(
-                StateEventType.TRACK_SNAPSHOT,
-                event_data
-            )
-
-            track_title = track_data.get("title", "Unknown") if track_data else "No track"
-            logger.info(f"✅ Broadcasted track change: {direction} -> {track_title}")
-
-        except Exception as e:
-            logger.error(f"❌ Failed to broadcast track change: {e!s}")
-
-    @handle_service_errors("player_broadcasting")
     async def broadcast_volume_changed(self, volume: int):
         """Broadcast volume change event.
 
@@ -117,29 +91,6 @@ class PlayerBroadcastingService:
 
         except Exception as e:
             logger.error(f"❌ Failed to broadcast volume change: {e!s}")
-
-    @handle_service_errors("player_broadcasting")
-    async def broadcast_position_changed(self, position_ms: int):
-        """Broadcast position/seek event.
-
-        Args:
-            position_ms: New position in milliseconds
-        """
-        try:
-            event_data = {
-                "position_ms": position_ms,
-                "operation": "position_change"
-            }
-
-            await self._state_manager.broadcast_state_change(
-                StateEventType.TRACK_POSITION,
-                event_data
-            )
-
-            logger.debug(f"✅ Broadcasted position change: {position_ms}ms")
-
-        except Exception as e:
-            logger.error(f"❌ Failed to broadcast position change: {e!s}")
 
     @handle_service_errors("player_broadcasting")
     async def broadcast_player_status(self, status: dict[str, Any]):

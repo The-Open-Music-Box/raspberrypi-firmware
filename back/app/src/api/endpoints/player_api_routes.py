@@ -146,12 +146,7 @@ class PlayerAPIRoutes(BaseAPIRoutes):
         if result.get("success"):
             status = result.get("status", {})
 
-            # Broadcast track change event (legacy for backward compatibility)
-            await self._broadcasting_service.broadcast_track_changed(
-                result.get("track"), direction
-            )
-
-            # CRITICAL FIX: Also broadcast complete player state for UI synchronization
+            # Broadcast complete player state for UI synchronization
             # This ensures all UI elements update (play/pause button, track info, progress bar)
             await self._broadcasting_service.broadcast_playback_state_changed(
                 "playing" if status.get("is_playing") else "paused",
@@ -451,11 +446,6 @@ class PlayerAPIRoutes(BaseAPIRoutes):
                     # Trigger immediate progress via operations service
                     if self._operations_service:
                         await self._operations_service.trigger_immediate_progress_use_case(request)
-
-                    # Broadcast position change
-                    await self._broadcasting_service.broadcast_position_changed(
-                        body.position_ms
-                    )
 
                     return self._success_response(
                         "Seek operation completed successfully", status, body.client_op_id

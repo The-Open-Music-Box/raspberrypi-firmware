@@ -239,7 +239,7 @@ class PlayerOperationsService:
                 await playlist_routes_ddd.progress_service.stop()
                 logger.info("✅ Progress service stopped")
                 return {"success": True}
-            logger.warning("⚠️ Progress service not found")
+            logger.debug("Progress service not available (expected in test contexts)")
             return {"success": False, "message": "Progress service not found"}
 
         except Exception as e:
@@ -264,7 +264,7 @@ class PlayerOperationsService:
                 logger.debug("Triggering immediate progress emission for UI responsiveness")
                 await playlist_routes_ddd.progress_service.emit_immediate_position()
                 return {"success": True}
-            logger.warning("⚠️ Progress service not found for immediate trigger")
+            logger.debug("Progress service not available for immediate trigger (expected in test contexts)")
             return {"success": False, "message": "Progress service not found"}
 
         except Exception as e:
