@@ -151,7 +151,7 @@ export const apiService = {
 
   async reorderTracks(playlistId: string, trackIds: string[]) {
     const response = await apiClient.post(API_ROUTES.PLAYLIST_REORDER(playlistId), {
-      track_order: trackIds,
+      track_ids: trackIds,
       client_op_id: generateClientOpId('reorder_tracks')
     })
     return ApiResponseHandler.extractData(response)

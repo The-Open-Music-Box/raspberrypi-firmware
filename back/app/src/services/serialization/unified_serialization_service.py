@@ -181,9 +181,10 @@ class UnifiedSerializationService:
                 track_data["number"] = track_data["track_number"]
         elif hasattr(track, "__dict__"):
             # Domain entity
+            # OpenAPI contract uses 'number', not 'track_number'
             track_data = {
                 "id": getattr(track, "id", None),
-                "track_number": getattr(track, "track_number", 0),
+                "number": getattr(track, "number", 0),  # Fixed: use 'number' per OpenAPI contract
                 "title": getattr(track, "title", ""),
                 "filename": getattr(track, "filename", ""),
                 "file_path": getattr(track, "file_path", ""),
@@ -196,7 +197,7 @@ class UnifiedSerializationService:
             # Database row or tuple
             track_data = {
                 "id": track[0] if len(track) > 0 else None,
-                "track_number": track[1] if len(track) > 1 else 0,
+                "number": track[1] if len(track) > 1 else 0,  # Fixed: use 'number' per OpenAPI contract
                 "title": track[2] if len(track) > 2 else "",
                 "filename": track[3] if len(track) > 3 else "",
                 "file_path": track[4] if len(track) > 4 else "",
@@ -207,7 +208,7 @@ class UnifiedSerializationService:
         # Build base structure
         result = {
             "id": track_data.get("id"),
-            "track_number": track_data.get("track_number", track_data.get("number", 0)),
+            "number": track_data.get("number", 0),  # Fixed: use 'number' per OpenAPI contract
             "title": track_data.get("title", ""),
             "filename": track_data.get("filename", ""),
             "duration_ms": track_data.get("duration_ms", track_data.get("duration", 0)) or 0,
@@ -217,7 +218,6 @@ class UnifiedSerializationService:
             # API includes all metadata required by frontend
             result.update(
                 {
-                    "number": result["track_number"],  # Frontend compatibility - expects 'number' field
                     "file_path": track_data.get("file_path", ""),
                     "artist": track_data.get("artist"),
                     "album": track_data.get("album"),
@@ -236,7 +236,7 @@ class UnifiedSerializationService:
             # WebSocket format is minimal
             result = {
                 "id": result["id"],
-                "track_number": result["track_number"],
+                "number": result["number"],  # Fixed: use 'number' per OpenAPI contract
                 "title": result["title"],
                 "duration_ms": result["duration_ms"],
             }
@@ -244,7 +244,7 @@ class UnifiedSerializationService:
             # Database format with all fields
             result = {
                 "id": result["id"],
-                "track_number": result["track_number"],
+                "number": result["number"],  # Fixed: use 'number' per OpenAPI contract
                 "title": result["title"],
                 "filename": result["filename"],
                 "file_path": track_data.get("file_path", ""),

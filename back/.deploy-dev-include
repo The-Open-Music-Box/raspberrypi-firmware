@@ -1,0 +1,29 @@
+# TheOpenMusicBox Development Deployment Inclusions
+# Additional files to include in DEVELOPMENT deployments only
+# These files are excluded from production but useful for local development
+
+# Development Scripts
++ start_dev.py
++ start_with_hardware_check.sh
++ run_tests.sh
++ check_unused_imports.py
+
+# Test Files (for local testing)
++ test_led.py
++ test_led_integration.py
++ tests/
++ tests/**
+
+# Test Configuration
++ pytest.ini
++ .coveragerc
++ requirements-test.txt
++ requirements/test.txt
+
+# Development Documentation
++ documentation/
++ documentation/**
+
+# Development Configuration
++ pyproject.toml
++ .pre-commit-config.yaml
