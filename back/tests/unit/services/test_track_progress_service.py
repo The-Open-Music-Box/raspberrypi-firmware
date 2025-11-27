@@ -461,7 +461,7 @@ class TestTrackProgressServiceTrackChange:
         service = TrackProgressService(state_manager, coordinator)
 
         status = {
-            "track_number": 1,
+            "number": 1,
             "active_track_id": "track-123"
         }
 
@@ -485,7 +485,7 @@ class TestTrackProgressServiceTrackChange:
 
         # Change to new track
         status = {
-            "track_number": 2,
+            "number": 2,
             "active_track_id": "track-456"
         }
 
@@ -509,7 +509,7 @@ class TestTrackProgressServiceTrackChange:
 
         # Same track
         status = {
-            "track_number": 1,
+            "number": 1,
             "active_track_id": "track-123"
         }
 

@@ -40,7 +40,7 @@ class TestPureSQLitePlaylistRepository:
             {
                 'id': 'track-1',
                 'playlist_id': playlist_id,
-                'track_number': 1,
+                'number': 1,
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
@@ -51,7 +51,7 @@ class TestPureSQLitePlaylistRepository:
             {
                 'id': 'track-2',
                 'playlist_id': playlist_id,
-                'track_number': 2,
+                'number': 2,
                 'title': 'Track 2',
                 'filename': 'track2.mp3',
                 'file_path': '/path/track2.mp3',
@@ -72,11 +72,11 @@ class TestPureSQLitePlaylistRepository:
         # Verify track data
         assert result[0].id == 'track-1'
         assert result[0].title == 'Track 1'
-        assert result[0].track_number == 1
+        assert result[0].number == 1
 
         assert result[1].id == 'track-2'
         assert result[1].title == 'Track 2'
-        assert result[1].track_number == 2
+        assert result[1].number == 2
 
         # Verify database query
         mock_db_service.execute_query.assert_called_once()
@@ -103,7 +103,7 @@ class TestPureSQLitePlaylistRepository:
             {
                 'id': 'track-1',
                 'playlist_id': playlist_id,
-                'track_number': 1,
+                'number': 1,
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
@@ -180,12 +180,12 @@ class TestPureSQLitePlaylistRepository:
 
         # Test attribute access
         assert track.id == 'track-1'
-        assert track.track_number == 1
+        assert track.number == 1
         assert track.title == 'Test Track'
 
         # Test hasattr works
         assert hasattr(track, 'id')
-        assert hasattr(track, 'track_number')
+        assert hasattr(track, 'number')
         assert hasattr(track, 'title')
 
         # Verify that track is NOT subscriptable (as expected)
@@ -212,7 +212,7 @@ class TestPureSQLitePlaylistRepository:
             {
                 'id': 'track-1',
                 'playlist_id': 'playlist-1',
-                'track_number': 1,
+                'number': 1,
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',

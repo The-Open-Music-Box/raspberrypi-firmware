@@ -39,7 +39,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'track_number': 1,  # Has this
+                    'number': 1,  # Has this
                     # 'number': 1,  # MISSING - the bug!
                     'title': 'Test Track',
                     'filename': 'test.mp3',
@@ -55,7 +55,7 @@ class TestBroadcastingContractValidation:
         assert 'number' in fixed_playlist['tracks'][0], \
             "Validation should add missing 'number' field"
         assert fixed_playlist['tracks'][0]['number'] == 1, \
-            "Added 'number' should match 'track_number'"
+            "Added 'number' should match 'number'"
 
     def test_validate_and_fix_contract_handles_multiple_tracks(self, broadcasting_service):
         """Test validation fixes multiple tracks."""
@@ -63,9 +63,9 @@ class TestBroadcastingContractValidation:
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
-                {'id': 't1', 'track_number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000},
-                {'id': 't2', 'track_number': 2, 'title': 'Track 2', 'filename': 't2.mp3', 'duration_ms': 2000},
-                {'id': 't3', 'track_number': 3, 'title': 'Track 3', 'filename': 't3.mp3', 'duration_ms': 3000},
+                {'id': 't1', 'number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000},
+                {'id': 't2', 'number': 2, 'title': 'Track 2', 'filename': 't2.mp3', 'duration_ms': 2000},
+                {'id': 't3', 'number': 3, 'title': 'Track 3', 'filename': 't3.mp3', 'duration_ms': 3000},
             ]
         }
 
@@ -84,7 +84,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'track_number': 1,
+                    'number': 1,
                     'number': 1,  # Already present
                     'title': 'Test Track',
                     'filename': 'test.mp3',
@@ -97,7 +97,7 @@ class TestBroadcastingContractValidation:
 
         # Should remain unchanged
         assert fixed_playlist['tracks'][0]['number'] == 1
-        assert fixed_playlist['tracks'][0]['track_number'] == 1
+        assert fixed_playlist['tracks'][0]['number'] == 1
 
     def test_validate_and_fix_contract_fixes_field_mismatch(self, broadcasting_service):
         """Test validation fixes mismatched number/track_number fields."""
@@ -107,7 +107,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'track_number': 5,
+                    'number': 5,
                     'number': 3,  # WRONG - doesn't match track_number
                     'title': 'Test Track',
                     'filename': 'test.mp3',
@@ -120,7 +120,7 @@ class TestBroadcastingContractValidation:
 
         # Should use track_number as source of truth
         assert fixed_playlist['tracks'][0]['number'] == 5, \
-            "Should fix 'number' to match 'track_number'"
+            "Should fix 'number' to match 'number'"
 
     def test_validate_and_fix_contract_handles_empty_playlist(self, broadcasting_service):
         """Test validation handles playlist with no tracks."""
@@ -164,7 +164,7 @@ class TestBroadcastingContractValidation:
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
-                {'id': 't1', 'track_number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000}
+                {'id': 't1', 'number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000}
             ]
         }
 
@@ -190,7 +190,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'track_number': 1,
+                    'number': 1,
                     # Missing 'number' field
                     'title': 'Test Track',
                     'filename': 'test.mp3',
@@ -240,7 +240,7 @@ class TestContractValidationLogging:
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
-                {'id': 't1', 'track_number': 1, 'title': 'Track', 'filename': 'track.mp3', 'duration_ms': 1000}
+                {'id': 't1', 'number': 1, 'title': 'Track', 'filename': 'track.mp3', 'duration_ms': 1000}
             ]
         }
 
@@ -261,7 +261,7 @@ class TestContractValidationLogging:
             'tracks': [
                 {
                     'id': 't1',
-                    # Missing both 'number' AND 'track_number'
+                    # Missing both 'number' AND 'number'
                     'title': 'Broken Track',
                     'filename': 'broken.mp3',
                     'duration_ms': 1000

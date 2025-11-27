@@ -140,7 +140,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
             track_params = (
                 track.id or str(uuid.uuid4()),
                 playlist.id,
-                track.track_number,
+                track.number,
                 track.title,
                 track.filename,
                 track.file_path,
@@ -546,7 +546,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
 
             track = Track(
                 id=track_row["id"],
-                track_number=track_row["track_number"] if track_row["track_number"] else 1,
+                number=track_row["track_number"] if track_row["track_number"] else 1,
                 title=track_row["title"] if track_row["title"] else "Unknown",
                 filename=filename,
                 file_path=file_path,
@@ -682,7 +682,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         # Build track entity and convert to dict
         track = Track(
             id=track_row["id"],
-            track_number=track_row["track_number"] if track_row["track_number"] else 1,
+            number=track_row["track_number"] if track_row["track_number"] else 1,
             title=track_row["title"] if track_row["title"] else "Unknown",
             filename=filename,
             file_path=file_path,
@@ -692,11 +692,11 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         )
 
         # Convert Track entity to dictionary
-        # OpenAPI contract uses 'number', but Track entity uses 'track_number'
+        # OpenAPI contract uses 'number', but Track entity uses 'number'
         from dataclasses import asdict
         track_dict = asdict(track)
         # Map track_number → number for API contract compliance
-        track_dict['number'] = track_dict.pop('track_number')
+        track_dict['number'] = track_dict.pop('number')
         return track_dict
 
     @_handle_repository_errors("track")
@@ -724,7 +724,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         track_params = (
             track_id,
             playlist_id,
-            track_data.get('track_number', 1),
+            track_data.get('number', 1),
             track_data.get('title', 'Unknown Track'),
             track_data.get('filename', ''),
             track_data.get('file_path', ''),
@@ -760,7 +760,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         update_fields = []
         params = []
 
-        allowed_fields = ['title', 'track_number', 'filename', 'file_path', 'duration_ms', 'artist', 'album']
+        allowed_fields = ['title', 'number', 'filename', 'file_path', 'duration_ms', 'artist', 'album']
         for field in allowed_fields:
             if field in track_data:
                 update_fields.append(f"{field} = ?")
@@ -824,7 +824,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
 
         Args:
             playlist_id: Playlist identifier
-            track_orders: List of dicts with 'track_id' and 'track_number'
+            track_orders: List of dicts with 'track_id' and 'number'
 
         Returns:
             True if reordering successful
@@ -842,7 +842,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         operations = []
         for order in track_orders:
             track_id = order.get('track_id')
-            track_number = order.get('track_number')
+            track_number = order.get('number')
 
             if not track_id or track_number is None:
                 logger.warning(f"Invalid track order entry: {order}")

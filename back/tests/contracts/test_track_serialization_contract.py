@@ -52,8 +52,8 @@ class TestTrackSerializationContract:
         serialized = asdict(sample_track)
 
         # Apply field mapping (THE FIX that was added to repository)
-        if 'track_number' in serialized:
-            serialized['number'] = serialized.pop('track_number')
+        if 'number' in serialized:
+            serialized['number'] = serialized.pop('number')
 
         # Get required fields from OpenAPI contract
         required_fields = openapi_schema['required']
@@ -74,7 +74,7 @@ class TestTrackSerializationContract:
 
         THIS TEST WOULD HAVE CAUGHT THE BUG!
 
-        The bug was that Track.track_number was serialized as 'track_number',
+        The bug was that Track.number was serialized as 'number',
         but the OpenAPI contract specifies 'number'.
 
         This test now verifies the fix is applied correctly.
@@ -83,8 +83,8 @@ class TestTrackSerializationContract:
         serialized = asdict(sample_track)
 
         # Apply field mapping (THE FIX that was added to repository)
-        if 'track_number' in serialized:
-            serialized['number'] = serialized.pop('track_number')
+        if 'number' in serialized:
+            serialized['number'] = serialized.pop('number')
 
         # Get expected fields from OpenAPI contract
         contract_properties = set(openapi_schema['properties'].keys())
@@ -94,12 +94,12 @@ class TestTrackSerializationContract:
         required_contract_fields = set(openapi_schema['required'])
         serialized_fields = set(serialized.keys())
 
-        # Verify the fix was applied: should have 'number', NOT 'track_number'
+        # Verify the fix was applied: should have 'number', NOT 'number'
         assert 'number' in serialized, (
             "❌ Field mapping not applied: Track should have 'number' field after serialization"
         )
-        assert 'track_number' not in serialized, (
-            "❌ Field mapping not applied: Track should NOT have 'track_number' field after mapping"
+        assert 'number' not in serialized, (
+            "❌ Field mapping not applied: Track should NOT have 'number' field after mapping"
         )
 
         # Check all required contract fields are present
@@ -120,14 +120,14 @@ class TestTrackSerializationContract:
 
         # The Track entity has a @property number that returns track_number
         assert hasattr(sample_track, 'number'), "Track should have 'number' property"
-        assert sample_track.number == sample_track.track_number, "Property should return track_number"
+        assert sample_track.number == sample_track.number, "Property should return track_number"
 
         # But asdict() does NOT serialize properties
         assert 'number' not in serialized, (
             "asdict() should NOT serialize @property methods. "
             "This is why explicit field mapping is needed in repositories."
         )
-        assert 'track_number' in serialized, "asdict() should serialize the track_number field"
+        assert 'number' in serialized, "asdict() should serialize the track_number field"
 
     def test_repository_serialization_includes_field_mapping(self, sample_track, openapi_schema):
         """Test that repository serialization correctly maps track_number → number.
@@ -138,16 +138,16 @@ class TestTrackSerializationContract:
         track_dict = asdict(sample_track)
 
         # Apply field mapping (the fix)
-        if 'track_number' in track_dict:
-            track_dict['number'] = track_dict.pop('track_number')
+        if 'number' in track_dict:
+            track_dict['number'] = track_dict.pop('number')
 
         # Now verify against contract
         required_fields = set(openapi_schema['required'])
         serialized_fields = set(track_dict.keys())
 
-        # Should have 'number', NOT 'track_number'
+        # Should have 'number', NOT 'number'
         assert 'number' in track_dict, "Serialized track should have 'number' field per contract"
-        assert 'track_number' not in track_dict, "Serialized track should NOT have 'track_number' field"
+        assert 'number' not in track_dict, "Serialized track should NOT have 'number' field"
 
         # All required contract fields should be present
         missing = required_fields - serialized_fields
@@ -174,14 +174,14 @@ class TestTrackSerializationContract:
         serialized_tracks = []
         for track in tracks:
             track_dict = asdict(track)
-            track_dict['number'] = track_dict.pop('track_number')
+            track_dict['number'] = track_dict.pop('number')
             serialized_tracks.append(track_dict)
 
         # Verify all tracks have correct field names
         for i, track_dict in enumerate(serialized_tracks, 1):
             assert 'number' in track_dict, f"Track {i} should have 'number' field"
             assert track_dict['number'] == i, f"Track {i} should have number={i}"
-            assert 'track_number' not in track_dict, f"Track {i} should not have 'track_number'"
+            assert 'number' not in track_dict, f"Track {i} should not have 'number'"
 
     def test_reorder_tracks_response_contract(self):
         """Test that reordered tracks maintain contract compliance.
@@ -201,13 +201,13 @@ class TestTrackSerializationContract:
 
         # Update track numbers
         for i, track in enumerate(reordered, 1):
-            track.track_number = i
+            track.number = i
 
         # Serialize with field mapping
         serialized = []
         for track in reordered:
             track_dict = asdict(track)
-            track_dict['number'] = track_dict.pop('track_number')
+            track_dict['number'] = track_dict.pop('number')
             serialized.append(track_dict)
 
         # Verify sequential numbering
@@ -216,7 +216,7 @@ class TestTrackSerializationContract:
                 f"Reordered track at position {i} should have number={i}, got {track_dict.get('number')}"
             )
             assert 'number' in track_dict, f"Track {i} must have 'number' field"
-            assert 'track_number' not in track_dict, f"Track {i} must not have 'track_number' field"
+            assert 'number' not in track_dict, f"Track {i} must not have 'number' field"
 
         # Verify no duplicates
         numbers = [t['number'] for t in serialized]
@@ -231,8 +231,8 @@ class TestTrackSerializationContract:
         """Test that required fields have correct types per OpenAPI contract."""
         # Serialize with field mapping
         track_dict = asdict(sample_track)
-        if 'track_number' in track_dict:
-            track_dict['number'] = track_dict.pop('track_number')
+        if 'number' in track_dict:
+            track_dict['number'] = track_dict.pop('number')
 
         assert field_name in track_dict, f"Required field '{field_name}' missing"
         assert isinstance(track_dict[field_name], field_type), (
@@ -261,7 +261,7 @@ class TestRepositorySerializationIntegration:
             {
                 'id': 'track-1',
                 'playlist_id': 'playlist-1',
-                'track_number': 1,
+                'number': 1,
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
@@ -293,7 +293,7 @@ class TestRepositorySerializationIntegration:
             for track in tracks:
                 track_dict = asdict(track)
                 # The fix: explicit field mapping
-                track_dict['number'] = track_dict.pop('track_number')
+                track_dict['number'] = track_dict.pop('number')
                 serialized.append(track_dict)
 
             # Verify contract compliance
@@ -304,8 +304,8 @@ class TestRepositorySerializationIntegration:
             assert 'number' in track, (
                 "❌ BUG: Serialized track missing 'number' field required by OpenAPI contract"
             )
-            assert 'track_number' not in track, (
-                "❌ BUG: Serialized track has 'track_number' field not in OpenAPI contract"
+            assert 'number' not in track, (
+                "❌ BUG: Serialized track has 'number' field not in OpenAPI contract"
             )
             assert track['number'] == 1
             assert track['filename'] == 'track1.mp3'

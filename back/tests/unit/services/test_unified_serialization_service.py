@@ -25,7 +25,7 @@ class TestTrackSerialization:
         CRITICAL TEST: Verify 'number' field exists in API format.
 
         This test prevents issue #71 where frontend expected 'number' field
-        but received only 'track_number', causing all tracks to default to 0.
+        but received only 'number', causing all tracks to default to 0.
         """
         track = Track(
             id="test-track-id",
@@ -51,7 +51,7 @@ class TestTrackSerialization:
         assert result["number"] == 5, "number field should match track position"
 
         # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert "track_number" not in result, (
+        assert "number" not in result, (
             "track_number field should not exist - use 'number' per OpenAPI contract"
         )
 
@@ -133,7 +133,7 @@ class TestTrackSerialization:
         """Verify serialization works with dict input (repository layer)."""
         track_dict = {
             "id": "dict-track-id",
-            "track_number": 7,
+            "number": 7,
             "title": "Dict Track",
             "filename": "dict.mp3",
             "file_path": "/path/dict.mp3",

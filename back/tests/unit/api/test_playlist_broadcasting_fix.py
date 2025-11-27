@@ -34,8 +34,8 @@ async def test_broadcast_playlist_updated_sends_full_playlist_data():
         "track_count": 5,
         "nfc_tag_id": None,
         "tracks": [
-            {"id": "track-1", "title": "Track 1", "track_number": 1, "filename": "track1.mp3"},
-            {"id": "track-2", "title": "Track 2", "track_number": 2, "filename": "track2.mp3"},
+            {"id": "track-1", "title": "Track 1", "number": 1, "filename": "track1.mp3"},
+            {"id": "track-2", "title": "Track 2", "number": 2, "filename": "track2.mp3"},
         ]
     })
 
@@ -136,9 +136,9 @@ async def test_broadcast_tracks_reordered_sends_via_playlists_snapshot():
         "title": "Reordered Playlist",
         "track_count": 3,
         "tracks": [
-            {"id": "track-3", "title": "Track 3", "track_number": 1, "filename": "track3.mp3"},
-            {"id": "track-1", "title": "Track 1", "track_number": 2, "filename": "track1.mp3"},
-            {"id": "track-2", "title": "Track 2", "track_number": 3, "filename": "track2.mp3"},
+            {"id": "track-3", "title": "Track 3", "number": 1, "filename": "track3.mp3"},
+            {"id": "track-1", "title": "Track 1", "number": 2, "filename": "track1.mp3"},
+            {"id": "track-2", "title": "Track 2", "number": 3, "filename": "track2.mp3"},
         ]
     })
 
@@ -178,9 +178,9 @@ async def test_broadcast_tracks_reordered_sends_via_playlists_snapshot():
     assert len(playlist["tracks"]) == 3
 
     # Verify track order is correct
-    assert playlist["tracks"][0]["track_number"] == 1
+    assert playlist["tracks"][0]["number"] == 1
     assert playlist["tracks"][0]["id"] == "track-3"
-    assert playlist["tracks"][1]["track_number"] == 2
+    assert playlist["tracks"][1]["number"] == 2
     assert playlist["tracks"][1]["id"] == "track-1"
 
     print("✅ Track reordering broadcasts via state:playlists - Frontend will receive it")

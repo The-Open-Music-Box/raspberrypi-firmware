@@ -91,7 +91,7 @@ class TestPlaylistBroadcastingService:
         """Test broadcasting track addition event."""
         # Arrange
         playlist_id = "test-playlist-id"
-        track_data = {"id": "track-1", "title": "Test Track", "track_number": 1}
+        track_data = {"id": "track-1", "title": "Test Track", "number": 1}
 
         # Act
         await broadcasting_service.broadcast_track_added(playlist_id, track_data)

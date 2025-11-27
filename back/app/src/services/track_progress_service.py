@@ -449,7 +449,7 @@ class TrackProgressService:
     @handle_service_errors("track_progress")
     async def _check_for_track_change(self, status: dict):
         """Check for track changes and emit state:track events to frontend."""
-        track_number = status.get("track_number")
+        track_number = status.get("number")
         track_id = status.get("active_track_id")  # CRITICAL FIX: Use correct field name
         # Initialize last track info if needed
         if not hasattr(self, "_last_track_number"):

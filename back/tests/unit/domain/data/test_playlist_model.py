@@ -96,9 +96,9 @@ class TestPlaylistFactoryMethods:
 
         assert playlist.title == "File Playlist"
         assert len(playlist.tracks) == 3
-        assert playlist.tracks[0].track_number == 1
-        assert playlist.tracks[1].track_number == 2
-        assert playlist.tracks[2].track_number == 3
+        assert playlist.tracks[0].number == 1
+        assert playlist.tracks[1].number == 2
+        assert playlist.tracks[2].number == 3
         assert playlist.tracks[0].filename == "song1.mp3"
 
     def test_from_files_empty_list(self):
@@ -120,7 +120,7 @@ class TestPlaylistTrackOperations:
         playlist.add_track(track)
 
         assert len(playlist.tracks) == 1
-        assert playlist.tracks[0].track_number == 5
+        assert playlist.tracks[0].number == 5
 
     def test_add_track_auto_number(self):
         """Test adding track with auto-assigned number."""
@@ -131,7 +131,7 @@ class TestPlaylistTrackOperations:
         playlist.add_track(track1)
         playlist.add_track(track2)
 
-        assert track2.track_number == 2
+        assert track2.number == 2
 
     def test_add_track_maintains_sort_order(self):
         """Test adding tracks maintains sorted order."""
@@ -144,9 +144,9 @@ class TestPlaylistTrackOperations:
         playlist.add_track(track1)
         playlist.add_track(track2)
 
-        assert playlist.tracks[0].track_number == 1
-        assert playlist.tracks[1].track_number == 2
-        assert playlist.tracks[2].track_number == 3
+        assert playlist.tracks[0].number == 1
+        assert playlist.tracks[1].number == 2
+        assert playlist.tracks[2].number == 3
 
     def test_get_track_exists(self):
         """Test getting track by number when it exists."""
@@ -155,7 +155,7 @@ class TestPlaylistTrackOperations:
         track = playlist.get_track(2)
 
         assert track is not None
-        assert track.track_number == 2
+        assert track.number == 2
 
     def test_get_track_not_exists(self):
         """Test getting track by number when it doesn't exist."""
@@ -172,7 +172,7 @@ class TestPlaylistTrackOperations:
         removed = playlist.remove_track(2)
 
         assert removed is not None
-        assert removed.track_number == 2
+        assert removed.number == 2
         assert len(playlist.tracks) == 2
 
     def test_remove_track_reindexes(self):
@@ -182,8 +182,8 @@ class TestPlaylistTrackOperations:
         playlist.remove_track(2)
 
         # Tracks should be reindexed to 1, 2
-        assert playlist.tracks[0].track_number == 1
-        assert playlist.tracks[1].track_number == 2
+        assert playlist.tracks[0].number == 1
+        assert playlist.tracks[1].number == 2
 
     def test_remove_track_not_exists(self):
         """Test removing track that doesn't exist."""
@@ -205,7 +205,7 @@ class TestPlaylistQueries:
         first = playlist.get_first_track()
 
         assert first is not None
-        assert first.track_number == 1
+        assert first.number == 1
 
     def test_get_first_track_empty_playlist(self):
         """Test getting first track from empty playlist."""
@@ -224,7 +224,7 @@ class TestPlaylistQueries:
 
         first = playlist.get_first_track()
 
-        assert first.track_number == 3
+        assert first.number == 3
 
     def test_get_track_by_position_valid(self):
         """Test getting track by position."""
@@ -233,7 +233,7 @@ class TestPlaylistQueries:
         track = playlist.get_track_by_position(1)
 
         assert track is not None
-        assert track.track_number == 2
+        assert track.number == 2
 
     def test_get_track_by_position_negative(self):
         """Test getting track by negative position."""
@@ -344,9 +344,9 @@ class TestPlaylistBusinessRules:
         playlist.normalize_track_numbers()
 
         # After normalization, track 5 becomes 1, track 10 becomes 2, track 20 becomes 3
-        assert track5.track_number == 1
-        assert track10.track_number == 2
-        assert track20.track_number == 3
+        assert track5.number == 1
+        assert track10.number == 2
+        assert track20.number == 3
 
     def test_normalize_track_numbers_preserves_order(self):
         """Test normalization preserves original order."""
@@ -359,9 +359,9 @@ class TestPlaylistBusinessRules:
         playlist.normalize_track_numbers()
 
         # Order should be 5 -> 1, 10 -> 2, 20 -> 3
-        assert track5.track_number == 1
-        assert track10.track_number == 2
-        assert track20.track_number == 3
+        assert track5.number == 1
+        assert track10.number == 2
+        assert track20.number == 3
 
     def test_normalize_track_numbers_empty_playlist(self):
         """Test normalizing empty playlist doesn't crash."""
@@ -493,7 +493,7 @@ class TestPlaylistEdgeCases:
         numbers = playlist.get_track_numbers()
 
         assert numbers == [1, 10, 100]
-        assert playlist.get_first_track().track_number == 1
+        assert playlist.get_first_track().number == 1
 
     def test_special_characters_in_name(self):
         """Test playlist name with special characters."""

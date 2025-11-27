@@ -31,7 +31,7 @@ class TestTrackDomainEntity:
             album="Test Album"
         )
         
-        assert track.track_number == 1
+        assert track.number == 1
         assert track.title == "Test Song"
         assert track.filename == "test.mp3"
         assert track.file_path == "/music/test.mp3"
@@ -112,7 +112,7 @@ class TestTrackDomainEntity:
         """Test domain factory method."""
         track = Track.from_file("/music/example.mp3", 3)
         
-        assert track.track_number == 3
+        assert track.number == 3
         assert track.title == "example"  # Stem of filename
         assert track.filename == "example.mp3"
         assert track.file_path == "/music/example.mp3"
@@ -200,7 +200,7 @@ class TestTrackDomainEntity:
         
         # Test setter
         track.number = 10
-        assert track.track_number == 10
+        assert track.number == 10
         assert track.number == 10
     
     def test_track_string_representation(self):
@@ -282,7 +282,7 @@ class TestPlaylistDomainEntity:
         playlist.add_track(track)
         
         # Should be auto-assigned number 1
-        assert track.track_number == 1
+        assert track.number == 1
     
     def test_playlist_validation_business_rule(self):
         """Test domain business rule: playlist validation."""
@@ -349,7 +349,7 @@ class TestPlaylistDomainEntity:
         # Normalize should make them 1, 2, 3
         playlist.normalize_track_numbers()
         
-        numbers = [track.track_number for track in playlist.tracks]
+        numbers = [track.number for track in playlist.tracks]
         assert numbers == [1, 2, 3]
     
     def test_playlist_duration_calculation_domain_service(self):

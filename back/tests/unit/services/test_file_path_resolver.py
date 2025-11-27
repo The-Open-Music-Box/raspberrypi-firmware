@@ -65,7 +65,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = "song.mp3"
-        track.track_number = 1
+        track.number = 1
         playlist_title = "My Playlist"
 
         expected_path = file_path_resolver.uploads_dir / playlist_title / "song.mp3"
@@ -84,7 +84,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = "song.mp3"
-        track.track_number = 1
+        track.number = 1
         playlist_title = "My Playlist"
 
         expected_path = file_path_resolver.uploads_dir / "song.mp3"
@@ -106,7 +106,7 @@ class TestFilePathResolver:
         """Test path resolution when track has no filename."""
         # Arrange
         track = Mock()
-        track.track_number = 1
+        track.number = 1
         track.filename = None
         playlist_title = "My Playlist"
 
@@ -121,7 +121,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = "missing.mp3"
-        track.track_number = 1
+        track.number = 1
         playlist_title = "My Playlist"
 
         with patch.object(Path, 'exists', return_value=False):
@@ -137,7 +137,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = "/home/admin/tomb/app/data/uploads/music/song.mp3"
-        track.track_number = 1
+        track.number = 1
         playlist_title = "Music"
 
         expected_path = file_path_resolver.uploads_dir / "uploads/music/song.mp3"
@@ -159,7 +159,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = "/absolute/path/to/song.mp3"
-        track.track_number = 1
+        track.number = 1
         playlist_title = "Music"
 
         expected_path = Path("/absolute/path/to/song.mp3")
@@ -181,7 +181,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = "subfolder/song.mp3"
-        track.track_number = 1
+        track.number = 1
         playlist_title = "My Playlist"
 
         expected_path = file_path_resolver.uploads_dir / "My Playlist" / "subfolder" / "song.mp3"
@@ -207,11 +207,11 @@ class TestFilePathResolver:
         # Arrange
         track1 = Mock()
         track1.filename = "song1.mp3"
-        track1.track_number = 1
+        track1.number = 1
 
         track2 = Mock()
         track2.filename = "song2.mp3"
-        track2.track_number = 2
+        track2.number = 2
 
         tracks = [track1, track2]
         playlist_title = "My Playlist"
@@ -237,11 +237,11 @@ class TestFilePathResolver:
         # Arrange
         track1 = Mock()
         track1.filename = "found.mp3"
-        track1.track_number = 1
+        track1.number = 1
 
         track2 = Mock()
         track2.filename = None  # Will fail
-        track2.track_number = 2
+        track2.number = 2
 
         tracks = [track1, track2]
         playlist_title = "My Playlist"
@@ -487,7 +487,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = ""
-        track.track_number = 1
+        track.number = 1
         playlist_title = "My Playlist"
 
         # Act
@@ -501,7 +501,7 @@ class TestFilePathResolver:
         # Arrange
         track = Mock()
         track.filename = "song.mp3"
-        track.track_number = 1
+        track.number = 1
         playlist_title = "My Playlist"
 
         # Mock: only second strategy (root dir) exists

@@ -246,13 +246,13 @@ class TestCreateReorderedTracks:
         reordered = service.create_reordered_tracks(new_order, sample_tracks)
 
         assert len(reordered) == 4
-        assert reordered[0].track_number == 1
+        assert reordered[0].number == 1
         assert reordered[0].title == "Track 4"
-        assert reordered[1].track_number == 2
+        assert reordered[1].number == 2
         assert reordered[1].title == "Track 3"
-        assert reordered[2].track_number == 3
+        assert reordered[2].number == 3
         assert reordered[2].title == "Track 2"
-        assert reordered[3].track_number == 4
+        assert reordered[3].number == 4
         assert reordered[3].title == "Track 1"
 
     def test_create_reordered_tracks_preserves_metadata(self, service, sample_tracks):
@@ -277,7 +277,7 @@ class TestCreateReorderedTracks:
         reordered = service.create_reordered_tracks(new_order, sample_tracks)
 
         # Positions should be sequential 1, 2, 3, 4
-        assert [t.track_number for t in reordered] == [1, 2, 3, 4]
+        assert [t.number for t in reordered] == [1, 2, 3, 4]
 
     def test_create_reordered_tracks_preserves_ids(self, service, sample_tracks):
         """Test reordered tracks preserve track IDs."""
@@ -351,7 +351,7 @@ class TestExecuteReordering:
         assert result.success is True
         assert result.new_order == [4, 2, 3, 1]
         # Track positions should be 1, 2, 3, 4
-        assert [t.track_number for t in result.affected_tracks] == [1, 2, 3, 4]
+        assert [t.number for t in result.affected_tracks] == [1, 2, 3, 4]
         # But the track IDs should be swapped
         assert result.affected_tracks[0].id == "id4"
         assert result.affected_tracks[3].id == "id1"

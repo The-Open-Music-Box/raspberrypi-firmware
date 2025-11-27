@@ -27,7 +27,7 @@ class TestTrackConstruction:
             file_path="/music/test.mp3"
         )
 
-        assert track.track_number == 1
+        assert track.number == 1
         assert track.title == "Test Song"
         assert track.filename == "test.mp3"
         assert track.file_path == "/music/test.mp3"
@@ -49,7 +49,7 @@ class TestTrackConstruction:
             id="track-123"
         )
 
-        assert track.track_number == 5
+        assert track.number == 5
         assert track.title == "Complete Song"
         assert track.filename == "complete.flac"
         assert track.file_path == "/music/albums/complete.flac"
@@ -66,7 +66,7 @@ class TestTrackFactoryMethods:
         """Test creating track from file with defaults."""
         track = Track.from_file("/music/my_song.mp3")
 
-        assert track.track_number == 1
+        assert track.number == 1
         assert track.title == "my_song"
         assert track.filename == "my_song.mp3"
         assert track.file_path == "/music/my_song.mp3"
@@ -75,13 +75,13 @@ class TestTrackFactoryMethods:
         """Test creating track from file with custom track number."""
         track = Track.from_file("/music/song.mp3", track_number=10)
 
-        assert track.track_number == 10
+        assert track.number == 10
 
     def test_from_file_complex_path(self):
         """Test creating track from complex file path."""
         track = Track.from_file("/home/user/Music/Artists/Album Name/03 - Track Title.flac", 3)
 
-        assert track.track_number == 3
+        assert track.number == 3
         assert track.title == "03 - Track Title"
         assert track.filename == "03 - Track Title.flac"
         assert "Album Name" in track.file_path
@@ -104,14 +104,14 @@ class TestTrackPropertyAliases:
         track = Track.from_file("/song.mp3", 5)
 
         assert track.number == 5
-        assert track.number == track.track_number
+        assert track.number == track.number
 
     def test_number_property_setter(self):
         """Test number property setter updates track_number."""
         track = Track.from_file("/song.mp3", 1)
         track.number = 10
 
-        assert track.track_number == 10
+        assert track.number == 10
         assert track.number == 10
 
     def test_path_property_returns_pathlib_path(self):
@@ -393,7 +393,7 @@ class TestTrackEdgeCases:
         """Test track with very large track number."""
         track = Track.from_file("/song.mp3", track_number=999999)
 
-        assert track.track_number == 999999
+        assert track.number == 999999
         assert track.is_valid() is True
 
     def test_all_audio_formats(self):

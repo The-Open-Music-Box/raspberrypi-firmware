@@ -64,7 +64,7 @@ class TestSerializationContracts:
             assert field in result, f"Missing required field: {field}"
 
         # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert 'track_number' not in result, \
+        assert 'number' not in result, \
             "track_number field should not exist - use 'number' per OpenAPI contract"
         assert result['number'] == 1, "Expected track number 1"
 
@@ -118,7 +118,7 @@ class TestSerializationContracts:
         """Test that serialization works when input is already a dict."""
         track_dict = {
             'id': 'test-id',
-            'track_number': 5,
+            'number': 5,
             'title': 'Dict Track',
             'filename': 'track.mp3',
             'file_path': '/path/track.mp3',
@@ -161,7 +161,7 @@ class TestSerializationContracts:
             "(not relying on @property auto-serialization)"
 
         # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert 'track_number' not in result, \
+        assert 'number' not in result, \
             "track_number field should not exist - use 'number' per OpenAPI contract"
 
     def test_playlist_serialization_regression_check(self, sample_playlist):
@@ -177,8 +177,8 @@ class TestSerializationContracts:
                 f"This caused issue #71 where playlists with NFC tags failed to display."
 
             # Per OpenAPI contract v3.3.2, only 'number' field should exist
-            assert 'track_number' not in track, \
-                f"Track {idx} should not have 'track_number' field - use 'number' per OpenAPI contract"
+            assert 'number' not in track, \
+                f"Track {idx} should not have 'number' field - use 'number' per OpenAPI contract"
 
 
 class TestSerializationContractValidation:
@@ -204,7 +204,7 @@ class TestSerializationContractValidation:
         """Test that we can detect missing 'number' field (the bug from issue #71)."""
         buggy_track = {
             'id': 'buggy-id',
-            'track_number': 1,  # Has this
+            'number': 1,  # Has this
             # 'number': 1,  # MISSING - this was the bug!
             'title': 'Buggy Track',
             'filename': 'buggy.mp3',
@@ -238,7 +238,7 @@ class TestSerializationContractValidation:
         assert unified_result['number'] == 7
         assert unified_result['title'] == "Consistency Test"
         # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert 'track_number' not in unified_result
+        assert 'number' not in unified_result
 
         # Note: We removed the buggy PurePlaylistRepositoryAdapter._track_to_dict()
         # so there's now only ONE serialization path - which prevents divergence!
