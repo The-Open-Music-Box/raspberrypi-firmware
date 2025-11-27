@@ -265,12 +265,21 @@ class TestSystemRoutes:
         # just verify the response structure is correct
         assert "logs" in logs_data
 
-    @pytest.mark.skip(reason="Restart test causes actual application restart, skipping to prevent test suite hang")
     def test_restart_system_success(self, test_client):
-        """Test successful system restart."""
-        # This test is skipped because the restart endpoint actually schedules a real restart
-        # which causes the test process to hang. The endpoint works correctly in production.
-        pass
+        """Test successful system restart endpoint response (schedules but doesn't execute restart)."""
+        # Note: We don't test the actual restart execution as it would kill the test process.
+        # The restart is scheduled via asyncio.create_task and sent via SIGTERM, which works in production.
+        # This test verifies the API responds correctly when restart is requested.
+
+        response = test_client.post("/api/system/restart")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert "data" in data
+        assert "status" in data["data"]
+        # The restart gets scheduled and will execute after this test completes
+        # In production, this triggers a graceful SIGTERM shutdown
 
     @patch('os.system', side_effect=Exception("Restart failed"))
     def test_restart_system_error(self, mock_os_system, test_client):
@@ -421,11 +430,7 @@ class TestSystemRoutes:
             assert "data" in data
             assert "logs" in data["data"]
 
-    @pytest.mark.skip(reason="Complex psutil mocking - test basic functionality instead")
-    def test_system_info_memory_calculation(self, test_client):
-        """Test system info memory calculations."""
-        # This test is complex to mock properly, basic system info test covers the core functionality
-        pass
+    # Note: test_system_info_memory_calculation removed - covered by test_get_system_info_success
 
     def test_system_info_includes_capabilities(self, test_client):
         """Test that /api/system/info includes backend capabilities."""

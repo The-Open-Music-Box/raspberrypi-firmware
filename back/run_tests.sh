@@ -269,14 +269,14 @@ main() {
             FAILED_TESTS=$((FAILED_TESTS + 1))
         fi
 
-        # App unit tests (without coverage threshold - limited scope)
-        if run_pytest "app/tests/unit/" "App Unit Tests"; then
+        # Unit tests (without coverage threshold - limited scope)
+        if run_pytest "tests/unit/" "Unit Tests"; then
             TOTAL_TESTS_RUN=$((TOTAL_TESTS_RUN + 1))
         else
             FAILED_TESTS=$((FAILED_TESTS + 1))
         fi
 
-        # App integration tests (with timeout protection)
+        # Integration tests (with timeout protection)
         if [ "$QUIET_MODE" != true ]; then
             echo ""
             print_status $YELLOW "⚠️  Integration tests may timeout on slow systems (${INTEGRATION_TIMEOUT}s limit)"
@@ -288,9 +288,9 @@ main() {
             PYTHON_BIN="venv/bin/python"
         fi
 
-        if timeout ${INTEGRATION_TIMEOUT}s bash -c "$WARNING_ENV $PYTHON_BIN -m pytest app/tests/integration/ $PYTEST_VERBOSITY $PYTEST_OUTPUT $WARNING_FLAGS"; then
+        if timeout ${INTEGRATION_TIMEOUT}s bash -c "$WARNING_ENV $PYTHON_BIN -m pytest tests/integration/ $PYTEST_VERBOSITY $PYTEST_OUTPUT $WARNING_FLAGS"; then
             if [ "$QUIET_MODE" != true ]; then
-                print_status $GREEN "✅ App Integration Tests - PASSED"
+                print_status $GREEN "✅ Integration Tests - PASSED"
             fi
             TOTAL_TESTS_RUN=$((TOTAL_TESTS_RUN + 1))
         else
@@ -301,8 +301,8 @@ main() {
             # Don't count timeout as failure for integration tests
         fi
 
-        # Standalone test files in app/tests/
-        if run_pytest "app/tests/test_*.py" "Standalone App Tests"; then
+        # Standalone test files in tests/
+        if run_pytest "tests/test_*.py" "Standalone Tests"; then
             TOTAL_TESTS_RUN=$((TOTAL_TESTS_RUN + 1))
         else
             FAILED_TESTS=$((FAILED_TESTS + 1))

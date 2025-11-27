@@ -8,6 +8,7 @@ import os
 import subprocess
 import time
 import signal
+import pytest
 
 def test_startup():
     """Test the application startup to verify all syntax errors are fixed."""
@@ -39,23 +40,26 @@ def test_startup():
             print("✅ SUCCESS: Application started successfully!")
             print("🎯 No syntax errors detected")
             print("🏗️ Unified architecture is operational")
-            
+
             # Terminate the test process
             process.terminate()
             process.wait(timeout=5)
-            return True
+            # Test passed
         else:
             # Process exited, get error output
             stdout, stderr = process.communicate()
             print("❌ FAILURE: Application failed to start")
             print("📝 STDOUT:", stdout)
             print("🚨 STDERR:", stderr)
-            return False
-            
+            pytest.fail(f"Application failed to start with code {process.returncode}")
+
     except Exception as e:
         print(f"💥 Exception during startup test: {e}")
-        return False
+        pytest.fail(f"Exception during startup test: {e}")
 
 if __name__ == "__main__":
-    success = test_startup()
-    sys.exit(0 if success else 1)
+    try:
+        test_startup()
+        sys.exit(0)
+    except (AssertionError, Exception):
+        sys.exit(1)

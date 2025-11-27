@@ -16,7 +16,7 @@ from typing import Any
 
 from app.src.monitoring import get_logger
 from app.src.services.error.unified_error_decorator import handle_service_errors
-from app.src.services.validation.validation_constants import WINDOWS_RESERVED_NAMES
+from app.src.domain.upload.constants import WINDOWS_RESERVED_NAMES
 
 logger = get_logger(__name__)
 
