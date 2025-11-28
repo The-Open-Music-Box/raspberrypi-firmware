@@ -69,9 +69,7 @@ class TestPlayerAPIRoutes:
         """Mock PlayerBroadcastingService."""
         service = Mock()
         service.broadcast_playback_state_changed = AsyncMock()
-        service.broadcast_track_changed = AsyncMock()
         service.broadcast_volume_changed = AsyncMock()
-        service.broadcast_position_changed = AsyncMock()
         return service
 
     @pytest.fixture
@@ -162,7 +160,7 @@ class TestPlayerAPIRoutes:
         assert data["status"] == "success"
         assert data["message"] == "Skipped to next track"
         mock_operations_service.next_track_use_case.assert_called_once()
-        mock_broadcasting_service.broadcast_track_changed.assert_called_once()
+        mock_broadcasting_service.broadcast_playback_state_changed.assert_called_once()
 
     def test_previous_track_endpoint_success(self, test_client, mock_operations_service, mock_broadcasting_service):
         """Test successful previous track endpoint."""
@@ -173,7 +171,7 @@ class TestPlayerAPIRoutes:
         assert data["status"] == "success"
         assert data["message"] == "Skipped to previous track"
         mock_operations_service.previous_track_use_case.assert_called_once()
-        mock_broadcasting_service.broadcast_track_changed.assert_called_once()
+        mock_broadcasting_service.broadcast_playback_state_changed.assert_called_once()
 
     def test_toggle_endpoint_success(self, test_client, mock_operations_service, mock_broadcasting_service):
         """Test successful toggle endpoint."""
@@ -207,7 +205,6 @@ class TestPlayerAPIRoutes:
         assert data["message"] == "Seek operation completed successfully"
         mock_player_service.seek_use_case.assert_called_once_with(30000)
         mock_operations_service.trigger_immediate_progress_use_case.assert_called_once()
-        mock_broadcasting_service.broadcast_position_changed.assert_called_once_with(30000)
 
     def test_volume_endpoint_success(self, test_client, mock_player_service, mock_broadcasting_service):
         """Test successful volume endpoint."""
