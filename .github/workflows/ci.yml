@@ -105,6 +105,14 @@ jobs:
           source venv/bin/activate
           pytest tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
 
+      - name: Run integration tests
+        id: integration-tests
+        run: |
+          source venv/bin/activate
+          # Run integration tests with longer timeout for startup tests
+          pytest tests/integration/ -v --tb=short --junitxml=test-results-integration.xml
+        continue-on-error: false
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
