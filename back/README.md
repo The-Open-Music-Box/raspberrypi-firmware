@@ -134,14 +134,16 @@ This will copy the app folder, the selected requirements, `.env`, and `app.servi
 Configuration parameters are defined in `app/src/config/app_config.py` and can be overridden using environment variables or a `.env` file.
 
 ### Environment Variables
-| Variable           | Description                        | Default       |
-|--------------------|------------------------------------|---------------|
-| DEBUG              | Enable debug mode                  | False         |
-| SOCKETIO_HOST      | SocketIO server host               | 0.0.0.0       |
-| SOCKETIO_PORT      | SocketIO server port               | 5004          |
-| UPLOAD_FOLDER      | Path for uploaded files            | uploads       |
-| AUTO_PAUSE_ENABLED | Enable auto-pause on disconnect    | True          |
-| ...                | *(see app_config.py for more)*     |               |
+| Variable           | Description                        | Default          |
+|--------------------|------------------------------------|------------------|
+| DEBUG              | Enable debug mode                  | False            |
+| SOCKETIO_HOST      | SocketIO server host               | 0.0.0.0          |
+| SOCKETIO_PORT      | SocketIO server port               | 5004             |
+| UPLOAD_FOLDER      | Path for uploaded files            | uploads          |
+| AUTO_PAUSE_ENABLED | Enable auto-pause on disconnect    | True             |
+| USE_MOCK_HARDWARE  | Use mock hardware for development  | false            |
+| AUDIO_DEVICE_NAME  | WM8960 card name (stable detection)| wm8960soundcard  |
+| ...                | *(see app_config.py for more)*     |                  |
 
 **Example `.env` file:**
 ```
@@ -150,6 +152,8 @@ SOCKETIO_HOST=0.0.0.0
 SOCKETIO_PORT=5004
 UPLOAD_FOLDER=uploads
 AUTO_PAUSE_ENABLED=True
+USE_MOCK_HARDWARE=false
+# AUDIO_DEVICE_NAME=wm8960soundcard  # Optional: uses card NAME for stable detection
 ```
 
 ---
