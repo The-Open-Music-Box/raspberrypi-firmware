@@ -153,7 +153,7 @@ class PlaylistRoutesDDD:
             )
             logger.info("✅ TrackProgressService initialized for auto-advance")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize TrackProgressService: {e}")
+            logger.debug(f"TrackProgressService not available (expected in test contexts): {e}")
             self.progress_service = None
 
         # Initialize upload controller for file uploads with error handling
