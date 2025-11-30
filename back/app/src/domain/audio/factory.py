@@ -2,8 +2,13 @@
 # This file is part of TheOpenMusicBox and is licensed for non-commercial use only.
 # See the LICENSE file for details.
 
-"""Factory for creating audio domain components."""
+"""Factory for creating audio domain components.
 
+This factory implements singleton pattern for audio backend to prevent multiple
+initialization attempts of hardware resources like pygame.mixer and ALSA devices.
+"""
+
+import threading
 from typing import Any, cast
 
 from app.src.domain.decorators.error_handler import (
@@ -25,7 +30,60 @@ logger = get_logger(__name__)
 
 
 class AudioDomainFactory:
-    """Factory for creating audio domain components with dependency injection."""
+    """Factory for creating audio domain components with dependency injection.
+
+    This factory implements singleton pattern for audio backend creation to prevent
+    multiple attempts to initialize hardware resources (pygame.mixer, ALSA devices).
+    The singleton ensures only one audio backend instance exists application-wide.
+    """
+
+    # Singleton instance cache for audio backend (thread-safe)
+    _cached_backend: AudioBackendProtocol | None = None
+    _backend_lock: threading.Lock = threading.Lock()
+    _backend_creation_attempted: bool = False
+    _backend_creation_failed: bool = False
+
+    @classmethod
+    def get_cached_backend(cls) -> AudioBackendProtocol | None:
+        """Get the cached audio backend if available.
+
+        Returns:
+            AudioBackendProtocol | None: Cached backend or None if not created yet
+        """
+        return cls._cached_backend
+
+    @classmethod
+    def has_cached_backend(cls) -> bool:
+        """Check if a backend has been cached.
+
+        Returns:
+            bool: True if a backend is cached
+        """
+        return cls._cached_backend is not None
+
+    @classmethod
+    def backend_creation_was_attempted(cls) -> bool:
+        """Check if backend creation was already attempted.
+
+        This is useful to prevent multiple creation attempts when the first one failed.
+
+        Returns:
+            bool: True if creation was attempted (success or failure)
+        """
+        return cls._backend_creation_attempted
+
+    @classmethod
+    def clear_cached_backend(cls) -> None:
+        """Clear the cached backend (for testing or cleanup).
+
+        This should only be called during application shutdown or in tests.
+        """
+        with cls._backend_lock:
+            if cls._cached_backend is not None:
+                logger.info("🧹 Clearing cached audio backend")
+                cls._cached_backend = None
+            cls._backend_creation_attempted = False
+            cls._backend_creation_failed = False
 
     @staticmethod
     def create_event_bus() -> EventBusProtocol:
@@ -114,21 +172,90 @@ class AudioDomainFactory:
 
         return audio_engine, backend
 
-    @staticmethod
+    @classmethod
     @handle_errors("create_default_backend")
-    def create_default_backend() -> AudioBackendProtocol:
+    def create_default_backend(cls) -> AudioBackendProtocol:
         """Create a default audio backend for pure domain architecture.
 
-        Returns:
-            AudioBackendProtocol: Default audio backend
-        """
-        logger.info("Creating default audio backend for pure domain architecture")
+        This method implements singleton pattern to prevent multiple audio backend
+        initialization attempts. On Linux, pygame.mixer and ALSA can only be
+        initialized once - subsequent attempts cause "device busy" errors.
 
+        If a backend is already cached, returns the cached instance.
+        If creation was attempted and failed, raises the original error to prevent
+        infinite retry loops.
+
+        Returns:
+            AudioBackendProtocol: Default audio backend (singleton)
+
+        Raises:
+            RuntimeError: If backend creation fails and no fallback is available
+        """
+        # Fast path: return cached backend if available
+        if cls._cached_backend is not None:
+            logger.info(f"🔄 Returning cached audio backend: {type(cls._cached_backend).__name__}")
+            return cls._cached_backend
+
+        # Thread-safe singleton creation
+        with cls._backend_lock:
+            # Double-check after acquiring lock
+            if cls._cached_backend is not None:
+                logger.info(f"🔄 Returning cached audio backend: {type(cls._cached_backend).__name__}")
+                return cls._cached_backend
+
+            # Prevent multiple creation attempts if first attempt failed
+            if cls._backend_creation_attempted and cls._backend_creation_failed:
+                logger.warning("⚠️ Audio backend creation was already attempted and failed, using mock fallback")
+                return cls._create_mock_fallback_backend()
+
+            # Mark that we're attempting creation
+            cls._backend_creation_attempted = True
+
+            try:
+                backend = cls._create_platform_backend()
+                cls._cached_backend = backend
+                cls._backend_creation_failed = False
+                return backend
+            except Exception as e:
+                logger.error(f"❌ Failed to create audio backend: {e}")
+                cls._backend_creation_failed = True
+                # Fall back to mock backend for graceful degradation
+                logger.warning("🎭 Falling back to mock audio backend for graceful degradation")
+                fallback = cls._create_mock_fallback_backend()
+                cls._cached_backend = fallback
+                return fallback
+
+    @classmethod
+    def _create_mock_fallback_backend(cls) -> AudioBackendProtocol:
+        """Create a mock audio backend as fallback.
+
+        Returns:
+            AudioBackendProtocol: Mock audio backend
+        """
+        from app.src.domain.protocols.notification_protocol import MockPlaybackNotifier
+        from .backends.implementations.mock_audio_backend import MockAudioBackend
+
+        playback_subject = MockPlaybackNotifier.get_instance()
+        mock_backend = MockAudioBackend(playback_subject)
+        logger.info(f"✅ Created mock fallback backend: {type(mock_backend).__name__}")
+        return cls.create_backend_adapter(mock_backend)
+
+    @classmethod
+    def _create_platform_backend(cls) -> AudioBackendProtocol:
+        """Create platform-specific audio backend.
+
+        Returns:
+            AudioBackendProtocol: Platform-appropriate audio backend
+
+        Raises:
+            RuntimeError: If platform backend creation fails
+        """
         import os
         import sys
 
         from app.src.domain.protocols.notification_protocol import MockPlaybackNotifier
 
+        logger.info("Creating default audio backend for pure domain architecture")
         playback_subject = MockPlaybackNotifier.get_instance()
 
         # Check if we should use mock hardware
@@ -140,9 +267,8 @@ class AudioDomainFactory:
             from .backends.implementations.mock_audio_backend import MockAudioBackend
 
             mock_backend = MockAudioBackend(playback_subject)
-            logger.info(f"✅ Created mock audio backend: {type(mock_backend).__name__}"
-                        )
-            return AudioDomainFactory.create_backend_adapter(mock_backend)
+            logger.info(f"✅ Created mock audio backend: {type(mock_backend).__name__}")
+            return cls.create_backend_adapter(mock_backend)
 
         # Platform-specific backend selection
         if sys.platform == "darwin":
@@ -153,20 +279,17 @@ class AudioDomainFactory:
                 )
 
                 macos_backend = MacOSAudioBackend(playback_subject)
-                logger.info(f"✅ Created macOS audio backend: {type(macos_backend).__name__}"
-                            )
-                return AudioDomainFactory.create_backend_adapter(macos_backend)
+                logger.info(f"✅ Created macOS audio backend: {type(macos_backend).__name__}")
+                return cls.create_backend_adapter(macos_backend)
             except ImportError as e:
-                logger.warning(f"⚠️ macOS audio backend failed ({e}), falling back to mock"
-                               )
+                logger.warning(f"⚠️ macOS audio backend failed ({e}), falling back to mock")
                 from .backends.implementations.mock_audio_backend import (
                     MockAudioBackend,
                 )
 
                 fallback_backend = MockAudioBackend(playback_subject)
-                logger.info(f"✅ Created fallback mock backend: {type(fallback_backend).__name__}",
-                            )
-                return AudioDomainFactory.create_backend_adapter(fallback_backend)
+                logger.info(f"✅ Created fallback mock backend: {type(fallback_backend).__name__}")
+                return cls.create_backend_adapter(fallback_backend)
 
         elif sys.platform == "linux":
             logger.info("🐧 Detected Linux platform")
@@ -175,16 +298,13 @@ class AudioDomainFactory:
             )
 
             wm8960_backend = WM8960AudioBackend(playback_subject)
-            logger.info(f"✅ Created WM8960 audio backend: {type(wm8960_backend).__name__}"
-                        )
-            return AudioDomainFactory.create_backend_adapter(wm8960_backend)
+            logger.info(f"✅ Created WM8960 audio backend: {type(wm8960_backend).__name__}")
+            return cls.create_backend_adapter(wm8960_backend)
 
         else:
-            logger.warning(f"⚠️ Unsupported platform {sys.platform}, falling back to mock backend",
-                           )
+            logger.warning(f"⚠️ Unsupported platform {sys.platform}, falling back to mock backend")
             from .backends.implementations.mock_audio_backend import MockAudioBackend
 
             fallback_backend = MockAudioBackend(playback_subject)
-            logger.info(f"✅ Created fallback mock backend: {type(fallback_backend).__name__}",
-                        )
-            return AudioDomainFactory.create_backend_adapter(fallback_backend)
+            logger.info(f"✅ Created fallback mock backend: {type(fallback_backend).__name__}")
+            return cls.create_backend_adapter(fallback_backend)
