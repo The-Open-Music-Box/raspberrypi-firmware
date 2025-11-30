@@ -151,7 +151,7 @@ class TestTrackAddedEvent:
             track_id="track-123",
             playlist_id="pl-456",
             track_name="New Song",
-            track_number=5,
+            number=5,
             added_at=now
         )
 
@@ -167,7 +167,7 @@ class TestTrackAddedEvent:
             track_id="track-1",
             playlist_id="pl-1",
             track_name="First Track",
-            track_number=1,
+            number=1,
             added_at=datetime.now(timezone.utc)
         )
 
@@ -179,7 +179,7 @@ class TestTrackAddedEvent:
             track_id="track-1",
             playlist_id="pl-1",
             track_name="Track",
-            track_number=999,
+            number=999,
             added_at=datetime.now(timezone.utc)
         )
 

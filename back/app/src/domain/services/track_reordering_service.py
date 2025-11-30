@@ -35,7 +35,7 @@ class ReorderingCommand:
 
     playlist_id: str
     strategy: ReorderingStrategy
-    track_numbers: list[int]
+    numbers: list[int]  # Position numbers per OpenAPI contract v3.3.2
     target_positions: list[int] | None = None
     validation_rules: dict[str, Any] | None = None
 
@@ -211,7 +211,7 @@ class TrackReorderingService:
 
             # Create new track with updated position using the actual Track model
             updated_track = Track(
-                track_number=position,  # New position
+                number=position,  # New position
                 title=original_track.title,
                 filename=original_track.filename,
                 file_path=original_track.file_path,

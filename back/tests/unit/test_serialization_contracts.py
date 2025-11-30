@@ -25,7 +25,7 @@ class TestSerializationContracts:
     def sample_track(self):
         """Create a sample track for testing."""
         return Track(
-            track_number=1,
+            number=1,
             title="Test Track",
             filename="test.mp3",
             file_path="/test/test.mp3",
@@ -133,7 +133,7 @@ class TestSerializationContracts:
     def test_track_serialization_handles_missing_optional_fields(self):
         """Test that serialization handles tracks with missing optional fields gracefully."""
         minimal_track = Track(
-            track_number=1,
+            number=1,
             title="Minimal Track",
             filename="minimal.mp3",
             file_path="/minimal.mp3",
@@ -223,7 +223,7 @@ class TestSerializationContractValidation:
         """Test that different serialization paths produce consistent output."""
         # Create test track
         track = Track(
-            track_number=7,
+            number=7,
             title="Consistency Test",
             filename="test.mp3",
             file_path="/test.mp3",
@@ -250,7 +250,7 @@ class TestContractRegressionPrevention:
     def test_track_number_field_always_present_in_api_format(self):
         """Critical test: 'number' field MUST be present in API format."""
         track = Track(
-            track_number=99,
+            number=99,
             title="Critical Test",
             filename="critical.mp3",
             file_path="/critical.mp3",
@@ -273,7 +273,7 @@ class TestContractRegressionPrevention:
             title="WebSocket Test",
             tracks=[
                 Track(
-                    track_number=1,
+                    number=1,
                     title="WS Track",
                     filename="ws.mp3",
                     file_path="/ws.mp3",
@@ -304,7 +304,7 @@ class TestContractRegressionPrevention:
             nfc_tag_id="04889462251c91",
             tracks=[
                 Track(
-                    track_number=1,
+                    number=1,
                     title="A la volette [zV-Rl7VVagw]",
                     filename="track.mp3",
                     file_path="/track.mp3",

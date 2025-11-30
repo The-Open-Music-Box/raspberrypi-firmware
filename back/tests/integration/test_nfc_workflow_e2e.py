@@ -166,7 +166,7 @@ class TestNfcWorkflowE2E:
             tracks=[
                 Track(
                     id=str(uuid.uuid4()),
-                    track_number=1,
+                    number=1,
                     title="Test Song",
                     filename="test.mp3",
                     file_path="/fake/path/test.mp3",
@@ -289,7 +289,7 @@ class TestNfcWorkflowE2E:
             tracks=[
                 Track(
                     id=str(uuid.uuid4()),
-                    track_number=1,
+                    number=1,
                     title="Override Song",
                     filename="override.mp3",
                     file_path="/fake/path/override.mp3",

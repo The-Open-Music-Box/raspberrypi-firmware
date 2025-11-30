@@ -31,10 +31,10 @@ def service():
 def sample_tracks():
     """Create sample tracks for testing."""
     return [
-        Track(track_number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-        Track(track_number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
-        Track(track_number=3, title="Track 3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
-        Track(track_number=4, title="Track 4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
+        Track(number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+        Track(number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
+        Track(number=3, title="Track 3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
+        Track(number=4, title="Track 4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
     ]
 
 
@@ -46,7 +46,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[1, 2, 3]
+            numbers=[1, 2, 3]
         )
 
         errors = service.validate_reordering_command(command, [])
@@ -59,7 +59,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[-1, 2, 3, 4]
+            numbers=[-1, 2, 3, 4]
         )
 
         errors = service.validate_reordering_command(command, sample_tracks)
@@ -72,7 +72,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[0, 1, 2, 3]
+            numbers=[0, 1, 2, 3]
         )
 
         errors = service.validate_reordering_command(command, sample_tracks)
@@ -85,7 +85,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[1, 2, 2, 3]
+            numbers=[1, 2, 2, 3]
         )
 
         errors = service.validate_reordering_command(command, sample_tracks)
@@ -98,7 +98,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[1, 2, 99, 100]
+            numbers=[1, 2, 99, 100]
         )
 
         errors = service.validate_reordering_command(command, sample_tracks)
@@ -111,7 +111,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[1, 2]  # Missing 3 and 4
+            numbers=[1, 2]  # Missing 3 and 4
         )
 
         errors = service.validate_reordering_command(command, sample_tracks)
@@ -124,7 +124,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.MOVE_TO_POSITION,
-            track_numbers=[1, 2],
+            numbers=[1, 2],
             target_positions=[1]  # Count mismatch
         )
 
@@ -138,7 +138,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.MOVE_TO_POSITION,
-            track_numbers=[1, 2],
+            numbers=[1, 2],
             target_positions=[0, 99]  # Out of bounds
         )
 
@@ -152,7 +152,7 @@ class TestCommandValidation:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[4, 3, 2, 1]
+            numbers=[4, 3, 2, 1]
         )
 
         errors = service.validate_reordering_command(command, sample_tracks)
@@ -168,7 +168,7 @@ class TestCalculateNewOrder:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[4, 3, 2, 1]
+            numbers=[4, 3, 2, 1]
         )
 
         new_order = service.calculate_new_order(command, sample_tracks)
@@ -180,7 +180,7 @@ class TestCalculateNewOrder:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.SWAP_TRACKS,
-            track_numbers=[1, 3]
+            numbers=[1, 3]
         )
 
         new_order = service.calculate_new_order(command, sample_tracks)
@@ -193,7 +193,7 @@ class TestCalculateNewOrder:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.SWAP_TRACKS,
-            track_numbers=[2, 3]
+            numbers=[2, 3]
         )
 
         new_order = service.calculate_new_order(command, sample_tracks)
@@ -205,7 +205,7 @@ class TestCalculateNewOrder:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.SWAP_TRACKS,
-            track_numbers=[1, 2, 3]  # Should be exactly 2
+            numbers=[1, 2, 3]  # Should be exactly 2
         )
 
         with pytest.raises(ValueError, match="exactly 2 track numbers"):
@@ -216,7 +216,7 @@ class TestCalculateNewOrder:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.MOVE_TO_POSITION,
-            track_numbers=[2, 1, 4, 3]
+            numbers=[2, 1, 4, 3]
         )
 
         new_order = service.calculate_new_order(command, sample_tracks)
@@ -229,7 +229,7 @@ class TestCalculateNewOrder:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy="INVALID_STRATEGY",  # Invalid
-            track_numbers=[1, 2, 3, 4]
+            numbers=[1, 2, 3, 4]
         )
 
         with pytest.raises(ValueError, match="Unsupported reordering strategy"):
@@ -299,7 +299,7 @@ class TestExecuteReordering:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[4, 3, 2, 1]
+            numbers=[4, 3, 2, 1]
         )
 
         result = service.execute_reordering(command, sample_tracks)
@@ -316,7 +316,7 @@ class TestExecuteReordering:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[1, 99]  # Non-existent track
+            numbers=[1, 99]  # Non-existent track
         )
 
         result = service.execute_reordering(command, sample_tracks)
@@ -330,7 +330,7 @@ class TestExecuteReordering:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=[]
+            numbers=[]
         )
 
         result = service.execute_reordering(command, [])
@@ -343,7 +343,7 @@ class TestExecuteReordering:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.SWAP_TRACKS,
-            track_numbers=[1, 4]
+            numbers=[1, 4]
         )
 
         result = service.execute_reordering(command, sample_tracks)
@@ -382,9 +382,9 @@ class TestBusinessRuleChecks:
         """Test business rule violation when tracks are missing."""
         # Create reordered list missing a track
         reordered = [
-            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-            Track(track_number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
-            Track(track_number=3, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
+            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+            Track(number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
+            Track(number=3, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
         ]
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -396,7 +396,7 @@ class TestBusinessRuleChecks:
         """Test business rule violation when extra tracks added."""
         reordered = service.create_reordered_tracks([4, 3, 2, 1], sample_tracks)
         # Add extra track
-        extra = Track(track_number=5, title="Extra", filename="e.mp3", file_path="/e.mp3", id="id-extra")
+        extra = Track(number=5, title="Extra", filename="e.mp3", file_path="/e.mp3", id="id-extra")
         reordered.append(extra)
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -408,10 +408,10 @@ class TestBusinessRuleChecks:
         """Test business rule violation for non-sequential track numbers."""
         # Manually create tracks with gaps in numbering
         reordered = [
-            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-            Track(track_number=3, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),  # Gap!
-            Track(track_number=4, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
-            Track(track_number=5, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
+            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+            Track(number=3, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),  # Gap!
+            Track(number=4, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
+            Track(number=5, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
         ]
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -422,10 +422,10 @@ class TestBusinessRuleChecks:
     def test_check_duplicate_track_numbers(self, service, sample_tracks):
         """Test business rule violation for duplicate track numbers."""
         reordered = [
-            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-            Track(track_number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
-            Track(track_number=2, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),  # Duplicate!
-            Track(track_number=4, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
+            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+            Track(number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
+            Track(number=2, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),  # Duplicate!
+            Track(number=4, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
         ]
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -488,7 +488,7 @@ class TestEdgeCases:
         """Test reordering very large playlist."""
         # Create 100 tracks
         tracks = [
-            Track(track_number=i, title=f"Track {i}", filename=f"t{i}.mp3",
+            Track(number=i, title=f"Track {i}", filename=f"t{i}.mp3",
                   file_path=f"/t{i}.mp3", id=f"id{i}")
             for i in range(1, 101)
         ]
@@ -497,7 +497,7 @@ class TestEdgeCases:
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.BULK_REORDER,
-            track_numbers=list(range(100, 0, -1))
+            numbers=list(range(100, 0, -1))
         )
 
         result = service.execute_reordering(command, tracks)
@@ -510,16 +510,16 @@ class TestEdgeCases:
     def test_reorder_tracks_with_metadata(self, service):
         """Test reordering preserves all metadata."""
         tracks = [
-            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3",
+            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3",
                   duration_ms=180000, artist="Artist 1", album="Album", id="id1"),
-            Track(track_number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3",
+            Track(number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3",
                   duration_ms=240000, artist="Artist 2", album="Album", id="id2"),
         ]
 
         command = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.SWAP_TRACKS,
-            track_numbers=[1, 2]
+            numbers=[1, 2]
         )
 
         result = service.execute_reordering(command, tracks)
@@ -538,7 +538,7 @@ class TestEdgeCases:
         command1 = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.SWAP_TRACKS,
-            track_numbers=[1, 2]
+            numbers=[1, 2]
         )
         result1 = service.execute_reordering(command1, sample_tracks)
 
@@ -546,7 +546,7 @@ class TestEdgeCases:
         command2 = ReorderingCommand(
             playlist_id="pl1",
             strategy=ReorderingStrategy.SWAP_TRACKS,
-            track_numbers=[3, 4]
+            numbers=[3, 4]
         )
         result2 = service.execute_reordering(command2, result1.affected_tracks)
 

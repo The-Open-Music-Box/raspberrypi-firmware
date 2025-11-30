@@ -39,7 +39,7 @@ class TrackAddedEvent:
     track_id: str
     playlist_id: str
     track_name: str
-    track_number: int
+    number: int  # Position in playlist - per OpenAPI contract v3.3.2
     added_at: datetime
 
 
