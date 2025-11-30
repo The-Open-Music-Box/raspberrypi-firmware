@@ -74,7 +74,7 @@ class PlaylistOperationsService:
             tracks = []
             for track_dict in playlist_dict.get("tracks", []):
                 track = Track(
-                    track_number=track_dict.get("number", 0),
+                    number=track_dict.get("number", 0),
                     title=track_dict.get("title", ""),
                     filename=track_dict.get("filename", ""),
                     file_path=track_dict.get("file_path", ""),
@@ -90,7 +90,7 @@ class PlaylistOperationsService:
             command = ReorderingCommand(
                 playlist_id=playlist_id,
                 strategy=ReorderingStrategy.BULK_REORDER,
-                track_numbers=track_order,
+                numbers=track_order,
             )
             reorder_result = reordering_service.execute_reordering(command, tracks)
 

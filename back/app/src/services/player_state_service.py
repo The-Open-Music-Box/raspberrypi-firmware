@@ -338,7 +338,7 @@ class PlayerStateService:
             file_size=track_data.get("file_size"),
             artist=track_data.get("artist"),
             album=track_data.get("album"),
-            track_number=track_data.get("number"),
+            number=track_data.get("number"),
             play_count=track_data.get("play_count", 0),
             created_at=track_data.get("created_at", datetime.now()),
             updated_at=track_data.get("updated_at"),
