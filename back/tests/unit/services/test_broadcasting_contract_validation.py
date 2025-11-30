@@ -30,17 +30,16 @@ class TestBroadcastingContractValidation:
         """Create broadcasting service instance."""
         return UnifiedBroadcastingService(mock_state_manager)
 
-    def test_validate_and_fix_contract_adds_missing_number_field(self, broadcasting_service):
-        """Test that validation auto-fixes missing 'number' field."""
-        # Simulate buggy serialization output (like the bug in issue #71)
-        buggy_playlist = {
+    def test_validate_and_fix_contract_preserves_existing_number_field(self, broadcasting_service):
+        """Test that validation preserves 'number' field when already present."""
+        # Per OpenAPI contract v3.3.2, tracks have 'number' field directly
+        valid_playlist = {
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
                 {
                     'id': 'track-1',
-                    'number': 1,  # Has this
-                    # 'number': 1,  # MISSING - the bug!
+                    'number': 1,  # Per OpenAPI contract v3.3.2
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -48,14 +47,14 @@ class TestBroadcastingContractValidation:
             ]
         }
 
-        # Validate and fix
-        fixed_playlist = broadcasting_service._validate_and_fix_contract(buggy_playlist)
+        # Validate (should not change anything)
+        fixed_playlist = broadcasting_service._validate_and_fix_contract(valid_playlist)
 
-        # Verify fix
+        # Verify number is preserved
         assert 'number' in fixed_playlist['tracks'][0], \
-            "Validation should add missing 'number' field"
+            "'number' field should be preserved"
         assert fixed_playlist['tracks'][0]['number'] == 1, \
-            "Added 'number' should match 'number'"
+            "'number' should have correct value"
 
     def test_validate_and_fix_contract_handles_multiple_tracks(self, broadcasting_service):
         """Test validation fixes multiple tracks."""
@@ -84,8 +83,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'number': 1,
-                    'number': 1,  # Already present
+                    'number': 1,  # Per OpenAPI contract v3.3.2
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -97,18 +95,17 @@ class TestBroadcastingContractValidation:
 
         # Should remain unchanged
         assert fixed_playlist['tracks'][0]['number'] == 1
-        assert fixed_playlist['tracks'][0]['number'] == 1
 
-    def test_validate_and_fix_contract_fixes_field_mismatch(self, broadcasting_service):
-        """Test validation fixes mismatched number/track_number fields."""
-        mismatched_playlist = {
+    def test_validate_and_fix_contract_preserves_number_field(self, broadcasting_service):
+        """Test validation preserves 'number' field as-is (no mismatch possible now)."""
+        # Per OpenAPI contract v3.3.2, tracks only have 'number' field (no 'track_number')
+        valid_playlist = {
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
                 {
                     'id': 'track-1',
                     'number': 5,
-                    'number': 3,  # WRONG - doesn't match track_number
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -116,11 +113,11 @@ class TestBroadcastingContractValidation:
             ]
         }
 
-        fixed_playlist = broadcasting_service._validate_and_fix_contract(mismatched_playlist)
+        fixed_playlist = broadcasting_service._validate_and_fix_contract(valid_playlist)
 
-        # Should use track_number as source of truth
+        # 'number' field should be preserved as-is
         assert fixed_playlist['tracks'][0]['number'] == 5, \
-            "Should fix 'number' to match 'number'"
+            "Should preserve 'number' field value"
 
     def test_validate_and_fix_contract_handles_empty_playlist(self, broadcasting_service):
         """Test validation handles playlist with no tracks."""
@@ -184,14 +181,14 @@ class TestBroadcastingContractValidation:
         self, broadcasting_service, mock_state_manager
     ):
         """Test that broadcast_playlist_change validates data before broadcasting."""
-        buggy_playlist = {
+        # Valid playlist per OpenAPI contract v3.3.2 - has 'number' field directly
+        valid_playlist = {
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
                 {
                     'id': 'track-1',
-                    'number': 1,
-                    # Missing 'number' field
+                    'number': 1,  # Per OpenAPI contract v3.3.2
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -199,11 +196,11 @@ class TestBroadcastingContractValidation:
             ]
         }
 
-        # Broadcast (should auto-fix)
+        # Broadcast
         await broadcasting_service.broadcast_playlist_change(
             playlist_id='test-playlist',
             change_type='updated',
-            playlist_data=buggy_playlist
+            playlist_data=valid_playlist
         )
 
         # Verify broadcast was called
@@ -213,12 +210,12 @@ class TestBroadcastingContractValidation:
         broadcast_call = mock_state_manager.broadcast_state_change.call_args
         broadcast_data = broadcast_call[0][1]  # Second argument is data
 
-        # Verify the broadcast included fixed data
+        # Verify the broadcast included 'number' field
         if 'playlist' in broadcast_data:
             playlist = broadcast_data['playlist']
             if 'tracks' in playlist and len(playlist['tracks']) > 0:
                 assert 'number' in playlist['tracks'][0], \
-                    "Broadcast should include fixed 'number' field"
+                    "Broadcast should include 'number' field"
 
 
 class TestContractValidationLogging:
@@ -231,12 +228,13 @@ class TestContractValidationLogging:
         mock_manager.broadcast_state_change = AsyncMock()
         return UnifiedBroadcastingService(mock_manager)
 
-    def test_validation_logs_warning_for_missing_number(self, broadcasting_service, caplog):
-        """Test that validation logs warning when fixing missing 'number' field."""
+    def test_validation_no_warning_for_valid_tracks(self, broadcasting_service, caplog):
+        """Test that validation doesn't log warning when track has 'number' field."""
         import logging
         caplog.set_level(logging.WARNING)
 
-        buggy_playlist = {
+        # Valid playlist per OpenAPI contract v3.3.2 - has 'number' field
+        valid_playlist = {
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
@@ -244,11 +242,11 @@ class TestContractValidationLogging:
             ]
         }
 
-        broadcasting_service._validate_and_fix_contract(buggy_playlist)
+        broadcasting_service._validate_and_fix_contract(valid_playlist)
 
-        # Check that warning was logged
-        assert any('CONTRACT VIOLATION FIXED' in record.message for record in caplog.records), \
-            "Should log warning about missing 'number' field"
+        # No warning should be logged since track is valid
+        assert not any('CONTRACT VIOLATION' in record.message for record in caplog.records), \
+            "Should NOT log warning when track has valid 'number' field"
 
     def test_validation_logs_error_for_unfixable_track(self, broadcasting_service, caplog):
         """Test that validation logs error for tracks that can't be fixed."""

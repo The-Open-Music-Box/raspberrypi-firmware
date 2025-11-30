@@ -36,11 +36,13 @@ class TestPureSQLitePlaylistRepository:
     async def test_get_tracks_by_playlist_success(self, repository, mock_db_service):
         """Test getting tracks by playlist ID."""
         playlist_id = 'playlist-1'
+        # Mock data uses database column name 'track_number'
+        # The repository maps this to domain model's 'number' field
         track_rows = [
             {
                 'id': 'track-1',
                 'playlist_id': playlist_id,
-                'number': 1,
+                'track_number': 1,  # Database column name
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
@@ -51,7 +53,7 @@ class TestPureSQLitePlaylistRepository:
             {
                 'id': 'track-2',
                 'playlist_id': playlist_id,
-                'number': 2,
+                'track_number': 2,  # Database column name
                 'title': 'Track 2',
                 'filename': 'track2.mp3',
                 'file_path': '/path/track2.mp3',
@@ -99,11 +101,12 @@ class TestPureSQLitePlaylistRepository:
     async def test_get_tracks_by_playlist_handles_missing_fields(self, repository, mock_db_service):
         """Test getting tracks handles missing optional fields gracefully."""
         playlist_id = 'playlist-1'
+        # Mock data uses database column name 'track_number'
         track_rows = [
             {
                 'id': 'track-1',
                 'playlist_id': playlist_id,
-                'number': 1,
+                'track_number': 1,  # Database column name
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
@@ -208,11 +211,12 @@ class TestPureSQLitePlaylistRepository:
             'path': '/path/to/playlist',
             'type': 'album'
         }
+        # Mock data uses database column name 'track_number'
         track_rows = [
             {
                 'id': 'track-1',
                 'playlist_id': 'playlist-1',
-                'number': 1,
+                'track_number': 1,  # Database column name
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
