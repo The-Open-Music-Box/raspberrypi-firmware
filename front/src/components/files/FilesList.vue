@@ -27,26 +27,15 @@
       </div>
     </div>
 
-    <!-- Search and Sort Controls -->
-    <div class="playlist-controls" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+    <!-- Search Control -->
+    <div class="playlist-controls" style="display: flex; gap: 12px; margin-bottom: 16px;">
       <input
         v-model="searchQuery"
         type="text"
         :placeholder="t('file.searchPlaylists') || 'Search playlists...'"
         class="search-input"
-        style="flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-onBackground);"
+        style="flex: 1; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-onBackground);"
       />
-      <select
-        v-model="sortOption"
-        class="sort-select"
-        style="padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-onBackground); cursor: pointer;"
-      >
-        <option value="date-newest">{{ t('file.sortNewest') || 'Newest First' }}</option>
-        <option value="date-oldest">{{ t('file.sortOldest') || 'Oldest First' }}</option>
-        <option value="alphabetical">{{ t('file.sortAlphabetical') || 'A-Z' }}</option>
-        <option value="track-count">{{ t('file.sortTrackCount') || 'Most Tracks' }}</option>
-        <option value="last-played">{{ t('file.sortLastPlayed') || 'Last Played' }}</option>
-      </select>
     </div>
 
     <!-- Error message -->
@@ -371,23 +360,8 @@ const toggleEditMode = () => {
   logger.debug('Edit mode toggled', { editMode: isEditMode.value }, 'FilesList')
 }
 
-// Sorting and filtering state
+// Search filter state (playlists are always sorted alphabetically)
 const searchQuery = ref('')
-const sortOption = ref<'alphabetical' | 'date-newest' | 'date-oldest' | 'track-count' | 'last-played'>('date-newest')
-
-// Load preferences from localStorage
-onMounted(() => {
-  const savedSort = localStorage.getItem('playlistSortOption')
-  if (savedSort) {
-    sortOption.value = savedSort as typeof sortOption.value
-  }
-})
-
-// Save sort preference to localStorage
-watch(sortOption, (newValue) => {
-  localStorage.setItem('playlistSortOption', newValue)
-  logger.debug('Sort preference saved', { sortOption: newValue }, 'FilesList')
-})
 
 // OPTIMIZED DATA SOURCE - with performance improvements
 const localPlaylists = computed(() => {
@@ -410,7 +384,7 @@ const localPlaylists = computed(() => {
   })
 })
 
-// Filtered and sorted playlists
+// Filtered and sorted playlists (always alphabetical)
 const filteredAndSortedPlaylists = computed(() => {
   let playlists = [...localPlaylists.value]
 
@@ -422,41 +396,8 @@ const filteredAndSortedPlaylists = computed(() => {
     )
   }
 
-  // Apply sorting
-  switch (sortOption.value) {
-    case 'alphabetical':
-      playlists.sort((a, b) => a.title.localeCompare(b.title))
-      break
-    case 'date-newest':
-      playlists.sort((a, b) => {
-        const dateA = new Date(b.updated_at || b.created_at || 0).getTime()
-        const dateB = new Date(a.updated_at || a.created_at || 0).getTime()
-        return dateA - dateB
-      })
-      break
-    case 'date-oldest':
-      playlists.sort((a, b) => {
-        const dateA = new Date(a.created_at || 0).getTime()
-        const dateB = new Date(b.created_at || 0).getTime()
-        return dateA - dateB
-      })
-      break
-    case 'track-count':
-      playlists.sort((a, b) => {
-        const countA = a.track_count || a.tracks?.length || 0
-        const countB = b.track_count || b.tracks?.length || 0
-        return countB - countA
-      })
-      break
-    case 'last-played':
-      playlists.sort((a, b) => {
-        if (!a.last_played && !b.last_played) return 0
-        if (!a.last_played) return 1
-        if (!b.last_played) return -1
-        return new Date(b.last_played).getTime() - new Date(a.last_played).getTime()
-      })
-      break
-  }
+  // Always sort alphabetically
+  playlists.sort((a, b) => a.title.localeCompare(b.title))
 
   return playlists
 })
