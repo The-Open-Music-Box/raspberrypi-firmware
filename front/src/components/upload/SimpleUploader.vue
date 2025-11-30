@@ -34,7 +34,7 @@
             {{ t('upload.orClickToBrowse') }}
           </p>
           <p class="text-xs text-gray-400 mt-2">
-            Formats supportés: MP3, WAV, FLAC, OGG, M4A
+            Formats supportés: MP3, WAV, FLAC, OGG, M4A, AAC
           </p>
         </div>
 
@@ -168,16 +168,35 @@ const handleFileSelect = (event: Event) => {
 }
 
 const validateFile = (file: File): string | null => {
-  if (!file.type.startsWith('audio/')) {
+  // Accept standard audio MIME types
+  // Note: M4A/AAC files can have various MIME types including audio/mp4, audio/x-m4a, audio/aac
+  const audioMimeTypes = [
+    'audio/mpeg',      // MP3
+    'audio/mp3',       // MP3 (alternative)
+    'audio/wav',       // WAV
+    'audio/x-wav',     // WAV (alternative)
+    'audio/flac',      // FLAC
+    'audio/x-flac',    // FLAC (alternative)
+    'audio/ogg',       // OGG Vorbis
+    'audio/vorbis',    // OGG Vorbis (alternative)
+    'audio/mp4',       // M4A/AAC
+    'audio/x-m4a',     // M4A (alternative)
+    'audio/aac',       // AAC
+    'audio/aacp'       // AAC+ (alternative)
+  ]
+
+  const isAudio = file.type === '' || audioMimeTypes.includes(file.type)
+
+  if (!isAudio) {
     return `${file.name}: Type de fichier non supporté`
   }
-  
+
   // Check file size (max 100MB)
   const maxSize = 100 * 1024 * 1024
   if (file.size > maxSize) {
     return `${file.name}: Fichier trop volumineux (max 100MB)`
   }
-  
+
   return null
 }
 
