@@ -27,6 +27,17 @@
       </div>
     </div>
 
+    <!-- Search Control -->
+    <div class="playlist-controls" style="display: flex; gap: 12px; margin-bottom: 16px;">
+      <input
+        v-model="searchQuery"
+        type="text"
+        :placeholder="t('file.searchPlaylists') || 'Search playlists...'"
+        class="search-input"
+        style="flex: 1; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-onBackground);"
+      />
+    </div>
+
     <!-- Error message -->
     <div v-if="error" :class="['text-error', 'py-4']">
       {{ error }}
@@ -44,7 +55,7 @@
     </div>
 
     <!-- Playlists list -->
-    <div v-for="playlist in localPlaylists" :key="playlist.id" class="playlist-item">
+    <div v-for="playlist in filteredAndSortedPlaylists" :key="playlist.id" class="playlist-item">
       <!-- Playlist header (always visible) -->
       <div
         class="playlist-header"
@@ -349,6 +360,9 @@ const toggleEditMode = () => {
   logger.debug('Edit mode toggled', { editMode: isEditMode.value }, 'FilesList')
 }
 
+// Search filter state (playlists are always sorted alphabetically)
+const searchQuery = ref('')
+
 // OPTIMIZED DATA SOURCE - with performance improvements
 const localPlaylists = computed(() => {
   // Use props playlists if provided (for backward compatibility)
@@ -356,10 +370,10 @@ const localPlaylists = computed(() => {
   if (props.playlists && props.playlists.length > 0) {
     return props.playlists
   }
-  
+
   // Cache the playlists array to avoid recalculating on every access
   const allPlaylists = unifiedStore.getAllPlaylists
-  
+
   // Use Map for O(1) lookups instead of O(n) for each playlist
   return allPlaylists.map(playlist => {
     const tracks = unifiedStore.getTracksForPlaylist(playlist.id)
@@ -368,6 +382,24 @@ const localPlaylists = computed(() => {
       tracks
     }
   })
+})
+
+// Filtered and sorted playlists (always alphabetical)
+const filteredAndSortedPlaylists = computed(() => {
+  let playlists = [...localPlaylists.value]
+
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    playlists = playlists.filter(playlist =>
+      playlist.title.toLowerCase().includes(query)
+    )
+  }
+
+  // Always sort alphabetically
+  playlists.sort((a, b) => a.title.localeCompare(b.title))
+
+  return playlists
 })
 
 const trackLoadingStates = ref<Record<string, boolean>>({})

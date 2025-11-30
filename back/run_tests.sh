@@ -230,6 +230,32 @@ main() {
         echo ""
     fi
 
+    # Clean up test environment before running tests
+    if [ "$QUIET_MODE" != true ]; then
+        echo ""
+    fi
+
+    if [ -x "scripts/cleanup_test_environment.sh" ]; then
+        if [ "$VERBOSE" = true ]; then
+            ./scripts/cleanup_test_environment.sh --verbose
+        else
+            ./scripts/cleanup_test_environment.sh
+        fi
+
+        if [ $? -ne 0 ]; then
+            print_status $RED "❌ Failed to clean up test environment"
+            print_status $YELLOW "⚠️  Continuing anyway, but tests may fail..."
+        fi
+    else
+        if [ "$VERBOSE" = true ]; then
+            print_status $YELLOW "⚠️  Cleanup script not found, skipping environment cleanup"
+        fi
+    fi
+
+    if [ "$QUIET_MODE" != true ]; then
+        echo ""
+    fi
+
     # Track test results
     TOTAL_TESTS_RUN=0
     FAILED_TESTS=0
