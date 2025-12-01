@@ -274,6 +274,10 @@ class SystemAPIRoutes(BaseAPIRoutes):
                     "backend_type": "rpi",
                     "position_update_interval_ms": 500,  # High-frequency updates
                     "supports_websocket_position": True,
+                    # v4.0.0 NFC platform-specific fields
+                    "nfc_session_model": "multi",  # RPI uses explicit session IDs
+                    "nfc_supports_override": False,  # ESP32 only
+                    "nfc_supports_tags_list": False,  # ESP32 only
                 }
 
                 # Detect NFC service availability
@@ -310,7 +314,7 @@ class SystemAPIRoutes(BaseAPIRoutes):
                     "data": {
                         "system_info": system_info,
                         "version": version,
-                        "contract_version": "3.3.0",  # Updated to 3.3.0
+                        "contract_version": "4.0.0",  # Updated to 4.0.0
                         "hostname": system_info.get("hostname", "localhost"),
                         "uptime": 3600,  # System uptime in seconds
                         "server_seq": server_seq,

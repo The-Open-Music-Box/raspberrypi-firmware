@@ -377,10 +377,6 @@ class ContractValidator {
     if (path.includes('/nfc/associate') && !path.includes('{')) {
       return { ...baseData, playlist_id: 'test-playlist', tag_id: 'test-tag' }
     }
-    // YouTube download - use test-value that backend recognizes in mock mode
-    if (path.includes('/youtube/download')) {
-      return { ...baseData, url: 'test-value', playlist_id: 'test-value' }
-    }
 
     return baseData
   }

@@ -31,7 +31,6 @@ TheOpenMusicBox provides a comprehensive music management and playback system de
 - 📋 **Playlist Management**: CRUD operations for playlists and tracks
 - 🏷️ **NFC Integration**: Associate NFC tags with playlists for physical playback
 - 📤 **File Upload**: Chunked upload support for audio files
-- 🎬 **YouTube Integration**: Download audio from YouTube videos
 - 🔄 **Real-time Updates**: Socket.IO for live state synchronization
 - 🎛️ **Physical Controls**: GPIO button support for hardware control
 
@@ -95,7 +94,6 @@ Currently designed for local network use without authentication. Future versions
 Rate limiting is implemented via the OperationsService:
 - Player controls: Prevent rapid-fire commands
 - File uploads: Limit concurrent sessions
-- YouTube downloads: Prevent API abuse
 
 ## Error Handling
 
@@ -208,25 +206,6 @@ Chunked file upload system with progress tracking and real-time updates.
 **Supported Formats**: MP3, FLAC, WAV, OGG, M4A
 
 **WebSocket Events**: `upload:progress`, `upload:complete`, `upload:error`
-        """,
-    },
-    {
-        "name": "youtube",
-        "description": """
-**YouTube Integration**
-
-Download audio from YouTube videos and add to playlists.
-
-**Features**:
-- Download from YouTube URL
-- Progress tracking
-- Video search
-- Automatic format conversion
-- Metadata extraction
-
-**WebSocket Events**: `youtube:progress`, `youtube:complete`, `youtube:error`
-
-**External Dependency**: yt-dlp for video processing
         """,
     },
     {

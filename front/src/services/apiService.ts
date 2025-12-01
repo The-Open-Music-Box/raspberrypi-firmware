@@ -17,7 +17,6 @@ import { playlistApi } from './api/playlistApi'
 import { uploadApi } from './api/uploadApi'
 import { systemApi } from './api/systemApi'
 import { nfcApi } from './api/nfcApi'
-import { youtubeApi } from './api/youtubeApi'
 
 /**
  * Main API service export with organized modules and backward compatibility
@@ -28,7 +27,6 @@ export const apiService = {
   uploads: uploadApi,
   system: systemApi,
   nfc: nfcApi,
-  youtube: youtubeApi,
 
   // Direct axios client access for custom requests
   client: apiClient,
@@ -259,7 +257,7 @@ export const apiService = {
 }
 
 // Export individual modules for direct import
-export { playerApi, playlistApi, uploadApi, systemApi, nfcApi, youtubeApi, apiClient, ApiResponseHandler, StandardApiError }
+export { playerApi, playlistApi, uploadApi, systemApi, nfcApi, apiClient, ApiResponseHandler, StandardApiError }
 
 // Default export for backward compatibility
 export default apiService

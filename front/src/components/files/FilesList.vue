@@ -5,13 +5,6 @@
       <h2 class="playlists-title">{{ t('file.playlists') }}</h2>
       <div class="header-actions" style="display: flex; gap: 12px;">
         <button
-          v-if="false"
-          @click="showYoutubeModal = true"
-          class="btn-modern danger"
-        >
-          Add from YouTube
-        </button>
-        <button
           @click="toggleEditMode"
           :class="[
             'btn-modern',
@@ -257,26 +250,6 @@
       @cancel="showDeleteDialog = false"
     />
 
-    <!-- YouTube Integration Modal -->
-    <div v-if="showYoutubeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full mx-4 overflow-auto">
-        <div class="flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 class="text-xl font-semibold">Add from YouTube</h2>
-          <button
-            @click="showYoutubeModal = false"
-            class="text-gray-500 hover:text-gray-700"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        <div class="p-4">
-          <YoutubeIntegration />
-        </div>
-      </div>
-    </div>
-
     <!-- Create Playlist Dialog -->
     <CreatePlaylistDialog
       :open="showCreatePlaylistDialog"
@@ -327,7 +300,6 @@ import DeleteDialog from './DeleteDialog.vue'
 import CreatePlaylistDialog from './CreatePlaylistDialog.vue'
 import NewPlaylistButton from './NewPlaylistButton.vue'
 import UploadModal from '@/components/upload/UploadModal.vue'
-import YoutubeIntegration from '@/components/youtube/YoutubeIntegration.vue'
 import { useUploadStore } from '@/stores/uploadStore'
 import { useUnifiedPlaylistStore } from '@/stores/unifiedPlaylistStore'
 import { getTrackNumber, getTrackDurationSeconds, formatTrackDuration } from '@/utils/trackFieldAccessor'
@@ -430,9 +402,6 @@ const playlistToDelete = ref<string | null>(null)
 
 // Create playlist dialog state
 const showCreatePlaylistDialog = ref(false)
-
-// YouTube modal state
-const showYoutubeModal = ref(false)
 
 // Upload modal state
 const currentUploadPlaylistId = ref<string | null>(null)

@@ -85,8 +85,7 @@ class ContractValidator:
             "playlists": [],
             "tracks": [],
             "sessions": [],
-            "tags": [],
-            "tasks": []
+            "tags": []
         }
         self.dynamic_substitutions = {}
 
@@ -118,13 +117,9 @@ class ContractValidator:
             # Create test NFC tag association (if needed)
             await self._create_test_nfc_tag()
 
-            # Create test YouTube task (simulated)
-            await self._create_test_youtube_task()
-
             logger.info(f"Test data setup complete. Created {len(self.test_data_created['playlists'])} playlists, "
                        f"{len(self.test_data_created['sessions'])} sessions, "
-                       f"{len(self.test_data_created['tags'])} tags, "
-                       f"{len(self.test_data_created['tasks'])} tasks")
+                       f"{len(self.test_data_created['tags'])} tags")
 
         except Exception as e:
             logger.warning(f"Test data setup failed: {e}. Tests may be skipped for missing entities.")
@@ -233,24 +228,6 @@ class ContractValidator:
 
         return None
 
-    async def _create_test_youtube_task(self):
-        """Create a test YouTube download task for validation."""
-        try:
-            # Generate a unique test task ID
-            task_id = f"test-task-{int(asyncio.get_event_loop().time())}"
-
-            # Note: YouTube task creation might not exist as an endpoint,
-            # so we just simulate having a task ID for path substitution
-            self.test_data_created["tasks"].append(task_id)
-            self.dynamic_substitutions["{task_id}"] = task_id
-            logger.debug(f"Created test YouTube task: {task_id}")
-            return task_id
-
-        except Exception as e:
-            logger.debug(f"Error creating test YouTube task: {e}")
-
-        return None
-
     async def _cleanup_test_data(self):
         """Clean up test data created during validation."""
         logger.info("Cleaning up test data...")
@@ -292,23 +269,12 @@ class ContractValidator:
             except Exception as e:
                 logger.debug(f"Error cleaning up NFC tag {tag_id}: {e}")
 
-        # Clean up YouTube tasks (if any)
-        for task_id in self.test_data_created["tasks"]:
-            try:
-                # Note: YouTube task cleanup might not have a dedicated endpoint
-                # They might auto-expire or be handled separately
-                cleanup_count += 1
-                logger.debug(f"Marked test YouTube task for cleanup: {task_id}")
-            except Exception as e:
-                logger.debug(f"Error cleaning up YouTube task {task_id}: {e}")
-
         # Clear tracking
         self.test_data_created = {
             "playlists": [],
             "tracks": [],
             "sessions": [],
-            "tags": [],
-            "tasks": []
+            "tags": []
         }
         self.dynamic_substitutions = {}
 

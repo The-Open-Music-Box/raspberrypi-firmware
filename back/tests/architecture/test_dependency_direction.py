@@ -97,9 +97,6 @@ class TestDependencyDirection:
                 'infrastructure.nfc.nfc_factory',  # Needs NFC factory for bootstrapping NFC services
                 'infrastructure.upload.upload_factory',  # Needs upload factory for bootstrapping upload services
             ],
-            'application.services.youtube.youtube_application_service': [
-                'infrastructure.youtube.youtube_downloader',  # YouTube service delegates to infrastructure downloader
-            ],
         }
 
         for module in self.dependency_graph.nodes():

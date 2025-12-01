@@ -260,28 +260,3 @@ class NFCAssociationModel(BaseDataModel):
         return v
 
 
-class YouTubeProgressModel(BaseModel):
-    """Model for YouTube download progress."""
-
-    task_id: str = Field(..., description="Download task identifier")
-    status: str = Field(..., description="Download status")
-    progress_percent: float = Field(
-        0.0, ge=0.0, le=100.0, description="Download progress percentage"
-    )
-    current_step: str = Field("", description="Current processing step")
-    estimated_time_remaining: int | None = Field(
-        None, description="Estimated time remaining in seconds"
-    )
-    error_message: str | None = Field(None, description="Error message if download failed")
-    result: dict[str, Any] | None = Field(None, description="Download result data")
-
-
-class YouTubeResultModel(BaseModel):
-    """Model for YouTube search results."""
-
-    id: str = Field(..., description="YouTube video ID")
-    title: str = Field(..., description="Video title")
-    duration_ms: int = Field(..., description="Video duration in milliseconds")
-    thumbnail_url: str = Field(..., description="Video thumbnail URL")
-    channel: str = Field(..., description="Channel name")
-    view_count: int = Field(0, description="Number of views")

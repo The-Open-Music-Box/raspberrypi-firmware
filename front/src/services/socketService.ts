@@ -9,14 +9,13 @@
 import { io, Socket } from 'socket.io-client'
 import { logger } from '../utils/logger'
 import { socketConfig } from '../config/environment'
-import { 
-  StateEventEnvelope, 
-  OperationAck, 
+import {
+  StateEventEnvelope,
+  OperationAck,
   PlayerState,
   Playlist,
   TrackProgress,
   UploadProgress,
-  YouTubeProgress,
   NFCAssociation
 } from '../types/contracts'
 
@@ -56,9 +55,6 @@ export type SocketEventType =
   | 'upload:error'
   | 'nfc_status'
   | 'nfc_association_state'
-  | 'youtube:progress'
-  | 'youtube:complete'
-  | 'youtube:error'
 
 /**
  * Event handler type definitions
@@ -92,10 +88,6 @@ export interface EventHandlers {
   'upload:error': (data: { playlist_id: string; session_id: string; error: string }) => void
   'nfc_status': (data: unknown) => void
   'nfc_association_state': (data: unknown) => void
-  'youtube:progress': (data: YouTubeProgress) => void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  'youtube:complete': (data: { task_id: string; track: any; playlist_id: string }) => void
-  'youtube:error': (data: { task_id: string; message: string }) => void
 }
 
 /**
@@ -306,20 +298,7 @@ class SocketService {
     this.socket.on('upload:error', (data) => {
       this.emitLocal('upload:error', data)
     })
-    
-    // YouTube events
-    this.socket.on('youtube:progress', (data) => {
-      this.emitLocal('youtube:progress', data)
-    })
-    
-    this.socket.on('youtube:complete', (data) => {
-      this.emitLocal('youtube:complete', data)
-    })
-    
-    this.socket.on('youtube:error', (data) => {
-      this.emitLocal('youtube:error', data)
-    })
-    
+
     // NFC events
     this.socket.on('nfc_status', (data) => {
       this.emitLocal('nfc_status', data)

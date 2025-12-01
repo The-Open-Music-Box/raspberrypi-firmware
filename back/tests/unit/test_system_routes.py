@@ -528,7 +528,7 @@ class TestSystemRoutes:
         # Verify contract version
         assert "data" in data
         assert "contract_version" in data["data"]
-        assert data["data"]["contract_version"] == "3.3.0"
+        assert data["data"]["contract_version"] == "4.0.0"
 
     def test_system_info_capabilities_without_container(self, mock_app):
         """Test that capabilities still work when app.container is None."""
@@ -592,10 +592,10 @@ class TestSystemRoutes:
         assert caps["position_update_interval_ms"] == 500  # High-frequency for RPI
         assert caps["supports_websocket_position"] is True
 
-    def test_contract_version_is_3_3_0(self, test_client):
-        """Test that contract version is updated to 3.3.0."""
+    def test_contract_version_is_4_0_0(self, test_client):
+        """Test that contract version is updated to 4.0.0."""
         response = test_client.get("/api/system/info")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["data"]["contract_version"] == "3.3.0"
+        assert data["data"]["contract_version"] == "4.0.0"
