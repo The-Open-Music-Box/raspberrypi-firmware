@@ -14,7 +14,7 @@ import os
 import subprocess  # nosec B404 - subprocess required for ALSA audio device detection and control
 import time
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 try:
     import pygame
@@ -49,8 +49,13 @@ class WM8960AudioBackend(BaseAudioBackend):
     using ALSA and subprocess-based audio control.
     """
 
-    def __init__(self, playback_subject: PlaybackSubject | None = None):
-        """Initialize the WM8960 audio backend."""
+    def __init__(self, playback_subject: PlaybackSubject | None = None, allow_graceful_degradation: bool = True):
+        """Initialize the WM8960 audio backend.
+
+        Args:
+            playback_subject: Optional subject for playback notifications
+            allow_graceful_degradation: If True, allows initialization to succeed even if hardware fails
+        """
         super().__init__(playback_subject)
         self._is_paused = False
         self._play_start_time = None
@@ -59,6 +64,10 @@ class WM8960AudioBackend(BaseAudioBackend):
         # Track current file and its duration
         self._current_file_path = None
         self._current_file_duration = None  # in seconds
+
+        # Track hardware availability
+        self._hardware_available = False
+        self._initialization_error = None
 
         # Initialize hardware
         self._initialize_wm8960_hardware()
@@ -69,13 +78,26 @@ class WM8960AudioBackend(BaseAudioBackend):
             # Simple default pygame initialization on startup
             self._pygame_initialized = self._init_pygame_simple()
             if not self._pygame_initialized:
-                logger.error("🔊 WM8960: Failed to initialize pygame mixer - audio device is busy or unavailable")
-                raise RuntimeError("WM8960 audio backend initialization failed: pygame mixer could not be initialized")
-        else:
-            logger.warning("🔊 WM8960: pygame not available - audio will not work")
-            raise RuntimeError("WM8960 audio backend initialization failed: pygame not available")
+                error_msg = "🔊 WM8960: Failed to initialize pygame mixer - audio device is busy or unavailable"
+                logger.error(error_msg)
+                self._initialization_error = "pygame mixer could not be initialized"
 
-        logger.info("🔊 WM8960 Audio Backend initialized successfully")
+                if not allow_graceful_degradation:
+                    raise RuntimeError("WM8960 audio backend initialization failed: pygame mixer could not be initialized")
+
+                logger.warning("🔊 WM8960: Continuing with degraded mode - audio playback unavailable")
+            else:
+                self._hardware_available = True
+                logger.info("🔊 WM8960 Audio Backend initialized successfully")
+        else:
+            error_msg = "🔊 WM8960: pygame not available - audio will not work"
+            logger.warning(error_msg)
+            self._initialization_error = "pygame not available"
+
+            if not allow_graceful_degradation:
+                raise RuntimeError("WM8960 audio backend initialization failed: pygame not available")
+
+            logger.warning("🔊 WM8960: Continuing with degraded mode - audio playback unavailable")
 
     @handle_errors("_init_pygame_simple")
     def _init_pygame_simple(self) -> bool:
@@ -125,57 +147,54 @@ class WM8960AudioBackend(BaseAudioBackend):
 
     @handle_errors("_detect_wm8960_device")
     def _detect_wm8960_device(self) -> str:
-        """Detect WM8960 audio device automatically.
+        """Detect WM8960 audio device automatically using stable card NAME (not card number).
+
+        Detection priority:
+        1. AUDIO_DEVICE_NAME environment variable
+        2. Auto-detect card name from aplay -l output
+        3. Fallback to "wm8960soundcard" (default WM8960 card name)
 
         Returns:
-            str: ALSA device identifier for WM8960
+            str: ALSA device identifier for WM8960 using card NAME (e.g., "plughw:wm8960soundcard")
         """
+        # Priority 1: Check environment variable override
+        env_device = os.environ.get("AUDIO_DEVICE_NAME")
+        if env_device:
+            device = f"plughw:{env_device}"
+            logger.info(f"🔊 WM8960: Using device from AUDIO_DEVICE_NAME env var: {device}")
+            return device
+
+        # Priority 2: Auto-detect card name from aplay -l
         try:
             # Try to get list of audio devices (hardcoded command, not user input)
             result = subprocess.run(["aplay", "-l"], check=False, capture_output=True, text=True)  # nosec B603 B607
+
+            if result.returncode == 0:
+                output = result.stdout
+                # Look for WM8960 card and extract card NAME (not number)
+                for line in output.split("\n"):
+                    if "wm8960" in line.lower():
+                        # Try to extract card name from "card X: cardname [...]" format
+                        if "card" in line.lower() and ":" in line:
+                            parts = line.split(":")
+                            if len(parts) >= 2:
+                                # Extract card name (second part after first colon, before brackets)
+                                card_name_part = parts[1].strip()
+                                # Card name is typically before any brackets or dashes
+                                card_name = card_name_part.split("[")[0].split("-")[0].strip()
+                                if card_name:
+                                    device = f"plughw:{card_name}"
+                                    logger.info(f"🔊 WM8960: Auto-detected device by card name: {device}")
+                                    return device
         except FileNotFoundError:
-            # aplay not found (e.g., on macOS), use default
-            logger.info("🔊 WM8960: aplay not found, using default device")
-            return "plughw:1,0"  # fallback when aplay not found
-        if result.returncode == 0:
-            output = result.stdout
-            # Look for WM8960 card
-            for line in output.split("\n"):
-                if "wm8960" in line.lower():
-                    # Extract card number for hw:X,0 format
-                    if "card" in line.lower():
-                        # Parse "card X: cardname" to get card number
-                        parts = line.split("card")
-                        if len(parts) >= 2:
-                            card_part = parts[1].split(":")[0].strip()  # Get number part
-                            if card_part.isdigit():
-                                # Use plughw for better compatibility with different audio formats
-                                device = f"plughw:{card_part},0"
-                                logger.info(f"🔊 WM8960: Detected audio device: {device}"
-                                            )
-                                return device
-                            # Fallback: try card name format
-                            card_name = (
-                                parts[1].split(":")[1].strip().split()[0]
-                            )  # Get card name
-                            device = f"hw:{card_name},0"
-                            logger.info(f"🔊 WM8960: Using card name format: {device}"
-                                        )
-                            return device
-            # Fallback: look for any card with wm8960 in name and extract number
-            for line in output.split("\n"):
-                if "wm8960soundcard" in line.lower():
-                    # Try to extract card number from any line containing wm8960soundcard
-                    if "card" in line:
-                        card_num = line.split("card")[1].split(":")[0].strip()
-                        if card_num.isdigit():
-                            # Use plughw for better format compatibility
-                            device = f"plughw:{card_num},0"
-                            logger.info(f"🔊 WM8960: Fallback detected: {device}")
-                            return device
-        # Final fallback
-        device = "plughw:0,0"
-        logger.info(f"🔊 WM8960: Using fallback device: {device}")
+            # aplay not found (e.g., on macOS), use fallback
+            logger.info("🔊 WM8960: aplay not found, using fallback device")
+        except Exception as e:
+            logger.warning(f"🔊 WM8960: Error detecting device: {e}, using fallback")
+
+        # Priority 3: Fallback to default WM8960 card name
+        device = "plughw:wm8960soundcard"
+        logger.info(f"🔊 WM8960: Using fallback device (stable card name): {device}")
         return device
 
     def _get_file_duration(self, file_path: str) -> float | None:
@@ -217,6 +236,28 @@ class WM8960AudioBackend(BaseAudioBackend):
         self._audio_device = self._detect_wm8960_device()
         logger.info(f"🔊 WM8960: Detected audio device: {self._audio_device}")
         return True
+
+    def is_hardware_available(self) -> bool:
+        """Check if audio hardware is available and functional.
+
+        Returns:
+            bool: True if hardware is operational, False otherwise
+        """
+        return self._hardware_available
+
+    def get_hardware_status(self) -> dict[str, Any]:
+        """Get detailed hardware status information.
+
+        Returns:
+            dict: Hardware status including availability, device name, and any errors
+        """
+        return {
+            "available": self._hardware_available,
+            "device": self._audio_device if hasattr(self, '_audio_device') else None,
+            "initialized": self._pygame_initialized,
+            "error": self._initialization_error,
+            "backend_type": "WM8960AudioBackend"
+        }
 
     @handle_errors("play_file")
     def play_file(self, file_path: str, duration_ms: int | None = None) -> bool:

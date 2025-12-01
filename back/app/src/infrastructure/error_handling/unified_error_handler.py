@@ -128,9 +128,20 @@ class UnifiedErrorHandler:
             # Last resort: print to stderr to avoid infinite recursion
             # Cannot use logger here since the logging system may have failed
             # This ensures critical errors are visible even when error handling crashes
-            # Note: sys is imported at module level, no need to re-import
-            print(f"CRITICAL: Error handler itself failed: {handler_error}", file=sys.stderr)
-            print(f"Original error was: {error}", file=sys.stderr)
+            try:
+                # Try to use sys.stderr if available
+                import sys as _sys
+                print(f"CRITICAL: Error handler itself failed: {handler_error}", file=_sys.stderr)
+                print(f"Original error was: {error}", file=_sys.stderr)
+            except Exception:
+                # Absolute last resort: print without file parameter (goes to stdout)
+                # This handles cases where sys.stderr is unavailable
+                try:
+                    print(f"CRITICAL: Error handler itself failed: {handler_error}")
+                    print(f"Original error was: {error}")
+                except Exception:
+                    # If even print fails, silently continue to avoid infinite recursion
+                    pass
 
         # Reraise original error if requested (after handling completes)
         if reraise:

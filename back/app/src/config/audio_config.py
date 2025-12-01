@@ -39,6 +39,11 @@ class AudioConfig:
     sdl_audiodev: str = "default"  # Audio device (uses ALSA default, configured for WM8960)
     sdl_videodriver: str = "dummy"  # Video driver (dummy to disable video)
 
+    # Hardware device settings
+    audio_device_name: str = "wm8960soundcard"  # ALSA card name for WM8960 (stable across reboots)
+    audio_device_type: str = "plughw"  # ALSA device type (plughw for format compatibility)
+    allow_graceful_degradation: bool = True  # Allow app to start even if audio hardware fails
+
     # Mock audio settings for development/testing
     mock_track_duration: float = 30.0  # Default duration for mock tracks in seconds (shortened for testing)
 
