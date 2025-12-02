@@ -60,6 +60,7 @@ export const API_ROUTES = {
   SYSTEM_INFO: '/api/system/info',
   SYSTEM_LOGS: '/api/system/logs',
   SYSTEM_RESTART: '/api/system/restart',
+  SYSTEM_HARDWARE_STATUS: '/api/system/hardware_status',
   VOLUME: '/api/player/volume',
   HEALTH: '/api/health',
   PLAYBACK_STATUS: '/api/playback/status',
