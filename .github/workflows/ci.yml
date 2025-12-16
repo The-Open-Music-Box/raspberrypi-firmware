@@ -27,7 +27,7 @@ jobs:
   # Check if branch is rebased on develop
   check-rebase:
     name: Check Rebase Status
-    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    runs-on: [self-hosted, Linux, X64, docker]
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
@@ -57,7 +57,7 @@ jobs:
 
   backend-tests:
     name: Backend Tests
-    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    runs-on: [self-hosted, Linux, X64, docker]
     needs: [check-rebase]
     if: always() && (needs.check-rebase.result == 'success' || github.event_name == 'push')
     defaults:
@@ -122,7 +122,7 @@ jobs:
 
   frontend-tests:
     name: Frontend Tests
-    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    runs-on: [self-hosted, Linux, X64, docker]
     needs: [check-rebase]
     if: always() && (needs.check-rebase.result == 'success' || github.event_name == 'push')
     defaults:
@@ -159,7 +159,7 @@ jobs:
 
   build-test:
     name: Build Test
-    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    runs-on: [self-hosted, Linux, X64, docker]
     needs: [backend-tests, frontend-tests]
     if: always() && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success'
 
@@ -197,7 +197,7 @@ jobs:
   # Final status check - THIS IS THE REQUIRED CHECK FOR BRANCH PROTECTION
   ci-status:
     name: CI Status
-    runs-on: [self-hosted, Linux, X64, docker, tomb]
+    runs-on: [self-hosted, Linux, X64, docker]
     needs: [check-rebase, backend-tests, frontend-tests, build-test]
     if: always()
 
