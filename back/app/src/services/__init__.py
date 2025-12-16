@@ -4,13 +4,11 @@
 
 """Services module initialization for TheOpenMusicBox backend.
 
-Exposes core service classes for notification handling and YouTube integration.
+Exposes core service classes for notification handling.
 Provides a centralized import point for external service functionality
 throughout the application.
 """
 
-from app.src.application.services.youtube import YouTubeService
+from .notification_service import PlaybackSubject
 
-from .notification_service import DownloadNotifier
-
-__all__ = ["DownloadNotifier", "YouTubeService"]
+__all__ = ["PlaybackSubject"]

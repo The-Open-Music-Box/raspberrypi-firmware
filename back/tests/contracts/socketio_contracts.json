@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TheOpenMusicBox Socket.IO Contracts",
   "description": "Complete contract definitions for all Socket.IO events based on DDD implementation analysis",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "event_envelope_format": {
     "description": "All state events use standardized envelope format via StateEventCoordinator",
     "schema": {
@@ -632,58 +632,6 @@
             "required": ["session_id", "error"]
           },
           "description": "Upload error notification"
-        }
-      }
-    },
-    "youtube_events": {
-      "description": "YouTube download progress events",
-      "events": {
-        "youtube:progress": {
-          "direction": "server_to_client",
-          "payload": {
-            "type": "object",
-            "properties": {
-              "task_id": {"type": "string"},
-              "status": {"type": "string"},
-              "progress_percent": {"type": "number"},
-              "current_step": {"type": "string"}
-            },
-            "required": ["task_id", "status"]
-          },
-          "description": "YouTube download progress"
-        },
-        "youtube:complete": {
-          "direction": "server_to_client",
-          "payload": {
-            "type": "object",
-            "properties": {
-              "task_id": {"type": "string"},
-              "track": {
-                "type": "object",
-                "properties": {
-                  "title": {"type": "string"},
-                  "filename": {"type": "string"},
-                  "duration": {"type": ["integer", "null"]},
-                  "duration_ms": {"type": ["integer", "null"]}
-                }
-              },
-              "playlist_id": {"type": "string"}
-            },
-            "required": ["task_id", "track", "playlist_id"]
-          },
-          "description": "YouTube download completion"
-        },
-        "youtube:error": {
-          "direction": "server_to_client",
-          "payload": {
-            "type": "object",
-            "properties": {
-              "task_id": {"type": "string"},
-              "message": {"type": "string"}
-            },
-            "required": ["task_id", "message"]
-          },
-          "description": "YouTube download error"
         }
       }
     }

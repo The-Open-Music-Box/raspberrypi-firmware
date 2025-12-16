@@ -288,31 +288,6 @@ UPLOAD_PROGRESS_EXAMPLE = {
 }
 
 # ============================================================================
-# YOUTUBE EXAMPLES
-# ============================================================================
-
-YOUTUBE_DOWNLOAD_STARTED_EXAMPLE = {
-    "description": "YouTube download started",
-    "content": {
-        "application/json": {
-            "example": {
-                "status": "success",
-                "message": "YouTube download started",
-                "data": {
-                    "task_id": "yt_task_123",
-                    "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                    "playlist_id": "playlist_789",
-                    "status": "downloading",
-                    "estimated_time_seconds": 30
-                },
-                "timestamp": 1704067200000,
-                "server_seq": 12355
-            }
-        }
-    }
-}
-
-# ============================================================================
 # ERROR EXAMPLES
 # ============================================================================
 

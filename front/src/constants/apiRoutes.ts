@@ -56,15 +56,11 @@ export const API_ROUTES = {
   NFC_SCAN: '/api/nfc/scan',
   NFC_CANCEL_SESSION: (sessionId: string) => `/api/nfc/session/${sessionId}`,
 
-  // YouTube
-  YOUTUBE_SEARCH: '/api/youtube/search',
-  YOUTUBE_DOWNLOAD: '/api/youtube/download',
-  YOUTUBE_STATUS: (taskId: string) => `/api/youtube/status/${taskId}`,
-
   // System
   SYSTEM_INFO: '/api/system/info',
   SYSTEM_LOGS: '/api/system/logs',
   SYSTEM_RESTART: '/api/system/restart',
+  SYSTEM_HARDWARE_STATUS: '/api/system/hardware_status',
   VOLUME: '/api/player/volume',
   HEALTH: '/api/health',
   PLAYBACK_STATUS: '/api/playback/status',
@@ -120,11 +116,6 @@ export const SOCKET_EVENTS = {
   NFC_STATUS: 'nfc_status',
   NFC_ASSOCIATION_STATE: 'nfc_association_state',
 
-  // YouTube events
-  YOUTUBE_PROGRESS: 'youtube:progress',
-  YOUTUBE_COMPLETE: 'youtube:complete',
-  YOUTUBE_ERROR: 'youtube:error',
-  
   // Health monitoring (implemented)
   PONG: 'client_pong'
 } as const

@@ -4,7 +4,6 @@ import { playerApi } from '@/services/api/playerApi'
 import { uploadApi } from '@/services/api/uploadApi'
 import { systemApi } from '@/services/api/systemApi'
 import { nfcApi } from '@/services/api/nfcApi'
-import { youtubeApi } from '@/services/api/youtubeApi'
 
 vi.mock('@/utils/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
@@ -132,17 +131,5 @@ describe('services api modules', () => {
 
     ;(apiClient.get as any).mockResolvedValue({ status: 200, data: { status: 'success', data: { reader_available: true, scanning: false } } })
     expect(await nfcApi.getNfcStatus()).toEqual({ reader_available: true, scanning: false })
-  })
-
-  it('youtubeApi flows', async () => {
-    const { apiClient } = await import('@/services/api/apiClient')
-    ;(apiClient.get as any).mockResolvedValue({ status: 200, data: { status: 'success', data: { results: [1] } } })
-    expect(await youtubeApi.searchVideos('x')).toEqual({ results: [1] })
-
-    ;(apiClient.post as any).mockResolvedValue({ status: 200, data: { status: 'success', data: { task_id: 'id' } } })
-    expect(await youtubeApi.downloadVideo('u', 'p')).toEqual({ task_id: 'id' })
-
-    ;(apiClient.get as any).mockResolvedValue({ status: 200, data: { status: 'success', data: { task_id: 'id', status: 'ok' } } })
-    expect(await youtubeApi.getDownloadStatus('id')).toEqual({ task_id: 'id', status: 'ok' })
   })
 })

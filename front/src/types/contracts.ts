@@ -221,30 +221,6 @@ export interface NFCAssociation {
   created_at: string;
 }
 
-// YouTube progress model  
-export interface YouTubeProgress {
-  task_id: string;
-  status: 'pending' | 'downloading' | 'processing' | 'completed' | 'error';
-  progress_percent: number;
-  current_step: string;
-  estimated_time_remaining?: number;
-  error_message?: string;
-  result?: {
-    track: Track;
-    playlist_id: string;
-  };
-}
-
-// YouTube search result model
-export interface YouTubeResult {
-  id: string;
-  title: string;
-  duration_ms: number;
-  thumbnail_url: string;
-  channel: string;
-  view_count: number;
-}
-
 /**
  * Paginated Playlists Index Types
  * These types support the optimized paginated index feature.

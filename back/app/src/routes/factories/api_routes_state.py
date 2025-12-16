@@ -18,7 +18,6 @@ from app.src.routes.factories.playlist_routes_ddd import PlaylistRoutesDDD
 from app.src.routes.factories.system_routes import SystemRoutes
 from app.src.routes.factories.upload_routes import UploadRoutes
 from app.src.routes.factories.web_routes import WebRoutes
-from app.src.routes.factories.youtube_routes import YouTubeRoutes
 from app.src.services.error.unified_error_decorator import handle_errors
 
 logger = get_logger(__name__)
@@ -79,7 +78,6 @@ class APIRoutesState:
         self.nfc_routes = UnifiedNFCRoutes(app, socketio)
         # NFC state management is handled internally by UnifiedNFCRoutes
         logger.info("Domain-driven NFC routes initialized")
-        self.youtube_routes = YouTubeRoutes(app, socketio)
         # NFC routes now unified - removed nfc_associate_routes
         self.upload_routes = UploadRoutes(app, socketio)
         self.system_routes = SystemRoutes(app)
@@ -99,9 +97,6 @@ class APIRoutesState:
         if self.nfc_routes:
             self.nfc_routes.register_with_app()
         logger.debug("NFC routes registered")
-        logger.info("🔧 Registering YouTube routes...")
-        self.youtube_routes.register()
-        logger.debug("YouTube routes registered")
         logger.info("🔧 Registering upload routes...")
         self.upload_routes.register_with_app()
         logger.debug("Upload routes registered")

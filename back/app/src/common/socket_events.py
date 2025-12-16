@@ -67,11 +67,6 @@ class SocketEventType(str, Enum):
     NFC_STATUS = "nfc_status"
     NFC_ASSOCIATION_STATE = "nfc_association_state"
 
-    # YouTube events
-    YOUTUBE_PROGRESS = "youtube:progress"
-    YOUTUBE_COMPLETE = "youtube:complete"
-    YOUTUBE_ERROR = "youtube:error"
-
 
 class StateEventType(Enum):
     """Types of state events that can be broadcast per API Contract v2.0."""
@@ -215,19 +210,6 @@ class NFCAssociationStatePayload(BaseModel):
     server_seq: int = Field(..., description="Server sequence number")
 
 
-class YouTubeProgressPayload(BaseModel):
-    """Payload for YouTube download progress events."""
-
-    task_id: str = Field(..., description="Download task ID")
-    status: str = Field(..., description="Download status")
-    progress_percent: float | None = Field(
-        None, ge=0.0, le=100.0, description="Progress percentage"
-    )
-    current_step: str | None = Field(None, description="Current processing step")
-    estimated_time_remaining: int | None = Field(None, description="ETA in seconds")
-    error_message: str | None = Field(None, description="Error message if failed")
-
-
 class SocketEventBuilder:
     """
     Builder class for creating standardized Socket.IO events.
@@ -352,9 +334,6 @@ EVENT_ROOM_MAPPING = {
     SocketEventType.UPLOAD_PROGRESS: "playlist:{playlist_id}",
     SocketEventType.UPLOAD_COMPLETE: "playlist:{playlist_id}",
     SocketEventType.UPLOAD_ERROR: "playlist:{playlist_id}",
-    SocketEventType.YOUTUBE_PROGRESS: "playlists",
-    SocketEventType.YOUTUBE_COMPLETE: "playlists",
-    SocketEventType.YOUTUBE_ERROR: "playlists",
 }
 
 

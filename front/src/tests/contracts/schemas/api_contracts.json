@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TheOpenMusicBox API Contracts",
   "description": "Complete contract definitions for all API endpoints based on DDD implementation analysis",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "unified_response_format": {
     "description": "All API responses follow UnifiedResponseService format",
     "schema": {
@@ -508,71 +508,57 @@
               "restart_scheduled": {"type": "boolean"}
             }
           }
-        }
-      }
-    },
-    "youtube_api": {
-      "base_path": "/api/youtube",
-      "routes": {
-        "POST /download": {
-          "description": "Download from YouTube URL",
-          "request_body": {
-            "type": "object",
-            "properties": {
-              "url": {"type": "string", "format": "uri"},
-              "playlist_id": {"type": "string"},
-              "quality": {"type": "string"},
-              "client_op_id": {"type": "string"}
-            },
-            "required": ["url", "playlist_id"]
-          },
-          "response_data": {
-            "type": "object",
-            "properties": {
-              "task_id": {"type": "string"},
-              "status": {"type": "string"}
-            }
-          }
         },
-        "GET /status/{task_id}": {
-          "description": "Get download progress",
-          "path_parameters": {
-            "task_id": {"type": "string"}
-          },
+        "GET /hardware_status": {
+          "description": "Get detailed hardware status for all subsystems",
           "response_data": {
             "type": "object",
             "properties": {
-              "task_id": {"type": "string"},
-              "status": {"type": "string"},
-              "progress_percent": {"type": "number"},
-              "current_step": {"type": "string"}
-            }
-          }
-        },
-        "GET /search": {
-          "description": "Search YouTube videos",
-          "query_parameters": {
-            "query": {"type": "string"},
-            "max_results": {"type": "integer", "default": 10}
-          },
-          "response_data": {
-            "type": "object",
-            "properties": {
-              "results": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "id": {"type": "string"},
-                    "title": {"type": "string"},
-                    "url": {"type": "string"},
-                    "duration": {"type": "string"},
-                    "thumbnail": {"type": "string"}
-                  }
-                }
+              "audio": {
+                "type": "object",
+                "properties": {
+                  "available": {"type": "boolean"},
+                  "status": {"type": "string", "enum": ["operational", "degraded", "error", "unknown"]},
+                  "device": {"type": ["string", "null"]},
+                  "initialized": {"type": "boolean"},
+                  "error": {"type": ["string", "null"]},
+                  "backend_type": {"type": ["string", "null"]}
+                },
+                "required": ["available", "status"]
               },
-              "total_results": {"type": "integer"}
-            }
+              "nfc": {
+                "type": "object",
+                "properties": {
+                  "available": {"type": "boolean"},
+                  "status": {"type": "string", "enum": ["operational", "degraded", "error", "unknown"]},
+                  "error": {"type": ["string", "null"]}
+                },
+                "required": ["available", "status"]
+              },
+              "led": {
+                "type": "object",
+                "properties": {
+                  "available": {"type": "boolean"},
+                  "status": {"type": "string", "enum": ["operational", "degraded", "error", "unknown"]},
+                  "error": {"type": ["string", "null"]}
+                },
+                "required": ["available", "status"]
+              },
+              "database": {
+                "type": "object",
+                "properties": {
+                  "available": {"type": "boolean"},
+                  "status": {"type": "string", "enum": ["operational", "degraded", "error", "unknown"]},
+                  "error": {"type": ["string", "null"]}
+                },
+                "required": ["available", "status"]
+              },
+              "overall_health": {
+                "type": "string",
+                "enum": ["healthy", "degraded", "critical", "unknown"]
+              }
+            },
+            "required": ["audio", "nfc", "led", "database", "overall_health"]
           }
         }
       }

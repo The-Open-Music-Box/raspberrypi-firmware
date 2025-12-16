@@ -24,7 +24,6 @@ import type {
   Playlist,
   TrackProgress,
   UploadProgress,
-  YouTubeProgress,
   NFCAssociation
 } from '../types'
 
@@ -64,9 +63,6 @@ export type SocketEventType =
   | 'upload:error'
   | 'nfc_status'
   | 'nfc_association_state'
-  | 'youtube:progress'
-  | 'youtube:complete'
-  | 'youtube:error'
 
 /**
  * Event handler type definitions
@@ -96,9 +92,6 @@ export interface EventHandlers {
   'upload:error': (data: { playlist_id: string; session_id: string; error: string }) => void
   'nfc_status': (data: unknown) => void
   'nfc_association_state': (data: unknown) => void
-  'youtube:progress': (data: YouTubeProgress) => void
-  'youtube:complete': (data: { task_id: string; track: any; playlist_id: string }) => void
-  'youtube:error': (data: { task_id: string; message: string }) => void
 }
 
 /**
@@ -346,10 +339,7 @@ export class SocketService {
       'upload:complete',
       'upload:error',
       'nfc_status',
-      'nfc_association_state',
-      'youtube:progress',
-      'youtube:complete',
-      'youtube:error'
+      'nfc_association_state'
     ]
 
     stateEvents.forEach(eventType => {
@@ -506,19 +496,6 @@ export class SocketService {
 
     socketIO.on('upload:error', (data) => {
       this.emitLocal('upload:error', data)
-    })
-
-    // YouTube events
-    socketIO.on('youtube:progress', (data) => {
-      this.emitLocal('youtube:progress', data)
-    })
-
-    socketIO.on('youtube:complete', (data) => {
-      this.emitLocal('youtube:complete', data)
-    })
-
-    socketIO.on('youtube:error', (data) => {
-      this.emitLocal('youtube:error', data)
     })
 
     // NFC events

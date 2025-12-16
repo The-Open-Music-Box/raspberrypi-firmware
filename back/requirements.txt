@@ -27,8 +27,5 @@ setuptools<81
 # Reactive extensions
 rx>=3.2.0
 
-# YouTube downloader
-yt-dlp>=2023.10.0
-
 # Werkzeug utilities
 werkzeug>=3.0.0

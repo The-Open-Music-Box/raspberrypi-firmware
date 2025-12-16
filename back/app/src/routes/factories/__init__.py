@@ -4,13 +4,12 @@
 
 """Routes module initialization for TheOpenMusicBox backend.
 
-Exposes the main route classes for HTTP endpoints including web routes,
-NFC management routes, and YouTube integration routes. Provides a centralized
-import point for all route handlers.
+Exposes the main route classes for HTTP endpoints including web routes
+and NFC management routes. Provides a centralized import point for all
+route handlers.
 """
 
 from .nfc_unified_routes import UnifiedNFCRoutes as NFCRoutes
 from .web_routes import WebRoutes
-from .youtube_routes import YouTubeRoutes
 
-__all__ = ["NFCRoutes", "WebRoutes", "YouTubeRoutes"]
+__all__ = ["NFCRoutes", "WebRoutes"]

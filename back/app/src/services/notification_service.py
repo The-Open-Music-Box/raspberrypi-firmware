@@ -4,9 +4,9 @@
 
 """Notification service for Socket.IO event broadcasting.
 
-Provides notification classes for download progress events, playback status
-updates, and track progress monitoring. Includes singleton pattern implementation
-for centralized event management and Socket.IO integration.
+Provides notification classes for playback status updates and track progress
+monitoring. Includes singleton pattern implementation for centralized event
+management and Socket.IO integration.
 """
 
 import logging
@@ -15,38 +15,6 @@ from typing import Any
 from app.src.services.error.unified_error_decorator import handle_service_errors
 
 logger = logging.getLogger(__name__)
-
-
-class DownloadNotifier:
-    """Notifier for download progress events via Socket.IO."""
-
-    def __init__(self, socketio, download_id: str):
-        self.socketio = socketio
-        self.download_id = download_id
-
-    @handle_service_errors("notification")
-    async def notify(self, status: str, **data):
-        """Emit canonical YouTube download events.
-
-        Events: `youtube:progress` during lifecycle, `youtube:complete` on success,
-        `youtube:error` on failure. Always includes `task_id`.
-        """
-        canonical = {"task_id": self.download_id, "status": status, **data}
-        if not self.socketio:
-            return
-        if status.lower() in ("pending", "downloading", "processing", "saving_playlist"):
-            await self.socketio.emit("youtube:progress", canonical)
-        elif status.lower() == "complete":
-            # Emit complete event with playlist info when available
-            await self.socketio.emit("youtube:complete", canonical)
-        elif status.lower() == "error":
-            message = data.get("message") or data.get("error") or "Download error"
-            await self.socketio.emit(
-                "youtube:error", {"task_id": self.download_id, "message": message}
-            )
-        else:
-            # Default to progress for unrecognized statuses
-            await self.socketio.emit("youtube:progress", canonical)
 
 
 class PlaybackEvent:

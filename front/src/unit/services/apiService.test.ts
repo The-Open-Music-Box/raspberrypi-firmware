@@ -51,14 +51,6 @@ vi.mock('@/services/api/nfcApi', () => ({
   }
 }))
 
-vi.mock('@/services/api/youtubeApi', () => ({
-  youtubeApi: {
-    searchVideos: vi.fn(),
-    downloadVideo: vi.fn(),
-    getDownloadStatus: vi.fn()
-  }
-}))
-
 // Mock apiClient for fallbacks
 vi.mock('@/services/api/apiClient', async (orig) => {
   const actual = await (orig as any)()
