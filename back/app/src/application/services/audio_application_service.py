@@ -69,7 +69,7 @@ class AudioApplicationService:
             tracks = []
             for track_data in playlist_data["tracks"]:
                 track = Track(
-                    track_number=track_data.get("track_number", 1),
+                    number=track_data.get("number", 1),
                     title=track_data.get("title", "Unknown"),
                     filename=track_data.get("filename", ""),
                     file_path=track_data.get("file_path", ""),

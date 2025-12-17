@@ -53,9 +53,9 @@ class TestPlaylistOperationsService:
         mock_playlist_data = {
             "id": playlist_id,
             "tracks": [
-                {"id": "t1", "track_number": 1, "title": "Track 1", "filename": "track1.mp3", "file_path": "/path/t1"},
-                {"id": "t2", "track_number": 2, "title": "Track 2", "filename": "track2.mp3", "file_path": "/path/t2"},
-                {"id": "t3", "track_number": 3, "title": "Track 3", "filename": "track3.mp3", "file_path": "/path/t3"},
+                {"id": "t1", "number": 1, "title": "Track 1", "filename": "track1.mp3", "file_path": "/path/t1"},
+                {"id": "t2", "number": 2, "title": "Track 2", "filename": "track2.mp3", "file_path": "/path/t2"},
+                {"id": "t3", "number": 3, "title": "Track 3", "filename": "track3.mp3", "file_path": "/path/t3"},
             ]
         }
         mock_repository_adapter.get_playlist_by_id.return_value = mock_playlist_data
@@ -106,7 +106,7 @@ class TestPlaylistOperationsService:
         mock_playlist_data = {
             "id": playlist_id,
             "tracks": [
-                {"id": "t1", "track_number": 1, "title": "Track 1", "filename": "track1.mp3", "file_path": "/path/t1"},
+                {"id": "t1", "number": 1, "title": "Track 1", "filename": "track1.mp3", "file_path": "/path/t1"},
             ]
         }
         mock_repository_adapter.get_playlist_by_id.return_value = mock_playlist_data
@@ -135,9 +135,9 @@ class TestPlaylistOperationsService:
         track_numbers = [1, 3]
         mock_playlist_data = {
             "tracks": [
-                {"track_number": 1, "title": "Track 1"},
-                {"track_number": 2, "title": "Track 2"},
-                {"track_number": 3, "title": "Track 3"},
+                {"number": 1, "title": "Track 1"},
+                {"number": 2, "title": "Track 2"},
+                {"number": 3, "title": "Track 3"},
             ]
         }
         mock_repository_adapter.get_playlist_by_id.return_value = mock_playlist_data
@@ -153,7 +153,7 @@ class TestPlaylistOperationsService:
         call_args = mock_repository_adapter.replace_tracks.call_args
         remaining_tracks = call_args[0][1]
         assert len(remaining_tracks) == 1
-        assert remaining_tracks[0]["track_number"] == 2
+        assert remaining_tracks[0]["number"] == 2
 
     @pytest.mark.asyncio
     async def test_delete_tracks_playlist_not_found(self, operations_service, mock_repository_adapter):
@@ -336,9 +336,9 @@ class TestPlaylistOperationsService:
         mock_playlist_data = {
             "id": playlist_id,
             "tracks": [
-                {"track_number": 1, "title": "Track 1"},
-                {"track_number": 2, "title": "Track 2"},
-                {"track_number": 3, "title": "Track 3"},
+                {"number": 1, "title": "Track 1"},
+                {"number": 2, "title": "Track 2"},
+                {"number": 3, "title": "Track 3"},
             ]
         }
         mock_playlist_app_service.get_playlist_use_case.return_value = {
@@ -362,9 +362,9 @@ class TestPlaylistOperationsService:
         mock_playlist_data = {
             "id": playlist_id,
             "tracks": [
-                {"track_number": 1, "title": "Track 1"},
-                {"track_number": 3, "title": "Track 3"},  # Missing track 2
-                {"track_number": 5, "title": "Track 5"},  # Wrong number
+                {"number": 1, "title": "Track 1"},
+                {"number": 3, "title": "Track 3"},  # Missing track 2
+                {"number": 5, "title": "Track 5"},  # Wrong number
             ]
         }
         mock_playlist_app_service.get_playlist_use_case.return_value = {

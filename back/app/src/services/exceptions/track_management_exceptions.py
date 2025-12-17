@@ -16,7 +16,7 @@ class TrackManagementError(Exception):
     def __init__(self, message: str, playlist_id: str | None = None, track_numbers: list | None = None):
         super().__init__(message)
         self.playlist_id = playlist_id
-        self.track_numbers = track_numbers
+        self.numbers = track_numbers
         self.message = message
 
 
@@ -67,4 +67,4 @@ class TrackValidationError(TrackManagementError):
 
     def __init__(self, message: str, playlist_id: str | None = None, track_number: int | None = None):
         super().__init__(message, playlist_id=playlist_id)
-        self.track_number = track_number
+        self.number = track_number

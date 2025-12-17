@@ -146,6 +146,7 @@ class TestNfcAssociationToPlaybackE2E:
         playlist_id = str(uuid.uuid4())
         test_nfc_tag = uuid.uuid4().hex[:12]  # Hexadecimal format for TagIdentifier validation
 
+        # Per OpenAPI contract v3.3.2, Track uses 'number' field
         playlist = Playlist(
             id=playlist_id,
             title=f"Test Music Playlist {uuid.uuid4().hex[:8]}",
@@ -154,7 +155,7 @@ class TestNfcAssociationToPlaybackE2E:
             tracks=[
                 Track(
                     id=str(uuid.uuid4()),
-                    track_number=1,
+                    number=1,
                     title="Song One",
                     filename="song1.mp3",
                     file_path="/fake/path/song1.mp3",
@@ -162,7 +163,7 @@ class TestNfcAssociationToPlaybackE2E:
                 ),
                 Track(
                     id=str(uuid.uuid4()),
-                    track_number=2,
+                    number=2,
                     title="Song Two",
                     filename="song2.mp3",
                     file_path="/fake/path/song2.mp3",

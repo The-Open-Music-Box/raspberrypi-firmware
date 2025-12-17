@@ -189,13 +189,13 @@ class UnifiedValidationService:
             )
 
         # Validate track number
-        track_number = data.get("track_number", 0)
+        track_number = data.get("number", 0)
         if not isinstance(track_number, int) or track_number < 0:
             errors.append(
-                {"field": "track_number", "message": "Track number must be a non-negative integer"}
+                {"field": "number", "message": "Track number must be a non-negative integer"}
             )
         elif track_number > 9999:
-            errors.append({"field": "track_number", "message": "Track number too high (max 9999)"})
+            errors.append({"field": "number", "message": "Track number too high (max 9999)"})
 
         # Validate filename
         filename = data.get("filename", "").strip()

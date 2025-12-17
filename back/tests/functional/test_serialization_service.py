@@ -28,7 +28,7 @@ class TestUnifiedSerializationService:
             "tracks": [
                 {
                     "id": "track-1",
-                    "track_number": 1,
+                    "number": 1,
                     "title": "Track 1",
                     "filename": "track1.mp3",
                     "duration_ms": None,  # This should not cause TypeError
@@ -37,7 +37,7 @@ class TestUnifiedSerializationService:
                 },
                 {
                     "id": "track-2",
-                    "track_number": 2,
+                    "number": 2,
                     "title": "Track 2",
                     "filename": "track2.mp3",
                     "duration_ms": 120000,  # Valid duration
@@ -46,7 +46,7 @@ class TestUnifiedSerializationService:
                 },
                 {
                     "id": "track-3",
-                    "track_number": 3,
+                    "number": 3,
                     "title": "Track 3",
                     "filename": "track3.mp3",
                     "duration_ms": 0,  # Zero duration
@@ -87,7 +87,7 @@ class TestUnifiedSerializationService:
         """Test that track serialization handles None values correctly."""
         track_data = {
             "id": "track-test",
-            "track_number": 1,
+            "number": 1,
             "title": "Test Track",
             "filename": "test.mp3",
             "duration_ms": None,  # Should be converted to 0
@@ -115,7 +115,7 @@ class TestUnifiedSerializationService:
             "tracks": [
                 {
                     "id": "track-1",
-                    "track_number": 1,
+                    "number": 1,
                     "title": "Test Track",
                     "duration_ms": 180000
                 }

@@ -74,7 +74,7 @@ class PlaylistOperationsService:
             tracks = []
             for track_dict in playlist_dict.get("tracks", []):
                 track = Track(
-                    track_number=track_dict.get("track_number", 0),
+                    number=track_dict.get("number", 0),
                     title=track_dict.get("title", ""),
                     filename=track_dict.get("filename", ""),
                     file_path=track_dict.get("file_path", ""),
@@ -90,7 +90,7 @@ class PlaylistOperationsService:
             command = ReorderingCommand(
                 playlist_id=playlist_id,
                 strategy=ReorderingStrategy.BULK_REORDER,
-                track_numbers=track_order,
+                numbers=track_order,
             )
             reorder_result = reordering_service.execute_reordering(command, tracks)
 
@@ -102,7 +102,7 @@ class PlaylistOperationsService:
                         (orig_track for orig_track in tracks if orig_track.id == new_track.id), None
                     )
                     if original_track:
-                        old_to_new_mapping[original_track.track_number] = new_track.track_number
+                        old_to_new_mapping[original_track.number] = new_track.number
 
                 success = await self._repository_adapter.update_track_numbers(playlist_id, old_to_new_mapping)
                 if success:
@@ -143,7 +143,7 @@ class PlaylistOperationsService:
             remaining_tracks = [
                 track
                 for track in playlist.get("tracks", [])
-                if track.get("track_number") not in track_numbers
+                if track.get("number") not in track_numbers
             ]
 
             # Replace tracks with remaining ones in database
@@ -339,7 +339,7 @@ class PlaylistOperationsService:
 
             # Check track numbering integrity
             tracks = playlist_data.get("tracks", [])
-            track_numbers = [track.get("track_number", 0) for track in tracks]
+            track_numbers = [track.get("number", 0) for track in tracks]
             expected_numbers = list(range(1, len(tracks) + 1))
 
             if sorted(track_numbers) != expected_numbers:

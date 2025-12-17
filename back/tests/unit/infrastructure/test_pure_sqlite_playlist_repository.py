@@ -36,11 +36,13 @@ class TestPureSQLitePlaylistRepository:
     async def test_get_tracks_by_playlist_success(self, repository, mock_db_service):
         """Test getting tracks by playlist ID."""
         playlist_id = 'playlist-1'
+        # Mock data uses database column name 'track_number'
+        # The repository maps this to domain model's 'number' field
         track_rows = [
             {
                 'id': 'track-1',
                 'playlist_id': playlist_id,
-                'track_number': 1,
+                'track_number': 1,  # Database column name
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
@@ -51,7 +53,7 @@ class TestPureSQLitePlaylistRepository:
             {
                 'id': 'track-2',
                 'playlist_id': playlist_id,
-                'track_number': 2,
+                'track_number': 2,  # Database column name
                 'title': 'Track 2',
                 'filename': 'track2.mp3',
                 'file_path': '/path/track2.mp3',
@@ -72,11 +74,11 @@ class TestPureSQLitePlaylistRepository:
         # Verify track data
         assert result[0].id == 'track-1'
         assert result[0].title == 'Track 1'
-        assert result[0].track_number == 1
+        assert result[0].number == 1
 
         assert result[1].id == 'track-2'
         assert result[1].title == 'Track 2'
-        assert result[1].track_number == 2
+        assert result[1].number == 2
 
         # Verify database query
         mock_db_service.execute_query.assert_called_once()
@@ -99,11 +101,12 @@ class TestPureSQLitePlaylistRepository:
     async def test_get_tracks_by_playlist_handles_missing_fields(self, repository, mock_db_service):
         """Test getting tracks handles missing optional fields gracefully."""
         playlist_id = 'playlist-1'
+        # Mock data uses database column name 'track_number'
         track_rows = [
             {
                 'id': 'track-1',
                 'playlist_id': playlist_id,
-                'track_number': 1,
+                'track_number': 1,  # Database column name
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',
@@ -171,7 +174,7 @@ class TestPureSQLitePlaylistRepository:
         """Test that Track objects work with both attribute and dictionary access patterns."""
         track = Track(
             id='track-1',
-            track_number=1,
+            number=1,
             title='Test Track',
             filename='test.mp3',
             file_path='/path/test.mp3',
@@ -180,12 +183,12 @@ class TestPureSQLitePlaylistRepository:
 
         # Test attribute access
         assert track.id == 'track-1'
-        assert track.track_number == 1
+        assert track.number == 1
         assert track.title == 'Test Track'
 
         # Test hasattr works
         assert hasattr(track, 'id')
-        assert hasattr(track, 'track_number')
+        assert hasattr(track, 'number')
         assert hasattr(track, 'title')
 
         # Verify that track is NOT subscriptable (as expected)
@@ -208,11 +211,12 @@ class TestPureSQLitePlaylistRepository:
             'path': '/path/to/playlist',
             'type': 'album'
         }
+        # Mock data uses database column name 'track_number'
         track_rows = [
             {
                 'id': 'track-1',
                 'playlist_id': 'playlist-1',
-                'track_number': 1,
+                'track_number': 1,  # Database column name
                 'title': 'Track 1',
                 'filename': 'track1.mp3',
                 'file_path': '/path/track1.mp3',

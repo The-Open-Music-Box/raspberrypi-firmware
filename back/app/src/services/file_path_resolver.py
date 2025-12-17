@@ -47,7 +47,7 @@ class FilePathResolver:
             Path to the track file if found, None otherwise
         """
         if not hasattr(track, "filename") or not track.filename:
-            logger.warning(f"Track {track.track_number} has no filename")
+            logger.warning(f"Track {track.number} has no filename")
             return None
 
         possible_paths = self._generate_possible_paths(track, playlist_title)

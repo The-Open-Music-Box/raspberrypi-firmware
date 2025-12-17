@@ -415,7 +415,7 @@ class PlaylistService(BaseDomainService):
                 track_data = {
                     'id': str(uuid.uuid4()),
                     'playlist_id': playlist_id,
-                    'track_number': idx,
+                    'number': idx,
                     'title': audio_file.stem,
                     'filename': audio_file.name,
                     'file_path': str(audio_file),

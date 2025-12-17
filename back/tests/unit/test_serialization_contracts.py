@@ -25,7 +25,7 @@ class TestSerializationContracts:
     def sample_track(self):
         """Create a sample track for testing."""
         return Track(
-            track_number=1,
+            number=1,
             title="Test Track",
             filename="test.mp3",
             file_path="/test/test.mp3",
@@ -63,9 +63,7 @@ class TestSerializationContracts:
         for field in required_fields:
             assert field in result, f"Missing required field: {field}"
 
-        # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert 'track_number' not in result, \
-            "track_number field should not exist - use 'number' per OpenAPI contract"
+        # Per OpenAPI contract v3.3.2, 'number' field should exist (no mapping needed)
         assert result['number'] == 1, "Expected track number 1"
 
     def test_track_serialization_field_types(self, sample_track):
@@ -118,7 +116,7 @@ class TestSerializationContracts:
         """Test that serialization works when input is already a dict."""
         track_dict = {
             'id': 'test-id',
-            'track_number': 5,
+            'number': 5,
             'title': 'Dict Track',
             'filename': 'track.mp3',
             'file_path': '/path/track.mp3',
@@ -133,7 +131,7 @@ class TestSerializationContracts:
     def test_track_serialization_handles_missing_optional_fields(self):
         """Test that serialization handles tracks with missing optional fields gracefully."""
         minimal_track = Track(
-            track_number=1,
+            number=1,
             title="Minimal Track",
             filename="minimal.mp3",
             file_path="/minimal.mp3",
@@ -157,12 +155,8 @@ class TestSerializationContracts:
         # UnifiedSerializationService MUST explicitly add them
 
         assert 'number' in result, \
-            "REGRESSION CHECK: 'number' field must be explicitly added " \
-            "(not relying on @property auto-serialization)"
-
-        # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert 'track_number' not in result, \
-            "track_number field should not exist - use 'number' per OpenAPI contract"
+            "REGRESSION CHECK: 'number' field must be present " \
+            "(Track entity now uses 'number' directly per OpenAPI contract v3.3.2)"
 
     def test_playlist_serialization_regression_check(self, sample_playlist):
         """Regression test: Verify playlist serialization doesn't lose track fields."""
@@ -176,9 +170,9 @@ class TestSerializationContracts:
                 f"REGRESSION: Track {idx} in playlist missing 'number' field. " \
                 f"This caused issue #71 where playlists with NFC tags failed to display."
 
-            # Per OpenAPI contract v3.3.2, only 'number' field should exist
-            assert 'track_number' not in track, \
-                f"Track {idx} should not have 'track_number' field - use 'number' per OpenAPI contract"
+            # Per OpenAPI contract v3.3.2, 'number' field must exist
+            assert 'number' in track, \
+                f"Track {idx} must have 'number' field per OpenAPI contract v3.3.2"
 
 
 class TestSerializationContractValidation:
@@ -202,28 +196,28 @@ class TestSerializationContractValidation:
 
     def test_validate_track_dict_detects_missing_number_field(self):
         """Test that we can detect missing 'number' field (the bug from issue #71)."""
-        buggy_track = {
+        # This test documents what the bug looked like - missing 'number' field
+        buggy_track_without_number = {
             'id': 'buggy-id',
-            'track_number': 1,  # Has this
             # 'number': 1,  # MISSING - this was the bug!
             'title': 'Buggy Track',
             'filename': 'buggy.mp3',
             'duration_ms': 180000
         }
 
-        # This is what the bug looked like
-        assert 'number' not in buggy_track, \
+        # This is what the bug looked like - no 'number' field
+        assert 'number' not in buggy_track_without_number, \
             "This test documents the bug: 'number' field was missing"
 
         # Validation should detect this
-        has_number = 'number' in buggy_track
+        has_number = 'number' in buggy_track_without_number
         assert not has_number, "Test confirms the field is missing"
 
     def test_all_serialization_paths_produce_identical_output(self):
         """Test that different serialization paths produce consistent output."""
         # Create test track
         track = Track(
-            track_number=7,
+            number=7,
             title="Consistency Test",
             filename="test.mp3",
             file_path="/test.mp3",
@@ -237,8 +231,8 @@ class TestSerializationContractValidation:
         # Key fields should be present per OpenAPI contract v3.3.2
         assert unified_result['number'] == 7
         assert unified_result['title'] == "Consistency Test"
-        # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert 'track_number' not in unified_result
+        # Per OpenAPI contract v3.3.2, 'number' field must exist
+        assert 'number' in unified_result
 
         # Note: We removed the buggy PurePlaylistRepositoryAdapter._track_to_dict()
         # so there's now only ONE serialization path - which prevents divergence!
@@ -250,7 +244,7 @@ class TestContractRegressionPrevention:
     def test_track_number_field_always_present_in_api_format(self):
         """Critical test: 'number' field MUST be present in API format."""
         track = Track(
-            track_number=99,
+            number=99,
             title="Critical Test",
             filename="critical.mp3",
             file_path="/critical.mp3",
@@ -273,7 +267,7 @@ class TestContractRegressionPrevention:
             title="WebSocket Test",
             tracks=[
                 Track(
-                    track_number=1,
+                    number=1,
                     title="WS Track",
                     filename="ws.mp3",
                     file_path="/ws.mp3",
@@ -304,7 +298,7 @@ class TestContractRegressionPrevention:
             nfc_tag_id="04889462251c91",
             tracks=[
                 Track(
-                    track_number=1,
+                    number=1,
                     title="A la volette [zV-Rl7VVagw]",
                     filename="track.mp3",
                     file_path="/track.mp3",

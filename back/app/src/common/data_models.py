@@ -91,7 +91,7 @@ class TrackModel(TimestampedModel):
     # Metadata fields
     artist: str | None = Field(None, description="Track artist")
     album: str | None = Field(None, description="Track album")
-    track_number: int | None = Field(None, description="Track number in album")
+    number: int | None = Field(None, description="Track number in playlist - per OpenAPI contract v3.3.2")
 
     # Statistics
     play_count: int = Field(0, description="Number of times played")

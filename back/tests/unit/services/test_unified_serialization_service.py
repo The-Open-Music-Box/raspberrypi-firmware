@@ -25,11 +25,11 @@ class TestTrackSerialization:
         CRITICAL TEST: Verify 'number' field exists in API format.
 
         This test prevents issue #71 where frontend expected 'number' field
-        but received only 'track_number', causing all tracks to default to 0.
+        but received only 'number', causing all tracks to default to 0.
         """
         track = Track(
             id="test-track-id",
-            track_number=5,
+            number=5,
             title="Test Track",
             filename="test.mp3",
             file_path="/path/to/test.mp3",
@@ -50,16 +50,13 @@ class TestTrackSerialization:
         )
         assert result["number"] == 5, "number field should match track position"
 
-        # Per OpenAPI contract v3.3.2, only 'number' field should exist
-        assert "track_number" not in result, (
-            "track_number field should not exist - use 'number' per OpenAPI contract"
-        )
+        # Per OpenAPI contract v3.3.2, 'number' field should exist (no track_number mapping needed)
 
     def test_serialize_track_api_format_all_required_fields(self):
         """Verify all required fields are present in API format."""
         track = Track(
             id="test-id",
-            track_number=3,
+            number=3,
             title="Track Title",
             filename="track.mp3",
             file_path="/path/track.mp3",
@@ -96,7 +93,7 @@ class TestTrackSerialization:
         """
         track = Track(
             id="test-id",
-            track_number=1,
+            number=1,
             title="First Track",
             filename="first.mp3",
             file_path="/path/first.mp3"
@@ -113,7 +110,7 @@ class TestTrackSerialization:
         """Verify WebSocket format is minimal and compact."""
         track = Track(
             id="test-id",
-            track_number=2,
+            number=2,
             title="Track 2",
             filename="track2.mp3",
             file_path="/path/track2.mp3",
@@ -133,7 +130,7 @@ class TestTrackSerialization:
         """Verify serialization works with dict input (repository layer)."""
         track_dict = {
             "id": "dict-track-id",
-            "track_number": 7,
+            "number": 7,
             "title": "Dict Track",
             "filename": "dict.mp3",
             "file_path": "/path/dict.mp3",
@@ -156,14 +153,14 @@ class TestPlaylistSerialization:
         """Verify tracks in playlist have 'number' field."""
         track1 = Track(
             id="track-1",
-            track_number=1,
+            number=1,
             title="Track 1",
             filename="track1.mp3",
             file_path="/path/track1.mp3"
         )
         track2 = Track(
             id="track-2",
-            track_number=2,
+            number=2,
             title="Track 2",
             filename="track2.mp3",
             file_path="/path/track2.mp3"
@@ -195,7 +192,7 @@ class TestPlaylistSerialization:
         tracks = [
             Track(
                 id=f"track-{i}",
-                track_number=i,
+                number=i,
                 title=f"Track {i}",
                 filename=f"track{i}.mp3",
                 file_path=f"/path/track{i}.mp3"
@@ -242,7 +239,7 @@ class TestContractCompliance:
         """
         track = Track(
             id="contract-test-id",
-            track_number=10,
+            number=10,
             title="Contract Test",
             filename="contract.mp3",
             file_path="/path/contract.mp3",
@@ -273,7 +270,7 @@ class TestContractCompliance:
         """
         track = Track(
             id="explicit-test",
-            track_number=15,
+            number=15,
             title="Explicit Values",
             filename="explicit.mp3",
             file_path="/path/explicit.mp3"

@@ -430,12 +430,12 @@ class UnifiedBroadcastingService:
             if 'number' not in track:
                 contract_violations_detected = True
 
-                # Try to fix by using 'track_number' if available
-                if 'track_number' in track:
-                    track['number'] = track['track_number']
+                # Try to fix by using 'number' if available
+                if 'number' in track:
+                    track['number'] = track['number']
                     logger.warning(
                         f"CONTRACT VIOLATION FIXED: Track {idx} (ID: {track.get('id')}) "
-                        f"missing 'number' field, auto-fixed from 'track_number'={track['track_number']}. "
+                        f"missing 'number' field, auto-fixed from 'number'={track['number']}. "
                         f"This indicates a serialization bug (see issue #71). "
                         f"Track: {track.get('title', 'unknown')}"
                     )
@@ -443,21 +443,21 @@ class UnifiedBroadcastingService:
                     # Cannot fix - log critical error
                     logger.error(
                         f"CONTRACT VIOLATION CANNOT FIX: Track {idx} (ID: {track.get('id')}) "
-                        f"missing both 'number' and 'track_number' fields! "
+                        f"missing both 'number' and 'number' fields! "
                         f"Available fields: {', '.join(track.keys())}. "
                         f"Track: {track.get('title', 'unknown')}. "
                         f"This will cause frontend errors!"
                     )
 
-            # Verify 'number' and 'track_number' match if both present
-            if 'number' in track and 'track_number' in track:
-                if track['number'] != track['track_number']:
+            # Verify 'number' and 'number' match if both present
+            if 'number' in track and 'number' in track:
+                if track['number'] != track['number']:
                     logger.warning(
                         f"CONTRACT INCONSISTENCY: Track {idx} has mismatched fields: "
-                        f"number={track['number']} vs track_number={track['track_number']}. "
+                        f"number={track['number']} vs track_number={track['number']}. "
                         f"Using track_number as source of truth."
                     )
-                    track['number'] = track['track_number']
+                    track['number'] = track['number']
 
             fixed_tracks.append(track)
 

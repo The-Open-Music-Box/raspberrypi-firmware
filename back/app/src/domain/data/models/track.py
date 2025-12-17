@@ -16,7 +16,7 @@ class Track:
     and rules related to audio tracks.
 
     Attributes:
-        track_number: Position in the playlist (1-based) - aligned with frontend
+        number: Position in the playlist (1-based) - per OpenAPI contract v3.3.2
         title: Title of the track
         filename: Filename of the track
         file_path: String path to the track file - aligned with frontend
@@ -26,7 +26,7 @@ class Track:
         id: Optional unique identifier
     """
 
-    track_number: int  # Renamed from 'number' to align with frontend
+    number: int  # Position in playlist - per OpenAPI contract v3.3.2
     title: str
     filename: str
     file_path: str  # Changed from Path to string to align with frontend
@@ -34,18 +34,6 @@ class Track:
     artist: str | None = None
     album: str | None = None
     id: str | None = None
-
-    # Domain property aliases for API compatibility
-    @property
-    def number(self) -> int:
-        """API compatibility property for frontend integration."""
-        return self.track_number
-
-    @number.setter
-    def number(self, value: int) -> None:
-        """Setter for number property to support domain logic."""
-        # TODO: use this abstraction across the app instead of direct references
-        self.track_number = value
 
     @property
     def path(self) -> Path:
@@ -63,29 +51,29 @@ class Track:
         return self.path.exists()
 
     @classmethod
-    def from_file(cls, file_path: str, track_number: int = 1) -> "Track":
+    def from_file(cls, file_path: str, number: int = 1) -> "Track":
         """Domain factory method: Create a track from a file path.
 
         Args:
             file_path: Path to the audio file
-            track_number: Position in the playlist (default: 1)
+            number: Position in the playlist (default: 1)
 
         Returns:
             A new Track domain entity
         """
         path = Path(file_path)
         return cls(
-            track_number=track_number, title=path.stem, filename=path.name, file_path=str(path)
+            number=number, title=path.stem, filename=path.name, file_path=str(path)
         )
 
     def __str__(self) -> str:
         """Domain representation of the track."""
-        return f"{self.track_number}. {self.title}"
+        return f"{self.number}. {self.title}"
 
     def is_valid(self) -> bool:
         """Domain business rule: Check if track has valid data."""
         return (
-            self.track_number > 0
+            self.number > 0
             and bool(self.title.strip())
             and bool(self.filename.strip())
             and bool(self.file_path.strip())

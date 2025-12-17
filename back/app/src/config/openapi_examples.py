@@ -150,7 +150,7 @@ PLAYLIST_DETAIL_EXAMPLE = {
                             "name": "Song 1.mp3",
                             "artist": "Artist 1",
                             "duration_ms": 240000,
-                            "track_number": 1,
+                            "number": 1,
                             "file_path": "/music/playlists/playlist_123/Song 1.mp3"
                         },
                         {
@@ -158,7 +158,7 @@ PLAYLIST_DETAIL_EXAMPLE = {
                             "name": "Song 2.mp3",
                             "artist": "Artist 2",
                             "duration_ms": 210000,
-                            "track_number": 2,
+                            "number": 2,
                             "file_path": "/music/playlists/playlist_123/Song 2.mp3"
                         }
                     ],

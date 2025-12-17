@@ -148,7 +148,7 @@ class PlaylistTrackAPI(BaseAPIRoutes):
             try:
                 source_playlist_id = body.get("source_playlist_id")
                 target_playlist_id = body.get("target_playlist_id")
-                track_number = body.get("track_number")
+                track_number = body.get("number")
                 target_position = body.get("target_position")
                 client_op_id = body.get("client_op_id")
 
@@ -186,5 +186,5 @@ class PlaylistTrackAPI(BaseAPIRoutes):
                     client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
                     source_playlist_id=body.get("source_playlist_id") if isinstance(body, dict) else None,
                     target_playlist_id=body.get("target_playlist_id") if isinstance(body, dict) else None,
-                    track_number=body.get("track_number") if isinstance(body, dict) else None
+                    track_number=body.get("number") if isinstance(body, dict) else None
                 )

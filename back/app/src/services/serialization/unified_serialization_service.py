@@ -181,7 +181,7 @@ class UnifiedSerializationService:
                 track_data["number"] = track_data["track_number"]
         elif hasattr(track, "__dict__"):
             # Domain entity
-            # OpenAPI contract uses 'number', not 'track_number'
+            # OpenAPI contract uses 'number', not 'number'
             track_data = {
                 "id": getattr(track, "id", None),
                 "number": getattr(track, "number", 0),  # Fixed: use 'number' per OpenAPI contract
@@ -327,7 +327,7 @@ class UnifiedSerializationService:
                         )
                         state["active_track"] = active_track_data
                         state["active_track_id"] = active_track_data.get("id")
-                        state["active_track_number"] = active_track_data.get("track_number", current_track_index + 1)
+                        state["active_track_number"] = active_track_data.get("number", current_track_index + 1)
                         state["active_track_title"] = active_track_data.get("title", "")
                         state["duration_ms"] = active_track_data.get("duration_ms", 0)
             else:

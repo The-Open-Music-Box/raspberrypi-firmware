@@ -70,12 +70,12 @@ class TestPlaylistService:
         # Create Playlist entities
         playlist_entities = [
             Playlist(id="playlist-1", title="Test Playlist 1", tracks=[
-                Track(track_number=1, title="Track 1", filename="path1.mp3", file_path="/fake/path1.mp3", id="track-1"),
-                Track(track_number=2, title="Track 2", filename="path2.mp3", file_path="/fake/path2.mp3", id="track-2")
+                Track(number=1, title="Track 1", filename="path1.mp3", file_path="/fake/path1.mp3", id="track-1"),
+                Track(number=2, title="Track 2", filename="path2.mp3", file_path="/fake/path2.mp3", id="track-2")
             ]),
             Playlist(id="playlist-2", title="Test Playlist 2", tracks=[
-                Track(track_number=1, title="Track 3", filename="path3.mp3", file_path="/fake/path3.mp3", id="track-3"),
-                Track(track_number=2, title="Track 4", filename="path4.mp3", file_path="/fake/path4.mp3", id="track-4")
+                Track(number=1, title="Track 3", filename="path3.mp3", file_path="/fake/path3.mp3", id="track-3"),
+                Track(number=2, title="Track 4", filename="path4.mp3", file_path="/fake/path4.mp3", id="track-4")
             ])
         ]
         mock_playlist_repo.find_all.return_value = playlist_entities
@@ -96,7 +96,7 @@ class TestPlaylistService:
         playlist_entity = Playlist(
             id="playlist-1",
             title="Test Playlist",
-            tracks=[Track(track_number=1, title="Track 1", filename="path.mp3", file_path="/fake/path.mp3", id="track-1")]
+            tracks=[Track(number=1, title="Track 1", filename="path.mp3", file_path="/fake/path.mp3", id="track-1")]
         )
 
         mock_playlist_repo.find_by_id.return_value = playlist_entity
@@ -241,7 +241,7 @@ class TestPlaylistService:
             id='playlist-1',
             title='NFC Playlist',
             nfc_tag_id=nfc_tag_id,
-            tracks=[Track(track_number=1, title='Track 1', filename='track1.mp3', file_path='/fake/track1.mp3', id='track-1')]
+            tracks=[Track(number=1, title='Track 1', filename='track1.mp3', file_path='/fake/track1.mp3', id='track-1')]
         )
 
         mock_playlist_repo.find_by_nfc_tag.return_value = playlist_entity
@@ -386,8 +386,8 @@ class TestPlaylistService:
         # Mock existing tracks - track2 no longer exists on disk
         from app.src.domain.data.models.track import Track
         existing_tracks = [
-            Track(id='track-1', track_number=1, title='Track 1', filename='track1.mp3', file_path='/tmp/track1.mp3'),
-            Track(id='track-2', track_number=2, title='Track 2', filename='track2.mp3', file_path='/tmp/track2.mp3')  # File deleted
+            Track(id='track-1', number=1, title='Track 1', filename='track1.mp3', file_path='/tmp/track1.mp3'),
+            Track(id='track-2', number=2, title='Track 2', filename='track2.mp3', file_path='/tmp/track2.mp3')  # File deleted
         ]
         mock_track_repo.get_tracks_by_playlist.return_value = existing_tracks
         mock_track_repo.delete_track.return_value = True

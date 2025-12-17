@@ -22,7 +22,7 @@ class TestTrackDomainEntity:
     def test_track_creation(self):
         """Test basic track creation."""
         track = Track(
-            track_number=1,
+            number=1,
             title="Test Song",
             filename="test.mp3",
             file_path="/music/test.mp3",
@@ -31,7 +31,7 @@ class TestTrackDomainEntity:
             album="Test Album"
         )
         
-        assert track.track_number == 1
+        assert track.number == 1
         assert track.title == "Test Song"
         assert track.filename == "test.mp3"
         assert track.file_path == "/music/test.mp3"
@@ -42,7 +42,7 @@ class TestTrackDomainEntity:
     def test_track_domain_properties(self):
         """Test domain-specific properties."""
         track = Track(
-            track_number=5,
+            number=5,
             title="Test Track",
             filename="track.mp3",
             file_path="/music/track.mp3",
@@ -57,7 +57,7 @@ class TestTrackDomainEntity:
     def test_track_validation_business_rule(self):
         """Test domain business rule: track validation."""
         valid_track = Track(
-            track_number=1,
+            number=1,
             title="Valid Track",
             filename="valid.mp3",
             file_path="/music/valid.mp3"
@@ -67,7 +67,7 @@ class TestTrackDomainEntity:
         
         # Invalid track: negative track number
         invalid_track = Track(
-            track_number=-1,
+            number=-1,
             title="Invalid Track",
             filename="invalid.mp3",
             file_path="/music/invalid.mp3"
@@ -77,7 +77,7 @@ class TestTrackDomainEntity:
         
         # Invalid track: empty title
         invalid_track2 = Track(
-            track_number=1,
+            number=1,
             title="",
             filename="empty.mp3",
             file_path="/music/empty.mp3"
@@ -89,7 +89,7 @@ class TestTrackDomainEntity:
         """Test domain service for display name formatting."""
         # Track without artist
         track1 = Track(
-            track_number=1,
+            number=1,
             title="Song Title",
             filename="song.mp3",
             file_path="/music/song.mp3"
@@ -99,7 +99,7 @@ class TestTrackDomainEntity:
         
         # Track with artist
         track2 = Track(
-            track_number=1,
+            number=1,
             title="Song Title",
             filename="song.mp3",
             file_path="/music/song.mp3",
@@ -112,7 +112,7 @@ class TestTrackDomainEntity:
         """Test domain factory method."""
         track = Track.from_file("/music/example.mp3", 3)
         
-        assert track.track_number == 3
+        assert track.number == 3
         assert track.title == "example"  # Stem of filename
         assert track.filename == "example.mp3"
         assert track.file_path == "/music/example.mp3"
@@ -121,7 +121,7 @@ class TestTrackDomainEntity:
         """Test track validation edge cases."""
         # Valid track with minimal data
         valid_track = Track(
-            track_number=1,
+            number=1,
             title="Valid",
             filename="valid.mp3",
             file_path="/valid.mp3"
@@ -130,7 +130,7 @@ class TestTrackDomainEntity:
         
         # Invalid: zero track number
         invalid_track = Track(
-            track_number=0,
+            number=0,
             title="Invalid",
             filename="invalid.mp3",
             file_path="/invalid.mp3"
@@ -139,7 +139,7 @@ class TestTrackDomainEntity:
         
         # Invalid: whitespace-only title
         whitespace_track = Track(
-            track_number=1,
+            number=1,
             title="   ",  # Only whitespace
             filename="whitespace.mp3",
             file_path="/whitespace.mp3"
@@ -148,7 +148,7 @@ class TestTrackDomainEntity:
         
         # Invalid: empty filename
         empty_filename_track = Track(
-            track_number=1,
+            number=1,
             title="Good Title",
             filename="",
             file_path="/good/path.mp3"
@@ -157,7 +157,7 @@ class TestTrackDomainEntity:
         
         # Invalid: empty file_path
         empty_path_track = Track(
-            track_number=1,
+            number=1,
             title="Good Title",
             filename="good.mp3",
             file_path=""
@@ -168,7 +168,7 @@ class TestTrackDomainEntity:
         """Test duration conversion from milliseconds to seconds."""
         # Track with duration
         track_with_duration = Track(
-            track_number=1,
+            number=1,
             title="Timed Track",
             filename="timed.mp3",
             file_path="/timed.mp3",
@@ -178,7 +178,7 @@ class TestTrackDomainEntity:
         
         # Track without duration
         track_no_duration = Track(
-            track_number=1,
+            number=1,
             title="No Time",
             filename="notime.mp3",
             file_path="/notime.mp3",
@@ -189,7 +189,7 @@ class TestTrackDomainEntity:
     def test_track_number_property_alias(self):
         """Test number property alias for API compatibility."""
         track = Track(
-            track_number=5,
+            number=5,
             title="Test Track",
             filename="test.mp3",
             file_path="/test.mp3"
@@ -200,13 +200,13 @@ class TestTrackDomainEntity:
         
         # Test setter
         track.number = 10
-        assert track.track_number == 10
+        assert track.number == 10
         assert track.number == 10
     
     def test_track_string_representation(self):
         """Test track string representation."""
         track = Track(
-            track_number=3,
+            number=3,
             title="My Song",
             filename="mysong.mp3",
             file_path="/music/mysong.mp3"
@@ -246,14 +246,14 @@ class TestPlaylistDomainEntity:
         playlist = Playlist(title="Test Playlist")
         
         track1 = Track(
-            track_number=1,
+            number=1,
             title="Track 1",
             filename="track1.mp3",
             file_path="/music/track1.mp3"
         )
         
         track2 = Track(
-            track_number=2,
+            number=2,
             title="Track 2",
             filename="track2.mp3",
             file_path="/music/track2.mp3"
@@ -273,7 +273,7 @@ class TestPlaylistDomainEntity:
         
         # Track with number 0 should be auto-assigned
         track = Track(
-            track_number=0,
+            number=0,
             title="Auto Number Track",
             filename="auto.mp3",
             file_path="/music/auto.mp3"
@@ -282,14 +282,14 @@ class TestPlaylistDomainEntity:
         playlist.add_track(track)
         
         # Should be auto-assigned number 1
-        assert track.track_number == 1
+        assert track.number == 1
     
     def test_playlist_validation_business_rule(self):
         """Test domain business rule: playlist validation."""
         # Valid playlist
         valid_playlist = Playlist(title="Valid Playlist")
         valid_track = Track(
-            track_number=1,
+            number=1,
             title="Valid Track",
             filename="valid.mp3",
             file_path="/music/valid.mp3"
@@ -305,7 +305,7 @@ class TestPlaylistDomainEntity:
         # Invalid playlist: contains invalid track
         invalid_playlist2 = Playlist(title="Invalid Playlist")
         invalid_track = Track(
-            track_number=-1,
+            number=-1,
             title="",
             filename="",
             file_path=""
@@ -318,8 +318,8 @@ class TestPlaylistDomainEntity:
         """Test domain services for playlist operations."""
         playlist = Playlist(title="Service Test Playlist")
         
-        track1 = Track(track_number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3")
-        track2 = Track(track_number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3")
+        track1 = Track(number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3")
+        track2 = Track(number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3")
         
         playlist.add_track(track1)
         playlist.add_track(track2)
@@ -338,9 +338,9 @@ class TestPlaylistDomainEntity:
         playlist = Playlist(title="Normalize Test")
         
         # Add tracks with non-sequential numbers
-        track1 = Track(track_number=5, title="Track 5", filename="t5.mp3", file_path="/t5.mp3")
-        track2 = Track(track_number=3, title="Track 3", filename="t3.mp3", file_path="/t3.mp3")
-        track3 = Track(track_number=8, title="Track 8", filename="t8.mp3", file_path="/t8.mp3")
+        track1 = Track(number=5, title="Track 5", filename="t5.mp3", file_path="/t5.mp3")
+        track2 = Track(number=3, title="Track 3", filename="t3.mp3", file_path="/t3.mp3")
+        track3 = Track(number=8, title="Track 8", filename="t8.mp3", file_path="/t8.mp3")
         
         playlist.add_track(track1)
         playlist.add_track(track2)
@@ -349,16 +349,16 @@ class TestPlaylistDomainEntity:
         # Normalize should make them 1, 2, 3
         playlist.normalize_track_numbers()
         
-        numbers = [track.track_number for track in playlist.tracks]
+        numbers = [track.number for track in playlist.tracks]
         assert numbers == [1, 2, 3]
     
     def test_playlist_duration_calculation_domain_service(self):
         """Test domain service: total duration calculation."""
         playlist = Playlist(title="Duration Test")
         
-        track1 = Track(track_number=1, title="Track 1", filename="t1.mp3", 
+        track1 = Track(number=1, title="Track 1", filename="t1.mp3", 
                       file_path="/t1.mp3", duration_ms=180000)  # 3 minutes
-        track2 = Track(track_number=2, title="Track 2", filename="t2.mp3", 
+        track2 = Track(number=2, title="Track 2", filename="t2.mp3", 
                       file_path="/t2.mp3", duration_ms=240000)  # 4 minutes
         
         playlist.add_track(track1)
@@ -388,7 +388,7 @@ class TestPlaylistDomainEntity:
         
         # Playlist with tracks
         playlist = Playlist(title="My Songs")
-        track = Track(track_number=1, title="Song", filename="song.mp3", file_path="/song.mp3")
+        track = Track(number=1, title="Song", filename="song.mp3", file_path="/song.mp3")
         playlist.add_track(track)
         
         assert playlist.get_display_name() == "My Songs (1 tracks)"
@@ -404,7 +404,7 @@ class TestPlaylistDomainEntity:
         assert playlist.has_track_number(1) is False
         
         # Test with single track
-        track = Track(track_number=5, title="Single", filename="single.mp3", file_path="/single.mp3")
+        track = Track(number=5, title="Single", filename="single.mp3", file_path="/single.mp3")
         playlist.add_track(track)
         
         assert playlist.get_track_numbers() == [5]
@@ -430,8 +430,8 @@ class TestPlaylistDomainEntity:
         assert playlist.get_track_by_position(-1) is None
         
         # Add tracks
-        track1 = Track(track_number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3")
-        track2 = Track(track_number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3")
+        track1 = Track(number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3")
+        track2 = Track(number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3")
         playlist.add_track(track1)
         playlist.add_track(track2)
         
@@ -451,8 +451,8 @@ class TestPlaylistDomainEntity:
         assert playlist.get_total_duration_ms() == 0
         
         # Tracks with unknown duration
-        track1 = Track(track_number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3", duration_ms=None)
-        track2 = Track(track_number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3", duration_ms=180000)
+        track1 = Track(number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3", duration_ms=None)
+        track2 = Track(number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3", duration_ms=180000)
         playlist.add_track(track1)
         playlist.add_track(track2)
         

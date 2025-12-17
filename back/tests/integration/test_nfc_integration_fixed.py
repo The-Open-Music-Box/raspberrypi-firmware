@@ -78,12 +78,13 @@ class TestNfcIntegration:
         from app.src.domain.data.models.track import Track
 
         with patch('app.src.infrastructure.repositories.pure_sqlite_playlist_repository.get_database_manager') as mock_get_db_manager:
+            # Mock data uses database column name 'track_number'
             mock_db_service = Mock()
             mock_db_service.execute_query = Mock(return_value=[
                 {
                     'id': 'track-1',
                     'playlist_id': 'playlist-1',
-                    'track_number': 1,
+                    'track_number': 1,  # Database column name
                     'title': 'Track 1',
                     'filename': 'track1.mp3',
                     'file_path': '/path/track1.mp3',
@@ -120,17 +121,18 @@ class TestNfcIntegration:
         service = TrackService(mock_track_repo, mock_playlist_repo)
 
         # Test with Track objects (as returned by new repository methods)
+        # Per OpenAPI contract v3.3.2, Track uses 'number' field
         track_objects = [
             Track(
                 id='track-1',
-                track_number=1,
+                number=1,
                 title='Track 1',
                 filename='track1.mp3',
                 file_path='/path/track1.mp3'
             ),
             Track(
                 id='track-2',
-                track_number=2,
+                number=2,
                 title='Track 2',
                 filename='track2.mp3',
                 file_path='/path/track2.mp3'
@@ -148,8 +150,8 @@ class TestNfcIntegration:
 
         # Test with dictionary objects (for backward compatibility)
         dict_tracks = [
-            {'id': 'track-1', 'track_number': 1, 'filename': 'track1.mp3'},
-            {'id': 'track-2', 'track_number': 2, 'filename': 'track2.mp3'}
+            {'id': 'track-1', 'number': 1, 'filename': 'track1.mp3'},
+            {'id': 'track-2', 'number': 2, 'filename': 'track2.mp3'}
         ]
 
         mock_track_repo.get_by_playlist.return_value = dict_tracks

@@ -78,7 +78,7 @@ class Playlist:
             The track or None if not found
         """
         try:
-            return next(t for t in self.tracks if t.track_number == number)
+            return next(t for t in self.tracks if t.number == number)
         except StopIteration:
             return None
 
@@ -91,13 +91,13 @@ class Playlist:
             track: Track to add
         """
         # Domain business rule: Auto-assign track number if not set
-        if track.track_number <= 0:
-            max_number = max([t.track_number for t in self.tracks], default=0)
-            track.track_number = max_number + 1
+        if track.number <= 0:
+            max_number = max([t.number for t in self.tracks], default=0)
+            track.number = max_number + 1
 
         self.tracks.append(track)
         # Domain business rule: Sort tracks by number
-        self.tracks.sort(key=lambda t: t.track_number)
+        self.tracks.sort(key=lambda t: t.number)
 
     def remove_track(self, track_number: int) -> Track | None:
         """Domain behavior: Remove a track by number and return it.
@@ -114,8 +114,8 @@ class Playlist:
         if track:
             self.tracks.remove(track)
             # Domain business rule: Reindex remaining tracks
-            for i, t in enumerate(sorted(self.tracks, key=lambda x: x.track_number), 1):
-                t.track_number = i
+            for i, t in enumerate(sorted(self.tracks, key=lambda x: x.number), 1):
+                t.number = i
         return track
 
     def __len__(self) -> int:
@@ -134,7 +134,7 @@ class Playlist:
         if not self.tracks:
             return None
         # Sort tracks by track number and return the first one
-        sorted_tracks = sorted(self.tracks, key=lambda t: t.track_number)
+        sorted_tracks = sorted(self.tracks, key=lambda t: t.number)
         return sorted_tracks[0]
 
     def get_track_by_position(self, position: int) -> Track | None:
@@ -148,7 +148,7 @@ class Playlist:
         """
         if not self.tracks or position < 0 or position >= len(self.tracks):
             return None
-        sorted_tracks = sorted(self.tracks, key=lambda t: t.track_number)
+        sorted_tracks = sorted(self.tracks, key=lambda t: t.number)
         return sorted_tracks[position]
 
     def get_track_numbers(self) -> list[int]:
@@ -157,7 +157,7 @@ class Playlist:
         Returns:
             List of track numbers sorted in ascending order
         """
-        return sorted([t.track_number for t in self.tracks])
+        return sorted([t.number for t in self.tracks])
 
     def has_track_number(self, number: int) -> bool:
         """Domain query: Check if a track with the given number exists.
@@ -180,9 +180,9 @@ class Playlist:
             return
 
         # Sort tracks by current track number and assign new sequential numbers
-        sorted_tracks = sorted(self.tracks, key=lambda t: t.track_number)
+        sorted_tracks = sorted(self.tracks, key=lambda t: t.number)
         for i, track in enumerate(sorted_tracks, 1):
-            track.track_number = i
+            track.number = i
 
     def get_min_track_number(self) -> int | None:
         """Domain query: Get the minimum track number in the playlist.
@@ -192,7 +192,7 @@ class Playlist:
         """
         if not self.tracks:
             return None
-        return min(t.track_number for t in self.tracks)
+        return min(t.number for t in self.tracks)
 
     def get_max_track_number(self) -> int | None:
         """Domain query: Get the maximum track number in the playlist.
@@ -202,7 +202,7 @@ class Playlist:
         """
         if not self.tracks:
             return None
-        return max(t.track_number for t in self.tracks)
+        return max(t.number for t in self.tracks)
 
     def is_empty(self) -> bool:
         """Domain query: Check if playlist has no tracks.

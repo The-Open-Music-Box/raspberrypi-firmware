@@ -117,7 +117,7 @@ class DataPlaylistRepository(PlaylistRepositoryProtocol):
 
         return {
             'id': track.id,
-            'track_number': track.track_number,
+            'number': track.number,
             'title': track.title,
             'filename': track.filename,
             'file_path': track.file_path,
