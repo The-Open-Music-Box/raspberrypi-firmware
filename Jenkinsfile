@@ -69,32 +69,32 @@ pipeline {
                         echo "=== Setting up Python virtual environment ==="
                         rm -rf venv
                         python3 -m venv venv
-                        source venv/bin/activate
+                        . venv/bin/activate
                         python -m pip install --upgrade pip
                     '''
 
                     sh '''
                         echo "=== Installing dependencies ==="
-                        source venv/bin/activate
+                        . venv/bin/activate
                         pip install -r requirements.txt
                         pip install -r requirements-test.txt
                     '''
 
                     sh '''
                         echo "=== Running unit tests ==="
-                        source venv/bin/activate
+                        . venv/bin/activate
                         pytest tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
                     '''
 
                     sh '''
                         echo "=== Running contract tests ==="
-                        source venv/bin/activate
+                        . venv/bin/activate
                         pytest tests/contracts/ -v --tb=short --junitxml=test-results-contracts.xml
                     '''
 
                     sh '''
                         echo "=== Running integration tests ==="
-                        source venv/bin/activate
+                        . venv/bin/activate
                         pytest tests/integration/ -v --tb=short --junitxml=test-results-integration.xml
                     '''
                 }
@@ -184,15 +184,18 @@ pipeline {
 
     post {
         always {
-            script {
-                def buildSuccess = currentBuild.result == 'SUCCESS' ? 1 : 0
+            node('python') {
+                script {
+                    def buildSuccess = currentBuild.result == 'SUCCESS' ? 1 : 0
+                    def branchName = env.BRANCH_NAME ?: 'unknown'
 
-                sh """
-                    cat <<EOF | curl --data-binary @- ${PUSHGATEWAY_URL}/metrics/job/ci/instance/rpi-firmware || true
-ci_tests_success{repo="raspberrypi-firmware",branch="${GIT_BRANCH}"} ${buildSuccess}
-ci_build_timestamp{repo="raspberrypi-firmware",branch="${GIT_BRANCH}"} \$(date +%s)
+                    sh """
+                        cat <<EOF | curl --data-binary @- ${PUSHGATEWAY_URL}/metrics/job/ci/instance/rpi-firmware || true
+ci_tests_success{repo="raspberrypi-firmware",branch="${branchName}"} ${buildSuccess}
+ci_build_timestamp{repo="raspberrypi-firmware",branch="${branchName}"} \$(date +%s)
 EOF
-                """
+                    """
+                }
             }
         }
         success {
