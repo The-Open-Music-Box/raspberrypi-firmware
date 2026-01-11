@@ -81,19 +81,23 @@ class BaseJackDetection(JackDetectionProtocol):
         Args:
             new_state: The new jack state.
         """
+        handler = None
+        state_changed = False
+
         with self._lock:
             if self._state != new_state:
                 old_state = self._state
                 self._state = new_state
+                state_changed = True
                 logger.info(
                     f"Jack state changed: {old_state.value} -> {new_state.value}"
                 )
 
-                # Call handler outside lock to prevent deadlocks
+                # Get handler reference to call outside lock (prevents deadlocks)
                 handler = self._state_change_handler
 
-        # Notify handler if state changed
-        if handler is not None and old_state != new_state:
+        # Notify handler if state changed (outside lock)
+        if state_changed and handler is not None:
             try:
                 handler(new_state)
             except Exception as e:
