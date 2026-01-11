@@ -167,3 +167,85 @@ async def cleanup_jack_detection() -> None:
             logger.warning(f"⚠️ Error cleaning up jack detection: {e}")
         finally:
             _jack_detection_instance = None
+
+
+def setup_headphone_broadcasting(socketio) -> bool:
+    """Set up headphone status broadcasting via Socket.IO.
+
+    This function connects the WM8960AudioBackend's headphone state change
+    callback to Socket.IO broadcasting, enabling real-time frontend updates
+    when headphones are plugged or unplugged.
+
+    Args:
+        socketio: Socket.IO server instance for broadcasting.
+
+    Returns:
+        bool: True if broadcasting was set up successfully, False otherwise.
+    """
+    try:
+        from app.src.domain.audio.container import audio_domain_container
+
+        # Check if audio domain is initialized
+        if not audio_domain_container.is_initialized:
+            logger.warning("⚠️ Audio domain not initialized, cannot setup headphone broadcasting")
+            return False
+
+        backend = audio_domain_container.backend
+
+        # Check if backend supports headphone state change callback
+        if not hasattr(backend, "set_headphone_state_change_callback"):
+            logger.info("ℹ️ Audio backend does not support headphone detection")
+            return False
+
+        # Import socket events here to avoid circular imports
+        from app.src.common.socket_events import (
+            SocketEventBuilder,
+            SocketEventType,
+        )
+
+        # Create a sequence generator for server_seq
+        _headphone_broadcast_seq = 0
+
+        async def broadcast_headphone_status(connected: bool) -> None:
+            """Broadcast headphone status change to all clients."""
+            nonlocal _headphone_broadcast_seq
+            _headphone_broadcast_seq += 1
+
+            try:
+                event_data = SocketEventBuilder.create_headphone_status_event(
+                    connected=connected,
+                    server_seq=_headphone_broadcast_seq,
+                )
+
+                # Emit to the 'playlists' room (global state)
+                await socketio.emit(
+                    SocketEventType.STATE_HEADPHONE_STATUS.value,
+                    event_data,
+                    room="playlists",
+                )
+
+                logger.info(
+                    f"🎧 Broadcasted headphone status: {'connected' if connected else 'disconnected'}"
+                )
+            except Exception as e:
+                logger.error(f"❌ Failed to broadcast headphone status: {e}")
+
+        def on_headphone_state_changed(connected: bool) -> None:
+            """Synchronous callback that schedules async broadcast."""
+            import asyncio
+
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(broadcast_headphone_status(connected))
+            except RuntimeError:
+                # No running event loop, log warning
+                logger.warning("⚠️ No event loop for headphone status broadcast")
+
+        # Register the callback with the audio backend
+        backend.set_headphone_state_change_callback(on_headphone_state_changed)
+        logger.info("✅ Headphone status broadcasting enabled")
+        return True
+
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to setup headphone broadcasting: {e}")
+        return False

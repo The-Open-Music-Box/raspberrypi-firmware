@@ -159,4 +159,11 @@ def init_api_routes_state(app: FastAPI, socketio, config=None):
 
     routes_organizer = APIRoutesState(app, socketio, config)
     routes_organizer.init_routes()
+
+    # Setup headphone status broadcasting (WM8960 jack detection)
+    from app.src.domain.audio.backends.implementations.audio_factory import (
+        setup_headphone_broadcasting,
+    )
+    setup_headphone_broadcasting(socketio)
+
     return routes_organizer
