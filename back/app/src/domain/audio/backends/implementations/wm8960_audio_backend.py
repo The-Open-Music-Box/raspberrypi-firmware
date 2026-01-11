@@ -7,12 +7,18 @@
 This module provides a clean WM8960 audio backend implementation for Raspberry Pi hardware.
 It implements the AudioBackendProtocol interface and provides real hardware audio playback
 through the WM8960 codec using pygame for reliable audio format handling.
+
+Features:
+- Audio playback via pygame mixer
+- Hardware volume control via ALSA
+- Headphone jack detection with automatic speaker muting
 """
 
 import asyncio
 import os
 import subprocess  # nosec B404 - subprocess required for ALSA audio device detection and control
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
@@ -32,6 +38,10 @@ except ImportError:
 from app.src.domain.decorators.error_handler import (
     handle_domain_errors as handle_errors,
 )
+from app.src.domain.protocols.jack_detection_protocol import (
+    JackDetectionProtocol,
+    JackState,
+)
 from app.src.domain.protocols.notification_protocol import (
     PlaybackNotifierProtocol as PlaybackSubject,
 )
@@ -41,20 +51,30 @@ from .base_audio_backend import BaseAudioBackend
 
 logger = get_logger(__name__)
 
+# Default speaker volume when headphones are unplugged
+DEFAULT_SPEAKER_VOLUME = 122  # ALSA volume level (0-127)
+
 
 class WM8960AudioBackend(BaseAudioBackend):
     """WM8960 audio backend for Raspberry Pi hardware.
 
     This implementation provides real audio playback through the WM8960 codec
-    using ALSA and subprocess-based audio control.
+    using ALSA and subprocess-based audio control. Supports automatic speaker
+    muting when headphones are connected via jack detection.
     """
 
-    def __init__(self, playback_subject: PlaybackSubject | None = None, allow_graceful_degradation: bool = True):
+    def __init__(
+        self,
+        playback_subject: PlaybackSubject | None = None,
+        allow_graceful_degradation: bool = True,
+        jack_detection: JackDetectionProtocol | None = None,
+    ):
         """Initialize the WM8960 audio backend.
 
         Args:
             playback_subject: Optional subject for playback notifications
             allow_graceful_degradation: If True, allows initialization to succeed even if hardware fails
+            jack_detection: Optional jack detection service for headphone plug/unplug events
         """
         super().__init__(playback_subject)
         self._is_paused = False
@@ -69,8 +89,17 @@ class WM8960AudioBackend(BaseAudioBackend):
         self._hardware_available = False
         self._initialization_error = None
 
+        # Jack detection for automatic speaker muting
+        self._jack_detection = jack_detection
+        self._headphone_connected = False
+        self._headphone_state_change_callback: Callable[[bool], None] | None = None
+
         # Initialize hardware
         self._initialize_wm8960_hardware()
+
+        # Initialize jack detection if provided
+        if self._jack_detection is not None:
+            self._setup_jack_detection()
 
         # Initialize pygame mixer for proper audio handling
         self._pygame_initialized = False
@@ -236,6 +265,147 @@ class WM8960AudioBackend(BaseAudioBackend):
         self._audio_device = self._detect_wm8960_device()
         logger.info(f"🔊 WM8960: Detected audio device: {self._audio_device}")
         return True
+
+    def _setup_jack_detection(self) -> None:
+        """Set up jack detection callback and read initial state."""
+        if self._jack_detection is None:
+            return
+
+        # Register callback for jack state changes
+        self._jack_detection.set_state_change_handler(self._on_jack_state_changed)
+
+        # Read and apply initial state
+        initial_state = self._jack_detection.get_state()
+        if initial_state != JackState.UNKNOWN:
+            self._headphone_connected = initial_state == JackState.CONNECTED
+            self._update_speaker_state()
+            logger.info(
+                f"🎧 WM8960: Initial headphone state: "
+                f"{'connected' if self._headphone_connected else 'disconnected'}"
+            )
+
+    def _on_jack_state_changed(self, new_state: JackState) -> None:
+        """Handle jack state change events.
+
+        Args:
+            new_state: The new jack state.
+        """
+        was_connected = self._headphone_connected
+        self._headphone_connected = new_state == JackState.CONNECTED
+
+        if was_connected != self._headphone_connected:
+            logger.info(
+                f"🎧 WM8960: Headphone {'connected' if self._headphone_connected else 'disconnected'}"
+            )
+            self._update_speaker_state()
+
+            # Notify external callback if registered
+            if self._headphone_state_change_callback is not None:
+                try:
+                    self._headphone_state_change_callback(self._headphone_connected)
+                except Exception as e:
+                    logger.error(f"Error in headphone state change callback: {e}")
+
+    def _update_speaker_state(self) -> None:
+        """Update speaker mute state based on headphone connection."""
+        if self._headphone_connected:
+            self._mute_speakers()
+        else:
+            self._unmute_speakers()
+
+    @handle_errors("_mute_speakers")
+    def _mute_speakers(self) -> bool:
+        """Mute the speakers via ALSA when headphones are connected.
+
+        Returns:
+            bool: True if successful.
+        """
+        try:
+            # Mute speaker output via amixer
+            subprocess.run(  # nosec B603 B607
+                ["amixer", "-c", "wm8960soundcard", "sset", "Speaker", "0"],
+                check=True,
+                capture_output=True,
+                timeout=2.0,
+            )
+            logger.info("🔇 WM8960: Speakers muted (headphones connected)")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to mute speakers: {e}")
+            return False
+        except FileNotFoundError:
+            logger.warning("amixer not found - speaker mute unavailable")
+            return False
+        except subprocess.TimeoutExpired:
+            logger.warning("amixer timeout while muting speakers")
+            return False
+
+    @handle_errors("_unmute_speakers")
+    def _unmute_speakers(self) -> bool:
+        """Unmute the speakers via ALSA when headphones are disconnected.
+
+        Returns:
+            bool: True if successful.
+        """
+        try:
+            # Restore speaker output via amixer
+            subprocess.run(  # nosec B603 B607
+                ["amixer", "-c", "wm8960soundcard", "sset", "Speaker", str(DEFAULT_SPEAKER_VOLUME)],
+                check=True,
+                capture_output=True,
+                timeout=2.0,
+            )
+            logger.info(f"🔊 WM8960: Speakers unmuted (volume={DEFAULT_SPEAKER_VOLUME})")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to unmute speakers: {e}")
+            return False
+        except FileNotFoundError:
+            logger.warning("amixer not found - speaker unmute unavailable")
+            return False
+        except subprocess.TimeoutExpired:
+            logger.warning("amixer timeout while unmuting speakers")
+            return False
+
+    def set_headphone_state_change_callback(
+        self, callback: Callable[[bool], None]
+    ) -> None:
+        """Set callback for headphone state changes.
+
+        This allows external components (like Socket.IO) to be notified
+        when headphones are plugged/unplugged.
+
+        Args:
+            callback: Function that receives True when headphones connected,
+                     False when disconnected.
+        """
+        self._headphone_state_change_callback = callback
+        logger.debug("Headphone state change callback registered")
+
+    def is_headphone_connected(self) -> bool:
+        """Check if headphones are currently connected.
+
+        Returns:
+            bool: True if headphones are connected.
+        """
+        return self._headphone_connected
+
+    def get_jack_detection_status(self) -> dict[str, Any]:
+        """Get jack detection status information.
+
+        Returns:
+            dict: Status including enabled, connected state, etc.
+        """
+        if self._jack_detection is None:
+            return {
+                "enabled": False,
+                "available": False,
+                "headphone_connected": False,
+            }
+
+        status = self._jack_detection.get_status()
+        status["headphone_connected"] = self._headphone_connected
+        return status
 
     def is_hardware_available(self) -> bool:
         """Check if audio hardware is available and functional.
@@ -706,6 +876,11 @@ class WM8960AudioBackend(BaseAudioBackend):
         logger.info("🔊 Cleaning up WM8960 audio backend")
         with self._state_lock:
             self._stop_current_playback()
+
+        # Clean up jack detection (note: async cleanup is handled by the service owner)
+        if self._jack_detection is not None:
+            self._jack_detection.set_state_change_handler(lambda _: None)  # Remove callback
+            logger.debug("🔊 WM8960: Jack detection callback removed")
 
         # Clean up any SDL environment variables we might have set
         if 'SDL_AUDIODRIVER' in os.environ:
