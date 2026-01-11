@@ -36,6 +36,12 @@ class HardwareConfig:
     gpio_led_green: int = 12
     gpio_led_blue: int = 24  # As per user's physical wiring
 
+    # Headphone jack detection (WM8960 HP_DET signal)
+    gpio_headphone_detect: int = 26  # HP_DET pin from WM8960 HAT
+    headphone_detect_enabled: bool = True  # Enable/disable jack detection feature
+    headphone_detect_debounce_ms: int = 300  # Debounce time in milliseconds
+    headphone_detect_active_low: bool = True  # True if LOW = headphone plugged
+
     # Button settings
     button_debounce_time: float = 0.01  # Debounce time in seconds (10ms for quick response)
     button_hold_time: float = 2.0  # Time to register a long press
@@ -89,6 +95,16 @@ class HardwareConfig:
         # Check for duplicate pin assignments
         if len(gpio_pins) != len(set(gpio_pins)):
             raise ValueError("Duplicate GPIO pin assignments detected")
+
+        # Validate headphone detect GPIO (separate validation as it may intentionally
+        # conflict with other pins during development/testing)
+        if self.headphone_detect_enabled:
+            if not 0 <= self.gpio_headphone_detect <= 27:
+                raise ValueError(
+                    f"GPIO pin {self.gpio_headphone_detect} is out of valid range (0-27)"
+                )
+            if self.headphone_detect_debounce_ms < 0:
+                raise ValueError("headphone_detect_debounce_ms must be positive")
 
         # Validate timing parameters
         if self.button_debounce_time < 0:
