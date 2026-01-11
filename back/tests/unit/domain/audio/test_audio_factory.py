@@ -48,21 +48,24 @@ class TestAudioBackendFactory:
         assert backend == mock_backend_instance
         mock_backend_class.assert_called_once_with(None)
 
+    @patch('app.src.domain.audio.backends.implementations.audio_factory._create_jack_detection')
     @patch('app.src.domain.audio.backends.implementations.audio_factory.config')
     @patch('sys.platform', 'linux')
     @patch('app.src.domain.audio.backends.implementations.wm8960_audio_backend.WM8960AudioBackend')
-    def test_create_wm8960_backend(self, mock_backend_class, mock_config):
+    def test_create_wm8960_backend(self, mock_backend_class, mock_config, mock_create_jack):
         """Test creating WM8960 backend on Linux platform."""
         mock_config.hardware.mock_hardware = False
         mock_backend_instance = Mock()
         mock_backend_class.return_value = mock_backend_instance
+        mock_jack_detection = Mock()
+        mock_create_jack.return_value = mock_jack_detection
 
         from app.src.domain.audio.backends.implementations.audio_factory import get_audio_backend
 
         backend = get_audio_backend()
 
         assert backend == mock_backend_instance
-        mock_backend_class.assert_called_once_with(None)
+        mock_backend_class.assert_called_once_with(None, jack_detection=mock_jack_detection)
 
     @patch('app.src.domain.audio.backends.implementations.audio_factory.config')
     @patch('sys.platform', 'linux')
