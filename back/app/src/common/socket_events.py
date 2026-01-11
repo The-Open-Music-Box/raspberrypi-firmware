@@ -67,6 +67,9 @@ class SocketEventType(str, Enum):
     NFC_STATUS = "nfc_status"
     NFC_ASSOCIATION_STATE = "nfc_association_state"
 
+    # Audio hardware events
+    STATE_HEADPHONE_STATUS = "state:headphone_status"
+
 
 class StateEventType(Enum):
     """Types of state events that can be broadcast per API Contract v2.0."""
@@ -94,6 +97,9 @@ class StateEventType(Enum):
     PLAYLIST_STARTED = "state:playlist_started"
     NFC_ASSOCIATED = "state:nfc_associated"
     NFC_DISASSOCIATED = "state:nfc_disassociated"
+
+    # Audio hardware events
+    HEADPHONE_STATUS = "state:headphone_status"
 
     # Legacy aliases
     GENERAL = "state:general"
@@ -210,6 +216,17 @@ class NFCAssociationStatePayload(BaseModel):
     server_seq: int = Field(..., description="Server sequence number")
 
 
+class HeadphoneStatusPayload(BaseModel):
+    """Payload for headphone status events."""
+
+    connected: bool = Field(..., description="Whether headphones are connected")
+    server_seq: int = Field(..., description="Server sequence number")
+    timestamp: int = Field(
+        default_factory=lambda: int(time.time() * 1000),
+        description="Event timestamp in milliseconds",
+    )
+
+
 class SocketEventBuilder:
     """
     Builder class for creating standardized Socket.IO events.
@@ -313,6 +330,26 @@ class SocketEventBuilder:
         )
         return payload.model_dump(exclude_none=True)
 
+    @staticmethod
+    def create_headphone_status_event(
+        connected: bool,
+        server_seq: int,
+    ) -> dict[str, Any]:
+        """Create headphone status event.
+
+        Args:
+            connected: Whether headphones are connected.
+            server_seq: Server sequence number.
+
+        Returns:
+            Event payload for headphone status.
+        """
+        payload = HeadphoneStatusPayload(
+            connected=connected,
+            server_seq=server_seq,
+        )
+        return payload.model_dump()
+
 
 # Event routing configuration
 EVENT_ROOM_MAPPING = {
@@ -334,6 +371,7 @@ EVENT_ROOM_MAPPING = {
     SocketEventType.UPLOAD_PROGRESS: "playlist:{playlist_id}",
     SocketEventType.UPLOAD_COMPLETE: "playlist:{playlist_id}",
     SocketEventType.UPLOAD_ERROR: "playlist:{playlist_id}",
+    SocketEventType.STATE_HEADPHONE_STATUS: "playlists",  # Global audio status
 }
 
 
