@@ -110,6 +110,17 @@ class ApplicationBootstrap(DomainBootstrap):
         Args:
             existing_backend: Existing audio backend to use (optional)
         """
+        # Early exit checks BEFORE creating backend to prevent "device busy" errors
+        # These mirror the checks in DomainBootstrap.initialize()
+        if self._is_initialized:
+            logger.warning("ApplicationBootstrap already initialized")
+            return
+
+        if audio_domain_container.is_initialized:
+            logger.info("🔄 Audio domain container already initialized, reusing existing backend")
+            self._is_initialized = True
+            return
+
         # If backend not provided and we have an injected factory, use it
         if existing_backend is None and self._audio_backend_factory is not None:
             try:

@@ -229,15 +229,19 @@ class WM8960AudioBackend(BaseAudioBackend):
     def _get_card_name(self) -> str:
         """Extract ALSA card name from the detected audio device.
 
-        The _audio_device is in format 'plughw:cardname' or similar.
-        For amixer commands, we need just the card name.
+        The _audio_device is in format 'plughw:cardname' or 'plughw:cardname,0'.
+        For amixer commands, we need just the card name without device suffix.
 
         Returns:
             str: ALSA card name (e.g., 'wm8960soundcard')
         """
         if self._audio_device and ":" in self._audio_device:
-            # Extract card name from "plughw:cardname" format
-            return self._audio_device.split(":")[-1]
+            # Extract card name from "plughw:cardname" or "plughw:cardname,0" format
+            card_part = self._audio_device.split(":")[-1]
+            # Strip device suffix like ",0" if present
+            if "," in card_part:
+                card_part = card_part.split(",")[0]
+            return card_part
         # Fallback to default WM8960 card name
         return "wm8960soundcard"
 

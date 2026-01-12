@@ -145,8 +145,12 @@ def setup_headphone_broadcasting(socketio, sequence_generator=None) -> bool:
         try:
             _main_loop = asyncio.get_running_loop()
         except RuntimeError:
-            _main_loop = None
-            logger.warning("⚠️ No running event loop during headphone broadcasting setup")
+            # Without an event loop, broadcasts will never work - return False
+            logger.warning(
+                "⚠️ No running event loop during headphone broadcasting setup - "
+                "broadcasts will not work"
+            )
+            return False
 
         async def broadcast_headphone_status(connected: bool) -> None:
             """Broadcast headphone status change to all clients."""
@@ -186,8 +190,10 @@ def setup_headphone_broadcasting(socketio, sequence_generator=None) -> bool:
             run_coroutine_threadsafe to schedule the async broadcast on
             the main event loop.
             """
-            if _main_loop is None or _main_loop.is_closed():
-                logger.warning("⚠️ No event loop available for headphone status broadcast")
+            # Note: _main_loop is guaranteed to be set (we return False otherwise)
+            # but check for closed loop in case of shutdown
+            if _main_loop.is_closed():
+                logger.warning("⚠️ Event loop closed - cannot broadcast headphone status")
                 return
 
             try:

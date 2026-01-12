@@ -161,7 +161,11 @@ class GPIOJackDetection(BaseJackDetection):
             return True  # Graceful degradation
 
     def _read_initial_state(self) -> None:
-        """Read and set the initial jack state from GPIO."""
+        """Read and set the initial jack state from GPIO.
+
+        Uses _update_state() instead of direct assignment to ensure the
+        state change handler is notified if one is registered.
+        """
         if self._button is None:
             return
 
@@ -175,8 +179,10 @@ class GPIOJackDetection(BaseJackDetection):
             # Active high: HIGH = connected, LOW = disconnected
             new_state = JackState.DISCONNECTED if is_pressed else JackState.CONNECTED
 
-        self._state = new_state
-        logger.info(f"Initial jack state: {new_state.value}")
+        # Use _update_state to trigger callback if handler is registered
+        # (though typically handler is registered after initialization)
+        logger.info(f"Initial jack state read from GPIO: {new_state.value}")
+        self._update_state(new_state)
 
     def _on_gpio_low(self) -> None:
         """Handle GPIO going LOW (button pressed in gpiozero terms)."""

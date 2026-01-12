@@ -315,8 +315,9 @@ class TestHeadphoneBroadcasting:
         socketio.emit = AsyncMock()
         return socketio
 
-    def test_setup_headphone_broadcasting_success(self, mock_socketio):
-        """Test setup_headphone_broadcasting returns True on success."""
+    @pytest.mark.asyncio
+    async def test_setup_headphone_broadcasting_success(self, mock_socketio):
+        """Test setup_headphone_broadcasting returns True on success with event loop."""
         mock_container = MagicMock()
         mock_container.is_initialized = True
         mock_backend = MagicMock()
@@ -331,10 +332,35 @@ class TestHeadphoneBroadcasting:
                 setup_headphone_broadcasting,
             )
 
+            # Now runs within an async context with an event loop
             result = setup_headphone_broadcasting(mock_socketio)
 
             assert result is True
             mock_backend.set_headphone_state_change_callback.assert_called_once()
+
+    def test_setup_headphone_broadcasting_no_event_loop(self, mock_socketio):
+        """Test setup returns False when no event loop is running."""
+        mock_container = MagicMock()
+        mock_container.is_initialized = True
+        mock_backend = MagicMock()
+        mock_backend.set_headphone_state_change_callback = MagicMock()
+        mock_container.backend = mock_backend
+
+        with patch(
+            "app.src.domain.audio.container.audio_domain_container",
+            mock_container
+        ):
+            from app.src.domain.audio.backends.implementations.audio_factory import (
+                setup_headphone_broadcasting,
+            )
+
+            # Running outside of async context - no event loop
+            result = setup_headphone_broadcasting(mock_socketio)
+
+            # Should return False because broadcasts won't work without event loop
+            assert result is False
+            # Callback should NOT be registered since we return early
+            mock_backend.set_headphone_state_change_callback.assert_not_called()
 
     def test_setup_headphone_broadcasting_not_initialized(self, mock_socketio):
         """Test setup returns False when audio not initialized."""
