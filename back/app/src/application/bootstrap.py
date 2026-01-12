@@ -54,6 +54,7 @@ class ApplicationBootstrap(DomainBootstrap):
         led_event_handler: 'LEDEventHandler | None' = None,
         physical_controls_manager: 'PhysicalControlsManager | None' = None,
         audio_backend_factory: Callable[[], Any] | None = None,
+        jack_detection_cleanup: Callable[[], Any] | None = None,
     ):
         """Initialize the application bootstrap with hardware components.
 
@@ -64,6 +65,8 @@ class ApplicationBootstrap(DomainBootstrap):
             audio_backend_factory: Optional factory function to create audio backend
                 with platform-specific features (e.g., jack detection on Linux).
                 Injected by infrastructure layer.
+            jack_detection_cleanup: Optional async cleanup function for jack detection
+                GPIO resources. Injected by infrastructure layer.
         """
         # Initialize domain bootstrap (audio, lifecycle)
         super().__init__()
@@ -77,6 +80,9 @@ class ApplicationBootstrap(DomainBootstrap):
 
         # Infrastructure-injected audio backend factory
         self._audio_backend_factory = audio_backend_factory
+
+        # Infrastructure-injected jack detection cleanup (async callable)
+        self._jack_detection_cleanup = jack_detection_cleanup
 
         # Log component injection status
         if led_manager and led_event_handler:
@@ -216,9 +222,9 @@ class ApplicationBootstrap(DomainBootstrap):
         logger.info("🚀 Application services started")
 
     async def stop(self) -> None:
-        """Stop all services including LED cleanup.
+        """Stop all services including LED and jack detection cleanup.
 
-        Extends domain stop() to add LED system cleanup.
+        Extends domain stop() to add LED system and jack detection cleanup.
         """
         if not self._is_initialized or self._is_stopping:
             return
@@ -233,6 +239,14 @@ class ApplicationBootstrap(DomainBootstrap):
                 logger.info("💡 LED system cleaned up")
             except Exception as e:
                 logger.warning(f"⚠️ LED cleanup failed: {e}")
+
+        # Application-specific: Cleanup jack detection (releases GPIO resources)
+        if self._jack_detection_cleanup is not None:
+            try:
+                await self._jack_detection_cleanup()
+                logger.info("🎧 Jack detection cleaned up")
+            except Exception as e:
+                logger.warning(f"⚠️ Jack detection cleanup failed: {e}")
 
     # MARK: - Hardware Initialization Helpers
 

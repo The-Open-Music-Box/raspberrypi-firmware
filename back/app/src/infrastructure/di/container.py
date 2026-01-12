@@ -266,15 +266,18 @@ def register_core_infrastructure_services():
         # NOTE: physical_controls_manager is NOT injected here to avoid circular dependencies
         # It will be set later via set_physical_controls_manager() in app_factory.py
 
-        # Inject audio backend factory on Linux (for jack detection support)
+        # Inject audio backend factory and cleanup on Linux (for jack detection support)
         # This factory creates WM8960AudioBackend with jack_detection injected
         audio_backend_factory = None
+        jack_detection_cleanup = None
         if sys.platform == "linux":
             try:
                 from app.src.infrastructure.hardware.audio.audio_services_factory import (
+                    cleanup_jack_detection,
                     create_audio_backend_with_jack_detection,
                 )
                 audio_backend_factory = create_audio_backend_with_jack_detection
+                jack_detection_cleanup = cleanup_jack_detection
                 logger.info("✅ Audio backend factory with jack detection injected")
             except ImportError as e:
                 logger.warning(f"⚠️ Audio services factory not available: {e}")
@@ -285,6 +288,7 @@ def register_core_infrastructure_services():
             led_event_handler=led_event_handler,
             physical_controls_manager=None,  # Will be set later to avoid circular deps
             audio_backend_factory=audio_backend_factory,
+            jack_detection_cleanup=jack_detection_cleanup,
         )
     # Registered as "domain_bootstrap" for backward compatibility (actually ApplicationBootstrap)
     container.register_factory("domain_bootstrap", domain_bootstrap_factory, ServiceLifetime.SINGLETON)

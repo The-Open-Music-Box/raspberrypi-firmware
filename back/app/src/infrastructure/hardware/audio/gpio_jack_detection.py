@@ -140,8 +140,11 @@ class GPIOJackDetection(BaseJackDetection):
             )
 
             # Set up event handlers
-            self._button.when_pressed = self._on_gpio_low
-            self._button.when_released = self._on_gpio_high
+            # With pull_up=active_low:
+            # - when_pressed fires when signal goes to "active" state (headphone connected)
+            # - when_released fires when signal goes to "inactive" state (headphone disconnected)
+            self._button.when_pressed = self._on_headphone_connected
+            self._button.when_released = self._on_headphone_disconnected
 
             # Read initial state
             self._read_initial_state()
@@ -165,42 +168,29 @@ class GPIOJackDetection(BaseJackDetection):
 
         Uses _update_state() instead of direct assignment to ensure the
         state change handler is notified if one is registered.
+
+        With pull_up=active_low configuration, is_pressed always means
+        "headphone connected" regardless of whether active_low is True or False.
         """
         if self._button is None:
             return
 
-        # Read current GPIO state
-        is_pressed = self._button.is_pressed  # True if GPIO is LOW
+        # With pull_up=active_low, is_pressed means "headphone connected"
+        is_connected = self._button.is_pressed
+        new_state = JackState.CONNECTED if is_connected else JackState.DISCONNECTED
 
-        if self._active_low:
-            # Active low: LOW = connected, HIGH = disconnected
-            new_state = JackState.CONNECTED if is_pressed else JackState.DISCONNECTED
-        else:
-            # Active high: HIGH = connected, LOW = disconnected
-            new_state = JackState.DISCONNECTED if is_pressed else JackState.CONNECTED
-
-        # Use _update_state to trigger callback if handler is registered
-        # (though typically handler is registered after initialization)
         logger.info(f"Initial jack state read from GPIO: {new_state.value}")
         self._update_state(new_state)
 
-    def _on_gpio_low(self) -> None:
-        """Handle GPIO going LOW (button pressed in gpiozero terms)."""
-        if self._active_low:
-            # Active low: LOW = headphone connected
-            self._update_state(JackState.CONNECTED)
-        else:
-            # Active high: LOW = headphone disconnected
-            self._update_state(JackState.DISCONNECTED)
+    def _on_headphone_connected(self) -> None:
+        """Handle headphone connection event (GPIO signal went to active state)."""
+        logger.debug("GPIO event: headphone connected")
+        self._update_state(JackState.CONNECTED)
 
-    def _on_gpio_high(self) -> None:
-        """Handle GPIO going HIGH (button released in gpiozero terms)."""
-        if self._active_low:
-            # Active low: HIGH = headphone disconnected
-            self._update_state(JackState.DISCONNECTED)
-        else:
-            # Active high: HIGH = headphone connected
-            self._update_state(JackState.CONNECTED)
+    def _on_headphone_disconnected(self) -> None:
+        """Handle headphone disconnection event (GPIO signal went to inactive state)."""
+        logger.debug("GPIO event: headphone disconnected")
+        self._update_state(JackState.DISCONNECTED)
 
     async def cleanup(self) -> None:
         """Clean up GPIO resources."""

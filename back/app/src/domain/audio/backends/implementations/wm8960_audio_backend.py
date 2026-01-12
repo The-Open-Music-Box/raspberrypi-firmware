@@ -407,15 +407,20 @@ class WM8960AudioBackend(BaseAudioBackend):
         logger.debug("Headphone state change callback registered")
 
         # Immediately notify of current state (important for boot state broadcast)
+        # Only broadcast if we actually know the state (not UNKNOWN)
         if self._jack_detection is not None:
-            try:
-                callback(self._headphone_connected)
-                logger.info(
-                    f"🎧 Initial headphone state broadcast: "
-                    f"{'connected' if self._headphone_connected else 'disconnected'}"
-                )
-            except Exception as e:
-                logger.error(f"Error broadcasting initial headphone state: {e}")
+            current_state = self._jack_detection.get_state()
+            if current_state != JackState.UNKNOWN:
+                try:
+                    callback(self._headphone_connected)
+                    logger.info(
+                        f"🎧 Initial headphone state broadcast: "
+                        f"{'connected' if self._headphone_connected else 'disconnected'}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error broadcasting initial headphone state: {e}")
+            else:
+                logger.info("🎧 Skipping initial headphone broadcast - state not yet known")
 
     def is_headphone_connected(self) -> bool:
         """Check if headphones are currently connected.
