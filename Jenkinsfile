@@ -1,6 +1,6 @@
 // TheOpenMusicBox - Raspberry Pi Firmware Pipeline
 // ================================================
-// Equivalent to rpi-firmware/.github/workflows/ci.yml
+// CI/CD Pipeline with Prometheus metrics export
 
 pipeline {
     agent none
@@ -9,6 +9,7 @@ pipeline {
         USE_MOCK_HARDWARE = 'true'
         ENVIRONMENT = 'test'
         PUSHGATEWAY_URL = 'http://pushgateway:9091'
+        REPO_NAME = 'rpi-firmware'
     }
 
     options {
@@ -81,9 +82,9 @@ pipeline {
                     '''
 
                     sh '''
-                        echo "=== Running unit tests ==="
+                        echo "=== Running unit tests with coverage ==="
                         . venv/bin/activate
-                        pytest tests/unit/ -v --tb=short --junitxml=test-results-unit.xml
+                        pytest tests/unit/ -v --tb=short --junitxml=test-results-unit.xml --cov=. --cov-report=term 2>&1 | tee test_output.txt
                     '''
 
                     sh '''
@@ -97,11 +98,58 @@ pipeline {
                         . venv/bin/activate
                         pytest tests/integration/ -v --tb=short --junitxml=test-results-integration.xml
                     '''
+
+                    // Parse test results and coverage
+                    script {
+                        def testOutput = readFile('test_output.txt')
+                        def testsTotal = 0
+                        def testsPassed = 0
+                        def coveragePercent = 0
+
+                        // Parse pytest output for test counts
+                        def matcher = testOutput =~ /(\d+) passed/
+                        if (matcher.find()) {
+                            testsPassed = matcher[0][1].toInteger()
+                        }
+                        matcher = testOutput =~ /(\d+) failed/
+                        def testsFailed = 0
+                        if (matcher.find()) {
+                            testsFailed = matcher[0][1].toInteger()
+                        }
+                        testsTotal = testsPassed + testsFailed
+
+                        // Parse coverage percentage (TOTAL line from pytest-cov)
+                        matcher = testOutput =~ /TOTAL\s+\d+\s+\d+\s+(\d+)%/
+                        if (matcher.find()) {
+                            coveragePercent = matcher[0][1].toInteger()
+                        }
+
+                        env.TESTS_TOTAL = testsTotal.toString()
+                        env.TESTS_PASSED = testsPassed.toString()
+                        env.COVERAGE_PERCENT = coveragePercent.toString()
+                    }
                 }
             }
             post {
                 always {
                     junit 'back/test-results-*.xml'
+
+                    // Export test metrics
+                    script {
+                        def branchName = env.BRANCH_NAME ?: 'unknown'
+                        def coveragePercent = env.COVERAGE_PERCENT ?: '0'
+                        def testsTotal = env.TESTS_TOTAL ?: '0'
+                        def testsPassed = env.TESTS_PASSED ?: '0'
+
+                        sh """
+                            cat <<EOF | curl --data-binary @- ${PUSHGATEWAY_URL}/metrics/job/ci-tests/instance/${REPO_NAME} || true
+ci_test_coverage_percent{repo="${REPO_NAME}",branch="${branchName}"} ${coveragePercent}
+ci_tests_total{repo="${REPO_NAME}",branch="${branchName}"} ${testsTotal}
+ci_tests_passed{repo="${REPO_NAME}",branch="${branchName}"} ${testsPassed}
+EOF
+                        """
+                    }
+
                     cleanWs()
                 }
             }
@@ -188,11 +236,13 @@ pipeline {
                 script {
                     def buildSuccess = currentBuild.result == 'SUCCESS' ? 1 : 0
                     def branchName = env.BRANCH_NAME ?: 'unknown'
+                    def buildDuration = currentBuild.duration / 1000 // Convert ms to seconds
 
                     sh """
-                        cat <<EOF | curl --data-binary @- ${PUSHGATEWAY_URL}/metrics/job/ci/instance/rpi-firmware || true
-ci_tests_success{repo="raspberrypi-firmware",branch="${branchName}"} ${buildSuccess}
-ci_build_timestamp{repo="raspberrypi-firmware",branch="${branchName}"} \$(date +%s)
+                        cat <<EOF | curl --data-binary @- ${PUSHGATEWAY_URL}/metrics/job/ci/instance/${REPO_NAME} || true
+ci_build_success{repo="${REPO_NAME}",branch="${branchName}"} ${buildSuccess}
+ci_build_duration_seconds{repo="${REPO_NAME}",branch="${branchName}"} ${buildDuration}
+ci_build_timestamp{repo="${REPO_NAME}",branch="${branchName}"} \$(date +%s)
 EOF
                     """
                 }
