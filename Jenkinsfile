@@ -240,7 +240,7 @@ EOF
 
                     sh """
                         cat <<EOF | curl --data-binary @- ${PUSHGATEWAY_URL}/metrics/job/ci/instance/${REPO_NAME} || true
-ci_build_success{repo="${REPO_NAME}",branch="${branchName}"} ${buildSuccess}
+ci_tests_success{repo="${REPO_NAME}",branch="${branchName}"} ${buildSuccess}
 ci_build_duration_seconds{repo="${REPO_NAME}",branch="${branchName}"} ${buildDuration}
 ci_build_timestamp{repo="${REPO_NAME}",branch="${branchName}"} \$(date +%s)
 EOF
