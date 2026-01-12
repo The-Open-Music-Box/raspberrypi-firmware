@@ -243,6 +243,7 @@ def register_core_infrastructure_services():
     # Note: ApplicationBootstrap extends DomainBootstrap, adding LED and physical controls management
     def domain_bootstrap_factory():
         import logging
+        import sys
 
         from app.src.application.bootstrap import ApplicationBootstrap
         logger = logging.getLogger(__name__)
@@ -265,11 +266,25 @@ def register_core_infrastructure_services():
         # NOTE: physical_controls_manager is NOT injected here to avoid circular dependencies
         # It will be set later via set_physical_controls_manager() in app_factory.py
 
+        # Inject audio backend factory on Linux (for jack detection support)
+        # This factory creates WM8960AudioBackend with jack_detection injected
+        audio_backend_factory = None
+        if sys.platform == "linux":
+            try:
+                from app.src.infrastructure.hardware.audio.audio_services_factory import (
+                    create_audio_backend_with_jack_detection,
+                )
+                audio_backend_factory = create_audio_backend_with_jack_detection
+                logger.info("✅ Audio backend factory with jack detection injected")
+            except ImportError as e:
+                logger.warning(f"⚠️ Audio services factory not available: {e}")
+
         logger.info("✅ Creating ApplicationBootstrap with LED components")
         return ApplicationBootstrap(
             led_manager=led_manager,
             led_event_handler=led_event_handler,
-            physical_controls_manager=None  # Will be set later to avoid circular deps
+            physical_controls_manager=None,  # Will be set later to avoid circular deps
+            audio_backend_factory=audio_backend_factory,
         )
     # Registered as "domain_bootstrap" for backward compatibility (actually ApplicationBootstrap)
     container.register_factory("domain_bootstrap", domain_bootstrap_factory, ServiceLifetime.SINGLETON)

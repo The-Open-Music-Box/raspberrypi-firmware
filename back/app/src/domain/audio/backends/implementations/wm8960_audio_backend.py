@@ -226,6 +226,21 @@ class WM8960AudioBackend(BaseAudioBackend):
         logger.info(f"🔊 WM8960: Using fallback device (stable card name): {device}")
         return device
 
+    def _get_card_name(self) -> str:
+        """Extract ALSA card name from the detected audio device.
+
+        The _audio_device is in format 'plughw:cardname' or similar.
+        For amixer commands, we need just the card name.
+
+        Returns:
+            str: ALSA card name (e.g., 'wm8960soundcard')
+        """
+        if self._audio_device and ":" in self._audio_device:
+            # Extract card name from "plughw:cardname" format
+            return self._audio_device.split(":")[-1]
+        # Fallback to default WM8960 card name
+        return "wm8960soundcard"
+
     def _get_file_duration(self, file_path: str) -> float | None:
         """Get the duration of an audio file using mutagen.
 
@@ -321,14 +336,15 @@ class WM8960AudioBackend(BaseAudioBackend):
             bool: True if successful.
         """
         try:
+            card_name = self._get_card_name()
             # Mute speaker output via amixer
             subprocess.run(  # nosec B603 B607
-                ["amixer", "-c", "wm8960soundcard", "sset", "Speaker", "0"],
+                ["amixer", "-c", card_name, "sset", "Speaker", "0"],
                 check=True,
                 capture_output=True,
                 timeout=2.0,
             )
-            logger.info("🔇 WM8960: Speakers muted (headphones connected)")
+            logger.info(f"🔇 WM8960: Speakers muted on {card_name} (headphones connected)")
             return True
         except subprocess.CalledProcessError as e:
             logger.warning(f"Failed to mute speakers: {e}")
@@ -348,14 +364,15 @@ class WM8960AudioBackend(BaseAudioBackend):
             bool: True if successful.
         """
         try:
+            card_name = self._get_card_name()
             # Restore speaker output via amixer
             subprocess.run(  # nosec B603 B607
-                ["amixer", "-c", "wm8960soundcard", "sset", "Speaker", str(DEFAULT_SPEAKER_VOLUME)],
+                ["amixer", "-c", card_name, "sset", "Speaker", str(DEFAULT_SPEAKER_VOLUME)],
                 check=True,
                 capture_output=True,
                 timeout=2.0,
             )
-            logger.info(f"🔊 WM8960: Speakers unmuted (volume={DEFAULT_SPEAKER_VOLUME})")
+            logger.info(f"🔊 WM8960: Speakers unmuted on {card_name} (volume={DEFAULT_SPEAKER_VOLUME})")
             return True
         except subprocess.CalledProcessError as e:
             logger.warning(f"Failed to unmute speakers: {e}")
@@ -375,12 +392,26 @@ class WM8960AudioBackend(BaseAudioBackend):
         This allows external components (like Socket.IO) to be notified
         when headphones are plugged/unplugged.
 
+        The callback is immediately invoked with the current state to ensure
+        clients receive the initial headphone status at boot.
+
         Args:
             callback: Function that receives True when headphones connected,
                      False when disconnected.
         """
         self._headphone_state_change_callback = callback
         logger.debug("Headphone state change callback registered")
+
+        # Immediately notify of current state (important for boot state broadcast)
+        if self._jack_detection is not None:
+            try:
+                callback(self._headphone_connected)
+                logger.info(
+                    f"🎧 Initial headphone state broadcast: "
+                    f"{'connected' if self._headphone_connected else 'disconnected'}"
+                )
+            except Exception as e:
+                logger.error(f"Error broadcasting initial headphone state: {e}")
 
     def is_headphone_connected(self) -> bool:
         """Check if headphones are currently connected.

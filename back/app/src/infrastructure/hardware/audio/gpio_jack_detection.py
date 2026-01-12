@@ -127,13 +127,15 @@ class GPIOJackDetection(BaseJackDetection):
         try:
             from gpiozero import Button
 
-            # Configure GPIO pin as input with pull-up resistor
+            # Configure GPIO pin as input with appropriate pull resistor
+            # For active_low: pull_up keeps pin HIGH when disconnected, detects LOW on connect
+            # For active_high: pull_down keeps pin LOW when disconnected, detects HIGH on connect
             # bounce_time is in seconds, convert from ms
             bounce_time = self._debounce_ms / 1000.0
 
             self._button = Button(
                 self._gpio_pin,
-                pull_up=True,
+                pull_up=self._active_low,  # pull_up for active_low, pull_down for active_high
                 bounce_time=bounce_time,
             )
 

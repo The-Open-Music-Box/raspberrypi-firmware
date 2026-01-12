@@ -97,7 +97,7 @@ def _create_audio_backend(
         return MockAudioBackend(playback_subject)
 
 
-def setup_headphone_broadcasting(socketio) -> bool:
+def setup_headphone_broadcasting(socketio, sequence_generator=None) -> bool:
     """Set up headphone status broadcasting via Socket.IO.
 
     This function connects the WM8960AudioBackend's headphone state change
@@ -106,6 +106,9 @@ def setup_headphone_broadcasting(socketio) -> bool:
 
     Args:
         socketio: Socket.IO server instance for broadcasting.
+        sequence_generator: Optional SequenceGenerator for server_seq.
+            If provided, uses global sequence for consistency with other events.
+            If None, uses a local counter (fallback for standalone usage).
 
     Returns:
         bool: True if broadcasting was set up successfully, False otherwise.
@@ -126,23 +129,40 @@ def setup_headphone_broadcasting(socketio) -> bool:
             return False
 
         # Import socket events here to avoid circular imports
+        import asyncio
+
         from app.src.common.socket_events import (
             SocketEventBuilder,
             SocketEventType,
         )
 
-        # Create a sequence generator for server_seq
-        _headphone_broadcast_seq = 0
+        # Use provided sequence generator or fall back to local counter
+        _use_global_seq = sequence_generator is not None
+        _local_seq = 0  # Fallback if no sequence generator provided
+
+        # Capture the main event loop for thread-safe callback scheduling
+        # GPIO callbacks run in a separate thread without an event loop
+        try:
+            _main_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            _main_loop = None
+            logger.warning("⚠️ No running event loop during headphone broadcasting setup")
 
         async def broadcast_headphone_status(connected: bool) -> None:
             """Broadcast headphone status change to all clients."""
-            nonlocal _headphone_broadcast_seq
-            _headphone_broadcast_seq += 1
+            nonlocal _local_seq
 
             try:
+                # Get server_seq from global sequence generator or local counter
+                if _use_global_seq:
+                    server_seq = await sequence_generator.get_next_global_seq()
+                else:
+                    _local_seq += 1
+                    server_seq = _local_seq
+
                 event_data = SocketEventBuilder.create_headphone_status_event(
                     connected=connected,
-                    server_seq=_headphone_broadcast_seq,
+                    server_seq=server_seq,
                 )
 
                 # Emit to the 'playlists' room (global state)
@@ -153,25 +173,39 @@ def setup_headphone_broadcasting(socketio) -> bool:
                 )
 
                 logger.info(
-                    f"🎧 Broadcasted headphone status: {'connected' if connected else 'disconnected'}"
+                    f"🎧 Broadcasted headphone status: {'connected' if connected else 'disconnected'} "
+                    f"(seq: {server_seq}, global={_use_global_seq})"
                 )
             except Exception as e:
                 logger.error(f"❌ Failed to broadcast headphone status: {e}")
 
         def on_headphone_state_changed(connected: bool) -> None:
-            """Synchronous callback that schedules async broadcast."""
-            import asyncio
+            """Synchronous callback that schedules async broadcast.
+
+            This callback is called from the GPIO thread, so we must use
+            run_coroutine_threadsafe to schedule the async broadcast on
+            the main event loop.
+            """
+            if _main_loop is None or _main_loop.is_closed():
+                logger.warning("⚠️ No event loop available for headphone status broadcast")
+                return
 
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(broadcast_headphone_status(connected))
-            except RuntimeError:
-                # No running event loop, log warning
-                logger.warning("⚠️ No event loop for headphone status broadcast")
+                # Schedule the coroutine on the main event loop from this thread
+                asyncio.run_coroutine_threadsafe(
+                    broadcast_headphone_status(connected),
+                    _main_loop
+                )
+            except Exception as e:
+                logger.error(f"❌ Failed to schedule headphone broadcast: {e}")
 
         # Register the callback with the audio backend
         backend.set_headphone_state_change_callback(on_headphone_state_changed)
-        logger.info("✅ Headphone status broadcasting enabled")
+
+        if _use_global_seq:
+            logger.info("✅ Headphone status broadcasting enabled (using global sequence)")
+        else:
+            logger.info("✅ Headphone status broadcasting enabled (using local sequence)")
         return True
 
     except Exception as e:

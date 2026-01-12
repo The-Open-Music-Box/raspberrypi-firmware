@@ -20,6 +20,9 @@ The audio backend initialization flow:
 4. Initialize audio_domain_container with the backend
 5. Mark DomainBootstrap as initialized
 
+Note: On Linux with jack detection, the caller should use the infrastructure factory
+(create_audio_backend_with_jack_detection) and pass the backend to initialize().
+
 This prevents the "device busy" errors from multiple pygame.mixer initialization attempts.
 """
 

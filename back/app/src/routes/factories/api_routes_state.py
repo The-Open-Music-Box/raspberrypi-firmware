@@ -161,9 +161,16 @@ def init_api_routes_state(app: FastAPI, socketio, config=None):
     routes_organizer.init_routes()
 
     # Setup headphone status broadcasting (WM8960 jack detection)
+    # Pass the global sequence generator for consistent event ordering
     from app.src.domain.audio.backends.implementations.audio_factory import (
         setup_headphone_broadcasting,
     )
-    setup_headphone_broadcasting(socketio)
+    sequence_generator = None
+    if hasattr(routes_organizer.playlist_routes, 'state_manager'):
+        state_manager = routes_organizer.playlist_routes.state_manager
+        if hasattr(state_manager, 'sequences'):
+            sequence_generator = state_manager.sequences
+            logger.info("✅ Using global SequenceGenerator for headphone broadcasting")
+    setup_headphone_broadcasting(socketio, sequence_generator=sequence_generator)
 
     return routes_organizer
