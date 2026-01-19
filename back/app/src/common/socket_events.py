@@ -46,8 +46,8 @@ class SocketEventType(str, Enum):
     STATE_PLAYLIST_UPDATED = "state:playlist_updated"
     STATE_PLAYLIST_DELETED = "state:playlist_deleted"
     STATE_TRACK_ADDED = "state:track_added"
-    STATE_TRACK_DELETED = "state:track_deleted"  # Legacy singular form for compatibility
-    STATE_TRACKS_DELETED = "state:tracks_deleted"  # Current plural form (v3.3.1+)
+    STATE_TRACK_DELETED = "state:track_deleted"
+    STATE_VOLUME_CHANGED = "state:volume_changed"
 
     # Operation acknowledgments
     ACK_OPERATION = "ack:op"
@@ -89,7 +89,6 @@ class StateEventType(Enum):
     NFC_STATE = "state:nfc_state"
 
     # Additional event types for DDD broadcasting service
-    TRACKS_DELETED = "state:tracks_deleted"
     TRACKS_REORDERED = "state:tracks_reordered"
     PLAYLIST_STARTED = "state:playlist_started"
     NFC_ASSOCIATED = "state:nfc_associated"
@@ -113,9 +112,9 @@ class StateEventEnvelope(BaseModel):
     event_type: SocketEventType = Field(..., description="Type of state event")
     server_seq: int = Field(..., description="Global server sequence number")
     data: dict[str, Any] = Field(..., description="Event payload data")
-    timestamp: int = Field(
-        default_factory=lambda: int(time.time() * 1000),
-        description="Event timestamp in milliseconds",
+    timestamp: float = Field(
+        default_factory=time.time,
+        description="Event timestamp in seconds",
     )
     event_id: str = Field(
         default_factory=lambda: str(uuid.uuid4())[:8], description="Unique event identifier"
@@ -123,6 +122,7 @@ class StateEventEnvelope(BaseModel):
 
     # Optional fields for specific event types
     playlist_id: str | None = Field(None, description="Playlist ID for playlist-specific events")
+    track_id: str | None = Field(None, description="Track ID for track-specific events")
     playlist_seq: int | None = Field(None, description="Playlist-specific sequence number")
 
 
@@ -132,8 +132,8 @@ class ConnectionStatusPayload(BaseModel):
     status: str = Field("connected", description="Connection status")
     sid: str = Field(..., description="Socket session ID")
     server_seq: int = Field(..., description="Current server sequence number")
-    server_time: int = Field(
-        default_factory=lambda: int(time.time() * 1000), description="Server timestamp"
+    server_time: float = Field(
+        default_factory=time.time, description="Server timestamp in seconds"
     )
 
 
@@ -327,8 +327,7 @@ EVENT_ROOM_MAPPING = {
     SocketEventType.STATE_PLAYLIST_UPDATED: "playlists",
     SocketEventType.STATE_PLAYLIST_DELETED: "playlists",
     SocketEventType.STATE_TRACK_ADDED: "playlist:{playlist_id}",
-    SocketEventType.STATE_TRACK_DELETED: "playlist:{playlist_id}",  # Legacy singular form
-    SocketEventType.STATE_TRACKS_DELETED: "playlist:{playlist_id}",  # Current plural form
+    SocketEventType.STATE_TRACK_DELETED: "playlist:{playlist_id}",
     SocketEventType.NFC_STATUS: "nfc",
     SocketEventType.NFC_ASSOCIATION_STATE: "nfc",
     SocketEventType.UPLOAD_PROGRESS: "playlist:{playlist_id}",

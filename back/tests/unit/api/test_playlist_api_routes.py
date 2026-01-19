@@ -41,7 +41,7 @@ class TestPlaylistAPIRoutes:
         service.broadcast_playlist_updated = AsyncMock()
         service.broadcast_playlist_deleted = AsyncMock()
         service.broadcast_tracks_reordered = AsyncMock()
-        service.broadcast_tracks_deleted = AsyncMock()
+        service.broadcast_track_deleted = AsyncMock()
         return service
 
     @pytest.fixture

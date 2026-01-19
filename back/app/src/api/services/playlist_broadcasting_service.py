@@ -166,7 +166,7 @@ class PlaylistBroadcastingService:
             logger.error(f"❌ Failed to broadcast track addition: {e!s}")
 
     @handle_service_errors("playlist_broadcasting")
-    async def broadcast_tracks_deleted(self, playlist_id: str, track_numbers: list[int]):
+    async def broadcast_track_deleted(self, playlist_id: str, track_numbers: list[int]):
         """Broadcast track deletion event.
 
         Args:
@@ -181,7 +181,7 @@ class PlaylistBroadcastingService:
             }
 
             await self._state_manager.broadcast_state_change(
-                StateEventType.TRACKS_DELETED,
+                StateEventType.TRACK_DELETED,
                 event_data
             )
 

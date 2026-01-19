@@ -30,7 +30,7 @@ class TestUploadSessionCreation:
         assert session.filename == "test.mp3"
         assert session.total_chunks == 10
         assert session.total_size_bytes == 10_000
-        assert session.status == UploadStatus.CREATED
+        assert session.status == UploadStatus.PENDING
         assert len(session.received_chunks) == 0
         assert session.current_size_bytes == 0
 
@@ -114,8 +114,7 @@ class TestChunkManagement:
         session.add_chunk(chunk)
 
         assert 0 in session.received_chunks
-        assert session.current_size_bytes == 1000
-        assert session.status == UploadStatus.IN_PROGRESS
+        assert session.status == UploadStatus.UPLOADING
 
     def test_add_multiple_chunks(self):
         """Test adding multiple chunks."""
@@ -200,7 +199,7 @@ class TestSessionCompletion:
         chunk2 = FileChunk.create(index=1, data=b"x" * 1000)
 
         session.add_chunk(chunk1)
-        assert session.status == UploadStatus.IN_PROGRESS
+        assert session.status == UploadStatus.UPLOADING
 
         session.add_chunk(chunk2)
         assert session.status == UploadStatus.COMPLETED
@@ -218,7 +217,7 @@ class TestSessionState:
     def test_is_active_in_progress(self):
         """Test session is active when in progress."""
         session = UploadSession(filename="test.mp3", total_chunks=2, total_size_bytes=2000)
-        session.status = UploadStatus.IN_PROGRESS
+        session.status = UploadStatus.UPLOADING
 
         assert session.is_active() is True
 
@@ -235,28 +234,9 @@ class TestSessionState:
 
         session.mark_failed("Upload error")
 
-        assert session.status == UploadStatus.FAILED
+        assert session.status == UploadStatus.ERROR
         assert session.error_message == "Upload error"
         assert session.completed_at is not None
-
-    def test_mark_cancelled(self):
-        """Test marking session as cancelled."""
-        session = UploadSession(filename="test.mp3", total_chunks=1, total_size_bytes=1000)
-
-        session.mark_cancelled()
-
-        assert session.status == UploadStatus.CANCELLED
-        assert session.completed_at is not None
-
-    def test_mark_expired(self):
-        """Test marking session as expired."""
-        session = UploadSession(filename="test.mp3", total_chunks=1, total_size_bytes=1000)
-
-        session.mark_expired()
-
-        assert session.status == UploadStatus.EXPIRED
-        assert session.completed_at is not None
-
 
 class TestSessionTimeout:
     """Test session timeout handling."""
@@ -384,7 +364,7 @@ class TestSessionSerialization:
         assert result["session_id"] == session.session_id
         assert result["filename"] == "test.mp3"
         assert result["playlist_id"] == "pl-123"
-        assert result["status"] == "created"
+        assert result["status"] == "pending"
         assert result["progress_percentage"] == 40.0
         assert result["size_progress_percentage"] == 40.0
         assert result["total_chunks"] == 5

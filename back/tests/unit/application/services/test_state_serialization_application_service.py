@@ -150,10 +150,10 @@ class TestStateSerializationApplicationService:
         track_obj.id = "track_456"
         track_obj.title = "Object Track"
         track_obj.filename = "track.mp3"
-        track_obj.duration = 180.5  # 3 minutes 30.5 seconds
+        track_obj.duration_ms = 180500  # 3 minutes 5 seconds
         track_obj.artist = "Object Artist"
         track_obj.album = "Object Album"
-        track_obj.number = 3
+        track_obj.track_number = 3
         track_obj.play_count = 42
         track_obj.created_at = "2023-01-01T00:00:00Z"
 
@@ -162,10 +162,10 @@ class TestStateSerializationApplicationService:
         assert result["id"] == "track_456"
         assert result["title"] == "Object Track"
         assert result["filename"] == "track.mp3"
-        assert result["duration_ms"] == 180500  # Converted to milliseconds
+        assert result["duration_ms"] == 180500
         assert result["artist"] == "Object Artist"
         assert result["album"] == "Object Album"
-        assert result["number"] == 3  # Fixed: OpenAPI contract uses 'number' not 'number'
+        assert result["track_number"] == 3
         assert result["play_count"] == 42
         assert result["created_at"] == "2023-01-01T00:00:00Z"
         assert result["server_seq"] == 100
@@ -177,7 +177,7 @@ class TestStateSerializationApplicationService:
         track_obj.id = "track_minimal"
         track_obj.title = "Minimal Track"
         track_obj.filename = "minimal.mp3"
-        track_obj.duration = None
+        track_obj.duration_ms = None
         # Missing optional attributes
         del track_obj.artist
         del track_obj.album
@@ -187,7 +187,7 @@ class TestStateSerializationApplicationService:
         assert result["id"] == "track_minimal"
         assert result["title"] == "Minimal Track"
         assert result["filename"] == "minimal.mp3"
-        assert result["duration_ms"] == 0  # None duration becomes 0
+        assert result["duration_ms"] is None
         assert result["artist"] is None
         assert result["album"] is None
 

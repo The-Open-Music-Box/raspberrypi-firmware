@@ -6,6 +6,7 @@ Progress: 4/4 endpoints tested ✅
 """
 
 import pytest
+import uuid
 from unittest.mock import AsyncMock, Mock
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
@@ -66,7 +67,7 @@ class TestNfcAPIContract:
                 "/api/nfc/associate",
                 json={
                     "tag_id": "test-tag-abc123",
-                    "playlist_id": "test-playlist-456",
+                    "playlist_id": str(uuid.uuid4()),
                     "client_op_id": "client-op-nfc"
                 }
             )

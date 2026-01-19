@@ -46,9 +46,9 @@ class BaseResponse(BaseModel, Generic[T]):
     status: ResponseStatus = Field(..., description="Response status")
     message: str = Field(..., description="Human-readable message")
     data: T | None = Field(None, description="Response data payload")
-    timestamp: int = Field(
-        default_factory=lambda: int(time.time() * 1000),
-        description="Response timestamp in milliseconds",
+    timestamp: float = Field(
+        default_factory=time.time,
+        description="Response timestamp in seconds",
     )
     server_seq: int | None = Field(
         None, description="Server sequence number for state synchronization"
@@ -64,9 +64,9 @@ class ErrorResponse(BaseModel):
     message: str = Field(..., description="Human-readable error message")
     error_type: ErrorType = Field(..., description="Structured error type")
     details: dict[str, Any] | None = Field(None, description="Additional error details")
-    timestamp: int = Field(
-        default_factory=lambda: int(time.time() * 1000),
-        description="Error timestamp in milliseconds",
+    timestamp: float = Field(
+        default_factory=time.time,
+        description="Error timestamp in seconds",
     )
     request_id: str = Field(
         default_factory=lambda: str(uuid.uuid4())[:8],

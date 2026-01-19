@@ -71,7 +71,7 @@ theopenmusicbox/
 ```
 
 The `conftest.py` automatically locates contracts at:
-`../../../../../contracts/schemas/socketio_contracts.json`
+`../../../../../contracts/deploy/socketio_contracts.json`
 
 ## Running Tests
 
@@ -509,7 +509,7 @@ When adding new tests:
 
 ## References
 
-- [Socket.IO Contracts](../../../../../../contracts/schemas/socketio_contracts.json)
-- [OpenAPI Contracts](../../../../../../contracts/schemas/openapi.yaml)
+- [Socket.IO Contracts](../../../../../../contracts/deploy/socketio_contracts.json)
+- [OpenAPI Contracts](../../../../../../contracts/deploy/openapi.yaml)
 - [pytest-asyncio docs](https://pytest-asyncio.readthedocs.io/)
 - [python-socketio client](https://python-socketio.readthedocs.io/en/latest/client.html)

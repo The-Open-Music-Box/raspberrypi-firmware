@@ -151,14 +151,14 @@ class TestTrackAddedEvent:
             track_id="track-123",
             playlist_id="pl-456",
             track_name="New Song",
-            number=5,
+            track_number=5,
             added_at=now
         )
 
         assert event.track_id == "track-123"
         assert event.playlist_id == "pl-456"
         assert event.track_name == "New Song"
-        assert event.number == 5
+        assert event.track_number == 5
         assert event.added_at == now
 
     def test_event_track_number_first_position(self):
@@ -167,11 +167,11 @@ class TestTrackAddedEvent:
             track_id="track-1",
             playlist_id="pl-1",
             track_name="First Track",
-            number=1,
+            track_number=1,
             added_at=datetime.now(timezone.utc)
         )
 
-        assert event.number == 1
+        assert event.track_number == 1
 
     def test_event_track_number_large_value(self):
         """Test event with large track number."""
@@ -179,11 +179,11 @@ class TestTrackAddedEvent:
             track_id="track-1",
             playlist_id="pl-1",
             track_name="Track",
-            number=999,
+            track_number=999,
             added_at=datetime.now(timezone.utc)
         )
 
-        assert event.number == 999
+        assert event.track_number == 999
 
 
 class TestTrackUpdatedEvent:

@@ -29,7 +29,7 @@ class TestTrackSerialization:
         """
         track = Track(
             id="test-track-id",
-            number=5,
+            track_number=5,
             title="Test Track",
             filename="test.mp3",
             file_path="/path/to/test.mp3",
@@ -43,12 +43,12 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_API
         )
 
-        # CRITICAL: Verify 'number' field exists (per OpenAPI contract v3.3.2)
-        assert "number" in result, (
-            f"Track serialization missing 'number' field. "
+        # CRITICAL: Verify 'track_number' field exists (per OpenAPI contract v4.0.0)
+        assert "track_number" in result, (
+            f"Track serialization missing 'track_number' field. "
             f"Available fields: {list(result.keys())}"
         )
-        assert result["number"] == 5, "number field should match track position"
+        assert result["track_number"] == 5, "track_number field should match track position"
 
         # Per OpenAPI contract v3.3.2, 'number' field should exist (no track_number mapping needed)
 
@@ -56,7 +56,7 @@ class TestTrackSerialization:
         """Verify all required fields are present in API format."""
         track = Track(
             id="test-id",
-            number=3,
+            track_number=3,
             title="Track Title",
             filename="track.mp3",
             file_path="/path/track.mp3",
@@ -68,10 +68,10 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_API
         )
 
-        # Required fields per OpenAPI contract v3.3.2 and frontend Track interface
+        # Required fields per OpenAPI contract v4.0.0 and frontend Track interface
         required_fields = [
             "id",
-            "number",  # Per OpenAPI contract v3.3.2
+            "track_number",  # Per OpenAPI contract v4.0.0
             "title",
             "filename",
             "duration_ms",
@@ -93,7 +93,7 @@ class TestTrackSerialization:
         """
         track = Track(
             id="test-id",
-            number=1,
+            track_number=1,
             title="First Track",
             filename="first.mp3",
             file_path="/path/first.mp3"
@@ -104,13 +104,13 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_API
         )
 
-        assert result["number"] > 0, "Track number should never be 0 for valid tracks"
+        assert result["track_number"] > 0, "Track number should never be 0 for valid tracks"
 
     def test_serialize_track_websocket_format(self):
         """Verify WebSocket format is minimal and compact."""
         track = Track(
             id="test-id",
-            number=2,
+            track_number=2,
             title="Track 2",
             filename="track2.mp3",
             file_path="/path/track2.mp3",
@@ -122,15 +122,15 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_WEBSOCKET
         )
 
-        # WebSocket format should be minimal (per OpenAPI contract v3.3.2)
-        expected_fields = {"id", "number", "title", "duration_ms"}
+        # WebSocket format should be minimal (per OpenAPI contract v4.0.0)
+        expected_fields = {"id", "track_number", "title", "duration_ms"}
         assert set(result.keys()) == expected_fields
 
     def test_serialize_track_from_dict(self):
         """Verify serialization works with dict input (repository layer)."""
         track_dict = {
             "id": "dict-track-id",
-            "number": 7,
+            "track_number": 7,
             "title": "Dict Track",
             "filename": "dict.mp3",
             "file_path": "/path/dict.mp3",
@@ -142,8 +142,8 @@ class TestTrackSerialization:
             format=UnifiedSerializationService.FORMAT_API
         )
 
-        assert "number" in result
-        assert result["number"] == 7
+        assert "track_number" in result
+        assert result["track_number"] == 7
 
 
 class TestPlaylistSerialization:
@@ -153,14 +153,14 @@ class TestPlaylistSerialization:
         """Verify tracks in playlist have 'number' field."""
         track1 = Track(
             id="track-1",
-            number=1,
+            track_number=1,
             title="Track 1",
             filename="track1.mp3",
             file_path="/path/track1.mp3"
         )
         track2 = Track(
             id="track-2",
-            number=2,
+            track_number=2,
             title="Track 2",
             filename="track2.mp3",
             file_path="/path/track2.mp3"
@@ -179,20 +179,20 @@ class TestPlaylistSerialization:
             format=UnifiedSerializationService.FORMAT_API
         )
 
-        # Verify all tracks have 'number' field
+        # Verify all tracks have 'track_number' field
         assert len(result["tracks"]) == 2
         for track in result["tracks"]:
-            assert "number" in track, (
-                f"Track in playlist missing 'number' field: {track.keys()}"
+            assert "track_number" in track, (
+                f"Track in playlist missing 'track_number' field: {track.keys()}"
             )
-            assert track["number"] > 0
+            assert track["track_number"] > 0
 
     def test_serialize_playlist_track_numbers_are_sequential(self):
         """Verify track numbers are preserved correctly."""
         tracks = [
             Track(
                 id=f"track-{i}",
-                number=i,
+                track_number=i,
                 title=f"Track {i}",
                 filename=f"track{i}.mp3",
                 file_path=f"/path/track{i}.mp3"
@@ -214,7 +214,7 @@ class TestPlaylistSerialization:
         )
 
         # Verify track numbers are 1, 2, 3, 4, 5
-        track_numbers = [track["number"] for track in result["tracks"]]
+        track_numbers = [track["track_number"] for track in result["tracks"]]
         assert track_numbers == [1, 2, 3, 4, 5]
 
 
@@ -239,7 +239,7 @@ class TestContractCompliance:
         """
         track = Track(
             id="contract-test-id",
-            number=10,
+            track_number=10,
             title="Contract Test",
             filename="contract.mp3",
             file_path="/path/contract.mp3",
@@ -253,13 +253,13 @@ class TestContractCompliance:
 
         # Frontend contract requirements
         assert isinstance(result["id"], str)
-        assert isinstance(result["number"], int)  # Frontend expects 'number'
+        assert isinstance(result["track_number"], int)  # Frontend expects 'track_number' per OpenAPI contract v4.0.0
         assert isinstance(result["title"], str)
         assert isinstance(result["filename"], str)
         assert isinstance(result["duration_ms"], int)
 
         # Track number must be valid (> 0)
-        assert result["number"] > 0
+        assert result["track_number"] > 0
 
     def test_no_silent_defaults_in_serialization(self):
         """
@@ -270,7 +270,7 @@ class TestContractCompliance:
         """
         track = Track(
             id="explicit-test",
-            number=15,
+            track_number=15,
             title="Explicit Values",
             filename="explicit.mp3",
             file_path="/path/explicit.mp3"
@@ -282,7 +282,5 @@ class TestContractCompliance:
         )
 
         # Critical fields must have explicit values, not None or 0
-        assert result["number"] is not None
-        assert result["number"] != 0
-        assert result["number"] is not None
-        assert result["number"] != 0
+        assert result["track_number"] is not None
+        assert result["track_number"] != 0

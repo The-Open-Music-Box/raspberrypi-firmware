@@ -15,6 +15,7 @@ This factory creates and registers handler instances following DDD principles:
 - SyncHandlers: Handles state synchronization and health monitoring
 """
 
+import time
 from typing import Any
 
 import socketio
@@ -150,6 +151,7 @@ class WebSocketStateHandlers:
                     "status": "connected",
                     "sid": sid,
                     "server_seq": self.state_manager.get_global_sequence(),
+                    "server_time": time.time(),
                 },
                 room=sid,
             )

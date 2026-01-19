@@ -83,30 +83,41 @@ class SyncHandlers:
                 - Emits 'sync:complete' acknowledgment with current sequence numbers
                 - Logs synchronization at INFO level
             """
-            # Get client's last known sequence numbers
-            last_global_seq = data.get("last_global_seq", 0)
-            last_playlist_seqs = data.get("last_playlist_seqs", {})
-            logger.info(f"Sync request from {sid}: global_seq={last_global_seq}")
+            try:
+                # Get client's last known sequence numbers
+                last_global_seq = data.get("last_global_seq", 0)
+                last_playlist_seqs = data.get("last_playlist_seqs", {})
+                logger.info(f"Sync request from {sid}: global_seq={last_global_seq}")
 
-            # Send current global state if client is behind
-            current_global_seq = self.state_manager.get_global_sequence()
-            if last_global_seq < current_global_seq:
-                # Client needs full resync - send snapshots for subscribed rooms
-                subscriptions = self.state_manager.get_client_subscriptions(sid)
-                for room in subscriptions:
-                    await self.state_manager._send_state_snapshot(sid, room)
+                # Send current global state if client is behind
+                current_global_seq = self.state_manager.get_global_sequence()
+                if last_global_seq < current_global_seq:
+                    # Client needs full resync - send snapshots for subscribed rooms
+                    subscriptions = self.state_manager.get_client_subscriptions(sid)
+                    for room in subscriptions:
+                        await self.state_manager._send_state_snapshot(sid, room)
 
-            # Send sync acknowledgment
-            await self.sio.emit(
-                "sync:complete",
-                {
-                    "current_global_seq": current_global_seq,
-                    "synced_rooms": list(
-                        self.state_manager.get_client_subscriptions(sid)
-                    ),
-                },
-                room=sid,
-            )
+                # Send sync acknowledgment
+                await self.sio.emit(
+                    "sync:complete",
+                    {
+                        "current_global_seq": current_global_seq,
+                        "synced_rooms": list(
+                            self.state_manager.get_client_subscriptions(sid)
+                        ),
+                    },
+                    room=sid,
+                )
+            except Exception as e:
+                logger.error(f"Error during sync request from {sid}: {e}")
+                await self.sio.emit(
+                    "sync:error",
+                    {
+                        "message": "An error occurred during synchronization.",
+                        "error": str(e),
+                    },
+                    room=sid,
+                )
 
         @self.sio.on("client:request_current_state")
         @handle_http_errors()
