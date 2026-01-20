@@ -39,7 +39,25 @@ This directory contains comprehensive documentation about GPIO pin usage, config
 
 ---
 
-### 3. GPIO_CODE_EVIDENCE.md
+### 3. LED_COLOR_CODES.md
+**Purpose:** Complete LED indicator system documentation
+**Audience:** Users, developers, hardware integrators
+**Contents:**
+- LED hardware configuration (GPIO pins)
+- Color codes for each system state
+- Animation types and descriptions
+- Priority-based state management
+- Quick visual reference guide
+
+**Best for:**
+- Understanding what each LED color/animation means
+- Debugging LED behavior issues
+- Customizing LED feedback
+- Hardware integration reference
+
+---
+
+### 4. GPIO_CODE_EVIDENCE.md
 **Purpose:** Detailed code snippets with exact line references
 **Audience:** Developers, code reviewers
 **Contents:**
