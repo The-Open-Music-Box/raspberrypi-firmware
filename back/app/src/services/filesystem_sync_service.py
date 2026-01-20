@@ -119,7 +119,7 @@ class FilesystemSyncService:
             duration_seconds = metadata.get("duration", 0)
             duration_ms = int(duration_seconds * 1000) if duration_seconds else 0
             track = {
-                "number": i,
+                "track_number": i,
                 "title": metadata.get("title", file_path.stem),
                 "filename": file_path.name,
                 "duration": duration_ms,  # Now in milliseconds like other services
@@ -177,7 +177,7 @@ class FilesystemSyncService:
         for filename in sorted(to_add):
             file_path = disk_files_map[filename]
             new_track = {
-                "number": track_number,
+                "track_number": track_number,
                 "title": file_path.stem,
                 "filename": filename,
                 "duration": "",

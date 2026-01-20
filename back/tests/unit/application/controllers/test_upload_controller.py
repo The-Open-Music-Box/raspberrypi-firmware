@@ -402,7 +402,7 @@ class TestUploadFinalization:
 
         controller.playlist_app_service.get_playlist_use_case = AsyncMock(return_value={
             "id": "pl-123",
-            "tracks": [{"number": 1}]
+            "tracks": [{"track_number": 1}]
         })
 
         result = await controller.finalize_upload(
@@ -412,7 +412,7 @@ class TestUploadFinalization:
 
         assert result["status"] == "success"
         assert "track" in result
-        assert result["track"]["number"] == 2  # After existing track
+        assert result["track"]["track_number"] == 2  # After existing track
 
     @pytest.mark.asyncio
     async def test_finalize_with_metadata_override(self, controller):

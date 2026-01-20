@@ -299,7 +299,7 @@ class TestUploadControllerIntegration:
         assert result["track"]["title"] == "Test Track"
         assert result["track"]["artist"] == "Test Artist"
         assert result["track"]["album"] == "Test Album"
-        assert result["track"]["number"] == 1
+        assert result["track"]["track_number"] == 1
 
         # Verify Socket.IO emit was called
         mock_socketio.emit.assert_called_once()

@@ -157,7 +157,7 @@ class PlaylistUploadAPI(BaseAPIRoutes):
                         "artist": track_data.get("artist"),
                         "album": track_data.get("album"),
                         "file_size": track_data.get("file_size"),
-                        "number": track_data.get("number", 1),
+                        "track_number": track_data.get("track_number", track_data.get("number", 1)),
                     }
 
                     # Add track via application service
