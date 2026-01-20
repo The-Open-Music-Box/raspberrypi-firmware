@@ -20,7 +20,7 @@ env:
 jobs:
   collect-metrics:
     name: Collect Code Quality Metrics
-    runs-on: [self-hosted, docker]
+    runs-on: [self-hosted, Linux, ARM64, rpi]
 
     defaults:
       run:
