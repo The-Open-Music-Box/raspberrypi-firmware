@@ -219,7 +219,7 @@ class TrackService(BaseDomainService):
         for idx, filename in enumerate(track_ids):
             internal_uuid = filename_to_uuid[filename]
             new_position = idx + 1
-            track_orders.append({'track_id': internal_uuid, 'number': new_position})
+            track_orders.append({'track_id': internal_uuid, 'track_number': new_position})
             logger.debug(f"Position {new_position}: {filename} → UUID {internal_uuid}")
 
         success = await self._track_repo.reorder(playlist_id, track_orders)
