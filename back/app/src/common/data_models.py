@@ -12,6 +12,7 @@ ensuring consistent field names, types, and serialization formats.
 from datetime import datetime
 from enum import Enum
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 
@@ -83,6 +84,7 @@ class TrackModel(TimestampedModel):
     id: str = Field(..., description="Unique track identifier")
     title: str = Field(..., description="Track title")
     filename: str = Field(..., description="Original filename")
+    duration: int | None = Field(None, description="Track duration in seconds (deprecated, use duration_ms)")
     duration_ms: int = Field(..., description="Track duration in milliseconds")
     file_path: str = Field(..., description="Server file path")
     file_hash: str | None = Field(None, description="File content hash")
@@ -91,13 +93,13 @@ class TrackModel(TimestampedModel):
     # Metadata fields
     artist: str | None = Field(None, description="Track artist")
     album: str | None = Field(None, description="Track album")
-    number: int | None = Field(None, description="Track number in playlist - per OpenAPI contract v3.3.2")
+    track_number: int | None = Field(None, description="Track number in playlist - per OpenAPI contract v4.0.0")
 
     # Statistics
     play_count: int = Field(0, description="Number of times played")
 
     # State synchronization
-    server_seq: int = Field(..., description="Server sequence number")
+    server_seq: float = Field(..., description="Server sequence number")
 
     @field_validator("duration_ms")
     @classmethod
@@ -111,7 +113,7 @@ class TrackModel(TimestampedModel):
 class PlaylistModel(TimestampedModel):
     """Unified Playlist model - resolves name/title confusion."""
 
-    id: str = Field(..., description="Unique playlist identifier")
+    id: UUID = Field(..., description="Unique playlist identifier")
     title: str = Field(..., description="Playlist title (resolved from name/title confusion)")
     description: str = Field("", description="Playlist description")
 
@@ -122,8 +124,7 @@ class PlaylistModel(TimestampedModel):
     tracks: list[TrackModel] = Field(default_factory=list, description="Playlist tracks")
     track_count: int = Field(0, description="Number of tracks in playlist")
 
-    # State synchronization
-    server_seq: int = Field(..., description="Global server sequence")
+    server_seq: float | None = Field(..., description="Global server sequence")
     playlist_seq: int = Field(..., description="Playlist-specific sequence")
 
     @field_validator("track_count", mode="after")
@@ -139,7 +140,7 @@ class PlaylistModel(TimestampedModel):
 class PlaylistLiteModel(TimestampedModel):
     """Lightweight playlist model for list views."""
 
-    id: str = Field(..., description="Unique playlist identifier")
+    id: UUID = Field(..., description="Unique playlist identifier")
     title: str = Field(..., description="Playlist title")
     description: str = Field("", description="Playlist description")
     nfc_tag_id: str | None = Field(None, description="Associated NFC tag ID")
@@ -161,6 +162,8 @@ class PlayerStateModel(BaseModel):
     )
     active_track_id: str | None = Field(None, description="Currently active track ID")
     active_track: TrackModel | None = Field(None, description="Currently active track")
+    active_track_number: int | None = Field(None, description="Currently active track number")
+    active_track_title: str | None = Field(None, description="Currently active track title")
 
     # Playback position
     position_ms: int = Field(0, description="Current playback position in milliseconds")
@@ -177,7 +180,7 @@ class PlayerStateModel(BaseModel):
     muted: bool = Field(False, description="Whether audio is muted")
 
     # State synchronization
-    server_seq: int = Field(..., description="Server sequence number")
+    server_seq: float = Field(..., description="Server sequence number")
 
     # Optional error information
     error_message: str | None = Field(None, description="Error message if in error state")
@@ -223,7 +226,7 @@ class VolumePayloadModel(BaseModel):
 class UploadStatusModel(BaseDataModel):
     """Unified model for file upload status."""
 
-    session_id: str = Field(..., description="Upload session identifier")
+    session_id: UUID = Field(..., description="Upload session identifier")
     filename: str = Field(..., description="Original filename")
     file_size: int = Field(..., description="Total file size in bytes")
     bytes_uploaded: int = Field(0, description="Bytes uploaded so far")
@@ -240,7 +243,7 @@ class NFCAssociationModel(BaseDataModel):
     """Model for NFC tag associations."""
 
     tag_id: str = Field(..., description="NFC tag identifier")
-    playlist_id: str = Field(..., description="Associated playlist ID")
+    playlist_id: UUID = Field(..., description="Associated playlist ID")
     playlist_title: str = Field(..., description="Associated playlist title")
     created_at: datetime = Field(..., description="Association creation time")
 

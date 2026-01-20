@@ -16,7 +16,7 @@ class Track:
     and rules related to audio tracks.
 
     Attributes:
-        number: Position in the playlist (1-based) - per OpenAPI contract v3.3.2
+        track_number: Position in the playlist (1-based) - per OpenAPI contract v4.0.0
         title: Title of the track
         filename: Filename of the track
         file_path: String path to the track file - aligned with frontend
@@ -26,7 +26,7 @@ class Track:
         id: Optional unique identifier
     """
 
-    number: int  # Position in playlist - per OpenAPI contract v3.3.2
+    track_number: int  # Position in playlist - per OpenAPI contract v4.0.0
     title: str
     filename: str
     file_path: str  # Changed from Path to string to align with frontend
@@ -39,11 +39,6 @@ class Track:
     def path(self) -> Path:
         """API compatibility property for file system operations."""
         return Path(self.file_path)
-
-    @property
-    def duration(self) -> float | None:
-        """Duration in seconds - converted from duration_ms field which contains milliseconds."""
-        return self.duration_ms / 1000.0 if self.duration_ms is not None else None
 
     @property
     def exists(self) -> bool:
@@ -63,17 +58,17 @@ class Track:
         """
         path = Path(file_path)
         return cls(
-            number=number, title=path.stem, filename=path.name, file_path=str(path)
+            track_number=number, title=path.stem, filename=path.name, file_path=str(path)
         )
 
     def __str__(self) -> str:
         """Domain representation of the track."""
-        return f"{self.number}. {self.title}"
+        return f"{self.track_number}. {self.title}"
 
     def is_valid(self) -> bool:
         """Domain business rule: Check if track has valid data."""
         return (
-            self.number > 0
+            self.track_number > 0
             and bool(self.title.strip())
             and bool(self.filename.strip())
             and bool(self.file_path.strip())

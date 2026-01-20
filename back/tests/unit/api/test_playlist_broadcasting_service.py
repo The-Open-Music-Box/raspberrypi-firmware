@@ -106,19 +106,19 @@ class TestPlaylistBroadcastingService:
         assert event_data["operation"] == "add_track"
 
     @pytest.mark.asyncio
-    async def test_broadcast_tracks_deleted(self, broadcasting_service, mock_state_manager):
+    async def test_broadcast_track_deleted(self, broadcasting_service, mock_state_manager):
         """Test broadcasting track deletion event."""
         # Arrange
         playlist_id = "test-playlist-id"
         track_numbers = [1, 3, 5]
 
         # Act
-        await broadcasting_service.broadcast_tracks_deleted(playlist_id, track_numbers)
+        await broadcasting_service.broadcast_track_deleted(playlist_id, track_numbers)
 
         # Assert
         mock_state_manager.broadcast_state_change.assert_called_once()
         call_args = mock_state_manager.broadcast_state_change.call_args
-        assert call_args[0][0] == StateEventType.TRACKS_DELETED
+        assert call_args[0][0] == StateEventType.TRACK_DELETED
         event_data = call_args[0][1]
         assert event_data["playlist_id"] == playlist_id
         assert event_data["track_numbers"] == track_numbers
@@ -255,7 +255,7 @@ class TestPlaylistBroadcastingService:
         await broadcasting_service.broadcast_playlist_updated("test-id", {})
         await broadcasting_service.broadcast_playlist_deleted("test-id")
         await broadcasting_service.broadcast_track_added("test-id", {})
-        await broadcasting_service.broadcast_tracks_deleted("test-id", [])
+        await broadcasting_service.broadcast_track_deleted("test-id", [])
         await broadcasting_service.broadcast_tracks_reordered("test-id", [])
         await broadcasting_service.broadcast_playlist_started("test-id")
         await broadcasting_service.broadcast_nfc_associated("test-id", "nfc")
@@ -282,7 +282,7 @@ class TestPlaylistBroadcastingService:
             'broadcast_playlist_updated',
             'broadcast_playlist_deleted',
             'broadcast_track_added',
-            'broadcast_tracks_deleted',
+            'broadcast_track_deleted',
             'broadcast_tracks_reordered',
             'broadcast_playlist_started',
             'broadcast_nfc_associated',

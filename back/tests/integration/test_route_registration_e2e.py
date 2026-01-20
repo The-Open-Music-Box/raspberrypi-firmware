@@ -6,6 +6,7 @@ and other route registration issues.
 """
 
 import pytest
+import uuid
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import Mock, AsyncMock
@@ -126,7 +127,7 @@ class TestRouteRegistrationE2E:
                 "/api/nfc/associate",
                 json={
                     "tag_id": "test-tag-123",
-                    "playlist_id": "test-playlist-456",
+                    "playlist_id": str(uuid.uuid4()),
                     "client_op_id": "test-assoc-op"
                 }
             )

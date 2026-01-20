@@ -119,10 +119,10 @@ class StateSerializationApplicationService:
                 "id": track.id,
                 "title": track.title,
                 "filename": track.filename,
-                "duration_ms": int((track.duration or 0) * 1000),
+                "duration_ms": track.duration_ms,
                 "artist": getattr(track, "artist", None),
                 "album": getattr(track, "album", None),
-                "number": getattr(track, "number", None),  # Fixed: 'number' not 'number'
+                "track_number": getattr(track, "track_number", None),
                 "play_count": getattr(track, "play_count", 0),
                 "created_at": getattr(track, "created_at", None),
                 "server_seq": self.sequences.get_current_global_seq(),

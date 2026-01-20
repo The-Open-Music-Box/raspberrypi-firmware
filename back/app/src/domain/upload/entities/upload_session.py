@@ -18,12 +18,10 @@ from ..value_objects.file_metadata import FileMetadata
 class UploadStatus(Enum):
     """Status of an upload session."""
 
-    CREATED = "created"
-    IN_PROGRESS = "in_progress"
+    PENDING = "pending"
+    UPLOADING = "uploading"
     COMPLETED = "completed"
-    FAILED = "failed"
-    EXPIRED = "expired"
-    CANCELLED = "cancelled"
+    ERROR = "error"
 
 
 @dataclass
@@ -41,7 +39,9 @@ class UploadSession(BaseSessionEntity):
     playlist_path: str | None = None
     total_chunks: int = 0
     total_size_bytes: int = 0
-    status: UploadStatus = UploadStatus.CREATED
+    chunk_size: int = 0
+    file_hash: str | None = None
+    status: UploadStatus = UploadStatus.PENDING
     completed_at: datetime | None = None
     received_chunks: set[int] = field(default_factory=set)
     current_size_bytes: int = 0
@@ -76,7 +76,7 @@ class UploadSession(BaseSessionEntity):
     def is_active(self) -> bool:
         """Check if this session is active (not completed/failed/expired)."""
         return (
-            self.status in [UploadStatus.CREATED, UploadStatus.IN_PROGRESS]
+            self.status in [UploadStatus.PENDING, UploadStatus.UPLOADING]
             and not self.is_expired()
         )
 
@@ -107,8 +107,8 @@ class UploadSession(BaseSessionEntity):
         self.current_size_bytes += chunk.size
 
         # Update status
-        if self.status == UploadStatus.CREATED:
-            self.status = UploadStatus.IN_PROGRESS
+        if self.status == UploadStatus.PENDING:
+            self.status = UploadStatus.UPLOADING
 
         # Check if complete
         if self.is_complete():
@@ -128,18 +128,8 @@ class UploadSession(BaseSessionEntity):
         Args:
             error_message: Description of the failure
         """
-        self.status = UploadStatus.FAILED
+        self.status = UploadStatus.ERROR
         self.error_message = error_message
-        self.completed_at = datetime.now(UTC)
-
-    def mark_cancelled(self) -> None:
-        """Mark this session as cancelled."""
-        self.status = UploadStatus.CANCELLED
-        self.completed_at = datetime.now(UTC)
-
-    def mark_expired(self) -> None:
-        """Mark this session as expired."""
-        self.status = UploadStatus.EXPIRED
         self.completed_at = datetime.now(UTC)
 
     def set_metadata(self, metadata: FileMetadata) -> None:

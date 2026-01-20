@@ -11,7 +11,7 @@ back/
 ├── app/src/api/              # API implementation
 ├── tests/contracts/          # Contract validation tests
 └── ../contracts/             # Git submodule (OpenAPI schemas)
-    └── schemas/
+    └── deploy/
         └── openapi.yaml      # Source of truth for API
 ```
 
@@ -70,7 +70,7 @@ from openapi_spec_validator.validation.exceptions import OpenAPIValidationError
 
 def load_openapi_schema():
     """Load OpenAPI schema from contracts submodule."""
-    schema_path = Path(__file__).parent.parent.parent.parent / "contracts" / "schemas" / "openapi.yaml"
+    schema_path = Path(__file__).parent.parent.parent.parent / "contracts" / "deploy" / "openapi.yaml"
 
     with open(schema_path) as f:
         schema = yaml.safe_load(f)
@@ -165,7 +165,7 @@ When you add/modify an endpoint in the backend:
 2. **Update OpenAPI schema**:
    ```bash
    cd ../contracts
-   vim schemas/openapi.yaml
+   vim deploy/openapi.yaml
    # Add/modify endpoint definition
    ```
 
@@ -364,7 +364,7 @@ pytest tests/contracts/
 1. Check what changed in schema:
    ```bash
    cd contracts
-   git log -p schemas/openapi.yaml
+   git log -p deploy/openapi.yaml
    ```
 
 2. Update implementation to match

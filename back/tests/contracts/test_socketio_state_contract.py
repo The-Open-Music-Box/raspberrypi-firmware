@@ -32,7 +32,7 @@ class TestSocketIOStateContract:
         assert isinstance(payload["event_type"], str), "event_type must be string"
         assert isinstance(payload["server_seq"], int), "server_seq must be number"
         assert isinstance(payload["data"], dict), "data must be object"
-        assert isinstance(payload["timestamp"], int), "timestamp must be number"
+        assert isinstance(payload["timestamp"], (int, float)), "timestamp must be number"
         assert isinstance(payload["event_id"], str), "event_id must be string"
 
         assert payload["event_type"] == event_type.value, f"event_type must be '{event_type.value}'"

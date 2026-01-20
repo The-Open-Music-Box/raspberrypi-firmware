@@ -112,7 +112,7 @@ class TestAudioApplicationService:
                 "title": "Test Playlist",
                 "tracks": [
                     {
-                        "number": 1,
+                        "track_number": 1,
                         "title": "Song 1",
                         "filename": "song1.mp3",
                         "file_path": "/path/to/song1.mp3",
@@ -142,7 +142,7 @@ class TestAudioApplicationService:
             "playlist": {
                 "id": playlist_id,
                 "title": "Test Playlist",
-                "tracks": [{"number": 1, "title": "Song 1", "filename": "song1.mp3"}]
+                "tracks": [{"track_number": 1, "title": "Song 1", "filename": "song1.mp3"}]
             }
         }
         mock_audio_container.audio_engine.set_playlist.return_value = True
@@ -218,7 +218,7 @@ class TestAudioApplicationService:
             "status": "success",
             "playlist": {
                 "id": playlist_id,
-                "tracks": [{"number": 1, "title": "Song 1", "filename": "song1.mp3"}]
+                "tracks": [{"track_number": 1, "title": "Song 1", "filename": "song1.mp3"}]
             }
         }
         mock_audio_container.audio_engine.set_playlist.return_value = False
@@ -243,7 +243,7 @@ class TestAudioApplicationService:
             "status": "success",
             "playlist": {
                 "id": playlist_id,
-                "tracks": [{"number": 1, "title": "Song 1"}]
+                "tracks": [{"track_number": 1, "title": "Song 1"}]
             }
         }
 

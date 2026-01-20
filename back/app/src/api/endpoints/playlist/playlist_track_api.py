@@ -118,7 +118,7 @@ class PlaylistTrackAPI(BaseAPIRoutes):
 
                 if result.get("status") == "success":
                     # Broadcast state change
-                    await self._broadcasting_service.broadcast_tracks_deleted(
+                    await self._broadcasting_service.broadcast_track_deleted(
                         playlist_id, track_numbers
                     )
 

@@ -50,7 +50,7 @@ class TrackService(BaseDomainService):
 
         tracks = await self._track_repo.get_by_playlist(playlist_id)
         # Handle both Track objects and dictionaries
-        return sorted(tracks, key=lambda t: t.number if hasattr(t, 'number') else t.get('number', 0))
+        return sorted(tracks, key=lambda t: t.track_number if hasattr(t, 'track_number') else t.get('track_number', 0))
 
     @handle_domain_errors(operation_name="add_track")
     async def add_track(self, playlist_id: str, track_data: dict[str, Any]) -> dict[str, Any]:
@@ -76,7 +76,7 @@ class TrackService(BaseDomainService):
         full_track_data = {
             'id': track_id,
             'playlist_id': playlist_id,
-            'number': track_data.get('number', next_track_number),
+            'track_number': track_data.get('track_number', next_track_number),
             'title': track_data.get('title', 'Unknown Track'),
             'filename': track_data.get('filename'),
             'file_path': track_data.get('file_path'),
@@ -192,7 +192,7 @@ class TrackService(BaseDomainService):
         # Verify all tracks belong to the playlist
         existing_tracks = await self._track_repo.get_by_playlist(playlist_id)
 
-        # Per OpenAPI contract v3.3.2: track_ids are filenames (Track schema has no 'id' field)
+        # Per OpenAPI contract v4.0.0: track_ids are filenames (Track schema has no 'id' field)
         existing_filenames = {
             t.filename if hasattr(t, 'filename') else t.get('filename')
             for t in existing_tracks
@@ -217,7 +217,7 @@ class TrackService(BaseDomainService):
         for idx, filename in enumerate(track_ids):
             internal_uuid = filename_to_uuid[filename]
             new_position = idx + 1
-            track_orders.append({'track_id': internal_uuid, 'number': new_position})
+            track_orders.append({'track_id': internal_uuid, 'track_number': new_position})
             logger.debug(f"Position {new_position}: {filename} → UUID {internal_uuid}")
 
         success = await self._track_repo.reorder(playlist_id, track_orders)

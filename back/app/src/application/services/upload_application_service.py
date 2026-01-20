@@ -219,8 +219,9 @@ class UploadApplicationService:
         session, error = self._get_session_or_error(session_id)
         if error:
             return error
-        # Mark session as cancelled
-        session.mark_cancelled()
+        # Mark session as error
+        session.status = UploadStatus.ERROR
+        session.error_message = "Upload cancelled by user"
         # Cleanup session files
         await self._file_storage.cleanup_session(session_id)
         logger.info(f"🛑 Cancelled upload session {session_id}")
@@ -302,10 +303,11 @@ class UploadApplicationService:
                 expired_sessions = []
                 for session_id, session in self._active_sessions.items():
                     if session.is_expired() and session.status in [
-                        UploadStatus.CREATED,
-                        UploadStatus.IN_PROGRESS,
+                        UploadStatus.PENDING,
+                        UploadStatus.UPLOADING,
                     ]:
-                        session.mark_expired()
+                        session.status = UploadStatus.ERROR
+                        session.error_message = "Upload session expired"
                         expired_sessions.append(session_id)
 
                 # Cleanup expired sessions

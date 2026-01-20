@@ -21,7 +21,7 @@ from .contract_validator import ContractValidator
 
 # Backend server configuration
 BACKEND_URL = "http://localhost:8000"
-CONTRACTS_SCHEMA_PATH = Path(__file__).parent.parent.parent.parent.parent.parent / "contracts" / "schemas" / "socketio_contracts.json"
+CONTRACTS_SCHEMA_PATH = Path(__file__).parent.parent.parent.parent.parent.parent / "contracts" / "deploy" / "socketio_contracts.json"
 
 
 @pytest.fixture(scope="session")

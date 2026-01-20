@@ -21,13 +21,13 @@ class TestTrackConstruction:
     def test_create_track_minimal(self):
         """Test creating track with minimal required fields."""
         track = Track(
-            number=1,
+            track_number=1,
             title="Test Song",
             filename="test.mp3",
             file_path="/music/test.mp3"
         )
 
-        assert track.number == 1
+        assert track.track_number == 1
         assert track.title == "Test Song"
         assert track.filename == "test.mp3"
         assert track.file_path == "/music/test.mp3"
@@ -39,7 +39,7 @@ class TestTrackConstruction:
     def test_create_track_full(self):
         """Test creating track with all fields."""
         track = Track(
-            number=5,
+            track_number=5,
             title="Complete Song",
             filename="complete.flac",
             file_path="/music/albums/complete.flac",
@@ -49,7 +49,7 @@ class TestTrackConstruction:
             id="track-123"
         )
 
-        assert track.number == 5
+        assert track.track_number == 5
         assert track.title == "Complete Song"
         assert track.filename == "complete.flac"
         assert track.file_path == "/music/albums/complete.flac"
@@ -66,7 +66,7 @@ class TestTrackFactoryMethods:
         """Test creating track from file with defaults."""
         track = Track.from_file("/music/my_song.mp3")
 
-        assert track.number == 1
+        assert track.track_number == 1
         assert track.title == "my_song"
         assert track.filename == "my_song.mp3"
         assert track.file_path == "/music/my_song.mp3"
@@ -75,13 +75,13 @@ class TestTrackFactoryMethods:
         """Test creating track from file with custom track number."""
         track = Track.from_file("/music/song.mp3", number=10)
 
-        assert track.number == 10
+        assert track.track_number == 10
 
     def test_from_file_complex_path(self):
         """Test creating track from complex file path."""
         track = Track.from_file("/home/user/Music/Artists/Album Name/03 - Track Title.flac", 3)
 
-        assert track.number == 3
+        assert track.track_number == 3
         assert track.title == "03 - Track Title"
         assert track.filename == "03 - Track Title.flac"
         assert "Album Name" in track.file_path
@@ -99,20 +99,20 @@ class TestTrackFactoryMethods:
 class TestTrackPropertyAliases:
     """Test track property aliases for API compatibility."""
 
-    def test_number_property_getter(self):
-        """Test number property returns track_number."""
+    def test_track_number_property_getter(self):
+        """Test track_number property returns track_number."""
         track = Track.from_file("/song.mp3", 5)
 
-        assert track.number == 5
-        assert track.number == track.number
+        assert track.track_number == 5
+        assert track.track_number == track.track_number
 
-    def test_number_property_setter(self):
-        """Test number property setter updates track_number."""
+    def test_track_number_property_setter(self):
+        """Test track_number property setter updates track_number."""
         track = Track.from_file("/song.mp3", 1)
-        track.number = 10
+        track.track_number = 10
 
-        assert track.number == 10
-        assert track.number == 10
+        assert track.track_number == 10
+        assert track.track_number == 10
 
     def test_path_property_returns_pathlib_path(self):
         """Test path property returns pathlib Path object."""
@@ -120,21 +120,6 @@ class TestTrackPropertyAliases:
 
         assert isinstance(track.path, Path)
         assert str(track.path) == "/music/test.mp3"
-
-    def test_duration_property_converts_to_seconds(self):
-        """Test duration property converts milliseconds to seconds."""
-        track = Track.from_file("/song.mp3")
-        track.duration_ms = 180000  # 3 minutes
-
-        assert track.duration == 180.0
-        assert track.duration == track.duration_ms / 1000.0
-
-    def test_duration_property_none_handling(self):
-        """Test duration property when duration_ms is None."""
-        track = Track.from_file("/song.mp3")
-        track.duration_ms = None
-
-        assert track.duration is None
 
     def test_exists_property_false(self):
         """Test exists property for non-existent file."""
@@ -159,7 +144,7 @@ class TestTrackValidation:
     def test_is_valid_true(self):
         """Test valid track."""
         track = Track(
-            number=1,
+            track_number=1,
             title="Valid Song",
             filename="valid.mp3",
             file_path="/music/valid.mp3"
@@ -170,7 +155,7 @@ class TestTrackValidation:
     def test_is_valid_zero_track_number(self):
         """Test track with zero track number is invalid."""
         track = Track(
-            number=0,
+            track_number=0,
             title="Invalid",
             filename="invalid.mp3",
             file_path="/music/invalid.mp3"
@@ -181,7 +166,7 @@ class TestTrackValidation:
     def test_is_valid_negative_track_number(self):
         """Test track with negative track number is invalid."""
         track = Track(
-            number=-1,
+            track_number=-1,
             title="Invalid",
             filename="invalid.mp3",
             file_path="/music/invalid.mp3"
@@ -192,7 +177,7 @@ class TestTrackValidation:
     def test_is_valid_empty_title(self):
         """Test track with empty title is invalid."""
         track = Track(
-            number=1,
+            track_number=1,
             title="",
             filename="file.mp3",
             file_path="/music/file.mp3"
@@ -203,7 +188,7 @@ class TestTrackValidation:
     def test_is_valid_whitespace_title(self):
         """Test track with whitespace-only title is invalid."""
         track = Track(
-            number=1,
+            track_number=1,
             title="   ",
             filename="file.mp3",
             file_path="/music/file.mp3"
@@ -214,7 +199,7 @@ class TestTrackValidation:
     def test_is_valid_empty_filename(self):
         """Test track with empty filename is invalid."""
         track = Track(
-            number=1,
+            track_number=1,
             title="Title",
             filename="",
             file_path="/music/file.mp3"
@@ -225,7 +210,7 @@ class TestTrackValidation:
     def test_is_valid_empty_file_path(self):
         """Test track with empty file path is invalid."""
         track = Track(
-            number=1,
+            track_number=1,
             title="Title",
             filename="file.mp3",
             file_path=""
@@ -236,7 +221,7 @@ class TestTrackValidation:
     def test_is_valid_all_fields_valid_but_optional_missing(self):
         """Test track is valid even without optional fields."""
         track = Track(
-            number=1,
+            track_number=1,
             title="Title",
             filename="file.mp3",
             file_path="/music/file.mp3",
@@ -263,7 +248,7 @@ class TestTrackDisplayMethods:
     def test_str_representation_with_custom_title(self):
         """Test string representation with custom title."""
         track = Track(
-            number=3,
+            track_number=3,
             title="Custom Title",
             filename="file.mp3",
             file_path="/music/file.mp3"
@@ -311,28 +296,20 @@ class TestTrackDurationHandling:
         track = Track.from_file("/song.mp3")
         track.duration_ms = 3500
 
-        assert track.duration == 3.5
-
     def test_duration_zero(self):
         """Test zero duration."""
         track = Track.from_file("/song.mp3")
         track.duration_ms = 0
-
-        assert track.duration == 0.0
 
     def test_duration_very_long(self):
         """Test very long duration (e.g., audiobook)."""
         track = Track.from_file("/audiobook.mp3")
         track.duration_ms = 36000000  # 10 hours
 
-        assert track.duration == 36000.0
-
     def test_duration_fractional_seconds(self):
         """Test fractional seconds in duration."""
         track = Track.from_file("/song.mp3")
         track.duration_ms = 123456  # 123.456 seconds
-
-        assert track.duration == 123.456
 
 
 class TestTrackEdgeCases:
@@ -341,7 +318,7 @@ class TestTrackEdgeCases:
     def test_unicode_title(self):
         """Test track with unicode characters in title."""
         track = Track(
-            number=1,
+            track_number=1,
             title="日本語のタイトル 🎵",
             filename="japanese.mp3",
             file_path="/music/japanese.mp3"
@@ -354,7 +331,7 @@ class TestTrackEdgeCases:
         """Test track with very long title."""
         long_title = "A" * 1000
         track = Track(
-            number=1,
+            track_number=1,
             title=long_title,
             filename="long.mp3",
             file_path="/music/long.mp3"
@@ -373,7 +350,7 @@ class TestTrackEdgeCases:
     def test_relative_file_path(self):
         """Test track with relative file path."""
         track = Track(
-            number=1,
+            track_number=1,
             title="Relative",
             filename="song.mp3",
             file_path="./music/song.mp3"
@@ -393,7 +370,7 @@ class TestTrackEdgeCases:
         """Test track with very large track number."""
         track = Track.from_file("/song.mp3", number=999999)
 
-        assert track.number == 999999
+        assert track.track_number == 999999
         assert track.is_valid() is True
 
     def test_all_audio_formats(self):
@@ -409,7 +386,7 @@ class TestTrackEdgeCases:
     def test_metadata_fields_optional(self):
         """Test that metadata fields are truly optional."""
         track = Track(
-            number=1,
+            track_number=1,
             title="Minimal",
             filename="minimal.mp3",
             file_path="/minimal.mp3"

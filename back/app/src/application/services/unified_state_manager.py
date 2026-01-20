@@ -162,6 +162,14 @@ class UnifiedStateManager(StateManagerProtocol):
         """Emit playlists index update events."""
         return await self.event_coordinator.emit_playlists_index_update(updates)
 
+    async def broadcast_volume_changed(self, volume: int) -> None:
+        """Broadcast volume change event."""
+        event_data = {"volume": volume}
+        await self.broadcast_state_change(
+            StateEventType.VOLUME_CHANGED,
+            event_data,
+        )
+
     async def send_acknowledgment(
         self,
         client_op_id: str,

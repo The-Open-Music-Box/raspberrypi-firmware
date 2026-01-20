@@ -205,7 +205,7 @@ class TestChunkValidation:
             filename="test.mp3",
             total_chunks=10,
             total_size_bytes=10_000,
-            status=UploadStatus.IN_PROGRESS
+            status=UploadStatus.UPLOADING
         )
 
     def test_valid_chunk(self, service, session):

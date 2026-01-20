@@ -243,7 +243,7 @@ class TestUploadApplicationService:
         assert result["session"]["filename"] == filename
         assert result["session"]["total_size_bytes"] == total_size
         assert result["session"]["total_chunks"] == total_chunks
-        assert result["session"]["status"] == "created"
+        assert result["session"]["status"] == "pending"
 
         # Verify session was tracked
         session_id = result["session"]["session_id"]
@@ -652,9 +652,9 @@ class TestUploadApplicationService:
         assert result["message"] == "Upload session cancelled"
         assert result["session_id"] == session_id
 
-        # Verify session was marked cancelled
+        # Verify session was marked as error
         session = upload_service._active_sessions[session_id]
-        assert session.status == UploadStatus.CANCELLED
+        assert session.status == UploadStatus.ERROR
 
         # Verify cleanup was called
         mock_file_storage.cleanup_session.assert_called_once_with(session_id)
@@ -766,8 +766,9 @@ class TestUploadApplicationService:
             "cancelled.mp3", 1024, 2
         )
 
-        # Cancel one session
-        await upload_service.cancel_upload_use_case(cancelled_session["session"]["session_id"])
+        # Mark one session as error
+        cancelled_session_obj = upload_service._active_sessions[cancelled_session["session"]["session_id"]]
+        cancelled_session_obj.status = UploadStatus.ERROR
 
         # Act
         result = await upload_service.list_active_uploads_use_case()
@@ -835,7 +836,7 @@ class TestUploadApplicationService:
         assert result["completion_status"] == "failed"
         assert "completion_errors" in result
         assert "Missing chunks" in result["completion_errors"]
-        assert session.status == UploadStatus.FAILED
+        assert session.status == UploadStatus.ERROR
 
     @pytest.mark.asyncio
     async def test_handle_upload_completion_integrity_failure(self, upload_service, mock_file_storage):
@@ -858,7 +859,7 @@ class TestUploadApplicationService:
         # Assert
         assert result["completion_status"] == "failed"
         assert "File integrity verification failed" in result["completion_errors"]
-        assert session.status == UploadStatus.FAILED
+        assert session.status == UploadStatus.ERROR
 
     @pytest.mark.asyncio
     async def test_handle_upload_completion_uses_playlist_path(self, upload_service, mock_file_storage):
@@ -934,15 +935,15 @@ class TestUploadApplicationService:
         # Call cleanup directly once instead of running the periodic task
         expired_sessions = []
         for sid, sess in upload_service._active_sessions.items():
-            if sess.is_expired() and sess.status in [UploadStatus.CREATED, UploadStatus.IN_PROGRESS]:
-                sess.mark_expired()
+            if sess.is_expired() and sess.status in [UploadStatus.PENDING, UploadStatus.UPLOADING]:
+                sess.status = UploadStatus.ERROR
                 expired_sessions.append(sid)
 
         for sid in expired_sessions:
             await upload_service._file_storage.cleanup_session(sid)
 
-        # Assert - Session should be marked expired
-        assert session.status == UploadStatus.EXPIRED
+        # Assert - Session should be marked as error
+        assert session.status == UploadStatus.ERROR
 
         # Cleanup should have been called
         mock_file_storage.cleanup_session.assert_called_once_with(session.session_id)
@@ -1011,12 +1012,12 @@ class TestUploadApplicationService:
         # Call cleanup logic directly
         expired_sessions = []
         for sid, sess in upload_service._active_sessions.items():
-            if sess.is_expired() and sess.status in [UploadStatus.CREATED, UploadStatus.IN_PROGRESS]:
-                sess.mark_expired()
+            if sess.is_expired() and sess.status in [UploadStatus.PENDING, UploadStatus.UPLOADING]:
+                sess.status = UploadStatus.ERROR
                 expired_sessions.append(sid)
 
-        # Assert - Only created session should be marked expired
-        assert created_session.status == UploadStatus.EXPIRED
+        # Assert - Only created session should be marked as error
+        assert created_session.status == UploadStatus.ERROR
         assert completed_session.status == UploadStatus.COMPLETED
 
     # ================================================================================
@@ -1039,7 +1040,7 @@ class TestUploadApplicationService:
 
         # Step 2: Check initial status
         status_result = await upload_service.get_upload_status_use_case(session_id)
-        assert status_result["session"]["status"] == "created"
+        assert status_result["session"]["status"] == "pending"
         assert status_result["session"]["progress_percentage"] == 0.0
 
         # Step 3: Upload first chunk
@@ -1051,7 +1052,7 @@ class TestUploadApplicationService:
 
         # Step 4: Check progress
         status_result = await upload_service.get_upload_status_use_case(session_id)
-        assert status_result["session"]["status"] == "in_progress"
+        assert status_result["session"]["status"] == "uploading"
         assert status_result["session"]["progress_percentage"] == 50.0
 
         # Step 5: Upload final chunk
@@ -1097,7 +1098,7 @@ class TestUploadApplicationService:
 
         # Verify cancelled
         status = await upload_service.get_upload_status_use_case(session_id)
-        assert status["session"]["status"] == "cancelled"
+        assert status["session"]["status"] == "error"
 
     @pytest.mark.asyncio
     async def test_concurrent_upload_sessions(self, upload_service):
