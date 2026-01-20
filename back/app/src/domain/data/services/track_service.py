@@ -50,7 +50,9 @@ class TrackService(BaseDomainService):
 
         tracks = await self._track_repo.get_by_playlist(playlist_id)
         # Handle both Track objects and dictionaries
-        return sorted(tracks, key=lambda t: t.number if hasattr(t, 'number') else t.get('number', 0))
+        # Track objects use .number property (backward compat for track_number)
+        # Dicts use 'track_number' per OpenAPI v4.1.0 (fallback to 'number' for backward compat)
+        return sorted(tracks, key=lambda t: t.number if hasattr(t, 'number') else t.get('track_number', t.get('number', 0)))
 
     @handle_domain_errors(operation_name="add_track")
     async def add_track(self, playlist_id: str, track_data: dict[str, Any]) -> dict[str, Any]:
@@ -76,7 +78,7 @@ class TrackService(BaseDomainService):
         full_track_data = {
             'id': track_id,
             'playlist_id': playlist_id,
-            'number': track_data.get('number', next_track_number),
+            'track_number': track_data.get('track_number', track_data.get('number', next_track_number)),  # OpenAPI v4.1.0
             'title': track_data.get('title', 'Unknown Track'),
             'filename': track_data.get('filename'),
             'file_path': track_data.get('file_path'),

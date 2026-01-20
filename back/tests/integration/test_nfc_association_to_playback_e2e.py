@@ -155,7 +155,7 @@ class TestNfcAssociationToPlaybackE2E:
             tracks=[
                 Track(
                     id=str(uuid.uuid4()),
-                    number=1,
+                    track_number=1,
                     title="Song One",
                     filename="song1.mp3",
                     file_path="/fake/path/song1.mp3",
@@ -163,7 +163,7 @@ class TestNfcAssociationToPlaybackE2E:
                 ),
                 Track(
                     id=str(uuid.uuid4()),
-                    number=2,
+                    track_number=2,
                     title="Song Two",
                     filename="song2.mp3",
                     file_path="/fake/path/song2.mp3",

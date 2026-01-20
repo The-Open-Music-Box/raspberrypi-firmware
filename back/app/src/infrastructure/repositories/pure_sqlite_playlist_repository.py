@@ -546,7 +546,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
 
             track = Track(
                 id=track_row["id"],
-                number=track_row["track_number"] if track_row["track_number"] else 1,
+                track_number=track_row["track_number"] if track_row["track_number"] else 1,
                 title=track_row["title"] if track_row["title"] else "Unknown",
                 filename=filename,
                 file_path=file_path,
@@ -682,7 +682,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         # Build track entity and convert to dict
         track = Track(
             id=track_row["id"],
-            number=track_row["track_number"] if track_row["track_number"] else 1,
+            track_number=track_row["track_number"] if track_row["track_number"] else 1,
             title=track_row["title"] if track_row["title"] else "Unknown",
             filename=filename,
             file_path=file_path,
@@ -724,7 +724,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         track_params = (
             track_id,
             playlist_id,
-            track_data.get('number', 1),
+            track_data.get('track_number', track_data.get('number', 1)),  # OpenAPI v4.1.0
             track_data.get('title', 'Unknown Track'),
             track_data.get('filename', ''),
             track_data.get('file_path', ''),
@@ -842,7 +842,7 @@ class PureSQLitePlaylistRepository(PlaylistRepositoryProtocol):
         operations = []
         for order in track_orders:
             track_id = order.get('track_id')
-            track_number = order.get('number')
+            track_number = order.get('track_number', order.get('number'))  # OpenAPI v4.1.0 with backward compat
 
             if not track_id or track_number is None:
                 logger.warning(f"Invalid track order entry: {order}")

@@ -312,7 +312,7 @@ class DataApplicationService:
                 tracks = await self._track_service.get_tracks(playlist_id)
                 track_to_delete = next(
                     (t for t in tracks if (hasattr(t, 'number') and t.number == track_number)
-                     or (isinstance(t, dict) and t.get('number') == track_number)),
+                     or (isinstance(t, dict) and t.get('track_number', t.get('number')) == track_number)),  # OpenAPI v4.1.0
                     None
                 )
 

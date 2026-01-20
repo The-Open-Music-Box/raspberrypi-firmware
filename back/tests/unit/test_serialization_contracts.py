@@ -25,7 +25,7 @@ class TestSerializationContracts:
     def sample_track(self):
         """Create a sample track for testing."""
         return Track(
-            number=1,
+            track_number=1,
             title="Test Track",
             filename="test.mp3",
             file_path="/test/test.mp3",
@@ -50,10 +50,10 @@ class TestSerializationContracts:
         """Test that track serialization includes ALL required fields for frontend contract."""
         result = UnifiedSerializationService.serialize_track(sample_track, format="api")
 
-        # Required fields per OpenAPI contract v3.3.2
+        # Required fields per OpenAPI contract v4.1.0
         required_fields = [
             'id',
-            'number',  # Per OpenAPI contract v3.3.2 - CRITICAL
+            'track_number',  # Per OpenAPI contract v4.1.0 - CRITICAL
             'title',
             'filename',
             'file_path',
@@ -64,7 +64,7 @@ class TestSerializationContracts:
             assert field in result, f"Missing required field: {field}"
 
         # Per OpenAPI contract v3.3.2, 'number' field should exist (no mapping needed)
-        assert result['number'] == 1, "Expected track number 1"
+        assert result['track_number'] == 1, "Expected track number 1"
 
     def test_track_serialization_field_types(self, sample_track):
         """Test that serialized track fields have correct types."""
@@ -72,7 +72,7 @@ class TestSerializationContracts:
 
         # Type validation per OpenAPI contract v3.3.2
         assert isinstance(result['id'], str), "id must be string"
-        assert isinstance(result['number'], int), "number must be integer"
+        assert isinstance(result['track_number'], int), "number must be integer"
         assert isinstance(result['title'], str), "title must be string"
         assert isinstance(result['filename'], str), "filename must be string"
         assert isinstance(result['duration_ms'], int), "duration_ms must be integer"
@@ -83,11 +83,11 @@ class TestSerializationContracts:
 
         # The 'number' field is a @property on Track model
         # It should be explicitly added by serialization service
-        assert 'number' in result, \
+        assert 'track_number' in result, \
             "Serialization MUST include @property field 'number' for frontend compatibility"
 
         # Verify it returns the correct value
-        assert result['number'] == sample_track.number, \
+        assert result['track_number'] == sample_track.number, \
             "Serialized 'number' must match Track.number property"
 
     def test_playlist_serialization_includes_tracks_with_number_field(self, sample_playlist):
@@ -99,24 +99,24 @@ class TestSerializationContracts:
 
         # Verify each track has the 'number' field
         for track in result['tracks']:
-            assert 'number' in track, \
+            assert 'track_number' in track, \
                 f"Track '{track.get('title')}' missing 'number' field in playlist serialization"
-            assert isinstance(track['number'], int), \
-                f"Track 'number' field must be integer, got {type(track['number'])}"
+            assert isinstance(track['track_number'], int), \
+                f"Track 'number' field must be integer, got {type(track['track_number'])}"
 
     def test_track_serialization_consistency_across_formats(self, sample_track):
         """Test that different serialization formats maintain 'number' field."""
         api_result = UnifiedSerializationService.serialize_track(sample_track, format="api")
 
         # API format MUST include 'number' field
-        assert 'number' in api_result, "API format must include 'number' field"
-        assert api_result['number'] == 1
+        assert 'track_number' in api_result, "API format must include 'number' field"
+        assert api_result['track_number'] == 1
 
     def test_track_serialization_from_dict(self):
         """Test that serialization works when input is already a dict."""
         track_dict = {
             'id': 'test-id',
-            'number': 5,
+            'track_number': 5,  # OpenAPI contract v4.1.0
             'title': 'Dict Track',
             'filename': 'track.mp3',
             'file_path': '/path/track.mp3',
@@ -125,13 +125,13 @@ class TestSerializationContracts:
 
         result = UnifiedSerializationService.serialize_track(track_dict, format="api")
 
-        assert 'number' in result, "Must add 'number' field even when serializing from dict"
-        assert result['number'] == 5, "number should match track_number from dict"
+        assert 'track_number' in result, "Must add 'track_number' field even when serializing from dict"
+        assert result['track_number'] == 5, "track_number should match input dict"
 
     def test_track_serialization_handles_missing_optional_fields(self):
         """Test that serialization handles tracks with missing optional fields gracefully."""
         minimal_track = Track(
-            number=1,
+            track_number=1,
             title="Minimal Track",
             filename="minimal.mp3",
             file_path="/minimal.mp3",
@@ -143,8 +143,8 @@ class TestSerializationContracts:
         result = UnifiedSerializationService.serialize_track(minimal_track, format="api")
 
         # Still must have required fields
-        assert 'number' in result, "Must include 'number' even for minimal track"
-        assert result['number'] == 1
+        assert 'track_number' in result, "Must include 'number' even for minimal track"
+        assert result['track_number'] == 1
 
     def test_serialization_prevents_silent_field_omission(self, sample_track):
         """Test that serialization explicitly includes fields, not relying on @property auto-serialization."""
@@ -154,7 +154,7 @@ class TestSerializationContracts:
         # Python's dataclasses.asdict() does NOT serialize @property fields
         # UnifiedSerializationService MUST explicitly add them
 
-        assert 'number' in result, \
+        assert 'track_number' in result, \
             "REGRESSION CHECK: 'number' field must be present " \
             "(Track entity now uses 'number' directly per OpenAPI contract v3.3.2)"
 
@@ -166,12 +166,12 @@ class TestSerializationContracts:
         # This test ensures it never happens again
 
         for idx, track in enumerate(result['tracks']):
-            assert 'number' in track, \
+            assert 'track_number' in track, \
                 f"REGRESSION: Track {idx} in playlist missing 'number' field. " \
                 f"This caused issue #71 where playlists with NFC tags failed to display."
 
             # Per OpenAPI contract v3.3.2, 'number' field must exist
-            assert 'number' in track, \
+            assert 'track_number' in track, \
                 f"Track {idx} must have 'number' field per OpenAPI contract v3.3.2"
 
 
@@ -182,7 +182,7 @@ class TestSerializationContractValidation:
         """Test validation passes for correctly serialized track."""
         valid_track = {
             'id': 'test-id',
-            'number': 1,
+            'track_number': 1,  # OpenAPI contract v4.1.0
             'title': 'Valid Track',
             'filename': 'valid.mp3',
             'file_path': '/valid.mp3',
@@ -190,9 +190,9 @@ class TestSerializationContractValidation:
         }
 
         # Should not raise any assertions
-        assert 'number' in valid_track
-        # Valid track now only has 'number' per OpenAPI contract v3.3.2
-        assert valid_track['number'] == 1
+        assert 'track_number' in valid_track
+        # Valid track now only has 'track_number' per OpenAPI contract v4.1.0
+        assert valid_track['track_number'] == 1
 
     def test_validate_track_dict_detects_missing_number_field(self):
         """Test that we can detect missing 'number' field (the bug from issue #71)."""
@@ -210,14 +210,14 @@ class TestSerializationContractValidation:
             "This test documents the bug: 'number' field was missing"
 
         # Validation should detect this
-        has_number = 'number' in buggy_track_without_number
+        has_number = 'track_number' in buggy_track_without_number
         assert not has_number, "Test confirms the field is missing"
 
     def test_all_serialization_paths_produce_identical_output(self):
         """Test that different serialization paths produce consistent output."""
         # Create test track
         track = Track(
-            number=7,
+            track_number=7,
             title="Consistency Test",
             filename="test.mp3",
             file_path="/test.mp3",
@@ -229,10 +229,10 @@ class TestSerializationContractValidation:
         unified_result = UnifiedSerializationService.serialize_track(track, format="api")
 
         # Key fields should be present per OpenAPI contract v3.3.2
-        assert unified_result['number'] == 7
+        assert unified_result['track_number'] == 7
         assert unified_result['title'] == "Consistency Test"
         # Per OpenAPI contract v3.3.2, 'number' field must exist
-        assert 'number' in unified_result
+        assert 'track_number' in unified_result
 
         # Note: We removed the buggy PurePlaylistRepositoryAdapter._track_to_dict()
         # so there's now only ONE serialization path - which prevents divergence!
@@ -244,7 +244,7 @@ class TestContractRegressionPrevention:
     def test_track_number_field_always_present_in_api_format(self):
         """Critical test: 'number' field MUST be present in API format."""
         track = Track(
-            number=99,
+            track_number=99,
             title="Critical Test",
             filename="critical.mp3",
             file_path="/critical.mp3",
@@ -254,10 +254,10 @@ class TestContractRegressionPrevention:
 
         result = UnifiedSerializationService.serialize_track(track, format="api")
 
-        assert 'number' in result, \
+        assert 'track_number' in result, \
             "CRITICAL: 'number' field missing. This causes frontend contract violations!"
 
-        assert result['number'] == 99, \
+        assert result['track_number'] == 99, \
             "'number' field has wrong value"
 
     def test_websocket_broadcast_data_includes_number_field(self):
@@ -267,7 +267,7 @@ class TestContractRegressionPrevention:
             title="WebSocket Test",
             tracks=[
                 Track(
-                    number=1,
+                    track_number=1,
                     title="WS Track",
                     filename="ws.mp3",
                     file_path="/ws.mp3",
@@ -284,7 +284,7 @@ class TestContractRegressionPrevention:
         # The bug in issue #71: WebSocket broadcasts used PurePlaylistRepositoryAdapter._track_to_dict()
         # which didn't include 'number' field
         assert len(result['tracks']) > 0
-        assert 'number' in result['tracks'][0], \
+        assert 'track_number' in result['tracks'][0], \
             "WebSocket broadcasts MUST include 'number' field (issue #71 regression check)"
 
     def test_nfc_triggered_playlist_load_includes_number_field(self):
@@ -298,7 +298,7 @@ class TestContractRegressionPrevention:
             nfc_tag_id="04889462251c91",
             tracks=[
                 Track(
-                    number=1,
+                    track_number=1,
                     title="A la volette [zV-Rl7VVagw]",
                     filename="track.mp3",
                     file_path="/track.mp3",
@@ -313,7 +313,7 @@ class TestContractRegressionPrevention:
 
         # This was the exact error message from issue #71
         track = result['tracks'][0]
-        assert 'number' in track, \
+        assert 'track_number' in track, \
             f"CONTRACT VIOLATION: Track missing required 'number' field. " \
             f"Track: {track.get('title')} (ID: {track.get('id')}). " \
             f"Available fields: {', '.join(track.keys())}. " \

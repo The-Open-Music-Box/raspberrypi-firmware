@@ -30,16 +30,16 @@ class TestBroadcastingContractValidation:
         """Create broadcasting service instance."""
         return UnifiedBroadcastingService(mock_state_manager)
 
-    def test_validate_and_fix_contract_preserves_existing_number_field(self, broadcasting_service):
-        """Test that validation preserves 'number' field when already present."""
-        # Per OpenAPI contract v3.3.2, tracks have 'number' field directly
+    def test_validate_and_fix_contract_preserves_existing_track_number_field(self, broadcasting_service):
+        """Test that validation preserves 'track_number' field when already present."""
+        # Per OpenAPI contract v4.1.0, tracks have 'track_number' field directly
         valid_playlist = {
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
                 {
                     'id': 'track-1',
-                    'number': 1,  # Per OpenAPI contract v3.3.2
+                    'track_number': 1,  # Per OpenAPI contract v4.1.0
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -50,11 +50,11 @@ class TestBroadcastingContractValidation:
         # Validate (should not change anything)
         fixed_playlist = broadcasting_service._validate_and_fix_contract(valid_playlist)
 
-        # Verify number is preserved
-        assert 'number' in fixed_playlist['tracks'][0], \
-            "'number' field should be preserved"
-        assert fixed_playlist['tracks'][0]['number'] == 1, \
-            "'number' should have correct value"
+        # Verify track_number is preserved
+        assert 'track_number' in fixed_playlist['tracks'][0], \
+            "'track_number' field should be preserved"
+        assert fixed_playlist['tracks'][0]['track_number'] == 1, \
+            "'track_number' should have correct value"
 
     def test_validate_and_fix_contract_handles_multiple_tracks(self, broadcasting_service):
         """Test validation fixes multiple tracks."""
@@ -62,9 +62,9 @@ class TestBroadcastingContractValidation:
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
-                {'id': 't1', 'number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000},
-                {'id': 't2', 'number': 2, 'title': 'Track 2', 'filename': 't2.mp3', 'duration_ms': 2000},
-                {'id': 't3', 'number': 3, 'title': 'Track 3', 'filename': 't3.mp3', 'duration_ms': 3000},
+                {'id': 't1', 'track_number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000},
+                {'id': 't2', 'track_number': 2, 'title': 'Track 2', 'filename': 't2.mp3', 'duration_ms': 2000},
+                {'id': 't3', 'track_number': 3, 'title': 'Track 3', 'filename': 't3.mp3', 'duration_ms': 3000},
             ]
         }
 
@@ -72,8 +72,8 @@ class TestBroadcastingContractValidation:
 
         # All tracks should have 'number' field
         for idx, track in enumerate(fixed_playlist['tracks'], 1):
-            assert 'number' in track, f"Track {idx} missing 'number' field"
-            assert track['number'] == idx, f"Track {idx} has wrong 'number' value"
+            assert 'track_number' in track, f"Track {idx} missing 'number' field"
+            assert track['track_number'] == idx, f"Track {idx} has wrong 'number' value"
 
     def test_validate_and_fix_contract_preserves_correct_tracks(self, broadcasting_service):
         """Test that validation doesn't break correctly serialized tracks."""
@@ -83,7 +83,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'number': 1,  # Per OpenAPI contract v3.3.2
+                    'track_number': 1,  # Per OpenAPI contract v3.3.2
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -94,7 +94,7 @@ class TestBroadcastingContractValidation:
         fixed_playlist = broadcasting_service._validate_and_fix_contract(correct_playlist)
 
         # Should remain unchanged
-        assert fixed_playlist['tracks'][0]['number'] == 1
+        assert fixed_playlist['tracks'][0]['track_number'] == 1
 
     def test_validate_and_fix_contract_preserves_number_field(self, broadcasting_service):
         """Test validation preserves 'number' field as-is (no mismatch possible now)."""
@@ -105,7 +105,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'number': 5,
+                    'track_number': 5,
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -116,7 +116,7 @@ class TestBroadcastingContractValidation:
         fixed_playlist = broadcasting_service._validate_and_fix_contract(valid_playlist)
 
         # 'number' field should be preserved as-is
-        assert fixed_playlist['tracks'][0]['number'] == 5, \
+        assert fixed_playlist['tracks'][0]['track_number'] == 5, \
             "Should preserve 'number' field value"
 
     def test_validate_and_fix_contract_handles_empty_playlist(self, broadcasting_service):
@@ -161,7 +161,7 @@ class TestBroadcastingContractValidation:
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
-                {'id': 't1', 'number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000}
+                {'id': 't1', 'track_number': 1, 'title': 'Track 1', 'filename': 't1.mp3', 'duration_ms': 1000}
             ]
         }
 
@@ -188,7 +188,7 @@ class TestBroadcastingContractValidation:
             'tracks': [
                 {
                     'id': 'track-1',
-                    'number': 1,  # Per OpenAPI contract v3.3.2
+                    'track_number': 1,  # Per OpenAPI contract v3.3.2
                     'title': 'Test Track',
                     'filename': 'test.mp3',
                     'duration_ms': 180000
@@ -214,7 +214,7 @@ class TestBroadcastingContractValidation:
         if 'playlist' in broadcast_data:
             playlist = broadcast_data['playlist']
             if 'tracks' in playlist and len(playlist['tracks']) > 0:
-                assert 'number' in playlist['tracks'][0], \
+                assert 'track_number' in playlist['tracks'][0], \
                     "Broadcast should include 'number' field"
 
 
@@ -238,7 +238,7 @@ class TestContractValidationLogging:
             'id': 'test-playlist',
             'title': 'Test Playlist',
             'tracks': [
-                {'id': 't1', 'number': 1, 'title': 'Track', 'filename': 'track.mp3', 'duration_ms': 1000}
+                {'id': 't1', 'track_number': 1, 'title': 'Track', 'filename': 'track.mp3', 'duration_ms': 1000}
             ]
         }
 

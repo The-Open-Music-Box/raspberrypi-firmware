@@ -174,7 +174,7 @@ class TestPureSQLitePlaylistRepository:
         """Test that Track objects work with both attribute and dictionary access patterns."""
         track = Track(
             id='track-1',
-            number=1,
+            track_number=1,
             title='Test Track',
             filename='test.mp3',
             file_path='/path/test.mp3',

@@ -174,17 +174,17 @@ class UnifiedSerializationService:
         """
         # Handle different input types
         if isinstance(track, dict):
-            # Normalize dict to use 'number' field (OpenAPI contract)
-            # Support both 'track_number' (legacy) and 'number' (current)
+            # Normalize dict to use 'track_number' field (OpenAPI contract v4.1.0)
+            # Support both 'number' (legacy v3.x) and 'track_number' (current v4.1.0)
             track_data = track.copy()
-            if "track_number" in track_data and "number" not in track_data:
-                track_data["number"] = track_data["track_number"]
+            if "number" in track_data and "track_number" not in track_data:
+                track_data["track_number"] = track_data["number"]
         elif hasattr(track, "__dict__"):
             # Domain entity
-            # OpenAPI contract uses 'number', not 'number'
+            # OpenAPI contract v4.1.0 uses 'track_number'
             track_data = {
                 "id": getattr(track, "id", None),
-                "number": getattr(track, "number", 0),  # Fixed: use 'number' per OpenAPI contract
+                "track_number": getattr(track, "track_number", getattr(track, "number", 0)),  # OpenAPI v4.1.0
                 "title": getattr(track, "title", ""),
                 "filename": getattr(track, "filename", ""),
                 "file_path": getattr(track, "file_path", ""),
@@ -197,7 +197,7 @@ class UnifiedSerializationService:
             # Database row or tuple
             track_data = {
                 "id": track[0] if len(track) > 0 else None,
-                "number": track[1] if len(track) > 1 else 0,  # Fixed: use 'number' per OpenAPI contract
+                "track_number": track[1] if len(track) > 1 else 0,  # OpenAPI contract v4.1.0
                 "title": track[2] if len(track) > 2 else "",
                 "filename": track[3] if len(track) > 3 else "",
                 "file_path": track[4] if len(track) > 4 else "",
@@ -208,7 +208,7 @@ class UnifiedSerializationService:
         # Build base structure
         result = {
             "id": track_data.get("id"),
-            "number": track_data.get("number", 0),  # Fixed: use 'number' per OpenAPI contract
+            "track_number": track_data.get("track_number", track_data.get("number", 0)),  # OpenAPI contract v4.1.0
             "title": track_data.get("title", ""),
             "filename": track_data.get("filename", ""),
             "duration_ms": track_data.get("duration_ms", track_data.get("duration", 0)) or 0,
@@ -236,7 +236,7 @@ class UnifiedSerializationService:
             # WebSocket format is minimal
             result = {
                 "id": result["id"],
-                "number": result["number"],  # Fixed: use 'number' per OpenAPI contract
+                "track_number": result["track_number"],  # OpenAPI contract v4.1.0
                 "title": result["title"],
                 "duration_ms": result["duration_ms"],
             }
@@ -244,7 +244,7 @@ class UnifiedSerializationService:
             # Database format with all fields
             result = {
                 "id": result["id"],
-                "number": result["number"],  # Fixed: use 'number' per OpenAPI contract
+                "track_number": result["track_number"],  # OpenAPI contract v4.1.0
                 "title": result["title"],
                 "filename": result["filename"],
                 "file_path": track_data.get("file_path", ""),

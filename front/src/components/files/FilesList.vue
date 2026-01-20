@@ -645,7 +645,7 @@ async function processDragEvent(evt: { moved?: { element: Track }; added?: { ele
         playlistId,
         trackCount: currentPlaylist.tracks.length,
         newOrder: trackNumbers,
-        firstThreeTracks: currentPlaylist.tracks.slice(0, 3).map(t => ({ number: getTrackNumber(t), title: t.title }))
+        firstThreeTracks: currentPlaylist.tracks.slice(0, 3).map(t => ({ track_number: getTrackNumber(t), title: t.title }))
       }, 'FilesList')
 
       // reorderTracks handles optimistic update internally

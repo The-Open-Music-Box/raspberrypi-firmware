@@ -359,23 +359,23 @@ describe('unifiedPlaylistStore', () => {
       const updatedTracks = store.getTracksForPlaylist('pl1')
       expect(updatedTracks).toHaveLength(5)
 
-      // Track 5 should now be first with number = 1
+      // Track 5 should now be first with track_number = 1 (v4.1.0)
       expect(updatedTracks[0].id).toBe('t5')
-      expect(updatedTracks[0].number).toBe(1)
+      expect(updatedTracks[0].track_number).toBe(1)
       expect(updatedTracks[0].title).toBe('Track 5')
 
-      // Track 1 should now be second with number = 2
+      // Track 1 should now be second with track_number = 2
       expect(updatedTracks[1].id).toBe('t1')
-      expect(updatedTracks[1].number).toBe(2)
+      expect(updatedTracks[1].track_number).toBe(2)
       expect(updatedTracks[1].title).toBe('Track 1')
 
       // Verify all tracks are in correct order
       expect(updatedTracks[2].id).toBe('t2')
-      expect(updatedTracks[2].number).toBe(3)
+      expect(updatedTracks[2].track_number).toBe(3)
       expect(updatedTracks[3].id).toBe('t3')
-      expect(updatedTracks[3].number).toBe(4)
+      expect(updatedTracks[3].track_number).toBe(4)
       expect(updatedTracks[4].id).toBe('t4')
-      expect(updatedTracks[4].number).toBe(5)
+      expect(updatedTracks[4].track_number).toBe(5)
     })
 
     it('should move track between playlists', async () => {

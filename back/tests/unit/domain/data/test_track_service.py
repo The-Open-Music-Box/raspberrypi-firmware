@@ -44,8 +44,8 @@ class TestTrackService:
         """Test getting tracks for a playlist."""
         playlist_id = 'playlist-1'
         tracks_data = [
-            {'id': 'track-1', 'number': 2, 'title': 'Track 2'},
-            {'id': 'track-2', 'number': 1, 'title': 'Track 1'}
+            {'id': 'track-1', 'track_number': 2, 'title': 'Track 2'},
+            {'id': 'track-2', 'track_number': 1, 'title': 'Track 1'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -55,8 +55,8 @@ class TestTrackService:
 
         # Should be sorted by track_number
         assert len(result) == 2
-        assert result[0]['number'] == 1
-        assert result[1]['number'] == 2
+        assert result[0]['track_number'] == 1
+        assert result[1]['track_number'] == 2
 
     @pytest.mark.asyncio
     async def test_get_tracks_playlist_not_found(self, service, mock_track_repo, mock_playlist_repo):
@@ -105,8 +105,8 @@ class TestTrackService:
         playlist_id = 'playlist-1'
         track_data = {'title': 'New Track'}
         existing_tracks = [
-            {'id': 'track-1', 'number': 1},
-            {'id': 'track-2', 'number': 2}
+            {'id': 'track-1', 'track_number': 1},
+            {'id': 'track-2', 'track_number': 2}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -118,7 +118,7 @@ class TestTrackService:
 
         # Check that track_number is set correctly (should be 3)
         call_args = mock_track_repo.add_to_playlist.call_args[0]
-        assert call_args[1]['number'] == 3
+        assert call_args[1]['track_number'] == 3
 
     @pytest.mark.asyncio
     async def test_update_track_success(self, service, mock_track_repo, mock_playlist_repo):
@@ -172,9 +172,9 @@ class TestTrackService:
         # Per OpenAPI contract v3.3.2: track_ids are filenames
         track_ids = ['file2.mp3', 'file1.mp3', 'file3.mp3']
         existing_tracks = [
-            {'id': 'track-1', 'number': 1, 'filename': 'file1.mp3'},
-            {'id': 'track-2', 'number': 2, 'filename': 'file2.mp3'},
-            {'id': 'track-3', 'number': 3, 'filename': 'file3.mp3'}
+            {'id': 'track-1', 'track_number': 1, 'filename': 'file1.mp3'},
+            {'id': 'track-2', 'track_number': 2, 'filename': 'file2.mp3'},
+            {'id': 'track-3', 'track_number': 3, 'filename': 'file3.mp3'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -200,7 +200,7 @@ class TestTrackService:
         playlist_id = 'playlist-1'
         # Per OpenAPI contract v3.3.2: track_ids are filenames
         track_ids = ['file1.mp3', 'invalid.mp3']
-        existing_tracks = [{'id': 'track-1', 'number': 1, 'filename': 'file1.mp3'}]
+        existing_tracks = [{'id': 'track-1', 'track_number': 1, 'filename': 'file1.mp3'}]
 
         mock_playlist_repo.exists.return_value = True
         mock_track_repo.get_by_playlist.return_value = existing_tracks
@@ -213,8 +213,8 @@ class TestTrackService:
         """Test getting the first track when no current track is specified."""
         playlist_id = 'playlist-1'
         tracks = [
-            {'id': 'track-1', 'number': 1, 'title': 'Track 1'},
-            {'id': 'track-2', 'number': 2, 'title': 'Track 2'}
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -229,9 +229,9 @@ class TestTrackService:
         """Test getting the next track from the middle of a playlist."""
         playlist_id = 'playlist-1'
         tracks = [
-            {'id': 'track-1', 'number': 1, 'title': 'Track 1'},
-            {'id': 'track-2', 'number': 2, 'title': 'Track 2'},
-            {'id': 'track-3', 'number': 3, 'title': 'Track 3'}
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'},
+            {'id': 'track-3', 'track_number': 3, 'title': 'Track 3'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -246,8 +246,8 @@ class TestTrackService:
         """Test getting the next track when at the end of a playlist."""
         playlist_id = 'playlist-1'
         tracks = [
-            {'id': 'track-1', 'number': 1, 'title': 'Track 1'},
-            {'id': 'track-2', 'number': 2, 'title': 'Track 2'}
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -262,8 +262,8 @@ class TestTrackService:
         """Test getting the last track when no current track is specified."""
         playlist_id = 'playlist-1'
         tracks = [
-            {'id': 'track-1', 'number': 1, 'title': 'Track 1'},
-            {'id': 'track-2', 'number': 2, 'title': 'Track 2'}
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -278,9 +278,9 @@ class TestTrackService:
         """Test getting the previous track from the middle of a playlist."""
         playlist_id = 'playlist-1'
         tracks = [
-            {'id': 'track-1', 'number': 1, 'title': 'Track 1'},
-            {'id': 'track-2', 'number': 2, 'title': 'Track 2'},
-            {'id': 'track-3', 'number': 3, 'title': 'Track 3'}
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'},
+            {'id': 'track-3', 'track_number': 3, 'title': 'Track 3'}
         ]
 
         mock_playlist_repo.exists.return_value = True
@@ -295,8 +295,8 @@ class TestTrackService:
         """Test getting the previous track when at the beginning of a playlist."""
         playlist_id = 'playlist-1'
         tracks = [
-            {'id': 'track-1', 'number': 1, 'title': 'Track 1'},
-            {'id': 'track-2', 'number': 2, 'title': 'Track 2'}
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'}
         ]
 
         mock_playlist_repo.exists.return_value = True

@@ -6,7 +6,7 @@ info:
 
     All API responses follow the UnifiedResponseService format with standardized envelopes.
     This specification is the source of truth for all client implementations (Web, Flutter, C++).
-  version: 3.1.0
+  version: 4.1.0
   contact:
     name: TheOpenMusicBox
     url: https://github.com/theopenmusicbox/tomb-rpi
@@ -93,13 +93,13 @@ components:
     Track:
       type: object
       required:
-        - number
+        - track_number
         - title
         - filename
       properties:
-        number:
+        track_number:
           type: integer
-          description: Track number in playlist
+          description: Track number in playlist (1-based position)
         title:
           type: string
         filename:
@@ -112,7 +112,7 @@ components:
           deprecated: true
           description: |
             DEPRECATED: Use duration_ms instead for millisecond precision.
-            Duration in seconds. Will be removed in v4.0.0.
+            Duration in seconds. Will be removed in a future version.
         duration_ms:
           type: integer
           nullable: true

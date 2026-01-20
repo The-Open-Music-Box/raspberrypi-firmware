@@ -39,8 +39,13 @@ class TrackAddedEvent:
     track_id: str
     playlist_id: str
     track_name: str
-    number: int  # Position in playlist - per OpenAPI contract v3.3.2
+    track_number: int  # Position in playlist - per OpenAPI contract v4.1.0
     added_at: datetime
+
+    @property
+    def number(self) -> int:
+        """Backward compatibility alias for track_number."""
+        return self.track_number
 
 
 @dataclass

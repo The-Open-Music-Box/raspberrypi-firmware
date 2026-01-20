@@ -74,7 +74,7 @@ class PlaylistOperationsService:
             tracks = []
             for track_dict in playlist_dict.get("tracks", []):
                 track = Track(
-                    number=track_dict.get("number", 0),
+                    track_number=track_dict.get("track_number", track_dict.get("number", 0)),  # OpenAPI v4.1.0
                     title=track_dict.get("title", ""),
                     filename=track_dict.get("filename", ""),
                     file_path=track_dict.get("file_path", ""),

@@ -114,7 +114,7 @@ class StateSerializationApplicationService:
             }
         else:
             # Handle domain object
-            # OpenAPI contract uses 'number', not 'number'
+            # OpenAPI contract v4.1.0 uses 'track_number'
             return {
                 "id": track.id,
                 "title": track.title,
@@ -122,7 +122,7 @@ class StateSerializationApplicationService:
                 "duration_ms": int((track.duration or 0) * 1000),
                 "artist": getattr(track, "artist", None),
                 "album": getattr(track, "album", None),
-                "number": getattr(track, "number", None),  # Fixed: 'number' not 'number'
+                "track_number": getattr(track, "number", None),  # OpenAPI v4.1.0: 'track_number'
                 "play_count": getattr(track, "play_count", 0),
                 "created_at": getattr(track, "created_at", None),
                 "server_seq": self.sequences.get_current_global_seq(),
