@@ -327,7 +327,7 @@ class UnifiedSerializationService:
                         )
                         state["active_track"] = active_track_data
                         state["active_track_id"] = active_track_data.get("id")
-                        state["active_track_number"] = active_track_data.get("number", current_track_index + 1)
+                        state["active_track_number"] = active_track_data.get("track_number", active_track_data.get("number", current_track_index + 1))
                         state["active_track_title"] = active_track_data.get("title", "")
                         state["duration_ms"] = active_track_data.get("duration_ms", 0)
             else:

@@ -62,7 +62,7 @@ class PurePlaylistRepositoryAdapter:
             Track domain entity
         """
         return Track(
-            track_number=track_data.get("number", 0),
+            track_number=track_data.get("track_number", track_data.get("number", 0)),
             title=track_data.get("title", "Unknown"),
             filename=track_data.get("filename", ""),
             file_path=track_data.get("file_path", ""),

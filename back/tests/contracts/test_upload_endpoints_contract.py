@@ -122,7 +122,7 @@ class TestUploadEndpointsContract:
 
         # Mock successful finalization
         mock_track = {
-            "number": 1,
+            "track_number": 1,
             "title": "Test Track",
             "filename": "test.mp3",
             "file_path": "/uploads/test.mp3",
@@ -308,7 +308,7 @@ class TestUploadEndpointsContract:
         app, routes = app_with_upload_routes
 
         mock_track = {
-            "number": 1,
+            "track_number": 1,
             "title": "Test Track",
             "filename": "test.mp3",
             "duration": 180000,

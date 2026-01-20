@@ -140,10 +140,11 @@ class PlaylistOperationsService:
                 return {"status": "error", "message": "Playlist not found"}
 
             # Filter out tracks to delete and keep remaining ones
+            # Use track_number (OpenAPI v4.1.0) with fallback to number for backward compat
             remaining_tracks = [
                 track
                 for track in playlist.get("tracks", [])
-                if track.get("number") not in track_numbers
+                if track.get("track_number", track.get("number")) not in track_numbers
             ]
 
             # Replace tracks with remaining ones in database
@@ -338,8 +339,9 @@ class PlaylistOperationsService:
                 }
 
             # Check track numbering integrity
+            # Use track_number (OpenAPI v4.1.0) with fallback to number for backward compat
             tracks = playlist_data.get("tracks", [])
-            track_numbers = [track.get("number", 0) for track in tracks]
+            track_numbers = [track.get("track_number", track.get("number", 0)) for track in tracks]
             expected_numbers = list(range(1, len(tracks) + 1))
 
             if sorted(track_numbers) != expected_numbers:

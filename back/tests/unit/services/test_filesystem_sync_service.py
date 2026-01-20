@@ -223,7 +223,7 @@ class TestFilesystemSyncService:
         existing_playlist = {
             "id": playlist_id,
             "tracks": [
-                {"number": 1, "filename": "existing.mp3", "title": "Existing"}
+                {"track_number": 1, "filename": "existing.mp3", "title": "Existing"}
             ]
         }
         mock_repository.get_playlist_by_id.return_value = existing_playlist
@@ -264,8 +264,8 @@ class TestFilesystemSyncService:
         existing_playlist = {
             "id": playlist_id,
             "tracks": [
-                {"number": 1, "filename": "existing.mp3", "title": "Existing"},
-                {"number": 2, "filename": "removed.mp3", "title": "Removed"}
+                {"track_number": 1, "filename": "existing.mp3", "title": "Existing"},
+                {"track_number": 2, "filename": "removed.mp3", "title": "Removed"}
             ]
         }
         mock_repository.get_playlist_by_id.return_value = existing_playlist

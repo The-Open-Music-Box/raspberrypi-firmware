@@ -170,7 +170,7 @@ class FilesystemSyncService:
         for filename, track in existing_tracks.items():
             if filename not in to_remove:
                 track_copy = dict(track)
-                track_copy["number"] = track_number
+                track_copy["track_number"] = track_number
                 new_tracks.append(track_copy)
                 track_number += 1
         # Add new tracks
