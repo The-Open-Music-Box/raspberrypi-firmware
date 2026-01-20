@@ -207,7 +207,7 @@ def mock_playlist_with_tracks(test_client_with_mock_db):
         "created_at": "2025-01-01T00:00:00Z",
         "tracks": [
             {
-                "number": 1,
+                "track_number": 1,
                 "title": "Mock Song 1",
                 "filename": "mock1.mp3",
                 "duration": "3:00",
@@ -216,7 +216,7 @@ def mock_playlist_with_tracks(test_client_with_mock_db):
                 "play_counter": 0,
             },
             {
-                "number": 2,
+                "track_number": 2,
                 "title": "Mock Song 2",
                 "filename": "mock2.mp3",
                 "duration": "2:30",

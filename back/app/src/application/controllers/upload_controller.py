@@ -216,7 +216,7 @@ class UploadController:
             duration_ms = metadata_dict.get("duration", 0)
 
             track_entry = {
-                "number": new_track_number,
+                "track_number": new_track_number,
                 "title": (metadata_override or {}).get("title")
                 or metadata_dict.get("title")
                 or Path(filename).stem,

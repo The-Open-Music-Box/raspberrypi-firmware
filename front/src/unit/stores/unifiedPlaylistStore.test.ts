@@ -103,12 +103,12 @@ describe('unifiedPlaylistStore', () => {
     // deleteTrack updates track_count
     api.deleteTrack.mockResolvedValue({})
     await store.deleteTrack('p1', 1)
-    expect(store.getTracksForPlaylist('p1').some(t => t.number === 1)).toBe(false)
+    expect(store.getTracksForPlaylist('p1').some(t => t.track_number === 1)).toBe(false)
 
-    // reorderTracks - store uses 'number' field for optimistic update
+    // reorderTracks - store uses 'track_number' field for optimistic update (v4.1.0)
     api.reorderTracks.mockResolvedValue({})
     await store.reorderTracks('p1', [2])
-    expect(store.getTracksForPlaylist('p1')[0].number).toBe(1)
+    expect(store.getTracksForPlaylist('p1')[0].track_number).toBe(1)
   })
 
   it('websocket handlers cover branches', async () => {
@@ -377,20 +377,20 @@ describe('unifiedPlaylistStore', () => {
     const store = useUnifiedPlaylistStore()
     const api = (await import('@/services/apiService')).default as any
     const tracksData = [
-      { id: 'track-1', number: 1, title: 'Track 1', filename: 'track1.mp3' },
-      { id: 'track-2', number: 2, title: 'Track 2', filename: 'track2.mp3' }
+      { id: 'track-1', track_number: 1, title: 'Track 1', filename: 'track1.mp3' },
+      { id: 'track-2', track_number: 2, title: 'Track 2', filename: 'track2.mp3' }
     ]
     api.getPlaylists.mockResolvedValue([{ id: 'p1', title: 'A', tracks: tracksData }])
     await store.loadAllPlaylists()
     // build index map via loadPlaylistTracks path
     api.getPlaylist.mockResolvedValue({ id: 'p1', title: 'A', tracks: tracksData })
     await store.loadPlaylistTracks('p1')
-    expect(store.getTrackByNumberOptimized('p1', 2)!.number).toBe(2)
+    expect(store.getTrackByNumberOptimized('p1', 2)!.track_number).toBe(2)
 
-    // reorder success - store uses 'number' field for optimistic update
+    // reorder success - store uses 'track_number' field for optimistic update (v4.1.0)
     api.reorderTracks.mockResolvedValueOnce({})
     await store.reorderTracks('p1', [2, 1])
-    expect(store.getTracksForPlaylist('p1')[0].number).toBe(1)
+    expect(store.getTracksForPlaylist('p1')[0].track_number).toBe(1)
 
     // reorder with unknown track number (filters undefined entries)
     api.reorderTracks.mockResolvedValueOnce({})

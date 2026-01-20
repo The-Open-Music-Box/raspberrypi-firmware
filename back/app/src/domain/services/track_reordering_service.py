@@ -211,7 +211,7 @@ class TrackReorderingService:
 
             # Create new track with updated position using the actual Track model
             updated_track = Track(
-                number=position,  # New position
+                track_number=position,  # New position
                 title=original_track.title,
                 filename=original_track.filename,
                 file_path=original_track.file_path,

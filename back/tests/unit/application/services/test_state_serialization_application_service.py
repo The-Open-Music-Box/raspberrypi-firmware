@@ -165,7 +165,7 @@ class TestStateSerializationApplicationService:
         assert result["duration_ms"] == 180500  # Converted to milliseconds
         assert result["artist"] == "Object Artist"
         assert result["album"] == "Object Album"
-        assert result["number"] == 3  # Fixed: OpenAPI contract uses 'number' not 'number'
+        assert result["track_number"] == 3  # Fixed: OpenAPI contract uses 'number' not 'number'
         assert result["play_count"] == 42
         assert result["created_at"] == "2023-01-01T00:00:00Z"
         assert result["server_seq"] == 100

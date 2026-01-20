@@ -70,14 +70,14 @@ class TestNfcPlaylistLookupE2E:
             tracks=[
                 Track(
                     id=str(uuid.uuid4()),
-                    number=1,
+                    track_number=1,
                     title="Track 1",
                     filename="track1.mp3",
                     file_path="/fake/path/track1.mp3"
                 ),
                 Track(
                     id=str(uuid.uuid4()),
-                    number=2,
+                    track_number=2,
                     title="Track 2",
                     filename="track2.mp3",
                     file_path="/fake/path/track2.mp3"
@@ -203,7 +203,7 @@ class TestNfcPlaylistLookupE2E:
                 tracks=[
                     Track(
                         id=str(uuid.uuid4()),
-                        number=1,
+                        track_number=1,
                         title="Test Track 1",
                         filename="test1.mp3",
                         file_path=test_file_path,

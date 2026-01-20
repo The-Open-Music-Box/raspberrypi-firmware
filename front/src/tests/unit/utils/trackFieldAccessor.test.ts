@@ -78,7 +78,7 @@ describe('trackFieldAccessor', () => {
       }
 
       expect(() => getTrackNumber(track as any))
-        .toThrow('Track missing required \'number\' field')
+        .toThrow('Track missing required \'track_number\' field')
     })
 
     it('should throw on null number values (fail-loud)', () => {
@@ -87,7 +87,7 @@ describe('trackFieldAccessor', () => {
       }
 
       expect(() => getTrackNumber(track as any))
-        .toThrow('Track missing required \'number\' field')
+        .toThrow('Track missing required \'track_number\' field')
     })
 
     it('should handle zero values correctly', () => {
@@ -105,7 +105,7 @@ describe('trackFieldAccessor', () => {
       expect(() => getTrackNumber(undefined as any))
         .toThrow('Track is null or undefined')
       expect(() => getTrackNumber({} as any))
-        .toThrow('Track missing required \'number\' field')
+        .toThrow('Track missing required \'track_number\' field')
     })
   })
 
@@ -409,7 +409,7 @@ describe('trackFieldAccessor', () => {
 
       // Fail-loud: invalid tracks cause immediate errors
       expect(() => findTrackByNumber(tracksWithoutNumbers as any, 1))
-        .toThrow('Track missing required \'number\' field')
+        .toThrow('Track missing required \'track_number\' field')
     })
   })
 
@@ -468,7 +468,7 @@ describe('trackFieldAccessor', () => {
 
       // Fail-loud: invalid tracks cause immediate errors during sort
       expect(() => sortTracksByNumber(tracks as any))
-        .toThrow('Track missing required \'number\' field')
+        .toThrow('Track missing required \'track_number\' field')
     })
 
     it('should handle empty array', () => {
@@ -786,7 +786,7 @@ describe('trackFieldAccessor', () => {
   })
 
   describe('batchUpdateTrackNumbers', () => {
-    it('should update track numbers correctly (v3.3.2 uses number field)', () => {
+    it('should update track numbers correctly (v4.1.0 uses track_number field)', () => {
       const tracks: MockTrack[] = [
         { id: '1', number: 3, title: 'Track A' },
         { id: '2', number: 1, title: 'Track B' },
@@ -799,11 +799,11 @@ describe('trackFieldAccessor', () => {
 
       expect(updated)
         .toHaveLength(3)
-      expect(updated[0].number)
+      expect(updated[0].track_number)
         .toBe(1)
-      expect(updated[1].number)
+      expect(updated[1].track_number)
         .toBe(2)
-      expect(updated[2].number)
+      expect(updated[2].track_number)
         .toBe(3)
     })
 
@@ -821,7 +821,7 @@ describe('trackFieldAccessor', () => {
         .toBe('Track A')
       expect(updated[0].artist)
         .toBe('Artist 1')
-      expect(updated[0].number)
+      expect(updated[0].track_number)
         .toBe(1)
       expect(updated[1].id)
         .toBe('2')
@@ -829,7 +829,7 @@ describe('trackFieldAccessor', () => {
         .toBe('Track B')
       expect(updated[1].artist)
         .toBe('Artist 2')
-      expect(updated[1].number)
+      expect(updated[1].track_number)
         .toBe(2)
     })
 
@@ -859,7 +859,7 @@ describe('trackFieldAccessor', () => {
 
       const updated = batchUpdateTrackNumbers(tracks as any, [1])
 
-      expect(updated[0].number)
+      expect(updated[0].track_number)
         .toBe(1)
     })
   })

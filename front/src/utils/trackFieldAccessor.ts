@@ -2,18 +2,20 @@
  * Track Field Accessor Utilities
  *
  * Centralized utilities for accessing track fields safely.
- * Uses ONLY OpenAPI Contract v3.3.2 types.
+ * Uses ONLY OpenAPI Contract v4.1.0 types.
  */
 
 import type { Track } from '@/types'
 import { logger } from './logger'
 
 /**
- * Get track number from contract v3.3.2
+ * Get track number from contract v4.1.0
  *
  * IMPORTANT: No longer uses silent fallback to 0.
- * Logs error and throws if 'number' field is missing to prevent
+ * Logs error and throws if 'track_number' field is missing to prevent
  * contract violations from causing silent data corruption (issue #71).
+ *
+ * Supports backward compatibility with legacy 'number' field during migration.
  */
 export function getTrackNumber(track: Track): number {
   if (!track) {
@@ -21,11 +23,13 @@ export function getTrackNumber(track: Track): number {
     throw new Error('Track is null or undefined')
   }
 
-  // Check if 'number' field exists (contract requirement)
-  if (track.number === undefined || track.number === null) {
+  // Check for 'track_number' field (v4.1.0 contract), fallback to 'number' for backward compat
+  const trackNumber = track.track_number ?? (track as any).number
+
+  if (trackNumber === undefined || trackNumber === null) {
     const trackKeys = Object.keys(track)
     logger.error(
-      'CONTRACT VIOLATION: Track missing required "number" field',
+      'CONTRACT VIOLATION: Track missing required "track_number" field',
       {
         trackId: (track as any).id,
         trackTitle: track.title,
@@ -37,45 +41,45 @@ export function getTrackNumber(track: Track): number {
     )
 
     throw new Error(
-      `Track missing required 'number' field. ` +
+      `Track missing required 'track_number' field. ` +
       `Available fields: ${trackKeys.join(', ')}. ` +
       `This indicates a backend serialization bug (see issue #71).`
     )
   }
 
-  // Validate number is actually a number type
-  if (typeof track.number !== 'number') {
+  // Validate track_number is actually a number type
+  if (typeof trackNumber !== 'number') {
     logger.error(
-      'CONTRACT VIOLATION: Track "number" field has wrong type',
+      'CONTRACT VIOLATION: Track "track_number" field has wrong type',
       {
-        trackNumber: track.number,
-        actualType: typeof track.number,
+        trackNumber: trackNumber,
+        actualType: typeof trackNumber,
         trackId: (track as any).id
       },
       'trackFieldAccessor'
     )
 
     throw new Error(
-      `Track 'number' field has wrong type. ` +
-      `Expected: number, Got: ${typeof track.number}. ` +
-      `Value: ${track.number}`
+      `Track 'track_number' field has wrong type. ` +
+      `Expected: number, Got: ${typeof trackNumber}. ` +
+      `Value: ${trackNumber}`
     )
   }
 
-  // Validate number is positive
-  if (track.number <= 0) {
+  // Validate track_number is positive
+  if (trackNumber <= 0) {
     logger.warn(
-      'Track has invalid number (<=0)',
-      { trackNumber: track.number, trackId: (track as any).id },
+      'Track has invalid track_number (<=0)',
+      { trackNumber: trackNumber, trackId: (track as any).id },
       'trackFieldAccessor'
     )
   }
 
-  return track.number
+  return trackNumber
 }
 
 /**
- * Get track duration in milliseconds from contract v3.3.2
+ * Get track duration in milliseconds from contract v4.1.0
  * Prefers duration_ms, falls back to duration * 1000 (deprecated field)
  */
 export function getTrackDurationMs(track: Track): number {
@@ -88,7 +92,7 @@ export function getTrackDurationMs(track: Track): number {
 }
 
 /**
- * Get track duration in seconds from contract v3.3.2
+ * Get track duration in seconds from contract v4.1.0
  */
 export function getTrackDurationSeconds(track: Track): number {
   if (!track) return 0
@@ -100,11 +104,11 @@ export function getTrackDurationSeconds(track: Track): number {
 }
 
 /**
- * Ensure track has all required fields from contract v3.3.2
+ * Ensure track has all required fields from contract v4.1.0
  */
 export function normalizeTrack(track: Track): Track {
   if (!track) return track
-  // Contract v3.3.2 - Track uses 'number' field
+  // Contract v4.1.0 - Track uses 'track_number' field
   return track
 }
 
@@ -235,7 +239,7 @@ export function createTrackIndexMap(tracks: Track[]): Map<number, Track> {
 }
 
 /**
- * Batch update track numbers efficiently (v3.3.2 uses 'number' field)
+ * Batch update track numbers efficiently (v4.1.0 uses 'track_number' field)
  */
 export function batchUpdateTrackNumbers(tracks: Track[], newOrder: number[]): Track[] {
   if (tracks.length !== newOrder.length) {
@@ -244,6 +248,6 @@ export function batchUpdateTrackNumbers(tracks: Track[], newOrder: number[]): Tr
 
   return tracks.map((track, index) => ({
     ...track,
-    number: index + 1
+    track_number: index + 1
   }))
 }

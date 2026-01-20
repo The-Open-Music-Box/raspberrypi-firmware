@@ -265,9 +265,9 @@ class TestDataApplicationService:
 
         # Mock tracks exist
         mock_track_service.get_tracks.return_value = [
-            {'id': 'track-1', 'number': 1, 'title': 'Track 1'},
-            {'id': 'track-2', 'number': 2, 'title': 'Track 2'},
-            {'id': 'track-3', 'number': 3, 'title': 'Track 3'}
+            {'id': 'track-1', 'track_number': 1, 'title': 'Track 1'},
+            {'id': 'track-2', 'track_number': 2, 'title': 'Track 2'},
+            {'id': 'track-3', 'track_number': 3, 'title': 'Track 3'}
         ]
 
         # Mock successful deletion

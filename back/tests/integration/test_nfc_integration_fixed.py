@@ -125,14 +125,14 @@ class TestNfcIntegration:
         track_objects = [
             Track(
                 id='track-1',
-                number=1,
+                track_number=1,
                 title='Track 1',
                 filename='track1.mp3',
                 file_path='/path/track1.mp3'
             ),
             Track(
                 id='track-2',
-                number=2,
+                track_number=2,
                 title='Track 2',
                 filename='track2.mp3',
                 file_path='/path/track2.mp3'
@@ -150,8 +150,8 @@ class TestNfcIntegration:
 
         # Test with dictionary objects (for backward compatibility)
         dict_tracks = [
-            {'id': 'track-1', 'number': 1, 'filename': 'track1.mp3'},
-            {'id': 'track-2', 'number': 2, 'filename': 'track2.mp3'}
+            {'id': 'track-1', 'track_number': 1, 'filename': 'track1.mp3'},
+            {'id': 'track-2', 'track_number': 2, 'filename': 'track2.mp3'}
         ]
 
         mock_track_repo.get_by_playlist.return_value = dict_tracks

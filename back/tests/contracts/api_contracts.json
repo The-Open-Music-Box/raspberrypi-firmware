@@ -717,7 +717,7 @@
     "Track": {
       "type": "object",
       "properties": {
-        "number": {"type": "integer"},
+        "track_number": {"type": "integer"},
         "title": {"type": "string"},
         "filename": {"type": "string"},
         "file_path": {"type": "string"},
@@ -729,7 +729,7 @@
         "created_at": {"type": "string"},
         "updated_at": {"type": "string"}
       },
-      "required": ["number", "title", "filename"]
+      "required": ["track_number", "title", "filename"]
     },
     "PlayerState": {
       "type": "object",

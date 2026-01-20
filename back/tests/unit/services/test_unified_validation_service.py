@@ -108,7 +108,7 @@ class TestValidateTrackData:
         data = {
             "title": "Song Title",
             "filename": "song.mp3",
-            "number": 1,
+            "track_number": 1,
             "duration_ms": 180000,
         }
         is_valid, errors = UnifiedValidationService.validate_track_data(
@@ -119,7 +119,7 @@ class TestValidateTrackData:
 
     def test_missing_title(self):
         """Test validation fails without title."""
-        data = {"filename": "song.mp3", "number": 1}
+        data = {"filename": "song.mp3", "track_number": 1}
         is_valid, errors = UnifiedValidationService.validate_track_data(
             data, context="api", validate_file_exists=False
         )
@@ -137,7 +137,7 @@ class TestValidateTrackData:
 
     def test_invalid_track_number(self):
         """Test validation fails with invalid track number."""
-        data = {"title": "Song", "number": -1}
+        data = {"title": "Song", "track_number": -1}
         is_valid, errors = UnifiedValidationService.validate_track_data(
             data, context="api", validate_file_exists=False
         )
@@ -146,7 +146,7 @@ class TestValidateTrackData:
 
     def test_track_number_too_high(self):
         """Test validation fails with track number too high."""
-        data = {"title": "Song", "number": 10000}
+        data = {"title": "Song", "track_number": 10000}
         is_valid, errors = UnifiedValidationService.validate_track_data(
             data, context="api", validate_file_exists=False
         )

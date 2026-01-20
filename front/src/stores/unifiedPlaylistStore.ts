@@ -333,7 +333,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         trackNumbers: playlistTracks?.map(t => getTrackNumber(t)) || [],
         trackData: playlistTracks?.map(t => ({
           filename: t.filename,
-          number: t.number,
+          track_number: getTrackNumber(t),
           allKeys: Object.keys(t),
           rawTrack: t
         })) || []
@@ -462,7 +462,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
         .filter((track): track is Track => track !== undefined)
         .map((track, index) => ({
           ...track,
-          number: index + 1 // Update track numbers for new positions (v3.3.2 uses 'number')
+          track_number: index + 1 // Update track numbers for new positions (v4.1.0 uses 'track_number')
         }))
 
       tracks.value.set(playlistId, reorderedTracks)
@@ -640,7 +640,7 @@ export const useUnifiedPlaylistStore = defineStore('unifiedPlaylist', () => {
           playlistId: playlist.id,
           tracksCount: sortedTracks.length,
           firstTrackNumber: sortedTracks[0] ? getTrackNumber(sortedTracks[0]) : 0,
-          trackTitles: sortedTracks.slice(0, 3).map((t: any) => ({ number: getTrackNumber(t), title: t.title, filename: t.filename }))
+          trackTitles: sortedTracks.slice(0, 3).map((t: any) => ({ track_number: getTrackNumber(t), title: t.title, filename: t.filename }))
         })
       }
     }

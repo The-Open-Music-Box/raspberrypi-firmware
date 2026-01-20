@@ -31,10 +31,10 @@ def service():
 def sample_tracks():
     """Create sample tracks for testing."""
     return [
-        Track(number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-        Track(number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
-        Track(number=3, title="Track 3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
-        Track(number=4, title="Track 4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
+        Track(track_number=1, title="Track 1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+        Track(track_number=2, title="Track 2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
+        Track(track_number=3, title="Track 3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
+        Track(track_number=4, title="Track 4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
     ]
 
 
@@ -382,9 +382,9 @@ class TestBusinessRuleChecks:
         """Test business rule violation when tracks are missing."""
         # Create reordered list missing a track
         reordered = [
-            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-            Track(number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
-            Track(number=3, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
+            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+            Track(track_number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
+            Track(track_number=3, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
         ]
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -396,7 +396,7 @@ class TestBusinessRuleChecks:
         """Test business rule violation when extra tracks added."""
         reordered = service.create_reordered_tracks([4, 3, 2, 1], sample_tracks)
         # Add extra track
-        extra = Track(number=5, title="Extra", filename="e.mp3", file_path="/e.mp3", id="id-extra")
+        extra = Track(track_number=5, title="Extra", filename="e.mp3", file_path="/e.mp3", id="id-extra")
         reordered.append(extra)
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -408,10 +408,10 @@ class TestBusinessRuleChecks:
         """Test business rule violation for non-sequential track numbers."""
         # Manually create tracks with gaps in numbering
         reordered = [
-            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-            Track(number=3, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),  # Gap!
-            Track(number=4, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
-            Track(number=5, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
+            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+            Track(track_number=3, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),  # Gap!
+            Track(track_number=4, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),
+            Track(track_number=5, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
         ]
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -422,10 +422,10 @@ class TestBusinessRuleChecks:
     def test_check_duplicate_track_numbers(self, service, sample_tracks):
         """Test business rule violation for duplicate track numbers."""
         reordered = [
-            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
-            Track(number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
-            Track(number=2, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),  # Duplicate!
-            Track(number=4, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
+            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3", id="id1"),
+            Track(track_number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3", id="id2"),
+            Track(track_number=2, title="T3", filename="t3.mp3", file_path="/t3.mp3", id="id3"),  # Duplicate!
+            Track(track_number=4, title="T4", filename="t4.mp3", file_path="/t4.mp3", id="id4"),
         ]
 
         violations = service._check_business_rules(reordered, sample_tracks)
@@ -488,7 +488,7 @@ class TestEdgeCases:
         """Test reordering very large playlist."""
         # Create 100 tracks
         tracks = [
-            Track(number=i, title=f"Track {i}", filename=f"t{i}.mp3",
+            Track(track_number=i, title=f"Track {i}", filename=f"t{i}.mp3",
                   file_path=f"/t{i}.mp3", id=f"id{i}")
             for i in range(1, 101)
         ]
@@ -510,9 +510,9 @@ class TestEdgeCases:
     def test_reorder_tracks_with_metadata(self, service):
         """Test reordering preserves all metadata."""
         tracks = [
-            Track(number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3",
+            Track(track_number=1, title="T1", filename="t1.mp3", file_path="/t1.mp3",
                   duration_ms=180000, artist="Artist 1", album="Album", id="id1"),
-            Track(number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3",
+            Track(track_number=2, title="T2", filename="t2.mp3", file_path="/t2.mp3",
                   duration_ms=240000, artist="Artist 2", album="Album", id="id2"),
         ]
 

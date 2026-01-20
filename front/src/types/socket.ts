@@ -59,7 +59,7 @@ export interface PlaylistStateData {
   id: string;
   title: string;
   tracks?: Array<{
-    number: number;
+    track_number: number;  // OpenAPI v4.1.0
     title: string;
     filename: string;
     duration?: number;

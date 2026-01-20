@@ -175,8 +175,8 @@ class TestPlaylistAPIContract:
             "id": "test-playlist-123",
             "title": "Test Playlist",
             "tracks": [
-                {"number": 1, "title": "Track 1"},
-                {"number": 2, "title": "Track 2"}
+                {"track_number": 1, "title": "Track 1"},
+                {"track_number": 2, "title": "Track 2"}
             ]
         }
         routes._playlist_app_service.get_playlist_use_case = AsyncMock(
@@ -473,7 +473,7 @@ class TestPlaylistAPIContract:
                 json={
                     "source_playlist_id": "playlist-1",
                     "target_playlist_id": "playlist-2",
-                    "number": 3,
+                    "track_number": 3,
                     "target_position": 1,
                     "client_op_id": "client-op-move"
                 }

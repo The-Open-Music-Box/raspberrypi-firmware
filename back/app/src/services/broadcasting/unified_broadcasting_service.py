@@ -395,7 +395,9 @@ class UnifiedBroadcastingService:
         Validate and fix contract compliance for playlist data before broadcasting.
 
         This is a defense-in-depth measure to prevent issue #71 from recurring.
-        It detects and auto-fixes missing 'number' field in tracks.
+        It detects and auto-fixes missing 'track_number' field in tracks.
+
+        Per OpenAPI contract v4.1.0, tracks must have 'track_number' field.
 
         Args:
             playlist_data: Playlist data to validate
@@ -426,16 +428,16 @@ class UnifiedBroadcastingService:
                 fixed_tracks.append(track)
                 continue
 
-            # Check for 'number' field (required by frontend contract)
-            if 'number' not in track:
+            # Check for 'track_number' field (required by OpenAPI contract v4.1.0)
+            if 'track_number' not in track:
                 contract_violations_detected = True
 
-                # Try to fix by using 'number' if available
+                # Try to fix by using 'number' if available (backward compatibility)
                 if 'number' in track:
-                    track['number'] = track['number']
+                    track['track_number'] = track['number']
                     logger.warning(
                         f"CONTRACT VIOLATION FIXED: Track {idx} (ID: {track.get('id')}) "
-                        f"missing 'number' field, auto-fixed from 'number'={track['number']}. "
+                        f"missing 'track_number' field, auto-fixed from 'number'={track['track_number']}. "
                         f"This indicates a serialization bug (see issue #71). "
                         f"Track: {track.get('title', 'unknown')}"
                     )
@@ -443,21 +445,20 @@ class UnifiedBroadcastingService:
                     # Cannot fix - log critical error
                     logger.error(
                         f"CONTRACT VIOLATION CANNOT FIX: Track {idx} (ID: {track.get('id')}) "
-                        f"missing both 'number' and 'number' fields! "
+                        f"missing both 'track_number' and 'number' fields! "
                         f"Available fields: {', '.join(track.keys())}. "
                         f"Track: {track.get('title', 'unknown')}. "
                         f"This will cause frontend errors!"
                     )
 
-            # Verify 'number' and 'number' match if both present
-            if 'number' in track and 'number' in track:
-                if track['number'] != track['number']:
+            # Verify 'track_number' and 'number' match if both present (backward compatibility)
+            if 'track_number' in track and 'number' in track:
+                if track['track_number'] != track['number']:
                     logger.warning(
                         f"CONTRACT INCONSISTENCY: Track {idx} has mismatched fields: "
-                        f"number={track['number']} vs track_number={track['number']}. "
+                        f"track_number={track['track_number']} vs number={track['number']}. "
                         f"Using track_number as source of truth."
                     )
-                    track['number'] = track['number']
 
             fixed_tracks.append(track)
 
@@ -467,7 +468,7 @@ class UnifiedBroadcastingService:
             playlist_title = playlist_data.get('title', 'unknown')
             logger.warning(
                 f"CONTRACT VALIDATION: Playlist '{playlist_title}' (ID: {playlist_id}) "
-                f"had tracks with missing 'number' fields. Auto-fixed before broadcast. "
+                f"had tracks with missing 'track_number' fields. Auto-fixed before broadcast. "
                 f"This indicates serialization is not using UnifiedSerializationService. "
                 f"See issue #71 for context."
             )

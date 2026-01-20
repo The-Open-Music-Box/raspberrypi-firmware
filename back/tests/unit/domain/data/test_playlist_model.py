@@ -388,7 +388,7 @@ class TestPlaylistBusinessRules:
         """Test playlist with invalid track is invalid."""
         playlist = Playlist(title="Test")
         invalid_track = Track(
-            number=0,  # Invalid: must be > 0
+            track_number=0,  # Invalid: must be > 0
             title="",
             filename="",
             file_path=""

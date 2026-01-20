@@ -33,7 +33,7 @@ class TestTrackSerializationContract:
         """Create a sample Track entity."""
         return Track(
             id="track-123",
-            number=1,
+            track_number=1,
             title="Test Track",
             filename="test.mp3",
             file_path="/path/to/test.mp3",
@@ -79,7 +79,7 @@ class TestTrackSerializationContract:
         serialized_fields = set(serialized.keys())
 
         # Verify 'number' field is present (no mapping needed anymore)
-        assert 'number' in serialized, (
+        assert 'track_number' in serialized, (
             "Track should have 'number' field after serialization"
         )
 
@@ -103,8 +103,8 @@ class TestTrackSerializationContract:
         assert hasattr(sample_track, 'number'), "Track should have 'number' attribute"
 
         # asdict() should serialize 'number' directly
-        assert 'number' in serialized, "asdict() should serialize 'number' field"
-        assert serialized['number'] == sample_track.number, "Serialized number should match entity"
+        assert 'track_number' in serialized, "asdict() should serialize 'number' field"
+        assert serialized['track_number'] == sample_track.number, "Serialized number should match entity"
 
     def test_repository_serialization_is_contract_compliant(self, sample_track, openapi_schema):
         """Test that Track serialization is contract compliant.
@@ -120,7 +120,7 @@ class TestTrackSerializationContract:
         serialized_fields = set(track_dict.keys())
 
         # Should have 'number' directly from asdict()
-        assert 'number' in track_dict, "Serialized track should have 'number' field per contract"
+        assert 'track_number' in track_dict, "Serialized track should have 'number' field per contract"
 
         # All required contract fields should be present
         missing = required_fields - serialized_fields
@@ -134,7 +134,7 @@ class TestTrackSerializationContract:
         tracks = [
             Track(
                 id=f"track-{i}",
-                number=i,
+                track_number=i,
                 title=f"Track {i}",
                 filename=f"track{i}.mp3",
                 file_path=f"/path/track{i}.mp3",
@@ -148,8 +148,8 @@ class TestTrackSerializationContract:
 
         # Verify all tracks have correct field names
         for i, track_dict in enumerate(serialized_tracks, 1):
-            assert 'number' in track_dict, f"Track {i} should have 'number' field"
-            assert track_dict['number'] == i, f"Track {i} should have number={i}"
+            assert 'track_number' in track_dict, f"Track {i} should have 'number' field"
+            assert track_dict['track_number'] == i, f"Track {i} should have number={i}"
 
     def test_reorder_tracks_response_contract(self):
         """Test that reordered tracks maintain contract compliance.
@@ -159,7 +159,7 @@ class TestTrackSerializationContract:
         """
         # Simulate reordering tracks
         original_tracks = [
-            Track(id=f"track-{i}", number=i, title=f"Track {i}",
+            Track(id=f"track-{i}", track_number=i, title=f"Track {i}",
                   filename=f"track{i}.mp3", file_path=f"/path/track{i}.mp3")
             for i in [1, 2, 3]
         ]
@@ -176,17 +176,17 @@ class TestTrackSerializationContract:
 
         # Verify sequential numbering
         for i, track_dict in enumerate(serialized, 1):
-            assert track_dict['number'] == i, (
+            assert track_dict['track_number'] == i, (
                 f"Reordered track at position {i} should have number={i}, got {track_dict.get('number')}"
             )
-            assert 'number' in track_dict, f"Track {i} must have 'number' field"
+            assert 'track_number' in track_dict, f"Track {i} must have 'number' field"
 
         # Verify no duplicates
-        numbers = [t['number'] for t in serialized]
+        numbers = [t['track_number'] for t in serialized]
         assert len(numbers) == len(set(numbers)), f"Duplicate track numbers found: {numbers}"
 
     @pytest.mark.parametrize("field_name,field_type", [
-        ("number", int),
+        ("track_number", int),  # OpenAPI v4.1.0
         ("title", str),
         ("filename", str),
     ])
@@ -256,8 +256,8 @@ class TestRepositorySerializationIntegration:
             track = serialized[0]
 
             # After refactoring, 'number' is directly available
-            assert 'number' in track, (
+            assert 'track_number' in track, (
                 "Serialized track should have 'number' field required by OpenAPI contract"
             )
-            assert track['number'] == 1
+            assert track['track_number'] == 1
             assert track['filename'] == 'track1.mp3'

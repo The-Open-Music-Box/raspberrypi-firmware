@@ -107,8 +107,8 @@ describe('trackFieldAccessor', () => {
 
     const arr = [t({ number: 5 }), t({ number: 9 })]
     const updated = batchUpdateTrackNumbers(arr as any, [1, 2])
-    expect(updated[0].number).toBe(1)
-    expect(updated[1].number).toBe(2)
+    expect(updated[0].track_number).toBe(1)
+    expect(updated[1].track_number).toBe(2)
 
     expect(() => batchUpdateTrackNumbers([t({})] as any, [1,2])).toThrow(/Track count mismatch/)
   })
