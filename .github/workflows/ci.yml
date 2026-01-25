@@ -15,8 +15,12 @@ on:
 
 # Cancel in-progress runs for the same branch
 concurrency:
-  group: ci-rpi-${{ github.head_ref || github.ref }}
+  group: ci-rpi-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
+
+# Minimal permissions for security hardening
+permissions:
+  contents: read
 
 env:
   PUSHGATEWAY_URL: http://host.docker.internal:9091
@@ -28,10 +32,12 @@ jobs:
   check-rebase:
     name: Check Rebase Status
     runs-on: [self-hosted, Linux, ARM64, rpi]
-    if: github.event_name == 'pull_request'
+    # Security: Only run on PRs from the same repository (not forks)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
 
@@ -59,7 +65,12 @@ jobs:
     name: Backend Tests
     runs-on: [self-hosted, Linux, ARM64, rpi]
     needs: [check-rebase]
-    if: always() && (needs.check-rebase.result == 'success' || github.event_name == 'push')
+    # Security: Only run on PRs from the same repository (not forks)
+    if: |
+      always() && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) && (needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped' || github.event_name == 'push')
     defaults:
       run:
         working-directory: back
@@ -69,7 +80,8 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       # Python 3.13 is pre-installed on self-hosted runner
       # - name: Set up Python
@@ -114,7 +126,8 @@ jobs:
         continue-on-error: false
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        # actions/upload-artifact@v4.6.0
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: backend-test-results
@@ -124,7 +137,12 @@ jobs:
     name: Frontend Tests
     runs-on: [self-hosted, Linux, ARM64, rpi]
     needs: [check-rebase]
-    if: always() && (needs.check-rebase.result == 'success' || github.event_name == 'push')
+    # Security: Only run on PRs from the same repository (not forks)
+    if: |
+      always() && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) && (needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped' || github.event_name == 'push')
     defaults:
       run:
         working-directory: front
@@ -134,10 +152,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        # actions/setup-node@v4.2.0
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
         with:
           node-version: '20'
           cache: 'npm'
@@ -150,7 +170,8 @@ jobs:
         run: npm run test:unit
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        # actions/upload-artifact@v4.6.0
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: frontend-test-results
@@ -161,19 +182,26 @@ jobs:
     name: Build Test
     runs-on: [self-hosted, Linux, ARM64, rpi]
     needs: [backend-tests, frontend-tests]
-    if: always() && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success'
+    # Security: Only run on PRs from the same repository (not forks)
+    if: |
+      always() && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success'
 
     outputs:
       status: ${{ job.status }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: true
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        # actions/setup-node@v4.2.0
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
         with:
           node-version: '20'
           cache: 'npm'
@@ -199,7 +227,12 @@ jobs:
     name: CI Status
     runs-on: [self-hosted, Linux, ARM64, rpi]
     needs: [check-rebase, backend-tests, frontend-tests, build-test]
-    if: always()
+    # Security: Only run for same-repo PRs, always run for pushes (even on failures)
+    if: |
+      always() && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
 
     steps:
       - name: Check all jobs
@@ -210,10 +243,11 @@ jobs:
           echo "Build Test: ${{ needs.build-test.result }}"
 
           # For push events, skip rebase check
+          # Treat 'skipped' as acceptable (fork PRs intentionally blocked)
           if [[ "${{ github.event_name }}" == "push" ]]; then
             REBASE_OK="true"
           else
-            REBASE_OK="${{ needs.check-rebase.result == 'success' }}"
+            REBASE_OK="${{ needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped' }}"
           fi
 
           if [[ "$REBASE_OK" != "true" ]]; then
@@ -221,17 +255,22 @@ jobs:
             exit 1
           fi
 
-          if [[ "${{ needs.backend-tests.result }}" != "success" ]]; then
+          # Treat 'skipped' as acceptable (fork PRs intentionally blocked)
+          backend_ok=${{ needs.backend-tests.result == 'success' || needs.backend-tests.result == 'skipped' }}
+          frontend_ok=${{ needs.frontend-tests.result == 'success' || needs.frontend-tests.result == 'skipped' }}
+          build_ok=${{ needs.build-test.result == 'success' || needs.build-test.result == 'skipped' }}
+
+          if [[ "$backend_ok" != "true" ]]; then
             echo "::error::Backend tests failed"
             exit 1
           fi
 
-          if [[ "${{ needs.frontend-tests.result }}" != "success" ]]; then
+          if [[ "$frontend_ok" != "true" ]]; then
             echo "::error::Frontend tests failed"
             exit 1
           fi
 
-          if [[ "${{ needs.build-test.result }}" != "success" ]]; then
+          if [[ "$build_ok" != "true" ]]; then
             echo "::error::Build test failed"
             exit 1
           fi

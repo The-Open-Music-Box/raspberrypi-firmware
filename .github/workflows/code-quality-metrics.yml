@@ -14,6 +14,10 @@ on:
     - cron: "0 6 * * *"
   workflow_dispatch:
 
+# Minimal permissions for security hardening
+permissions:
+  contents: read
+
 env:
   PYTHON_VERSION: "3.11"
 
@@ -21,6 +25,8 @@ jobs:
   collect-metrics:
     name: Collect Code Quality Metrics
     runs-on: [self-hosted, Linux, ARM64, rpi]
+    # Security: Only run on PRs from the same repository (not forks)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
 
     defaults:
       run:
@@ -28,7 +34,8 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      # actions/checkout@v4.2.2
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       # Python 3.13 is pre-installed on self-hosted runner
       # - name: Set up Python
