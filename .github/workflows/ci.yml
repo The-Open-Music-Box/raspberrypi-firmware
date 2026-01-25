@@ -15,7 +15,7 @@ on:
 
 # Cancel in-progress runs for the same branch
 concurrency:
-  group: ci-rpi-${{ github.head_ref || github.ref }}
+  group: ci-rpi-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 # Minimal permissions for security hardening
