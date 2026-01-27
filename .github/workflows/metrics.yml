@@ -97,6 +97,21 @@ jobs:
           RUFF_ISSUES=$(ruff check app/src --output-format=json 2>/dev/null | python3 -c "import sys, json; print(len(json.load(sys.stdin)))" || echo "0")
           echo "ruff_issues=$RUFF_ISSUES" >> $GITHUB_OUTPUT
 
+          # Dead code detection (vulture)
+          pip install vulture --quiet
+          DEAD_CODE=$(vulture app/src --min-confidence 80 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+          echo "dead_code=$DEAD_CODE" >> $GITHUB_OUTPUT
+
+          # Complexity metrics (radon)
+          pip install radon --quiet
+          # High complexity functions (C grade or worse: complexity >= 11)
+          HIGH_COMPLEXITY=$(radon cc app/src -n C -s 2>/dev/null | grep -c "^    " || echo "0")
+          echo "high_complexity=$HIGH_COMPLEXITY" >> $GITHUB_OUTPUT
+
+          # Average complexity
+          AVG_COMPLEXITY=$(radon cc app/src -a -s 2>/dev/null | grep "Average complexity:" | grep -oE '[0-9]+\.?[0-9]*' | head -1 || echo "0")
+          echo "avg_complexity=${AVG_COMPLEXITY:-0}" >> $GITHUB_OUTPUT
+
       # === Frontend Tests and Metrics ===
       - name: Set up Node.js
         # actions/setup-node@v4.3.0
@@ -190,6 +205,9 @@ jobs:
           ci_mypy_errors{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.mypy_errors || 0 }}
           ci_bandit_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.bandit_issues || 0 }}
           ci_ruff_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.ruff_issues || 0 }}
+          ci_dead_code_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.dead_code || 0 }}
+          ci_complexity_high_functions{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.high_complexity || 0 }}
+          ci_complexity_avg{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.avg_complexity || 0 }}
 
           # === Code Size Metrics ===
           ci_backend_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.backend_files || 0 }}
@@ -216,3 +234,6 @@ jobs:
           echo "| Quality | Type Errors | ${{ steps.quality.outputs.mypy_errors || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quality | Security Issues | ${{ steps.quality.outputs.bandit_issues || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quality | Lint Issues | ${{ steps.quality.outputs.ruff_issues || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | Dead Code | ${{ steps.quality.outputs.dead_code || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | High Complexity Funcs | ${{ steps.quality.outputs.high_complexity || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | Avg Complexity | ${{ steps.quality.outputs.avg_complexity || 0 }} |" >> $GITHUB_STEP_SUMMARY
