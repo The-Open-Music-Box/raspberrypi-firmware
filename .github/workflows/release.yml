@@ -1,20 +1,21 @@
-name: Build and Release
+name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 env:
-  PYTHON_VERSION: '3.11'
-  NODE_VERSION: '20'
+  USE_MOCK_HARDWARE: "true"
+  ENVIRONMENT: test
 
 jobs:
-  # Run tests before building release
   test:
     name: Run Tests
     runs-on: [self-hosted, Linux, ARM64, rpi]
@@ -45,22 +46,19 @@ jobs:
         run: |
           cd back
           source venv/bin/activate
-          export USE_MOCK_HARDWARE=true
-          export ENVIRONMENT=test
-          pytest app/tests/unit/ -v --tb=short
+          pytest tests/unit/ -v --tb=short
 
       - name: Run contract tests
         run: |
           cd back
           source venv/bin/activate
-          export USE_MOCK_HARDWARE=true
-          export ENVIRONMENT=test
-          pytest app/tests/contracts/ -v --tb=short || echo "No contract tests found"
+          pytest tests/contracts/ -v --tb=short || echo "No contract tests found"
 
   build-release:
     name: Build Release
     runs-on: [self-hosted, Linux, ARM64, rpi]
     needs: test
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -70,8 +68,8 @@ jobs:
           submodules: recursive
 
       - name: Setup Node.js
-        # actions/setup-node@v4.2.0
-        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+        # actions/setup-node@v4.3.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
           cache: 'npm'
@@ -87,6 +85,8 @@ jobs:
 
       - name: Package release
         run: |
+          VERSION="${{ inputs.version }}"
+
           # Create tomb directory structure
           mkdir -p tomb/app/static
 
@@ -145,59 +145,116 @@ jobs:
           cp -r front/dist/* tomb/app/static/
 
           # Create version file
-          echo "${{ github.ref_name }}" > tomb/VERSION
+          echo "$VERSION" > tomb/VERSION
 
           # Create versioned archives
-          tar -czvf tomb-${{ github.ref_name }}.tar.gz tomb
-          zip -r tomb-${{ github.ref_name }}.zip tomb
+          tar -czvf tomb-v${VERSION}.tar.gz tomb
+          zip -r tomb-v${VERSION}.zip tomb
 
-          # Create stable-named archives for /releases/latest/download/
-          cp tomb-${{ github.ref_name }}.tar.gz tomb.tar.gz
-          cp tomb-${{ github.ref_name }}.zip tomb.zip
+          # Create checksums
+          sha256sum tomb-v${VERSION}.tar.gz tomb-v${VERSION}.zip > SHA256SUMS
 
-      - name: Create GitHub Release
-        # softprops/action-gh-release@v2.2.1
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
+      - name: Upload release artifacts
+        # actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          files: |
-            tomb-${{ github.ref_name }}.tar.gz
-            tomb-${{ github.ref_name }}.zip
-            tomb.tar.gz
-            tomb.zip
-          generate_release_notes: true
-          body: |
-            ## Installation
+          name: rpi-firmware-${{ inputs.version }}
+          path: |
+            tomb-v${{ inputs.version }}.tar.gz
+            tomb-v${{ inputs.version }}.zip
+            SHA256SUMS
+          retention-days: 90
 
-            ### Quick install (always latest)
-            ```bash
-            wget -qO- https://github.com/${{ github.repository }}/releases/latest/download/tomb.tar.gz | tar -xz && cd tomb && sudo ./setup.sh
-            sudo reboot
-            ```
+  publish:
+    name: Publish Release
+    runs-on: [self-hosted, Linux, ARM64, rpi]
+    needs: build-release
+    timeout-minutes: 10
 
-            ### Specific version
-            ```bash
-            wget -qO- https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/tomb-${{ github.ref_name }}.tar.gz | tar -xz && cd tomb && sudo ./setup.sh
-            sudo reboot
-            ```
+    steps:
+      - name: Checkout code
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
 
-            ### Option 2: Clone and build manually
-            ```bash
-            git clone https://github.com/${{ github.repository }}.git
-            cd raspberrypi-firmware
-            ./deploy.sh --build-only
-            ```
+      - name: Download artifacts
+        # actions/download-artifact@v4.3.0
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rpi-firmware-${{ inputs.version }}
+          path: /tmp/rpi-release
 
-            ---
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
 
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ github.event.repository.default_branch }}...${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish to release branch
+        run: |
+          VERSION="${{ inputs.version }}"
+
+          # Fetch release branch or create it as orphan
+          if git ls-remote --heads origin release | grep -q release; then
+            git fetch origin release
+            git checkout release
+          else
+            git checkout --orphan release
+            git rm -rf . || true
+            cat > README.md << 'EOF'
+          # RPI Firmware Releases
+
+          This branch contains release artifacts for the Raspberry Pi firmware.
+
+          ## Installation
+
+          ### Quick install (always latest)
+          ```bash
+          wget -qO- https://github.com/The-Open-Music-Box/raspberrypi-firmware/releases/latest/download/tomb.tar.gz | tar -xz && cd tomb && sudo ./setup.sh
+          sudo reboot
+          ```
+
+          ### Specific version
+          Download from the `releases/` directory and extract.
+          EOF
+            git add README.md
+            git commit -m "Initialize release branch"
+          fi
+
+          # Create releases directory
+          mkdir -p releases/$VERSION
+
+          # Copy artifacts
+          cp /tmp/rpi-release/* releases/$VERSION/
+
+          # Create stable-named copies for latest
+          cp releases/$VERSION/tomb-v${VERSION}.tar.gz releases/$VERSION/tomb.tar.gz
+          cp releases/$VERSION/tomb-v${VERSION}.zip releases/$VERSION/tomb.zip
+
+          # Create version info
+          cat > releases/$VERSION/VERSION.txt << EOF
+          Version: $VERSION
+          Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          Commit: ${{ github.sha }}
+          EOF
+
+          # Stage and commit
+          git add releases/$VERSION/
+          git commit -m "Release v$VERSION [skip ci]" || echo "No changes to commit"
+
+          # Create version tag
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+
+      - name: Push changes
+        run: |
+          git push origin release
+          git push origin "v${{ inputs.version }}"
 
       - name: Export metrics to Pushgateway
         if: always()
         run: |
           RELEASE_SUCCESS=${{ job.status == 'success' && 1 || 0 }}
-          cat <<EOF | curl --data-binary @- http://host.docker.internal:9091/metrics/job/release/instance/rpi-firmware
-          release_success{repo="rpi-firmware",version="${{ github.ref_name }}"} ${RELEASE_SUCCESS}
-          release_timestamp{repo="rpi-firmware",version="${{ github.ref_name }}"} $(date +%s)
+          cat <<EOF | curl --data-binary @- http://host.docker.internal:9091/metrics/job/release/instance/raspberrypi-firmware || true
+          release_success{repo="raspberrypi-firmware",version="v${{ inputs.version }}"} ${RELEASE_SUCCESS}
+          release_timestamp{repo="raspberrypi-firmware",version="v${{ inputs.version }}"} $(date +%s)
           EOF

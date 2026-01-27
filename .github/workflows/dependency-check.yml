@@ -1,0 +1,182 @@
+name: Dependency Check
+
+on:
+  schedule:
+    # Run weekly on Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-dependencies:
+    name: Check Outdated Dependencies
+    runs-on: [self-hosted, Linux, ARM64, rpi]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      # === Backend (Python) Dependencies ===
+      - name: Set up Python virtual environment
+        run: |
+          cd back
+          rm -rf venv
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+
+      - name: Install backend dependencies
+        run: |
+          cd back
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Check Python dependencies
+        id: pip-check
+        run: |
+          cd back
+          source venv/bin/activate
+
+          echo "## Python Dependencies (Backend)" > /tmp/outdated-report.md
+          echo "" >> /tmp/outdated-report.md
+
+          # Get outdated packages
+          OUTDATED=$(pip list --outdated --format=json 2>/dev/null || echo "[]")
+          OUTDATED_COUNT=$(echo "$OUTDATED" | python3 -c "import sys, json; print(len(json.load(sys.stdin)))")
+
+          if [[ "$OUTDATED_COUNT" -gt 0 ]]; then
+            echo "| Package | Current | Latest |" >> /tmp/outdated-report.md
+            echo "|---------|---------|--------|" >> /tmp/outdated-report.md
+            echo "$OUTDATED" | python3 -c "
+          import sys, json
+          for pkg in json.load(sys.stdin):
+              print(f\"| {pkg['name']} | {pkg['version']} | {pkg['latest_version']} |\")
+          " >> /tmp/outdated-report.md
+            echo "pip_outdated=1" >> $GITHUB_OUTPUT
+          else
+            echo "All Python packages are up to date." >> /tmp/outdated-report.md
+            echo "pip_outdated=0" >> $GITHUB_OUTPUT
+          fi
+
+          echo "pip_count=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
+
+      # === Frontend (npm) Dependencies ===
+      - name: Set up Node.js
+        # actions/setup-node@v4.3.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd front
+          npm ci
+
+      - name: Check npm dependencies
+        id: npm-check
+        run: |
+          cd front
+
+          echo "" >> /tmp/outdated-report.md
+          echo "## npm Dependencies (Frontend)" >> /tmp/outdated-report.md
+          echo "" >> /tmp/outdated-report.md
+
+          # Get outdated packages
+          OUTDATED=$(npm outdated --json 2>/dev/null || echo "{}")
+          OUTDATED_COUNT=$(echo "$OUTDATED" | python3 -c "import sys, json; print(len(json.load(sys.stdin)))")
+
+          if [[ "$OUTDATED_COUNT" -gt 0 ]]; then
+            echo "| Package | Current | Wanted | Latest |" >> /tmp/outdated-report.md
+            echo "|---------|---------|--------|--------|" >> /tmp/outdated-report.md
+            echo "$OUTDATED" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          for name, info in data.items():
+              current = info.get('current', 'N/A')
+              wanted = info.get('wanted', 'N/A')
+              latest = info.get('latest', 'N/A')
+              print(f'| {name} | {current} | {wanted} | {latest} |')
+          " >> /tmp/outdated-report.md
+            echo "npm_outdated=1" >> $GITHUB_OUTPUT
+          else
+            echo "All npm packages are up to date." >> /tmp/outdated-report.md
+            echo "npm_outdated=0" >> $GITHUB_OUTPUT
+          fi
+
+          echo "npm_count=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
+
+      # === Security Audit ===
+      - name: Run npm audit
+        id: npm-audit
+        run: |
+          cd front
+
+          echo "" >> /tmp/outdated-report.md
+          echo "## Security Audit" >> /tmp/outdated-report.md
+          echo "" >> /tmp/outdated-report.md
+
+          if npm audit --json 2>/dev/null | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          vulns = data.get('metadata', {}).get('vulnerabilities', {})
+          total = sum(vulns.values())
+          if total > 0:
+              print(f'Found {total} vulnerabilities:')
+              for severity, count in vulns.items():
+                  if count > 0:
+                      print(f'  - {severity}: {count}')
+              sys.exit(1)
+          else:
+              print('No vulnerabilities found.')
+          "; then
+            echo "npm_vulnerabilities=0" >> $GITHUB_OUTPUT
+          else
+            echo "npm_vulnerabilities=1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue if outdated or vulnerable
+        if: steps.pip-check.outputs.pip_outdated == '1' || steps.npm-check.outputs.npm_outdated == '1' || steps.npm-audit.outputs.npm_vulnerabilities == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if issue already exists
+          EXISTING=$(gh issue list --label "dependencies" --state open --json number --jq 'length')
+
+          if [[ "$EXISTING" == "0" ]]; then
+            REPORT=$(cat /tmp/outdated-report.md)
+            PIP_COUNT=${{ steps.pip-check.outputs.pip_count }}
+            NPM_COUNT=${{ steps.npm-check.outputs.npm_count }}
+            HAS_VULNS=${{ steps.npm-audit.outputs.npm_vulnerabilities }}
+
+            TITLE="chore: Update outdated dependencies"
+            if [[ "$HAS_VULNS" == "1" ]]; then
+              TITLE="chore: Security - Update vulnerable dependencies"
+            fi
+
+            gh issue create \
+              --title "$TITLE" \
+              --label "dependencies" \
+              --body "## Outdated Dependencies Report
+
+          $REPORT
+
+          ### Summary
+          - Python packages outdated: $PIP_COUNT
+          - npm packages outdated: $NPM_COUNT
+          - Security vulnerabilities: $([[ \"$HAS_VULNS\" == \"1\" ]] && echo \"Yes\" || echo \"No\")
+
+          ### Actions Required
+          - Review changelog for breaking changes
+          - Update requirements.txt and package.json
+          - Run tests after update
+
+          ---
+          *This issue was automatically created by the dependency-check workflow.*"
+          fi
