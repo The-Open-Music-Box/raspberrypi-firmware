@@ -8,10 +8,8 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [develop, develop-middleware]
     types: [opened, synchronize, reopened]
-  push:
-    branches: [develop]
 
 # Cancel in-progress runs for the same branch
 concurrency:
@@ -67,10 +65,9 @@ jobs:
     needs: [check-rebase]
     # Security: Only run on PRs from the same repository (not forks)
     if: |
-      always() && (
-        github.event_name != 'pull_request' ||
-        github.event.pull_request.head.repo.full_name == github.repository
-      ) && (needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped' || github.event_name == 'push')
+      always() &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped')
     defaults:
       run:
         working-directory: back
@@ -139,10 +136,9 @@ jobs:
     needs: [check-rebase]
     # Security: Only run on PRs from the same repository (not forks)
     if: |
-      always() && (
-        github.event_name != 'pull_request' ||
-        github.event.pull_request.head.repo.full_name == github.repository
-      ) && (needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped' || github.event_name == 'push')
+      always() &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped')
     defaults:
       run:
         working-directory: front
@@ -184,10 +180,10 @@ jobs:
     needs: [backend-tests, frontend-tests]
     # Security: Only run on PRs from the same repository (not forks)
     if: |
-      always() && (
-        github.event_name != 'pull_request' ||
-        github.event.pull_request.head.repo.full_name == github.repository
-      ) && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success'
+      always() &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      needs.backend-tests.result == 'success' &&
+      needs.frontend-tests.result == 'success'
 
     outputs:
       status: ${{ job.status }}
@@ -227,12 +223,8 @@ jobs:
     name: CI Status
     runs-on: [self-hosted, Linux, ARM64, rpi]
     needs: [check-rebase, backend-tests, frontend-tests, build-test]
-    # Security: Only run for same-repo PRs, always run for pushes (even on failures)
-    if: |
-      always() && (
-        github.event_name != 'pull_request' ||
-        github.event.pull_request.head.repo.full_name == github.repository
-      )
+    # Security: Only run for same-repo PRs
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Check all jobs
@@ -242,23 +234,16 @@ jobs:
           echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
           echo "Build Test: ${{ needs.build-test.result }}"
 
-          # For push events, skip rebase check
           # Treat 'skipped' as acceptable (fork PRs intentionally blocked)
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            REBASE_OK="true"
-          else
-            REBASE_OK="${{ needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped' }}"
-          fi
-
-          if [[ "$REBASE_OK" != "true" ]]; then
-            echo "::error::Branch must be rebased on develop"
-            exit 1
-          fi
-
-          # Treat 'skipped' as acceptable (fork PRs intentionally blocked)
+          rebase_ok=${{ needs.check-rebase.result == 'success' || needs.check-rebase.result == 'skipped' }}
           backend_ok=${{ needs.backend-tests.result == 'success' || needs.backend-tests.result == 'skipped' }}
           frontend_ok=${{ needs.frontend-tests.result == 'success' || needs.frontend-tests.result == 'skipped' }}
           build_ok=${{ needs.build-test.result == 'success' || needs.build-test.result == 'skipped' }}
+
+          if [[ "$rebase_ok" != "true" ]]; then
+            echo "::error::Branch must be rebased on develop"
+            exit 1
+          fi
 
           if [[ "$backend_ok" != "true" ]]; then
             echo "::error::Backend tests failed"
@@ -276,12 +261,3 @@ jobs:
           fi
 
           echo "All CI checks passed!"
-
-      - name: Export metrics
-        if: always()
-        run: |
-          STATUS=$([[ "${{ job.status }}" == "success" ]] && echo 1 || echo 0)
-          curl -s --data-binary @- "${{ env.PUSHGATEWAY_URL }}/metrics/job/ci/repo/raspberrypi-firmware" << EOF || true
-          ci_tests_success{repo="raspberrypi-firmware",branch="${{ github.head_ref || github.ref_name }}"} $STATUS
-          ci_build_timestamp{repo="raspberrypi-firmware",branch="${{ github.head_ref || github.ref_name }}"} $(date +%s)
-          EOF

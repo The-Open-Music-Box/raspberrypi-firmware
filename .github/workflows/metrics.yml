@@ -1,0 +1,218 @@
+name: Export Metrics
+
+on:
+  push:
+    branches: [develop, develop-middleware]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  PUSHGATEWAY_URL: http://host.docker.internal:9091
+  USE_MOCK_HARDWARE: "true"
+  ENVIRONMENT: test
+
+jobs:
+  export-metrics:
+    name: Export CI/CD Metrics
+    runs-on: [self-hosted, Linux, ARM64, rpi]
+    timeout-minutes: 30
+    if: github.event.pusher.name != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout code
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          submodules: recursive
+
+      # === Backend Tests and Metrics ===
+      - name: Set up Python virtual environment
+        run: |
+          cd back
+          rm -rf venv
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+
+      - name: Install backend dependencies
+        run: |
+          cd back
+          source venv/bin/activate
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run backend tests with coverage
+        id: backend-tests
+        run: |
+          cd back
+          source venv/bin/activate
+          if pytest tests/ -v \
+            --cov=app \
+            --cov-report=json:coverage.json \
+            --cov-report=term-missing \
+            --junitxml=test-results.xml 2>&1 | tee /tmp/test_output.txt; then
+            echo "success=1" >> $GITHUB_OUTPUT
+          else
+            echo "success=0" >> $GITHUB_OUTPUT
+          fi
+
+          # Parse test results
+          TESTS_TOTAL=$(grep -oE 'collected [0-9]+' /tmp/test_output.txt | grep -oE '[0-9]+' || echo "0")
+          TESTS_PASSED=$(grep -oE '[0-9]+ passed' /tmp/test_output.txt | grep -oE '[0-9]+' || echo "0")
+          TESTS_FAILED=$(grep -oE '[0-9]+ failed' /tmp/test_output.txt | grep -oE '[0-9]+' || echo "0")
+          echo "tests_total=$TESTS_TOTAL" >> $GITHUB_OUTPUT
+          echo "tests_passed=$TESTS_PASSED" >> $GITHUB_OUTPUT
+          echo "tests_failed=$TESTS_FAILED" >> $GITHUB_OUTPUT
+
+          # Parse coverage
+          if [ -f coverage.json ]; then
+            COVERAGE=$(python3 -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])" 2>/dev/null || echo "0")
+            echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          else
+            echo "coverage=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Collect code quality metrics
+        id: quality
+        run: |
+          cd back
+          source venv/bin/activate
+
+          # Type errors (mypy)
+          MYPY_ERRORS=$(mypy app/src --no-error-summary 2>&1 | grep -c "error:" || echo "0")
+          echo "mypy_errors=$MYPY_ERRORS" >> $GITHUB_OUTPUT
+
+          # Security issues (bandit)
+          BANDIT_ISSUES=$(bandit -r app/src -f json 2>/dev/null | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data.get('results', [])))" || echo "0")
+          echo "bandit_issues=$BANDIT_ISSUES" >> $GITHUB_OUTPUT
+
+          # Lint issues (ruff)
+          RUFF_ISSUES=$(ruff check app/src --output-format=json 2>/dev/null | python3 -c "import sys, json; print(len(json.load(sys.stdin)))" || echo "0")
+          echo "ruff_issues=$RUFF_ISSUES" >> $GITHUB_OUTPUT
+
+      # === Frontend Tests and Metrics ===
+      - name: Set up Node.js
+        # actions/setup-node@v4.3.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd front
+          npm ci
+
+      - name: Run frontend tests
+        id: frontend-tests
+        run: |
+          cd front
+          if npm run test:unit 2>&1 | tee /tmp/frontend_test.txt; then
+            echo "success=1" >> $GITHUB_OUTPUT
+          else
+            echo "success=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build frontend
+        id: build
+        run: |
+          cd front
+          START_TIME=$(date +%s)
+          if npm run build; then
+            echo "success=1" >> $GITHUB_OUTPUT
+          else
+            echo "success=0" >> $GITHUB_OUTPUT
+          fi
+          END_TIME=$(date +%s)
+          echo "duration=$((END_TIME - START_TIME))" >> $GITHUB_OUTPUT
+
+      # === Collect Code Metrics ===
+      - name: Count source files and lines
+        id: stats
+        run: |
+          # Backend
+          BACKEND_FILES=$(find back/app -name "*.py" 2>/dev/null | wc -l | tr -d ' ')
+          BACKEND_LINES=$(find back/app -name "*.py" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+
+          # Frontend
+          FRONTEND_FILES=$(find front/src -name "*.vue" -o -name "*.ts" -o -name "*.js" 2>/dev/null | wc -l | tr -d ' ')
+          FRONTEND_LINES=$(find front/src -name "*.vue" -o -name "*.ts" -o -name "*.js" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+
+          # Tests
+          TEST_FILES=$(find back/tests front/tests -name "*.py" -o -name "*.spec.ts" 2>/dev/null | wc -l | tr -d ' ')
+          TEST_LINES=$(find back/tests front/tests -name "*.py" -o -name "*.spec.ts" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+
+          echo "backend_files=$BACKEND_FILES" >> $GITHUB_OUTPUT
+          echo "backend_lines=$BACKEND_LINES" >> $GITHUB_OUTPUT
+          echo "frontend_files=$FRONTEND_FILES" >> $GITHUB_OUTPUT
+          echo "frontend_lines=$FRONTEND_LINES" >> $GITHUB_OUTPUT
+          echo "test_files=$TEST_FILES" >> $GITHUB_OUTPUT
+          echo "test_lines=$TEST_LINES" >> $GITHUB_OUTPUT
+
+      # === Export All Metrics to Pushgateway ===
+      - name: Export comprehensive metrics
+        if: always()
+        run: |
+          TIMESTAMP=$(date +%s)
+          BRANCH="${{ github.ref_name }}"
+
+          BACKEND_SUCCESS=${{ steps.backend-tests.outputs.success || 0 }}
+          FRONTEND_SUCCESS=${{ steps.frontend-tests.outputs.success || 0 }}
+          BUILD_SUCCESS=${{ steps.build.outputs.success || 0 }}
+
+          cat <<EOF | curl --fail --silent --show-error \
+            --data-binary @- \
+            "${PUSHGATEWAY_URL}/metrics/job/ci_merge/instance/raspberrypi-firmware" \
+            && echo "Metrics exported successfully" \
+            || echo "Warning: Pushgateway unavailable"
+          # === Build Metrics ===
+          ci_build_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${BUILD_SUCCESS}
+          ci_build_duration_seconds{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.build.outputs.duration || 0 }}
+          ci_build_timestamp{repo="raspberrypi-firmware",branch="${BRANCH}"} ${TIMESTAMP}
+
+          # === Test Metrics ===
+          ci_tests_total{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_total || 0 }}
+          ci_tests_passed{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_passed || 0 }}
+          ci_tests_failed{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_failed || 0 }}
+          ci_tests_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${BACKEND_SUCCESS}
+          ci_frontend_tests_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${FRONTEND_SUCCESS}
+          ci_coverage_percent{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.coverage || 0 }}
+
+          # === Code Quality Metrics ===
+          ci_mypy_errors{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.mypy_errors || 0 }}
+          ci_bandit_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.bandit_issues || 0 }}
+          ci_ruff_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.ruff_issues || 0 }}
+
+          # === Code Size Metrics ===
+          ci_backend_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.backend_files || 0 }}
+          ci_backend_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.backend_lines || 0 }}
+          ci_frontend_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.frontend_files || 0 }}
+          ci_frontend_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.frontend_lines || 0 }}
+          ci_test_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.test_files || 0 }}
+          ci_test_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.test_lines || 0 }}
+          EOF
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Metrics Exported" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | Success | ${{ steps.build.outputs.success || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | Duration | ${{ steps.build.outputs.duration || 0 }}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | Backend Success | ${{ steps.backend-tests.outputs.success || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | Frontend Success | ${{ steps.frontend-tests.outputs.success || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | Total | ${{ steps.backend-tests.outputs.tests_total || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | Coverage | ${{ steps.backend-tests.outputs.coverage || 0 }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | Type Errors | ${{ steps.quality.outputs.mypy_errors || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | Security Issues | ${{ steps.quality.outputs.bandit_issues || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | Lint Issues | ${{ steps.quality.outputs.ruff_issues || 0 }} |" >> $GITHUB_STEP_SUMMARY
