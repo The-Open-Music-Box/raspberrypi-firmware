@@ -1,12 +1,12 @@
 /**
  * Frontend Types - Central Export Point
  *
- * Uses ONLY generated types from OpenAPI Contract v4.1.0
+ * Uses ONLY generated types from OpenAPI Contract v6.0.1
  * Zero legacy code - 100% contract-driven development
  */
 
-// Import generated types from contracts v4.1.0
-import type { components } from '../../../contracts/releases/4.1.0-7dc3483/typescript/api-types';
+// Import generated types from contracts v6.0.1
+import type { components } from '../../../contracts/releases/6.0.1/typescript/api-types';
 
 // Export core data types from OpenAPI schema
 export type Track = components['schemas']['Track'];
@@ -47,7 +47,7 @@ export type PaginatedData<T> = {
   total_pages: number;
 };
 
-// Socket.IO event types
+// Socket.IO event types (v6.0.1)
 export type StateEventEnvelope<T = any> = {
   event_type: string;
   server_seq: number;
@@ -55,7 +55,8 @@ export type StateEventEnvelope<T = any> = {
   timestamp: number;
   event_id: string;
   playlist_id?: string | null;
-  track_id?: string | null;
+  /** Renamed from track_id in v6.0.0 - contains track filename */
+  track_filename?: string | null;
 };
 
 export type OperationAck = {
@@ -79,7 +80,8 @@ export type UploadStatus = 'pending' | 'uploading' | 'complete' | 'error';
 
 export type TrackProgress = {
   position_ms: number;
-  track_id?: string | null;
+  /** Renamed from track_id in v6.0.0 - contains track filename */
+  track_filename?: string | null;
   is_playing: boolean;
   duration_ms?: number | null;
 };
