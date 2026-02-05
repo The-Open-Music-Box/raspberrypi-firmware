@@ -28,7 +28,11 @@ class ResponseStatus(str, Enum):
 
 
 class ErrorType(str, Enum):
-    """Standard error types for consistent error handling."""
+    """Standard error types for consistent error handling.
+
+    Per contracts v6.0.1, Socket.IO err:op events use a subset:
+    validation_error, not_found, permission_denied, conflict, timeout, internal_error
+    """
 
     VALIDATION_ERROR = "validation_error"
     NOT_FOUND = "not_found"
@@ -38,6 +42,7 @@ class ErrorType(str, Enum):
     INTERNAL_ERROR = "internal_error"
     CONFLICT = "conflict"
     BAD_REQUEST = "bad_request"
+    TIMEOUT = "timeout"  # Added per contracts v6.0.1 Socket.IO spec
 
 
 class BaseResponse(BaseModel, Generic[T]):
@@ -166,6 +171,7 @@ ERROR_STATUS_CODES = {
     ErrorType.SERVICE_UNAVAILABLE: 503,
     ErrorType.INTERNAL_ERROR: 500,
     ErrorType.CONFLICT: 409,
+    ErrorType.TIMEOUT: 408,  # Request Timeout
 }
 
 

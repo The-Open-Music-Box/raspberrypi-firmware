@@ -69,7 +69,7 @@ export interface EventHandlers {
   'state:playlist': (data: StateEventEnvelope<Playlist>) => void
   'state:player': (data: StateEventEnvelope<PlayerState>) => void
   'state:track_progress': (data: StateEventEnvelope<TrackProgress>) => void
-  'state:track_position': (data: StateEventEnvelope<{ position_ms: number; track_id: string; is_playing: boolean; duration_ms?: number }>) => void
+  'state:track_position': (data: StateEventEnvelope<{ position_ms: number; track_filename?: string | null; is_playing: boolean; duration_ms?: number }>) => void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   'state:track': (data: StateEventEnvelope<any>) => void
   'state:playlist_deleted': (data: StateEventEnvelope<{ playlist_id: string; message?: string }>) => void

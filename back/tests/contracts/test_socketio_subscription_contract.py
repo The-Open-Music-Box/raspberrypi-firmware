@@ -2,7 +2,7 @@
 
 Validates that Socket.IO room subscription events conform to the expected contract.
 
-Progress: 7/7 events tested ✅
+Progress: 8/8 events tested ✅ (including leave:nfc per contracts v6.0.1)
 """
 
 import pytest
@@ -308,3 +308,65 @@ class TestSocketIOSubscriptionContract:
         assert isinstance(payload["success"], bool), "success must be boolean"
 
         assert payload["success"] is True, "success should be true for successful leave"
+
+    async def test_leave_nfc_event_contract(self, socketio_handlers, mock_state_manager):
+        """Test 'leave:nfc' event - Unsubscribe from NFC association session.
+
+        Contract (v6.0.1):
+        - Direction: client_to_server
+        - Payload: {assoc_id: str (required)}
+        - Server should remove client from 'nfc:{assoc_id}' room
+        - Server should emit ack:leave confirmation
+        """
+        handler = socketio_handlers._registered_handlers['leave:nfc']
+        test_sid = "test-client-leave-nfc"
+        test_assoc_id = "test-assoc-leave-123"
+
+        # Test successful leave
+        await handler(test_sid, {"assoc_id": test_assoc_id})
+
+        # Verify unsubscribe_client called with correct room
+        expected_room = f"nfc:{test_assoc_id}"
+        mock_state_manager.unsubscribe_client.assert_called_once_with(test_sid, expected_room)
+
+        # Verify ack:leave emitted
+        call_args = socketio_handlers.sio.emit.call_args
+        assert call_args[0][0] == "ack:leave", "Should emit ack:leave"
+
+        payload = call_args[0][1]
+        assert payload["room"] == expected_room, "Room should be nfc:{assoc_id}"
+        assert payload["success"] is True, "Success should be true"
+
+    async def test_leave_nfc_requires_assoc_id(self, socketio_handlers, mock_state_manager):
+        """Test 'leave:nfc' event requires assoc_id.
+
+        Contract (v6.0.1):
+        - Payload: {assoc_id: str (required)}
+        - Error if assoc_id missing
+        """
+        handler = socketio_handlers._registered_handlers['leave:nfc']
+        test_sid = "test-client-leave-nfc-error"
+
+        # Test error when assoc_id missing
+        with pytest.raises(HTTPException) as exc_info:
+            await handler(test_sid, {})
+        assert "assoc_id is required" in str(exc_info.value.detail)
+
+    async def test_join_playlist_includes_server_seq(self, socketio_handlers, mock_state_manager):
+        """Test 'join:playlist' event includes server_seq in ack:join.
+
+        Contract (v6.0.1):
+        - ack:join must include server_seq for all subscription events
+        """
+        handler = socketio_handlers._registered_handlers['join:playlist']
+        test_sid = "test-client-playlist-seq"
+        test_playlist_id = "test-playlist-seq-123"
+
+        await handler(test_sid, {"playlist_id": test_playlist_id})
+
+        # Verify ack:join includes server_seq
+        call_args = socketio_handlers.sio.emit.call_args
+        payload = call_args[0][1]
+
+        assert "server_seq" in payload, "ack:join for join:playlist must include server_seq (v6.0.1)"
+        assert isinstance(payload["server_seq"], int), "server_seq must be an integer"

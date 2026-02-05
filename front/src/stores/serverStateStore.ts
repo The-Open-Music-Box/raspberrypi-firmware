@@ -461,7 +461,8 @@ export const useServerStateStore = defineStore('serverState', () => {
 
   function handleTrackPosition(event: StateEvent) {
     // Lightweight position-only updates with strategic logging
-    const data = event.data as { position_ms?: number; duration_ms?: number; is_playing?: boolean; track_id?: string }
+    // Note: track_filename renamed from track_id in contracts v6.0.0
+    const data = event.data as { position_ms?: number; duration_ms?: number; is_playing?: boolean; track_filename?: string | null }
 
     // Log first event for debugging and every subsequent event for a few seconds
     if (!firstPositionLogged) {
@@ -493,8 +494,9 @@ export const useServerStateStore = defineStore('serverState', () => {
       }
 
       // Update active track ID if provided (for consistency)
-      if (data?.track_id && data.track_id !== playerState.value.active_track_id) {
-        playerState.value.active_track_id = data.track_id
+      // Note: track_filename renamed from track_id in contracts v6.0.0, stored in active_track_id for backward compat
+      if (data?.track_filename && data.track_filename !== playerState.value.active_track_id) {
+        playerState.value.active_track_id = data.track_filename
       }
     }
 
