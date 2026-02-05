@@ -29,6 +29,7 @@ class SocketEventType(str, Enum):
     JOIN_PLAYLIST = "join:playlist"
     LEAVE_PLAYLIST = "leave:playlist"
     JOIN_NFC = "join:nfc"
+    LEAVE_NFC = "leave:nfc"
     ACK_JOIN = "ack:join"
     ACK_LEAVE = "ack:leave"
 

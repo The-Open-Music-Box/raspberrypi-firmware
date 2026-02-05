@@ -60,6 +60,7 @@ class SubscriptionHandlers:
         - 'leave:playlists': Unsubscribe from global playlist updates
         - 'leave:playlist': Unsubscribe from specific playlist updates
         - 'join:nfc': Subscribe to NFC association session updates
+        - 'leave:nfc': Unsubscribe from NFC association session updates
         """
 
         @self.sio.on("join:playlists")
@@ -131,13 +132,14 @@ class SubscriptionHandlers:
             logger.info(f"Client {sid} joining playlist room: {room}")
             await self.state_manager.subscribe_client(sid, room)
 
-            # Send acknowledgment
+            # Send acknowledgment with server_seq as required by contracts v6.0.1
             await self.sio.emit(
                 "ack:join",
                 {
                     "room": room,
                     "playlist_id": playlist_id,
                     "success": True,
+                    "server_seq": self.state_manager.get_global_sequence(),
                     "playlist_seq": self.state_manager.get_playlist_sequence(
                         playlist_id
                     ),
@@ -245,5 +247,38 @@ class SubscriptionHandlers:
                     "success": True,
                     "server_seq": self.state_manager.get_global_sequence(),
                 },
+                room=sid,
+            )
+
+        @self.sio.on("leave:nfc")
+        @handle_http_errors()
+        async def handle_leave_nfc(sid: str, data: dict[str, Any]) -> None:
+            """Unsubscribe client from NFC association session room.
+
+            This is the symmetric counterpart to 'join:nfc' for proper NFC room
+            unsubscription as required by contracts v6.0.1.
+
+            Args:
+                sid: The Socket.IO session identifier for the unsubscribing client
+                data: The request payload containing 'assoc_id' (association ID)
+
+            Raises:
+                ValueError: If 'assoc_id' is not provided in data
+
+            Side Effects:
+                - Removes client from 'nfc:{assoc_id}' room
+                - Emits 'ack:leave' acknowledgment to client
+                - Logs unsubscription at INFO level
+            """
+            assoc_id = data.get("assoc_id")
+            if not assoc_id:
+                raise ValueError("assoc_id is required")
+
+            room = SocketRooms.nfc(assoc_id)
+            logger.info(f"Client {sid} leaving NFC room: {room}")
+            await self.state_manager.unsubscribe_client(sid, room)
+            await self.sio.emit(
+                "ack:leave",
+                {"room": room, "success": True},
                 room=sid,
             )
