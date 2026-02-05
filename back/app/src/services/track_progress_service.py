@@ -232,7 +232,9 @@ class TrackProgressService:
 
         # Use correct field names from PlaybackCoordinator status
         is_playing = status.get("is_playing", False)
-        track_id = status.get("active_track_id")
+        # Per contracts v6.0.1: use active_track_filename (actual filename) for track_filename field
+        # Fallback to active_track_id for backward compatibility with older coordinators
+        track_filename = status.get("active_track_filename") or status.get("active_track_id")
 
         return {
             "current_time_ms": current_time_ms,
@@ -240,7 +242,7 @@ class TrackProgressService:
             "current_time": current_time,
             "duration": duration,
             "is_playing": is_playing,
-            "track_id": track_id,
+            "track_filename": track_filename,
         }
 
     async def _handle_track_events(self, status: dict, position_data: dict) -> None:
@@ -263,7 +265,7 @@ class TrackProgressService:
             logger.debug(
                 f"📍 Progress emission #{self._emit_counter}: "
                 f"pos={position_data['current_time']:.1f}s/{position_data['duration']:.1f}s, "
-                f"playing={position_data['is_playing']}, track_id={position_data['track_id']}"
+                f"playing={position_data['is_playing']}, track_filename={position_data['track_filename']}"
             )
 
         # Check for stuck position
@@ -288,14 +290,14 @@ class TrackProgressService:
         if not self._validate_position_data(
             position_data["current_time"],
             position_data["duration"],
-            position_data["track_id"]
+            position_data["track_filename"]
         ):
             if not hasattr(self, "_validation_fail_logged"):
                 logger.warning(
                     f"❌ VALIDATION FAILED (attempt #{self._emission_attempt_count}): "
                     f"time={position_data['current_time']}, "
                     f"duration={position_data['duration']}, "
-                    f"track_id={position_data['track_id']}"
+                    f"track_filename={position_data['track_filename']}"
                 )
                 self._validation_fail_logged = True
             return False
@@ -305,7 +307,7 @@ class TrackProgressService:
             logger.info(
                 f"✅ FIRST VALID position: time={position_data['current_time']:.1f}s, "
                 f"duration={position_data['duration']:.1f}s, "
-                f"track_id={position_data['track_id']}, playing={position_data['is_playing']}"
+                f"track_filename={position_data['track_filename']}, playing={position_data['is_playing']}"
             )
             self._first_valid_logged = True
 
@@ -317,13 +319,13 @@ class TrackProgressService:
         if not hasattr(self, "_first_broadcast_logged"):
             logger.info(
                 f"📡 FIRST BROADCAST attempt: pos={position_data['current_time_ms']}ms, "
-                f"track={position_data['track_id']}, playing={position_data['is_playing']}"
+                f"track_filename={position_data['track_filename']}, playing={position_data['is_playing']}"
             )
             self._first_broadcast_logged = True
 
         result = await self.state_manager.broadcast_position_update(
             position_ms=position_data["current_time_ms"],
-            track_id=str(position_data["track_id"]) if position_data["track_id"] else "unknown",
+            track_filename=str(position_data["track_filename"]) if position_data["track_filename"] else "unknown",
             is_playing=position_data["is_playing"],
             duration_ms=position_data["duration_ms"] if position_data["duration_ms"] > 0 else None,
         )
@@ -346,14 +348,16 @@ class TrackProgressService:
             logger.info(f"✅ FIRST BROADCAST SUCCESS: {result.get('event_type', 'unknown')}")
             self._broadcast_success_logged = True
 
-    def _validate_position_data(self, current_time: float, duration: float, track_id) -> bool:
+    def _validate_position_data(self, current_time: float, duration: float, track_filename) -> bool:
         """Validate position data before emission."""
         # DIAGNOSTIC: Track validation failures
         if not hasattr(self, "_validation_check_count"):
             self._validation_check_count = 0
         self._validation_check_count += 1
 
-        # Allow track_id to be None or empty string temporarily
+        # Allow track_filename to be None or empty string temporarily
+        # (track_filename is the filename, not a required field per contract)
+        _ = track_filename  # Mark as used for validation context
         if current_time is None:
             return False
 

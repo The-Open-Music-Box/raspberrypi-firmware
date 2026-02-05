@@ -332,6 +332,8 @@ class PlaybackCoordinator:
             "active_playlist_title": playlist_info["playlist_name"],
             "active_track": current_track,
             "active_track_id": current_track.get("id") if current_track else None,
+            # track_filename per contracts v6.0.1 - use filename, not id
+            "active_track_filename": current_track.get("filename") if current_track else None,
             "track_index": playlist_info["current_track_number"],
             "track_count": playlist_info["total_tracks"],
             "can_next": playlist_info["can_next"],

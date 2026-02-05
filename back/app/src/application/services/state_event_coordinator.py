@@ -144,14 +144,14 @@ class StateEventCoordinator:
         return envelope
 
     async def broadcast_position_update(
-        self, position_ms: int, track_id: str, is_playing: bool, duration_ms: int | None = None
+        self, position_ms: int, track_filename: str, is_playing: bool, duration_ms: int | None = None
     ) -> dict | None:
         """
         Broadcast a lightweight position update with throttling.
 
         Args:
             position_ms: Current playback position in milliseconds
-            track_id: Filename of the currently playing track (renamed to track_filename in payload per v6.0.1)
+            track_filename: Filename of the currently playing track (per contracts v6.0.1)
             is_playing: Whether playback is active
             duration_ms: Optional track duration
 
@@ -176,8 +176,8 @@ class StateEventCoordinator:
                 f"Broadcasting position update #{self._position_log_counter}: {position_ms}ms, playing={is_playing}"
             )
 
-        # Create minimal payload - use track_filename per contracts v6.0.1 (renamed from track_id)
-        data = {"position_ms": position_ms, "track_filename": track_id, "is_playing": is_playing}
+        # Create minimal payload per contracts v6.0.1
+        data = {"position_ms": position_ms, "track_filename": track_filename, "is_playing": is_playing}
 
         if duration_ms is not None:
             data["duration_ms"] = duration_ms

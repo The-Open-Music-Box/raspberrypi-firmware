@@ -384,12 +384,12 @@
                 "items": {"type": "integer"},
                 "description": "List of 1-based track numbers that were deleted"
               },
-              "operation": {"type": "string"},
-              "server_seq": {"type": "number", "description": "Server sequence for state synchronization"}
+              "operation": {"type": "string"}
             },
-            "required": ["playlist_id", "track_numbers", "server_seq"]
+            "required": ["playlist_id", "track_numbers"],
+            "additionalNote": "server_seq is in the envelope, not in data (envelope: true)"
           },
-          "description": "Track deletion notification. track_numbers contains 1-based positions.",
+          "description": "Track deletion notification. track_numbers contains 1-based positions. server_seq is in the envelope.",
           "frequency": "on_demand"
         },
         "state:track_added": {

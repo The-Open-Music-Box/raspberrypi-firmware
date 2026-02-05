@@ -67,15 +67,17 @@ class TestSocketIOStateContract:
     async def test_state_track_position_event_contract(self):
         """Test 'state:track_position' event - Track playback position updates.
 
-        Contract:
+        Contract (v6.0.1):
         - Direction: server_to_client
-        - Event envelope format with data: {position: number, duration: number}
-        - Broadcast frequently during playback
+        - Event envelope format with data: {position_ms: integer, is_playing: boolean, track_filename?: string, duration_ms?: integer}
+        - Required fields: position_ms, is_playing
+        - Broadcast frequently during playback (500ms intervals)
         """
         position_data = {
-            "position": 45.2,
-            "duration": 180.5,
-            "track_id": "track-789"
+            "position_ms": 45200,  # Position in milliseconds
+            "is_playing": True,
+            "track_filename": "song.mp3",  # Per v6.0.1 - actual filename, not ID
+            "duration_ms": 180500  # Duration in milliseconds
         }
 
         event = SocketEventBuilder.create_state_event(
@@ -85,10 +87,14 @@ class TestSocketIOStateContract:
         )
 
         self.verify_event_envelope(event, SocketEventType.STATE_TRACK_POSITION)
-        assert "position" in event["data"]
-        assert "duration" in event["data"]
-        assert isinstance(event["data"]["position"], (int, float))
-        assert isinstance(event["data"]["duration"], (int, float))
+        # Per contracts v6.0.1 - required fields
+        assert "position_ms" in event["data"]
+        assert "is_playing" in event["data"]
+        assert isinstance(event["data"]["position_ms"], int)
+        assert isinstance(event["data"]["is_playing"], bool)
+        # Optional fields
+        assert "track_filename" in event["data"]
+        assert "duration_ms" in event["data"]
 
     async def test_state_playlists_event_contract(self):
         """Test 'state:playlists' event - Global playlists list broadcast.
