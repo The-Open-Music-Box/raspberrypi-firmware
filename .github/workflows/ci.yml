@@ -8,7 +8,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop, develop-middleware]
+    branches: [develop]
     types: [opened, synchronize, reopened]
 
 # Cancel in-progress runs for the same branch

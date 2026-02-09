@@ -2,7 +2,7 @@ name: Export Metrics
 
 on:
   push:
-    branches: [develop, develop-middleware]
+    branches: [develop]
 
 permissions:
   contents: read
