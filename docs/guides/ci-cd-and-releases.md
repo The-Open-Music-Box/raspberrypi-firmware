@@ -1,3 +1,11 @@
+---
+title: "CI/CD and Release Workflow"
+status: active
+category: operations
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # CI/CD and Release Workflow
 
 This document explains the CI/CD setup, self-hosted runner configuration, and release workflow for TheOpenMusicBox.

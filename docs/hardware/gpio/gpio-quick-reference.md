@@ -1,3 +1,11 @@
+---
+title: "GPIO Quick Reference"
+status: active
+category: hardware
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # GPIO Quick Reference Guide
 
 ## How to Override GPIO Pin Configuration

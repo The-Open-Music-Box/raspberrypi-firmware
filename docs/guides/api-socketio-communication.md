@@ -1,3 +1,11 @@
+---
+title: "API & Socket.IO Communication"
+status: active
+category: guide
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # TheOpenMusicBox: HTTP API & Socket.IO Communication (DDD Architecture v3.0)
 
 This document specifies the HTTP API and Socket.IO communication as currently implemented with Domain-Driven Design architecture, server-authoritative patterns, and the UnifiedStateManager system.

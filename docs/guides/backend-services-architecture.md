@@ -1,21 +1,29 @@
+---
+title: "Backend Services Architecture"
+status: active
+category: architecture
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # Backend Services Architecture - TheOpenMusicBox
 
-> **⚠️ Note**: This document may contain outdated service names and file paths. The codebase has evolved to use DDD architecture with services in `app/src/application/services/` and `app/src/domain/`. Please verify file paths before referencing.
+> **Warning**: This document may contain outdated service names and file paths. The codebase has evolved to use DDD architecture with services in `app/src/application/services/` and `app/src/domain/`. Please verify file paths before referencing.
 
-## Vue d'ensemble
+## Overview
 
-TheOpenMusicBox utilise une **architecture Domain-Driven Design (DDD)** avec une approche **server-authoritative**. L'architecture sépare clairement les couches Application, Domaine et Infrastructure, avec 8 services coordonnés pour gérer l'état du player et les mises à jour temps réel.
+TheOpenMusicBox uses a **Domain-Driven Design (DDD)** architecture with a **server-authoritative** approach. The architecture clearly separates the Application, Domain, and Infrastructure layers, with 8 coordinated services to manage player state and real-time updates.
 
-## Architecture Générale
+## General Architecture
 
 ```mermaid
 graph TD
-    A[StateManager - Orchestrateur Central] --> B[EventOutbox - Livraison Fiable]
-    A --> C[ClientSubscriptionManager - Gestion Rooms]
-    A --> D[SequenceGenerator - Ordre Événements]
-    A --> E[OperationTracker - Déduplication]
+    A[StateManager - Central Orchestrator] --> B[EventOutbox - Reliable Delivery]
+    A --> C[ClientSubscriptionManager - Room Management]
+    A --> D[SequenceGenerator - Event Ordering]
+    A --> E[OperationTracker - Deduplication]
 
-    F[PlayerStateService - Constructeur État] --> A
+    F[PlayerStateService - State Builder] --> A
     G[TrackProgressService - Position 200ms] --> A
     H[NotificationService - Legacy Bridge] --> A
 
@@ -26,59 +34,59 @@ graph TD
     F --> K[HTTP Responses]
 ```
 
-## Services Détaillés
+## Detailed Services
 
-### 1. StateManager - Orchestrateur Central ✅ ACTIF
+### 1. StateManager - Central Orchestrator (ACTIVE)
 
-**Fichier**: `app/src/services/state_manager.py`
-**Classe**: `StateManager`
+**File**: `app/src/services/state_manager.py`
+**Class**: `StateManager`
 
-**Responsabilités**:
-- Coordination centrale de tous les événements temps réel
-- Diffusion WebSocket vers clients abonnés
-- Gestion des salles ("playlists", "playlist:{id}")
-- Interface unifiée pour broadcast d'état
+**Responsibilities**:
+- Central coordination of all real-time events
+- WebSocket broadcasting to subscribed clients
+- Room management ("playlists", "playlist:{id}")
+- Unified interface for state broadcasting
 
-**Méthodes clés**:
+**Key Methods**:
 ```python
 async def broadcast_state_change(event_type, data, playlist_id=None)
 async def broadcast_position_update(position_ms, track_id, is_playing)
 async def subscribe_client(client_id, room)
 ```
 
-**Composants internes**:
-- **EventOutbox**: Livraison fiable avec retry
-- **ClientSubscriptionManager**: Gestion abonnements clients
-- **SequenceGenerator**: Numérotation séquentielle thread-safe
-- **OperationTracker**: Prévention doublons
+**Internal Components**:
+- **EventOutbox**: Reliable delivery with retry
+- **ClientSubscriptionManager**: Client subscription management
+- **SequenceGenerator**: Thread-safe sequential numbering
+- **OperationTracker**: Duplicate prevention
 
-### 2. PlayerStateService - Constructeur d'État ✅ ACTIF
+### 2. PlayerStateService - State Builder (ACTIVE)
 
-**Fichier**: `app/src/services/player_state_service.py`
+**File**: `app/src/services/player_state_service.py`
 
-**Responsabilités**:
-- Construction d'objets PlayerState cohérents
-- Interface unifiée entre AudioController et réponses API
-- Normalisation des données player
+**Responsibilities**:
+- Building consistent PlayerState objects
+- Unified interface between AudioController and API responses
+- Player data normalization
 
-**Méthodes clés**:
+**Key Methods**:
 ```python
 async def build_current_player_state() -> PlayerState
 async def build_track_progress_state() -> dict
 async def broadcast_playlist_started(playlist_id)  # Legacy
 ```
 
-**Usage**: Utilisé par toutes les routes player pour générer réponses HTTP standardisées.
+**Usage**: Used by all player routes to generate standardized HTTP responses.
 
-### 3. TrackProgressService - Position Temps Réel ✅ ACTIF
+### 3. TrackProgressService - Real-Time Position (ACTIVE)
 
-**Fichier**: `app/src/services/track_progress_service.py`
+**File**: `app/src/services/track_progress_service.py`
 
-**Responsabilités**:
-- Émissions position toutes les 200ms pendant la lecture
-- Mises à jour légères pour tracking fluide
-- Throttling pour éviter spam (150ms minimum)
-- Récupération d'erreur automatique
+**Responsibilities**:
+- Position emissions every 200ms during playback
+- Lightweight updates for smooth tracking
+- Throttling to prevent spam (150ms minimum)
+- Automatic error recovery
 
 **Configuration**:
 ```python
@@ -86,33 +94,33 @@ POSITION_UPDATE_INTERVAL_MS = 200  # socket_config
 POSITION_THROTTLE_MIN_MS = 150
 ```
 
-**Flux de données**:
+**Data Flow**:
 ```
-AudioController.get_playback_status() → position_ms, duration_ms, is_playing
-→ StateManager.broadcast_position_update()
-→ WebSocket state:track_position event
+AudioController.get_playback_status() -> position_ms, duration_ms, is_playing
+-> StateManager.broadcast_position_update()
+-> WebSocket state:track_position event
 ```
 
-### 4. NotificationService - Service Transitionnel ⚠️️ PARTIELLEMENT ACTIF
+### 4. NotificationService - Transitional Service (PARTIALLY ACTIVE)
 
-**Fichier**: `app/src/services/notification_service.py`
+**File**: `app/src/services/notification_service.py`
 
-**Composants**:
+**Components**:
 
-#### PlaybackSubject (Déprécié)
-- **État**: Supprimé dans l'architecture DDD
-- **Remplacement**: StateManager gère toutes les émissions
-- **Migration**: Complètement migré vers StateManager
+#### PlaybackSubject (Deprecated)
+- **Status**: Removed in DDD architecture
+- **Replacement**: StateManager handles all emissions
+- **Migration**: Completely migrated to StateManager
 
-#### DownloadNotifier (Actif)
-- **Usage**: Événements YouTube download
-- **Émissions**: `youtube:progress`, `youtube:complete`, `youtube:error`
+#### DownloadNotifier (Active)
+- **Usage**: YouTube download events
+- **Emissions**: `youtube:progress`, `youtube:complete`, `youtube:error`
 
-### 5-8. Composants Internes StateManager ✅ TOUS ACTIFS
+### 5-8. StateManager Internal Components (ALL ACTIVE)
 
 #### ClientSubscriptionManager
 ```python
-# Gestion abonnements WebSocket rooms
+# WebSocket room subscription management
 async def subscribe_client(client_id: str, room: str)
 async def unsubscribe_client(client_id: str, room: str)
 def get_subscribed_clients(room: str) -> Set[str]
@@ -120,31 +128,31 @@ def get_subscribed_clients(room: str) -> Set[str]
 
 #### EventOutbox
 ```python
-# Livraison fiable avec retry
+# Reliable delivery with retry
 async def add_event(event_id, payload, target_room)
 async def process_outbox()  # Retry failed emissions
 ```
 
 #### SequenceGenerator
 ```python
-# Numéros séquence thread-safe
+# Thread-safe sequence numbers
 async def get_next_global_seq() -> int
 async def get_next_playlist_seq(playlist_id: str) -> int
 ```
 
 #### OperationTracker
 ```python
-# Prévention opérations dupliquées
+# Duplicate operation prevention
 def is_processed(client_op_id: str) -> bool
 def mark_processed(client_op_id: str, result: any)
 ```
 
-## Flux de Communication
+## Communication Flows
 
-### Événements Player State
+### Player State Events
 ```mermaid
 sequenceDiagram
-    participant Route as Route HTTP
+    participant Route as HTTP Route
     participant PSS as PlayerStateService
     participant SM as StateManager
     participant Client as WebSocket Client
@@ -155,7 +163,7 @@ sequenceDiagram
     Route-->>Client: HTTP Response (PlayerState)
 ```
 
-### Position Updates Continus
+### Continuous Position Updates
 ```mermaid
 sequenceDiagram
     participant TPS as TrackProgressService
@@ -163,7 +171,7 @@ sequenceDiagram
     participant SM as StateManager
     participant Client as WebSocket Client
 
-    loop Toutes les 200ms
+    loop Every 200ms
         TPS->>AC: get_playback_status()
         AC-->>TPS: position, duration, is_playing
         TPS->>SM: broadcast_position_update()
@@ -171,7 +179,7 @@ sequenceDiagram
     end
 ```
 
-### Abonnement Client
+### Client Subscription
 ```mermaid
 sequenceDiagram
     participant Client as WebSocket Client
@@ -186,30 +194,30 @@ sequenceDiagram
     SM->>Client: ack:join
 ```
 
-## Types d'Événements WebSocket
+## WebSocket Event Types
 
-| Événement | Émetteur | Fréquence | Payload | Objectif |
-|-----------|----------|-----------|---------|----------|
-| `state:player` | StateManager | Sur demande | PlayerState complet | État complet player |
-| `state:track_position` | TrackProgressService | 200ms | Position légère | Position fluide |
-| `state:playlists` | StateManager | Sur demande | Collection playlists | Synchronisation listes |
-| `youtube:progress` | DownloadNotifier | Continue | Progrès download | Feedback YouTube |
+| Event | Emitter | Frequency | Payload | Purpose |
+|-------|---------|-----------|---------|---------|
+| `state:player` | StateManager | On demand | Full PlayerState | Complete player state |
+| `state:track_position` | TrackProgressService | 200ms | Lightweight position | Smooth position tracking |
+| `state:playlists` | StateManager | On demand | Playlist collection | List synchronization |
+| `youtube:progress` | DownloadNotifier | Continuous | Download progress | YouTube feedback |
 
-## Initialisation des Services
+## Service Initialization
 
-### Ordre de démarrage (Architecture DDD)
-1. **main.py** → `Application.initialize_async()`
-2. **DomainBootstrap** → Initialisation domaine
-3. **Application Services** → Services applicatifs DDD
-4. **StateManager** création avec composants internes
-5. **TrackProgressService** planification démarrage background
-6. **WebSocket handlers** enregistrement
-7. **Infrastructure** → Services concrets (DB, Hardware)
-8. Services prêts pour requêtes
+### Startup Order (DDD Architecture)
+1. **main.py** -> `Application.initialize_async()`
+2. **DomainBootstrap** -> Domain initialization
+3. **Application Services** -> DDD application services
+4. **StateManager** creation with internal components
+5. **TrackProgressService** background startup scheduling
+6. **WebSocket handlers** registration
+7. **Infrastructure** -> Concrete services (DB, Hardware)
+8. Services ready for requests
 
 ### Configuration
 ```python
-# app/src/config/socket_config.py - Configuration réelle
+# app/src/config/socket_config.py - Actual configuration
 class SocketConfig:
     POSITION_UPDATE_INTERVAL_MS = 200
     POSITION_THROTTLE_MIN_MS = 150
@@ -219,71 +227,71 @@ class SocketConfig:
     CLIENT_TIMEOUT_SEC = 60
 ```
 
-## Patterns Architecturaux
+## Architectural Patterns
 
 ### Server-Authoritative
-- **Source unique vérité**: Backend maintient état autoritaire
-- **Clients abonnés**: Frontend s'abonne aux mises à jour
-- **Séquençage**: Tous événements ont numéro séquence
-- **Résolution conflits**: État serveur toujours prioritaire
+- **Single source of truth**: Backend maintains authoritative state
+- **Subscribed clients**: Frontend subscribes to updates
+- **Sequencing**: All events have a sequence number
+- **Conflict resolution**: Server state always takes priority
 
 ### Event Sourcing
-- **Envelope standardisée**: Tous événements suivent même format
-- **Séquence globale**: Ordre chronologique garanti
-- **Traçabilité**: event_id unique pour debugging
-- **Replay**: Possibilité reconstituer état
+- **Standardized envelope**: All events follow the same format
+- **Global sequence**: Guaranteed chronological order
+- **Traceability**: Unique event_id for debugging
+- **Replay**: Ability to reconstruct state
 
 ### Reliability Patterns
-- **Outbox Pattern**: Queue événements avec retry
-- **Circuit Breaker**: Récupération erreur automatique
-- **Throttling**: Prévention surcharge réseau
-- **Deduplication**: Évite traitement multiple
+- **Outbox Pattern**: Event queue with retry
+- **Circuit Breaker**: Automatic error recovery
+- **Throttling**: Network overload prevention
+- **Deduplication**: Prevents multiple processing
 
-## Métriques et Monitoring
+## Metrics and Monitoring
 
-### Statistiques disponibles
+### Available Statistics
 ```python
-# Méthode get_stats() disponible pour monitoring
-# Structure exacte dépend de l'implémentation StateManager
+# get_stats() method available for monitoring
+# Exact structure depends on StateManager implementation
 ```
 
 ### Logging
-- **StateManager**: Événements non-position seulement (évite spam)
-- **TrackProgressService**: Erreurs et récupération
-- **Composants**: Statistiques périodiques
+- **StateManager**: Non-position events only (avoids spam)
+- **TrackProgressService**: Errors and recovery
+- **Components**: Periodic statistics
 
-## Cohérence Frontend-Backend
+## Frontend-Backend Consistency
 
-### Événements WebSocket
-- **Backend StateManager** → **Frontend socketService** → **serverStateStore**
-- Format standardisé avec envelope et séquence
-- Rooms appropriées pour efficacité
+### WebSocket Events
+- **Backend StateManager** -> **Frontend socketService** -> **serverStateStore**
+- Standardized format with envelope and sequence
+- Appropriate rooms for efficiency
 
-### Réponses HTTP
-- **Backend PlayerStateService** → **Frontend apiService** → **UI Components**
-- Structure PlayerState identique
-- Gestion erreur cohérente
+### HTTP Responses
+- **Backend PlayerStateService** -> **Frontend apiService** -> **UI Components**
+- Identical PlayerState structure
+- Consistent error handling
 
-Cette architecture garantit une **communication temps réel fiable** avec **état cohérent** entre tous les clients et **performance optimale** via throttling intelligent.
+This architecture guarantees **reliable real-time communication** with **consistent state** between all clients and **optimal performance** via intelligent throttling.
 
-## Architecture de Routing (Two-Layer Pattern)
+## Routing Architecture (Two-Layer Pattern)
 
-TheOpenMusicBox implémente une **architecture de routing à deux couches** suivant les principes DDD et Dependency Injection.
+TheOpenMusicBox implements a **two-layer routing architecture** following DDD and Dependency Injection principles.
 
-### Vue d'ensemble
+### Overview
 
 ```mermaid
 graph TD
-    A[main.py] -->|initialise| B[api_routes_state.py]
-    B -->|orchestre| C[Bootstrap Routes]
-    C -->|importe & initialise| D[API Routes]
-    D -->|délègue à| E[Application Services]
+    A[main.py] -->|initializes| B[api_routes_state.py]
+    B -->|orchestrates| C[Bootstrap Routes]
+    C -->|imports & initializes| D[API Routes]
+    D -->|delegates to| E[Application Services]
 
-    subgraph "Couche 2: Bootstrap/Factory<br/>back/app/src/routes/factories/"
+    subgraph "Layer 2: Bootstrap/Factory<br/>back/app/src/routes/factories/"
         C
     end
 
-    subgraph "Couche 1: Routes API Pures<br/>back/app/src/api/endpoints/"
+    subgraph "Layer 1: Pure API Routes<br/>back/app/src/api/endpoints/"
         D
     end
 
@@ -291,104 +299,104 @@ graph TD
     style D fill:#f3e5f5
 ```
 
-### Couche 1: Routes API Pures (`back/app/src/api/endpoints/`)
+### Layer 1: Pure API Routes (`back/app/src/api/endpoints/`)
 
-**Responsabilités**:
-- Définition des endpoints FastAPI
-- Gestion requête/réponse HTTP
-- Validation des entrées (Pydantic)
-- Délégation de la logique métier
-- **NE GÈRE PAS**: Instantiation de services, gestion du cycle de vie
+**Responsibilities**:
+- FastAPI endpoint definitions
+- HTTP request/response handling
+- Input validation (Pydantic)
+- Business logic delegation
+- **DOES NOT HANDLE**: Service instantiation, lifecycle management
 
-**Fichiers** (7 au total, ~2,829 LOC):
-- `player_api_routes.py` - Endpoints de contrôle player
-- `nfc_api_routes.py` - Endpoints d'association NFC
-- `playlist_api_routes.py` - Endpoints de gestion playlists
-- `system_api_routes.py` - Endpoints système et santé
-- `upload_api_routes.py` - Endpoints de sessions upload
-- `web_api_routes.py` - Endpoints web/statiques
-- `youtube_api_routes.py` - Endpoints YouTube
+**Files** (7 total, ~2,829 LOC):
+- `player_api_routes.py` - Player control endpoints
+- `nfc_api_routes.py` - NFC association endpoints
+- `playlist_api_routes.py` - Playlist management endpoints
+- `system_api_routes.py` - System and health endpoints
+- `upload_api_routes.py` - Upload session endpoints
+- `web_api_routes.py` - Web/static endpoints
+- `youtube_api_routes.py` - YouTube endpoints
 
-### Couche 2: Routes Bootstrap (`back/app/src/routes/factories/`)
+### Layer 2: Bootstrap Routes (`back/app/src/routes/factories/`)
 
-**Responsabilités**:
-- Création et câblage des dépendances
-- Initialisation des services
-- Configuration de l'injection de dépendances
-- Enregistrement des routes avec FastAPI
-- Gestion du cycle de vie
+**Responsibilities**:
+- Dependency creation and wiring
+- Service initialization
+- Dependency injection configuration
+- Route registration with FastAPI
+- Lifecycle management
 
-**Fichiers** (7 au total, ~761 LOC):
-- `player_routes_ddd.py` - Bootstrap player routes
-- `nfc_unified_routes.py` - Bootstrap NFC routes
-- `playlist_routes_ddd.py` - Bootstrap playlist routes
-- `system_routes.py` - Bootstrap système routes
-- `upload_routes.py` - Bootstrap upload routes
-- `web_routes.py` - Bootstrap web routes
-- `youtube_routes.py` - Bootstrap YouTube routes
+**Files** (7 total, ~761 LOC):
+- `player_routes_ddd.py` - Player routes bootstrap
+- `nfc_unified_routes.py` - NFC routes bootstrap
+- `playlist_routes_ddd.py` - Playlist routes bootstrap
+- `system_routes.py` - System routes bootstrap
+- `upload_routes.py` - Upload routes bootstrap
+- `web_routes.py` - Web routes bootstrap
+- `youtube_routes.py` - YouTube routes bootstrap
 
-### Flux de dépendances
+### Dependency Flow
 
 ```python
 # Layer 2: Bootstrap (routes/factories/player_routes_ddd.py)
 class PlayerRoutesDDD:
     def __init__(self, app, socketio, coordinator):
-        # Initialise les services
+        # Initialize services
         self.state_manager = UnifiedStateManager(socketio)
         self.player_service = PlayerApplicationService(coordinator, self.state_manager)
         self.broadcasting_service = PlayerBroadcastingService(self.state_manager)
 
-        # Initialise les routes API avec dépendances
+        # Initialize API routes with dependencies
         self.api_routes = PlayerAPIRoutes(
             player_service=self.player_service,
             broadcasting_service=self.broadcasting_service
         )
 
-        # Enregistre avec FastAPI
+        # Register with FastAPI
         app.include_router(self.api_routes.get_router())
 
 # Layer 1: API Routes (api/endpoints/player_api_routes.py)
 class PlayerAPIRoutes:
     def __init__(self, player_service, broadcasting_service):
         self.router = APIRouter(prefix="/api/player")
-        self._player_service = player_service  # Reçu par DI
+        self._player_service = player_service  # Received via DI
         self._broadcasting_service = broadcasting_service
 
     def _register_routes(self):
         @self.router.post("/play")
         async def play():
-            # Délègue au service - pas d'instantiation
+            # Delegates to service - no instantiation
             result = await self._player_service.play_use_case()
             await self._broadcasting_service.broadcast_state_change(...)
             return UnifiedResponseService.success(...)
 ```
 
-### Avantages de cette architecture
+### Benefits of This Architecture
 
-1. **Séparation des responsabilités**
-   - Routes API: logique HTTP uniquement
-   - Bootstrap: gestion des dépendances uniquement
+1. **Separation of Concerns**
+   - API routes: HTTP logic only
+   - Bootstrap: dependency management only
 
-2. **Testabilité**
-   - Routes API testables avec mocks
-   - Bootstrap testable pour vérifier le câblage
+2. **Testability**
+   - API routes testable with mocks
+   - Bootstrap testable for wiring verification
 
-3. **Flexibilité**
-   - Facile de remplacer les implémentations
-   - Modifications de dépendances isolées
+3. **Flexibility**
+   - Easy to replace implementations
+   - Isolated dependency modifications
 
 4. **Clean Architecture**
-   - Respecte la direction des dépendances
-   - Suit les principes DDD
+   - Respects dependency direction
+   - Follows DDD principles
 
-### Patterns utilisés
+### Patterns Used
 
-- **Factory Pattern**: Bootstrap routes créent et configurent les handlers
-- **Dependency Injection**: Dépendances injectées par constructeur
-- **Single Responsibility**: Chaque couche a une responsabilité unique
+- **Factory Pattern**: Bootstrap routes create and configure handlers
+- **Dependency Injection**: Dependencies injected via constructor
+- **Single Responsibility**: Each layer has a unique responsibility
 
-### ⚠️ Note importante
+### Important Note
 
-Cette structure **N'EST PAS une duplication** mais un pattern architectural intentionnel. Les deux dossiers de routes servent des objectifs complémentaires distincts.
+This structure **IS NOT duplication** but an intentional architectural pattern. The two route folders serve distinct complementary purposes.
 
-**Documentation complète**: Voir [routing-architecture.md](./routing-architecture.md) pour détails complets.
+**Full documentation**: See [routing-architecture.md](./routing-architecture.md) for complete details.

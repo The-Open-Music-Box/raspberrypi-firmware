@@ -1,3 +1,11 @@
+---
+title: "GPIO Pin Configuration Analysis"
+status: active
+category: hardware
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # TheOpenMusicBox GPIO Pin Configuration Analysis
 
 ## Summary

@@ -1,3 +1,11 @@
+---
+title: "ADR 001: UnifiedResponseService Logging Behavior"
+status: active
+category: adr
+last_reviewed: 2026-02-09
+review_cycle: 12months
+---
+
 # ADR 001: UnifiedResponseService Logging Behavior
 
 **Status:** Accepted

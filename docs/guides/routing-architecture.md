@@ -1,3 +1,11 @@
+---
+title: "Routing Architecture"
+status: active
+category: architecture
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # Routing Architecture - TheOpenMusicBox
 
 ## Overview

@@ -1,3 +1,11 @@
+---
+title: "Deployment Safety Guidelines"
+status: active
+category: operations
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # Deployment Safety Guidelines
 
 ## ⚠️ CRITICAL: Data Protection

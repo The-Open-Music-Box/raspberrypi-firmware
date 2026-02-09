@@ -1,3 +1,11 @@
+---
+title: "OpenAPI Migration Example"
+status: active
+category: guide
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # OpenAPI Enhancement Migration Example
 
 This document shows how to enhance existing API endpoints with comprehensive OpenAPI documentation.

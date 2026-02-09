@@ -1,3 +1,11 @@
+---
+title: "GPIO Configuration Code Evidence"
+status: active
+category: hardware
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # GPIO Configuration - Code Evidence
 
 ## 1. Default GPIO Pin Definitions (Hardcoded)

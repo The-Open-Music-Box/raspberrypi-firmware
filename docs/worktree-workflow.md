@@ -1,3 +1,11 @@
+---
+title: "Worktree Workflow"
+status: deprecated
+category: guide
+last_reviewed: 2026-02-09
+review_cycle: 12months
+---
+
 # Git Worktree Workflow for Multiple Claude Sessions
 
 ## Problem

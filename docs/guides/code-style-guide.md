@@ -1,114 +1,123 @@
-# Guide de Style de Code et Pre-commit Hooks
+---
+title: "Code Style Guide and Pre-commit Hooks"
+status: active
+category: guide
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
 
-Ce document décrit les règles de style de code et les hooks pre-commit utilisés dans le projet TheOpenMusicBox. Suivre ces règles garantit une base de code cohérente et facilite la collaboration entre développeurs.
+# Code Style Guide and Pre-commit Hooks
 
-## Table des Matières
+This document describes the code style rules and pre-commit hooks used in the TheOpenMusicBox project. Following these rules ensures a consistent codebase and facilitates collaboration between developers.
 
-1. [Hooks Pre-commit](#hooks-pre-commit)
-2. [Règles Pydocstyle](#règles-pydocstyle)
-3. [Règles Flake8](#règles-flake8)
-4. [Configuration Black](#configuration-black)
-5. [Configuration Isort](#configuration-isort)
+## Table of Contents
+
+1. [Pre-commit Hooks](#pre-commit-hooks)
+2. [Pydocstyle Rules](#pydocstyle-rules)
+3. [Flake8 Rules](#flake8-rules)
+4. [Black Configuration](#black-configuration)
+5. [Isort Configuration](#isort-configuration)
 6. [Docformatter](#docformatter)
-7. [Bonnes Pratiques](#bonnes-pratiques)
-8. [Résolution des Problèmes Courants](#résolution-des-problèmes-courants)
+7. [Best Practices](#best-practices)
+8. [Troubleshooting Common Issues](#troubleshooting-common-issues)
 
-## Hooks Pre-commit
+## Pre-commit Hooks
 
-Le projet utilise plusieurs hooks pre-commit pour garantir la qualité du code avant chaque commit :
+The project uses several pre-commit hooks to ensure code quality before each commit:
 
-- **black** : Formateur de code automatique
-- **isort** : Organisation des imports
-- **flake8** : Linter pour détecter les erreurs et problèmes de style
-- **docformatter** : Formateur de docstrings
-- **pydocstyle** : Vérification des conventions de documentation
+- **black**: Automatic code formatter
+- **isort**: Import organization
+- **flake8**: Linter for detecting errors and style issues
+- **docformatter**: Docstring formatter
+- **pydocstyle**: Documentation convention checker
 
-Ces hooks s'exécutent automatiquement lorsque vous tentez de faire un commit. Si l'un d'eux échoue, le commit est bloqué jusqu'à ce que les problèmes soient résolus.
+These hooks run automatically when you attempt to make a commit. If any of them fails, the commit is blocked until the issues are resolved.
 
-## Règles Pydocstyle
+## Pydocstyle Rules
 
-Les règles pydocstyle suivantes sont activées dans notre configuration (`.pydocstyle`) :
+The following pydocstyle rules are enabled in our configuration (`.pydocstyle`):
 
-### Règles Activées
+### Enabled Rules
 
-- **D101** : Les classes publiques doivent avoir une docstring
-- **D102** : Les méthodes publiques doivent avoir une docstring
-- **D103** : Les fonctions publiques doivent avoir une docstring
-- **D205** : Une ligne vide est requise entre la ligne de résumé et la description
-- **D400** : La première ligne doit se terminer par un point
+- **D101**: Public classes must have a docstring
+- **D102**: Public methods must have a docstring
+- **D103**: Public functions must have a docstring
+- **D205**: A blank line is required between the summary line and the description
+- **D400**: The first line must end with a period
 
-**Note** : La règle D200 (Les docstrings sur une ligne doivent tenir sur une ligne) a été désactivée pour permettre plus de flexibilité dans la présentation des docstrings courtes.
+**Note**: Rule D200 (Single-line docstrings must fit on one line) has been disabled to allow more flexibility in the presentation of short docstrings.
 
-### Format Correct pour les Docstrings
+### Correct Format for Docstrings
 
 ```python
-def ma_fonction(param1, param2):
-    """Ceci est un résumé qui se termine par un point.
+def my_function(param1, param2):
+    """This is a summary that ends with a period.
 
-    Ceci est la description détaillée qui est séparée
-    de la ligne de résumé par une ligne vide.
+    This is the detailed description that is separated
+    from the summary line by a blank line.
 
     Args:
-        param1: Description du premier paramètre.
-        param2: Description du deuxième paramètre.
+        param1: Description of the first parameter.
+        param2: Description of the second parameter.
 
     Returns:
-        Description de ce que la fonction retourne.
+        Description of what the function returns.
 
     Raises:
-        ExceptionType: Description des conditions qui déclenchent l'exception.
+        ExceptionType: Description of conditions that trigger the exception.
     """
     pass
 ```
 
-### Erreurs Courantes et Solutions
+### Common Errors and Solutions
 
-| Erreur | Description | Solution |
-|--------|-------------|----------|
-| D205 | Pas de ligne vide entre le résumé et la description | Ajouter une ligne vide après la première ligne |
-| D400 | La première ligne ne se termine pas par un point | Ajouter un point à la fin de la première ligne |
+| Error | Description | Solution |
+|-------|-------------|----------|
+| D205 | No blank line between summary and description | Add a blank line after the first line |
+| D400 | First line does not end with a period | Add a period at the end of the first line |
 
-## Règles Flake8
+## Flake8 Rules
 
-Flake8 vérifie la conformité du code avec PEP 8 et détecte les erreurs potentielles.
+Flake8 checks code compliance with PEP 8 and detects potential errors.
 
-### Règles Importantes
+### Important Rules
 
-- **E501** : Limite de longueur de ligne (généralement 88 ou 100 caractères)
-- **F401** : Imports non utilisés
-- **F841** : Variables locales non utilisées
-- **E302/E305** : Espacement correct entre les fonctions/classes (2 lignes vides)
-- **E231** : Espacement après les virgules
+- **E501**: Line length limit (typically 88 or 100 characters)
+- **F401**: Unused imports
+- **F841**: Unused local variables
+- **E302/E305**: Correct spacing between functions/classes (2 blank lines)
+- **E231**: Spacing after commas
 
-### Exemple de Code Conforme
+### Compliant Code Example
 
 ```python
 import os
 from typing import Dict, List, Optional
 
-# Deux lignes vides avant les définitions de classe
+
+# Two blank lines before class definitions
 class MyClass:
-    """Cette classe fait quelque chose d'utile."""
+    """This class does something useful."""
 
     def __init__(self, param1: str, param2: int = 0):
-        """Initialiser l'instance.
+        """Initialize the instance.
 
         Args:
-            param1: Premier paramètre.
-            param2: Deuxième paramètre, par défaut 0.
+            param1: First parameter.
+            param2: Second parameter, defaults to 0.
         """
         self.param1 = param1
         self.param2 = param2
 
-    # Une ligne vide entre les méthodes
+    # One blank line between methods
     def my_method(self, items: List[str]) -> Dict[str, int]:
-        """Faire quelque chose avec les éléments.
+        """Do something with the items.
 
         Args:
-            items: Liste d'éléments à traiter.
+            items: List of items to process.
 
         Returns:
-            Dictionnaire des résultats.
+            Dictionary of results.
         """
         result = {}
         for item in items:
@@ -116,160 +125,160 @@ class MyClass:
         return result
 ```
 
-## Configuration Black
+## Black Configuration
 
-Black est un formateur de code qui applique un style cohérent à tout le code Python.
+Black is a code formatter that applies a consistent style to all Python code.
 
-### Règles Principales
+### Main Rules
 
-- Longueur de ligne maximale de 88 caractères
-- Utilisation de guillemets doubles pour les chaînes
-- Indentation de 4 espaces
-- Espacement autour des opérateurs
-- Formatage automatique des listes, dictionnaires et appels de fonction
+- Maximum line length of 88 characters
+- Use of double quotes for strings
+- 4-space indentation
+- Spacing around operators
+- Automatic formatting of lists, dictionaries, and function calls
 
-### Comment Utiliser Black
+### How to Use Black
 
 ```bash
-# Formater un fichier
+# Format a file
 black app/src/services/my_file.py
 
-# Formater tous les fichiers Python dans un répertoire
+# Format all Python files in a directory
 black app/src/
 ```
 
-## Configuration Isort
+## Isort Configuration
 
-Isort organise les imports selon un ordre standard.
+Isort organizes imports according to a standard order.
 
-### Règles d'Organisation
+### Organization Rules
 
-1. Imports standards de Python d'abord
-2. Imports tiers ensuite
-3. Imports locaux en dernier
-4. Tri alphabétique dans chaque section
+1. Python standard library imports first
+2. Third-party imports next
+3. Local imports last
+4. Alphabetical sorting within each section
 
-### Exemple d'Imports Bien Organisés
+### Well-Organized Imports Example
 
 ```python
-# Imports standards
+# Standard imports
 import os
 import sys
 from pathlib import Path
 
-# Imports tiers
+# Third-party imports
 import numpy as np
 import pandas as pd
 from flask import Flask
 
-# Imports locaux
+# Local imports
 from app.src.config import app_config
 from app.src.helpers.exceptions import InvalidFileError
 ```
 
 ## Docformatter
 
-Le tool `docformatter` est utilisé pour formater automatiquement les docstrings selon les conventions PEP 257. Il s'assure que :
+The `docformatter` tool is used to automatically format docstrings according to PEP 257 conventions. It ensures that:
 
-- Les guillemets triples sont sur des lignes séparées
-- La mise en forme est cohérente
-- L'indentation est correcte
-- Les listes sont correctement formatées
+- Triple quotes are on separate lines
+- Formatting is consistent
+- Indentation is correct
+- Lists are properly formatted
 
-### Configuration de Docformatter
+### Docformatter Configuration
 
-Pour assurer la compatibilité avec les règles pydocstyle (notamment D205 et D400), docformatter est configuré avec les arguments suivants dans notre pre-commit :
+To ensure compatibility with pydocstyle rules (notably D205 and D400), docformatter is configured with the following arguments in our pre-commit:
 
 ```yaml
 args:
-  - --in-place                # Modifie les fichiers sur place
-  - --pre-summary-newline     # Assure une ligne vide après les guillemets ouvrants
-  - --make-summary-multi-line # Assure que la ligne de résumé se termine par un point
-  - --force-wrap              # Force le wrapping des lignes longues
-  - --wrap-summaries=88       # Limite longueur des lignes de résumé
-  - --wrap-descriptions=88    # Limite longueur des lignes de description
+  - --in-place                # Modifies files in place
+  - --pre-summary-newline     # Ensures a blank line after opening quotes
+  - --make-summary-multi-line # Ensures the summary line ends with a period
+  - --force-wrap              # Forces wrapping of long lines
+  - --wrap-summaries=88       # Limits summary line length
+  - --wrap-descriptions=88    # Limits description line length
 ```
 
-**Important** : Cette configuration garantit la conformité avec les règles D205 (ligne vide après le résumé) et D400 (point à la fin du résumé) exigées par notre configuration pydocstyle.
+**Important**: This configuration ensures compliance with rules D205 (blank line after summary) and D400 (period at the end of summary) required by our pydocstyle configuration.
 
-Docformatter s'assure que les docstrings suivent un format cohérent.
+Docformatter ensures that docstrings follow a consistent format.
 
-### Fonctionnalités Principales
+### Main Features
 
-- Indentation correcte des docstrings
-- Espacement approprié
-- Formatage des sections Args, Returns, Raises, etc.
+- Correct docstring indentation
+- Appropriate spacing
+- Formatting of Args, Returns, Raises sections, etc.
 
-### Comment Utiliser Docformatter
+### How to Use Docformatter
 
 ```bash
-# Formater un fichier
+# Format a file
 docformatter --in-place app/src/services/my_file.py
 
-# Formater avec options spécifiques
+# Format with specific options
 docformatter --in-place --make-summary-multi-line --pre-summary-newline app/src/services/my_file.py
 ```
 
-## Bonnes Pratiques
+## Best Practices
 
-### Pour les Docstrings
+### For Docstrings
 
-1. **Soyez concis mais complet** : La première ligne doit résumer clairement le but de la fonction/classe.
-2. **Documentez tous les paramètres** : Chaque paramètre doit être documenté avec son type et sa fonction.
-3. **Documentez les valeurs de retour** : Précisez ce que la fonction retourne.
-4. **Documentez les exceptions** : Indiquez quelles exceptions peuvent être levées et dans quelles conditions.
+1. **Be concise but complete**: The first line should clearly summarize the purpose of the function/class.
+2. **Document all parameters**: Each parameter must be documented with its type and purpose.
+3. **Document return values**: Specify what the function returns.
+4. **Document exceptions**: Indicate which exceptions can be raised and under what conditions.
 
-### Pour le Style de Code
+### For Code Style
 
-1. **Exécutez les outils de formatage avant de commit** : Utilisez `black` et `isort` pour formater votre code.
-2. **Limitez la longueur des lignes** : Gardez les lignes sous 88 caractères.
-3. **Utilisez des noms descriptifs** : Les noms de variables et de fonctions doivent être clairs et descriptifs.
-4. **Suivez les conventions de nommage** :
-   - `snake_case` pour les variables et fonctions
-   - `PascalCase` pour les classes
-   - `UPPER_SNAKE_CASE` pour les constantes
+1. **Run formatting tools before committing**: Use `black` and `isort` to format your code.
+2. **Limit line length**: Keep lines under 88 characters.
+3. **Use descriptive names**: Variable and function names should be clear and descriptive.
+4. **Follow naming conventions**:
+   - `snake_case` for variables and functions
+   - `PascalCase` for classes
+   - `UPPER_SNAKE_CASE` for constants
 
-## Résolution des Problèmes Courants
+## Troubleshooting Common Issues
 
-### Contourner Temporairement les Hooks
+### Temporarily Bypassing Hooks
 
-Dans certains cas, vous pourriez avoir besoin de contourner temporairement les hooks pre-commit :
+In some cases, you may need to temporarily bypass pre-commit hooks:
 
 ```bash
-git commit --no-verify -m "Message de commit"
+git commit --no-verify -m "Commit message"
 ```
 
-**Note** : Cette pratique doit être utilisée avec parcimonie et uniquement dans des situations exceptionnelles.
+**Note**: This practice should be used sparingly and only in exceptional situations.
 
-### Résoudre les Erreurs Pydocstyle
+### Resolving Pydocstyle Errors
 
-1. **D205 (ligne vide manquante)** :
+1. **D205 (missing blank line)**:
    ```python
-   def ma_fonction():
-       """Ceci est un résumé.
+   def my_function():
+       """This is a summary.
 
-       Ceci est la description.
+       This is the description.
        """
    ```
 
-2. **D400 (point manquant)** :
+2. **D400 (missing period)**:
    ```python
-   def ma_fonction():
-       """Ceci est un résumé qui se termine par un point.
+   def my_function():
+       """This is a summary that ends with a period.
        """
    ```
 
-### Résoudre les Erreurs Flake8
+### Resolving Flake8 Errors
 
-1. **E501 (ligne trop longue)** :
-   - Divisez les longues chaînes de caractères
-   - Utilisez des parenthèses pour diviser les expressions
-   - Réorganisez la logique en plusieurs lignes
+1. **E501 (line too long)**:
+   - Split long strings
+   - Use parentheses to split expressions
+   - Reorganize logic across multiple lines
 
-2. **F401 (import non utilisé)** :
-   - Supprimez les imports non utilisés
-   - Si l'import est nécessaire pour les effets secondaires, ajoutez `# noqa: F401`
+2. **F401 (unused import)**:
+   - Remove unused imports
+   - If the import is needed for side effects, add `# noqa: F401`
 
 ---
 
-Ce guide est un document vivant qui sera mis à jour au fur et à mesure que les standards de code évoluent. Pour toute question ou suggestion, veuillez contacter l'équipe de développement.
+This guide is a living document that will be updated as code standards evolve. For any questions or suggestions, please contact the development team.
