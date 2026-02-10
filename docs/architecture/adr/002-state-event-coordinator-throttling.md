@@ -1,3 +1,11 @@
+---
+title: "ADR 002: StateEventCoordinator Throttling Responsibility"
+status: active
+category: adr
+last_reviewed: 2026-02-09
+review_cycle: 12months
+---
+
 # ADR 002: StateEventCoordinator Throttling Responsibility
 
 **Status:** Accepted

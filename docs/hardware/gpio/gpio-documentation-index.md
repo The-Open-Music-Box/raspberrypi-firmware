@@ -1,3 +1,11 @@
+---
+title: "GPIO Documentation Index"
+status: active
+category: hardware
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # GPIO Configuration Documentation Index
 
 This directory contains comprehensive documentation about GPIO pin usage, configuration, and management in TheOpenMusicBox RPi Firmware.

@@ -1,96 +1,104 @@
+---
+title: "Frontend Architecture"
+status: active
+category: architecture
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # Frontend Architecture - TheOpenMusicBox
 
-## Vue d'ensemble
+## Overview
 
-L'architecture frontend de TheOpenMusicBox suit un pattern **server-authoritative** avec synchronisation temps réel via WebSocket, intégration API HTTP complète, et composants Vue.js réactifs. Le backend sert de source unique de vérité, le frontend agissant comme couche présentation réactive.
+The TheOpenMusicBox frontend architecture follows a **server-authoritative** pattern with real-time synchronization via WebSocket, complete HTTP API integration, and reactive Vue.js components. The backend serves as the single source of truth, with the frontend acting as a reactive presentation layer.
 
-## Architecture des Services
+## Service Architecture
 
-### Couche Service Principale
+### Main Service Layer
 
 ```mermaid
 graph TD
     A[Vue Components] --> B[serverStateStore - Pinia]
     A --> C[apiService - HTTP Gateway]
-    
+
     B --> D[socketService - WebSocket Client]
     C --> E[Backend HTTP APIs]
     D --> F[Backend WebSocket Events]
-    
+
     B --> G[DOM Events Bridge]
     D --> G
-    
+
     H[cacheService] --> C
     I[operationUtils] --> C
 ```
 
-## Services Fondamentaux
+## Core Services
 
-### 1. serverStateStore.ts - Gestion d'État Centralisée ✅
+### 1. serverStateStore.ts - Centralized State Management
 
-**Architecture**: Store Pinia avec état server-authoritative  
-**Fichier**: `front/src/stores/serverStateStore.ts`
+**Architecture**: Pinia Store with server-authoritative state
+**File**: `front/src/stores/serverStateStore.ts`
 
-**Responsabilités**:
-- Source unique de vérité pour état serveur
-- Synchronisation temps réel via WebSocket
-- Déduplication opérations client
-- Mises à jour optimistes avec réconciliation serveur
+**Responsibilities**:
+- Single source of truth for server state
+- Real-time synchronization via WebSocket
+- Client operation deduplication
+- Optimistic updates with server reconciliation
 
-**Structure de données**:
+**Data Structure**:
 ```typescript
 interface PlayerState {
   // Playback state
   is_playing: boolean;
   state: PlaybackState;
-  
+
   // Current playlist/track
   active_playlist_id: string | null;
   active_playlist_title: string | null;
   active_track_id: string | null;
   active_track: Track | null;
-  
+
   // Playback position
   position_ms: number;
   duration_ms: number;
-  
+
   // Playlist navigation
   track_index: number;
   track_count: number;
   can_prev: boolean;
   can_next: boolean;
-  
+
   // Audio control
   volume: number;
   muted: boolean;
-  
+
   // System
   server_seq: number;
 }
 ```
 
-**Handlers événements**:
-- `state:player` → État complet player
-- `state:track_position` → Position légère 200ms  
-- `state:playlists` → Collection playlists
-- `ack:op` / `err:op` → Confirmations opérations
+**Event Handlers**:
+- `state:player` -> Full player state
+- `state:track_position` -> Lightweight 200ms position
+- `state:playlists` -> Playlist collection
+- `ack:op` / `err:op` -> Operation confirmations
 
-### 2. apiService.ts - Passerelle HTTP API ✅
+### 2. apiService.ts - HTTP API Gateway
 
-**Architecture**: Gateway HTTP modulaire par domaine  
-**Fichier**: `front/src/services/apiService.ts`
+**Architecture**: Modular HTTP gateway by domain
+**File**: `front/src/services/apiService.ts`
 
-**Services spécialisés**:
-- **playerApi**: Contrôle player (toggle, seek, volume)
-- **playlistApi**: Gestion playlists CRUD + pagination
-- **uploadApi**: Upload chunked avec progress  
-- **systemApi**: Santé système et volume
-- **nfcApi**: Gestion tags NFC et associations
-- **youtubeApi**: Recherche et download YouTube
+**Specialized Services**:
+- **playerApi**: Player control (toggle, seek, volume)
+- **playlistApi**: Playlist CRUD + pagination management
+- **uploadApi**: Chunked upload with progress
+- **systemApi**: System health and volume
+- **nfcApi**: NFC tag management and associations
+- **youtubeApi**: YouTube search and download
 
-**Fonctionnalités**:
+**Features**:
 ```typescript
-// Gestion d'erreur standardisée
+// Standardized error handling
 class StandardApiError extends Error {
   constructor(message: string, type: string, status: number) {
     this.type = type;
@@ -98,7 +106,7 @@ class StandardApiError extends Error {
   }
 }
 
-// Extracteur réponse avec validation
+// Response extractor with validation
 class ApiResponseHandler {
   static extractData<T>(response: AxiosResponse<ApiResponse<T>>): T {
     return response.data.data!;
@@ -106,55 +114,55 @@ class ApiResponseHandler {
 }
 ```
 
-### 3. socketService.ts - Communication WebSocket ✅
+### 3. socketService.ts - WebSocket Communication
 
-**Architecture**: Client WebSocket event-driven  
-**Fichier**: `front/src/services/socketService.ts`
+**Architecture**: Event-driven WebSocket client
+**File**: `front/src/services/socketService.ts`
 
-**Responsabilités**:
-- Communication bidirectionnelle temps réel
-- Abonnements rooms (playlists, playlist:id, nfc)
-- Séquençage événements et buffering
-- Reconnexion automatique avec re-abonnement
+**Responsibilities**:
+- Bidirectional real-time communication
+- Room subscriptions (playlists, playlist:id, nfc)
+- Event sequencing and buffering
+- Automatic reconnection with re-subscription
 
 **Configuration**:
 ```typescript
-// Configuration réelle dans environment.ts
+// Actual configuration in environment.ts
 const socketConfig = {
   autoConnect: true,
   transports: ['websocket', 'polling']
 }
 ```
 
-**Pattern événements**:
+**Event Pattern**:
 ```typescript
-// Réception événement serveur
+// Server event reception
 private processEvent(envelope: StateEventEnvelope): void {
   this.emitLocal(envelope.event_type, envelope)
-  
-  // CRITIQUE: Bridge DOM pour serverStateStore
-  window.dispatchEvent(new CustomEvent(envelope.event_type, { 
-    detail: envelope 
+
+  // CRITICAL: DOM bridge for serverStateStore
+  window.dispatchEvent(new CustomEvent(envelope.event_type, {
+    detail: envelope
   }))
 }
 ```
 
-## Dépendances Backend par Service
+## Backend Dependencies by Service
 
 ### HTTP API Dependencies
 
-#### playerApi → Backend Player Routes
+#### playerApi -> Backend Player Routes
 ```typescript
-// Endpoints consommés (routes réelles)
+// Consumed endpoints (actual routes)
 GET /api/player/status           // PlayerStateService
 POST /api/player/toggle          // PlayerStateService + StateManager
-POST /api/player/seek            // PlayerStateService + StateManager  
+POST /api/player/seek            // PlayerStateService + StateManager
 POST /api/player/volume          // PlayerStateService + StateManager
 POST /api/player/stop            // PlayerStateService + StateManager
 POST /api/player/next            // PlayerStateService + StateManager
 POST /api/player/previous        // PlayerStateService + StateManager
 
-// Réponses standardisées
+// Standardized responses
 ApiResponse<PlayerState> {
   status: "success",
   message: "...",
@@ -163,27 +171,27 @@ ApiResponse<PlayerState> {
 }
 ```
 
-#### playlistApi → Backend Playlist Routes  
+#### playlistApi -> Backend Playlist Routes
 ```typescript
 // CRUD Operations
 GET /api/playlists/              // PlaylistController.get_all_playlists()
 GET /api/playlists/{id}          // PlaylistRepository.get_playlist_with_tracks()
 POST /api/playlists/             // PlaylistCoreService.create_playlist()
-PUT /api/playlists/{id}          // PlaylistCoreService.update_playlist()  
+PUT /api/playlists/{id}          // PlaylistCoreService.update_playlist()
 DELETE /api/playlists/{id}       // PlaylistCoreService.delete_playlist()
 
-// Playback Control  
+// Playback Control
 POST /api/playlists/{id}/start   // PlaylistOrchestrator.start_playlist()
 
-// Réponses avec cache
+// Responses with cache
 cacheService.set(cacheKey, result, 10000); // TTL 10s
 ```
 
-#### uploadApi → Backend Upload System
+#### uploadApi -> Backend Upload System
 ```typescript
-// Upload chunked
+// Chunked upload
 POST /api/playlists/{id}/uploads/session     // Upload session init
-PUT /api/playlists/{id}/uploads/{session}/chunks/{index}  // Chunk upload  
+PUT /api/playlists/{id}/uploads/{session}/chunks/{index}  // Chunk upload
 POST /api/playlists/{id}/uploads/{session}/finalize      // Upload finalize
 
 // Progress tracking
@@ -198,69 +206,69 @@ interface UploadStatus {
 
 ### WebSocket Event Dependencies
 
-#### Événements Server → Client
+#### Server -> Client Events
 ```typescript
-// États principaux
-'state:player'            // StateManager → playerState updates
-'state:track_position'    // TrackProgressService → position 200ms
-'state:playlists'         // StateManager → collection updates
+// Main states
+'state:player'            // StateManager -> playerState updates
+'state:track_position'    // TrackProgressService -> position 200ms
+'state:playlists'         // StateManager -> collection updates
 
-// Événements spécifiques  
-'state:playlist_created'  // PlaylistCoreService → nouvelle playlist
-'state:track_added'       // TrackService → nouveau track  
-'youtube:progress'        // DownloadNotifier → progress YouTube
+// Specific events
+'state:playlist_created'  // PlaylistCoreService -> new playlist
+'state:track_added'       // TrackService -> new track
+'youtube:progress'        // DownloadNotifier -> YouTube progress
 
 // Acknowledgments
-'ack:op'                  // Confirmation succès opération
-'err:op'                  // Erreur opération avec client_op_id
+'ack:op'                  // Success confirmation for operation
+'err:op'                  // Operation error with client_op_id
 ```
 
-#### Événements Client → Server
+#### Client -> Server Events
 ```typescript
-// Abonnements rooms
-'join:playlists'    → ClientSubscriptionManager.subscribe_client()
-'join:playlist'     → Room playlist:${id} 
-'join:nfc'          → Room nfc pour événements tags
+// Room subscriptions
+'join:playlists'    -> ClientSubscriptionManager.subscribe_client()
+'join:playlist'     -> Room playlist:${id}
+'join:nfc'          -> NFC events room
 
-// Synchronisation
-'sync:request'      → StateManager.send_state_snapshot()
+// Synchronization
+'sync:request'      -> StateManager.send_state_snapshot()
 ```
 
-## Architecture Composants Vue.js
+## Vue.js Component Architecture
 
-### Composants Principaux et Dépendances Backend
+### Main Components and Backend Dependencies
 
-#### AudioPlayer.vue - Lecteur Principal
+#### AudioPlayer.vue - Main Player
 ```vue
 <template>
   <TrackInfo :track="currentTrack" :playlistTitle="playerState?.active_playlist_title"/>
-  <ProgressBar :currentTime="currentTime" :duration="duration" @seek="seekTo"/>  
+  <ProgressBar :currentTime="currentTime" :duration="duration" @seek="seekTo"/>
   <PlaybackControls :isPlaying="isPlaying" @toggle-play-pause="togglePlayPause"/>
 </template>
 ```
 
-**Dépendances Backend**:
-- **État**: `serverStateStore.playerState` (via `state:player` events)
-- **Position**: `state:track_position` events toutes les 200ms
+**Backend Dependencies**:
+- **State**: `serverStateStore.playerState` (via `state:player` events)
+- **Position**: `state:track_position` events every 200ms
 - **Actions**: `apiService.playPlayer()`, `apiService.seekPlayer()`
 
-**Flux temps réel**:
+**Real-time Flow**:
 ```typescript
-// Mise à jour position temps réel
+// Real-time position update
 const unwatchPosition = serverStateStore.$subscribe((mutation, state) => {
   if (state.playerState.position_ms !== lastServerPosition) {
-    currentTime.value = state.playerState.position_ms / 1000 // ms → s
+    currentTime.value = state.playerState.position_ms / 1000 // ms -> s
   }
 })
 ```
 
-#### FilesList.vue - Gestion Fichiers  
-**Dépendances Backend**:
-- **Chargement**: `apiService.getPlaylist(playlistId)` lazy loading
+#### FilesList.vue - File Management
+**Backend Dependencies**:
+- **Loading**: `apiService.getPlaylist(playlistId)` lazy loading
 - **Drag & Drop**: `apiService.reorderTracks()`, `apiService.moveTrackBetweenPlaylists()`
-- **NFC**: `apiService.startNfcAssociation()`, événements `nfc_association_state`
+- **NFC**: `apiService.startNfcAssociation()`, `nfc_association_state` events
 
-**Pattern lazy loading**:
+**Lazy loading pattern**:
 ```typescript
 async loadPlaylistTracks(playlistId: string) {
   if (!this.loadedPlaylists.has(playlistId)) {
@@ -270,38 +278,38 @@ async loadPlaylistTracks(playlistId: string) {
 }
 ```
 
-#### SimpleUploader.vue - Upload Fichiers
-**Dépendances Backend**:
+#### SimpleUploader.vue - File Upload
+**Backend Dependencies**:
 - **Session**: `uploadApi.initUpload()`
-- **Chunks**: `uploadApi.uploadChunk()` avec FormData
-- **Finalisation**: `uploadApi.finalizeUpload()`
+- **Chunks**: `uploadApi.uploadChunk()` with FormData
+- **Finalization**: `uploadApi.finalizeUpload()`
 - **Progress**: Polling `uploadApi.getUploadStatus()`
 
-**Upload chunked**:
+**Chunked upload**:
 ```typescript
 async uploadFile(file: File, playlistId: string) {
   const session = await uploadApi.initUpload(playlistId, file.name, file.size)
   const chunks = this.createChunks(file, session.chunk_size)
-  
+
   for (const [index, chunk] of chunks.entries()) {
     await uploadApi.uploadChunk(playlistId, session.session_id, index, chunk)
     this.updateProgress((index + 1) / chunks.length * 100)
   }
-  
+
   return await uploadApi.finalizeUpload(playlistId, session.session_id)
 }
 ```
 
-## Flux de Données
+## Data Flows
 
-### Cycle Requête/Réponse HTTP  
+### HTTP Request/Response Cycle
 ```mermaid
 sequenceDiagram
     participant C as Vue Component
     participant API as apiService
     participant Store as serverStateStore
     participant Backend as Backend Service
-    
+
     C->>API: playerApi.toggle()
     API->>Backend: POST /api/player/toggle
     Backend->>API: ApiResponse<PlayerState>
@@ -310,14 +318,14 @@ sequenceDiagram
     Store->>C: Reactive update
 ```
 
-### Mises à Jour Temps Réel
-```mermaid  
+### Real-Time Updates
+```mermaid
 sequenceDiagram
     participant Backend as Backend Service
     participant Socket as socketService
     participant Store as serverStateStore
     participant Component as Vue Component
-    
+
     Backend->>Socket: WebSocket state:track_position
     Socket->>Socket: processEvent()
     Socket->>Store: DOM Event dispatch
@@ -325,45 +333,45 @@ sequenceDiagram
     Store->>Component: Reactive state update
 ```
 
-### Updates Optimistes
+### Optimistic Updates
 ```mermaid
-sequenceDiagram  
+sequenceDiagram
     participant Component as Vue Component
     participant Store as serverStateStore
     participant API as apiService
     participant Backend as Backend
-    
+
     Component->>Component: Optimistic UI update
     Component->>API: HTTP API call
     API->>Backend: Request
-    Backend->>Store: WebSocket confirmation  
+    Backend->>Store: WebSocket confirmation
     Store->>Component: Final reconciliation
 ```
 
-## Patterns Architecturaux
+## Architectural Patterns
 
 ### Server-Authoritative State
-- **Source unique**: Backend maintient état autoritaire
-- **Subscriptions**: Frontend s'abonne aux mises à jour  
-- **Reconciliation**: État serveur prioritaire sur optimisme client
-- **Séquençage**: server_seq garantit ordre événements
+- **Single source**: Backend maintains authoritative state
+- **Subscriptions**: Frontend subscribes to updates
+- **Reconciliation**: Server state takes priority over client optimism
+- **Sequencing**: server_seq guarantees event order
 
 ### Event-Driven Architecture
 ```typescript
-// Pattern publisher-subscriber via DOM events
+// Publisher-subscriber pattern via DOM events
 class SocketService {
   private processEvent(envelope: StateEventEnvelope): void {
     // Internal handlers
     this.emitLocal(envelope.event_type, envelope)
-    
-    // DOM bridge pour découplage
+
+    // DOM bridge for decoupling
     window.dispatchEvent(new CustomEvent(envelope.event_type, {
       detail: envelope
     }))
   }
 }
 
-// Store écoute événements DOM
+// Store listens for DOM events
 export const useServerStateStore = defineStore('serverState', () => {
   // Setup DOM event listeners
   window.addEventListener('state:player', (e) => handlePlayerState(e.detail))
@@ -373,7 +381,7 @@ export const useServerStateStore = defineStore('serverState', () => {
 
 ### Reactive State Management
 ```typescript
-// État réactif avec computed properties
+// Reactive state with computed properties
 const currentTrack = computed(() => {
   return playerState.value?.active_track || props.selectedTrack || null
 })
@@ -386,13 +394,13 @@ const duration = computed(() => {
 })
 ```
 
-## Configuration et Déploiement
+## Configuration and Deployment
 
-### Variables Environnement
+### Environment Variables
 ```typescript
-// Configuration réelle dans environment.ts
+// Actual configuration in environment.ts
 export const apiConfig = {
-  baseUrl: isDevelopment 
+  baseUrl: isDevelopment
     ? (process.env.VUE_APP_API_URL || 'http://localhost:5004')
     : window.location.origin,
   withCredentials: !isDevelopment,
@@ -400,28 +408,28 @@ export const apiConfig = {
 }
 ```
 
-### Build et Assets
+### Build and Assets
 - **Framework**: Vue 3 + TypeScript + Vite
-- **State**: Pinia pour state management  
-- **Styling**: Tailwind CSS avec design tokens
-- **PWA**: Service Worker pour cache offline
-- **Bundle**: Code splitting par routes et vendors
+- **State**: Pinia for state management
+- **Styling**: Tailwind CSS with design tokens
+- **PWA**: Service Worker for offline cache
+- **Bundle**: Code splitting by routes and vendors
 
-## Performance et Optimisations
+## Performance and Optimizations
 
 ### Lazy Loading
 ```typescript
-// Chargement différé playlists
+// Deferred playlist loading
 const getPlaylistById = computed(() => (id: string) => {
-  return playlists.value.find(p => p.id === id) || 
+  return playlists.value.find(p => p.id === id) ||
          cachedPlaylists.get(id) ||
          null
 })
 ```
 
-### Caching Stratégies
+### Caching Strategies
 ```typescript
-// Cache intelligente avec TTL
+// Smart cache with TTL
 export class CacheService {
   set(key: string, data: any, ttl: number = 60000): void {
     this.cache.set(key, {
@@ -433,13 +441,13 @@ export class CacheService {
 }
 ```
 
-### Throttling Position Updates
+### Position Update Throttling
 ```typescript
-// Throttling 200ms pour position updates
+// 200ms throttling for position updates
 let lastServerPosition = 0
 const unwatchPosition = serverStateStore.$subscribe((mutation, state) => {
   if (state.playerState.position_ms !== lastServerPosition) {
-    // Évite updates si en cours de seek
+    // Avoids updates if a seek is in progress
     if (!isSeekInProgress.value) {
       currentTime.value = state.playerState.position_ms / 1000
     }
@@ -447,15 +455,15 @@ const unwatchPosition = serverStateStore.$subscribe((mutation, state) => {
 })
 ```
 
-## Sécurité et Fiabilité
+## Security and Reliability
 
-### Gestion d'Erreur  
+### Error Handling
 ```typescript
-// Standardisation erreurs avec retry
+// Standardized errors with retry
 export class ApiClient {
   private async handleError(error: AxiosError): Promise<StandardApiError> {
     if (error.response?.status >= 500) {
-      // Retry automatique pour erreurs serveur
+      // Automatic retry for server errors
       return this.retryWithBackoff(error.config)
     }
     return new StandardApiError(error.message, 'client_error', error.response?.status)
@@ -463,28 +471,28 @@ export class ApiClient {
 }
 ```
 
-### Validation Côté Client
+### Client-Side Validation
 ```typescript
-// Validation avant envoi au backend
+// Validation before sending to backend
 async function seekTo(timeSeconds: number) {
   const maxDurationSeconds = 86400 // 24h
   if (timeSeconds < 0 || timeSeconds > maxDurationSeconds) {
     logger.error('Seek position out of bounds', { timeSeconds })
     return
   }
-  
+
   const timeMs = Math.floor(Math.round(timeSeconds * 1000))
   await apiService.seekPlayer(timeMs)
 }
 ```
 
-## Intégrations Externes
+## External Integrations
 
 ### WebSocket Reliability
 ```typescript
-// Reconnexion automatique avec état
+// Automatic reconnection with state
 socketService.on('reconnect', () => {
-  // Re-abonnement automatique aux rooms
+  // Automatic re-subscription to rooms
   subscribeToPlaylists()
   requestStateSync()
   requestInitialPlayerState()
@@ -492,7 +500,7 @@ socketService.on('reconnect', () => {
 ```
 
 ### Hardware Integration
-- **NFC**: Interface via endpoints dédiés avec feedback temps réel
-- **Audio**: Contrôle via abstraction backend service audio
+- **NFC**: Interface via dedicated endpoints with real-time feedback
+- **Audio**: Control via backend audio service abstraction
 
-Cette architecture frontend démontre une **séparation claire des responsabilités** avec **capacités temps réel robustes**, rendant le système approprié pour une application musicale responsive avec intégrations matérielles.
+This frontend architecture demonstrates a **clear separation of concerns** with **robust real-time capabilities**, making the system suitable for a responsive music application with hardware integrations.

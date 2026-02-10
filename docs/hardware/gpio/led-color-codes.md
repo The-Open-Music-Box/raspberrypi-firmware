@@ -1,3 +1,11 @@
+---
+title: "LED Color Codes Reference"
+status: active
+category: hardware
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # LED Color Codes Reference
 
 This document describes the LED indicator system used on TheOpenMusicBox RPI firmware, including color codes, animations, and their meanings.

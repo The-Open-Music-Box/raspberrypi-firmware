@@ -1,3 +1,11 @@
+---
+title: "OpenAPI/Swagger Developer Guide"
+status: active
+category: guide
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # OpenAPI/Swagger Developer Guide
 
 This guide explains how to use and enhance the OpenAPI/Swagger documentation in TheOpenMusicBox.

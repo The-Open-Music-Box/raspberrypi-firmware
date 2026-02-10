@@ -1,3 +1,11 @@
+---
+title: "Business Logic"
+status: active
+category: guide
+last_reviewed: 2026-02-09
+review_cycle: 6months
+---
+
 # The Open Music Box - Business Logic Documentation
 
 ## Overview

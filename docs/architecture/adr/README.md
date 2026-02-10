@@ -1,3 +1,11 @@
+---
+title: "Architecture Decision Records"
+status: active
+category: adr
+last_reviewed: 2026-02-09
+review_cycle: 12months
+---
+
 # Architecture Decision Records (ADRs)
 
 This directory contains Architecture Decision Records for TheOpenMusicBox RPI Firmware.

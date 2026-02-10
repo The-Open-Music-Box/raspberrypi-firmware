@@ -1,3 +1,11 @@
+---
+title: "Breaking Changes v4.0.0"
+status: deprecated
+category: architecture
+last_reviewed: 2026-02-09
+review_cycle: 12months
+---
+
 # BREAKING CHANGES - v4.0.0 Legacy Code Elimination
 
 **Date:** 2025-11-10
