@@ -49,6 +49,13 @@ contract-validation-reports/
 .env.test.local
 .env.production.local
 
+# Project environment files (tracked via .env.example templates)
+back/.env
+front/.env
+front/.env.build
+front/.env.development
+front/cookies.txt
+
 # =========================
 # Logs
 # =========================
