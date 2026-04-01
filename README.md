@@ -2,6 +2,12 @@
 
 > Un lecteur audio tangible pour enfants : autonomie, sans écran, et contrôlé par les parents. Les enfants explorent musique, histoires et podcasts en posant simplement des tags NFC sur le lecteur.
 
+> [!IMPORTANT]
+> **Ce projet (version Raspberry Pi) n'est plus activement développé.**
+> Une nouvelle version basée sur **ESP32** est en cours de préparation et constitue désormais la priorité du projet.
+> Cette version Raspberry Pi **reste fonctionnelle** et continuera de bénéficier d'un **support de maintenance**, mais elle ne fait plus l'objet de nouvelles fonctionnalités ou de mises à jour prioritaires.
+> Consultez le dépôt [esp32-firmware](https://github.com/The-Open-Music-Box/esp32-firmware) pour suivre l'évolution de la nouvelle version.
+
 [![License](https://img.shields.io/badge/License-Custom-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-latest-teal.svg)](https://fastapi.tiangolo.com/)
