@@ -2,7 +2,11 @@
   <img src="docs/assets/banner.png" alt="The Open Music Box" width="100%">
 </p>
 
-> Un lecteur audio tangible pour enfants : autonomie, sans écran, et contrôlé par les parents. Les enfants explorent musique, histoires et podcasts en posant simplement des tags NFC sur le lecteur.
+<h3 align="center">Le lecteur audio pour enfants</h3>
+
+<p align="center">
+  <code>REPARABLE</code>&nbsp;&nbsp;<code>EVOLUTIF</code>
+</p>
 
 > [!IMPORTANT]
 > **Ce projet (version Raspberry Pi) n'est plus activement développé.**
