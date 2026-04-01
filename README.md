@@ -2,8 +2,6 @@
   <img src="docs/assets/banner.png" alt="The Open Music Box" width="100%">
 </p>
 
-# 🎵 The Open Music Box
-
 > Un lecteur audio tangible pour enfants : autonomie, sans écran, et contrôlé par les parents. Les enfants explorent musique, histoires et podcasts en posant simplement des tags NFC sur le lecteur.
 
 > [!IMPORTANT]
