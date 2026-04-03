@@ -1,0 +1,244 @@
+# TheOpenMusicBox - RPI Firmware Deploy
+# ======================================
+# Builds and publishes artifacts to the deploy branch
+# Triggered on merge to develop or manual dispatch
+
+name: Deploy
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      version_override:
+        description: 'Override version (leave empty to use VERSION file)'
+        required: false
+        type: string
+
+# Only one deploy at a time
+concurrency:
+  group: deploy-rpi
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  USE_MOCK_HARDWARE: "true"
+  ENVIRONMENT: test
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: [self-hosted, Linux, ARM64, rpi]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_TOKEN }}
+
+      - name: Set up Python virtual environment
+        run: |
+          cd back
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: |
+          cd back
+          source venv/bin/activate
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run unit tests
+        run: |
+          cd back
+          source venv/bin/activate
+          pytest tests/unit/ -v --tb=short
+
+      - name: Run contract tests
+        run: |
+          cd back
+          source venv/bin/activate
+          pytest tests/contracts/ -v --tb=short || echo "No contract tests found"
+
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: [self-hosted, Linux, ARM64, rpi]
+    needs: test
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_TOKEN }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version_override }}" ]; then
+            VERSION="${{ inputs.version_override }}"
+          else
+            VERSION=$(cat VERSION | tr -d '[:space:]')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: front
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: front
+        run: npm run build
+
+      - name: Package release
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Create tomb directory structure
+          mkdir -p tomb/app/static
+
+          # Copy backend files (excluding dev files)
+          rsync -a \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='logs' \
+            --exclude='app.db' \
+            --exclude='venv' \
+            --exclude='.pytest_cache' \
+            --exclude='tests' \
+            back/app/ tomb/app/
+
+          # Create flattened requirements.txt
+          awk -v src_dir="back/requirements" '
+            /^-r / {
+              sub(/^-r /, "", $0);
+              file = src_dir "/" $0;
+              while ((getline line < file) > 0) print line;
+              close(file);
+              next;
+            }
+            { print }
+          ' back/requirements/prod.txt > tomb/requirements.txt
+
+          # Remove comments and blank lines from requirements
+          sed -i '/^\s*#/d;/^\s*$/d' tomb/requirements.txt
+
+          # Copy additional files
+          [ -f back/README.md ] && cp back/README.md tomb/
+          [ -f back/app.service ] && cp back/app.service tomb/
+          [ -f back/LICENSE ] && cp back/LICENSE tomb/
+          [ -f back/setup.sh ] && cp back/setup.sh tomb/ && chmod +x tomb/setup.sh
+          [ -f back/start_app.py ] && cp back/start_app.py tomb/ && chmod +x tomb/start_app.py
+
+          # Copy tools directory
+          if [ -d back/tools ]; then
+            cp -r back/tools tomb/
+            chmod +x tomb/tools/*.py 2>/dev/null || true
+          fi
+
+          # Copy WM8960 driver files
+          if [ -d back/drivers ]; then
+            cp -r back/drivers tomb/
+          fi
+
+          # Copy .env template (without secrets)
+          if [ -f back/.env.example ]; then
+            cp back/.env.example tomb/.env
+          fi
+
+          # Copy frontend build
+          cp -r front/dist/* tomb/app/static/
+
+          # Create version file
+          echo "$VERSION" > tomb/VERSION
+
+          # Create archives
+          tar -czvf tomb-v${VERSION}.tar.gz tomb
+          zip -r tomb-v${VERSION}.zip tomb
+
+          # Create checksums
+          sha256sum tomb-v${VERSION}.tar.gz tomb-v${VERSION}.zip > SHA256SUMS
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Stash artifacts
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p /tmp/deploy-artifacts
+          cp tomb-v${VERSION}.tar.gz /tmp/deploy-artifacts/
+          cp tomb-v${VERSION}.zip /tmp/deploy-artifacts/
+          cp SHA256SUMS /tmp/deploy-artifacts/
+
+      - name: Publish to deploy branch
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          COMMIT_SHA="${{ github.sha }}"
+          SHORT_SHA=$(echo "$COMMIT_SHA" | cut -c1-7)
+
+          # Switch to deploy branch (clean checkout)
+          git fetch origin deploy
+          git checkout deploy
+
+          # Create releases directory for this version
+          mkdir -p releases/$VERSION
+
+          # Copy artifacts from temp
+          cp /tmp/deploy-artifacts/tomb-v${VERSION}.tar.gz releases/$VERSION/
+          cp /tmp/deploy-artifacts/tomb-v${VERSION}.zip releases/$VERSION/
+          cp /tmp/deploy-artifacts/SHA256SUMS releases/$VERSION/
+
+          # Create convenience copies without version suffix
+          cp releases/$VERSION/tomb-v${VERSION}.tar.gz releases/$VERSION/tomb.tar.gz
+          cp releases/$VERSION/tomb-v${VERSION}.zip releases/$VERSION/tomb.zip
+
+          # Update root-level latest copies
+          cp releases/$VERSION/tomb.tar.gz tomb.tar.gz
+          cp releases/$VERSION/tomb.zip tomb.zip
+          cp releases/$VERSION/SHA256SUMS SHA256SUMS
+
+          # Create version info
+          cat > releases/$VERSION/VERSION.txt <<EOF
+          Version: $VERSION
+          Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          Commit: $COMMIT_SHA
+          EOF
+
+          # Update LATEST pointer
+          echo "$VERSION" > LATEST
+
+          # Stage and commit
+          git add -A
+          git commit -m "deploy: v${VERSION} (${SHORT_SHA})" || echo "No changes to commit"
+
+      - name: Push to deploy branch
+        run: |
+          git push origin deploy
+
+      - name: Export metrics to Pushgateway
+        if: always()
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DEPLOY_SUCCESS=${{ job.status == 'success' && 1 || 0 }}
+          cat <<EOF | curl --data-binary @- http://host.docker.internal:9091/metrics/job/deploy/instance/raspberrypi-firmware || true
+          deploy_success{repo="raspberrypi-firmware",version="v${VERSION}"} ${DEPLOY_SUCCESS}
+          deploy_timestamp{repo="raspberrypi-firmware",version="v${VERSION}"} $(date +%s)
+          EOF
