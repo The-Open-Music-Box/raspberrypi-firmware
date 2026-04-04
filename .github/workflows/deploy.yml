@@ -117,15 +117,10 @@ jobs:
           mkdir -p tomb/app/static
 
           # Copy backend files (excluding dev files)
-          rsync -a \
-            --exclude='__pycache__' \
-            --exclude='*.pyc' \
-            --exclude='logs' \
-            --exclude='app.db' \
-            --exclude='venv' \
-            --exclude='.pytest_cache' \
-            --exclude='tests' \
-            back/app/ tomb/app/
+          cp -r back/app/* tomb/app/
+          find tomb/app -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+          find tomb/app -name '*.pyc' -delete 2>/dev/null || true
+          rm -rf tomb/app/logs tomb/app/app.db tomb/app/venv tomb/app/.pytest_cache tomb/app/tests 2>/dev/null || true
 
           # Create flattened requirements.txt
           awk -v src_dir="back/requirements" '
