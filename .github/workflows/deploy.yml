@@ -192,7 +192,8 @@ jobs:
           COMMIT_SHA="${{ github.sha }}"
           SHORT_SHA=$(echo "$COMMIT_SHA" | cut -c1-7)
 
-          # Switch to deploy branch (clean checkout)
+          # Clean untracked files (node_modules, build artifacts) before switching branch
+          git clean -fd
           git fetch origin deploy
           git checkout deploy
 
