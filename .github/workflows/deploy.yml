@@ -40,6 +40,9 @@ jobs:
           submodules: recursive
           token: ${{ secrets.SUBMODULE_TOKEN }}
 
+      - name: Create .env from template
+        run: cp back/.env.example back/.env
+
       - name: Set up Python virtual environment
         run: |
           cd back
