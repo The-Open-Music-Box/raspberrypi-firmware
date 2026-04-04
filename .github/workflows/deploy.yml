@@ -192,10 +192,9 @@ jobs:
           COMMIT_SHA="${{ github.sha }}"
           SHORT_SHA=$(echo "$COMMIT_SHA" | cut -c1-7)
 
-          # Clean all untracked and ignored files (node_modules, build artifacts) before switching branch
-          git clean -fdx
+          # Force checkout to deploy branch (overrides node_modules and build artifacts)
           git fetch origin deploy
-          git checkout deploy
+          git checkout -f deploy
 
           # Create releases directory for this version
           mkdir -p releases/$VERSION
