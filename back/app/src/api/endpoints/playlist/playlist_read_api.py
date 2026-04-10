@@ -12,6 +12,7 @@ import logging
 
 from fastapi import APIRouter, Query
 
+from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
 from app.src.services.serialization.unified_serialization_service import (
@@ -21,11 +22,12 @@ from app.src.services.serialization.unified_serialization_service import (
 logger = logging.getLogger(__name__)
 
 
-class PlaylistReadAPI:
+class PlaylistReadAPI(BaseAPIRoutes):
     """
     Handles read-only playlist operations.
 
     Single Responsibility: HTTP GET operations for playlists.
+    Inherits common API functionality from BaseAPIRoutes.
 
     Architecture: Registers routes directly on parent router (no composition).
     """
@@ -37,6 +39,10 @@ class PlaylistReadAPI:
             playlist_service: Application service for playlist operations
             router: Parent FastAPI router to register routes on
         """
+        super().__init__(
+            router=router,
+            playlist_service=playlist_service
+        )
         self._playlist_service = playlist_service
         self._register_routes(router)
 
@@ -89,20 +95,12 @@ class PlaylistReadAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in list_playlists: {e!s}",
-                    extra={
-                        "operation": "list_playlists",
-                        "page": page,
-                        "limit": limit,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to retrieve playlists", operation="list_playlists"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="list_playlists",
+                    message="Failed to retrieve playlists",
+                    page=page,
+                    limit=limit
                 )
 
         # Register the same handler for both with and without trailing slash
@@ -154,17 +152,9 @@ class PlaylistReadAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in get_playlist: {e!s}",
-                    extra={
-                        "operation": "get_playlist",
-                        "playlist_id": playlist_id,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to retrieve playlist", operation="get_playlist"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="get_playlist",
+                    message="Failed to retrieve playlist",
+                    playlist_id=playlist_id
                 )
