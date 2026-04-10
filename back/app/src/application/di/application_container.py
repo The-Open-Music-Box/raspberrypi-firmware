@@ -20,8 +20,6 @@ from app.src.application.services.nfc_application_service import NfcApplicationS
 from app.src.application.services.upload_application_service import (
     UploadApplicationService,
 )
-from app.src.domain.audio.engine.state_manager import StateManager
-
 # Direct imports - no more dynamic imports
 from app.src.infrastructure.di.container import (
     get_container as get_infrastructure_container,
@@ -127,7 +125,6 @@ def register_application_services(container: ApplicationContainer) -> None:
         return AudioApplicationService(
             audio_domain_container=audio_domain_container,
             playlist_application_service=playlist_service,
-            state_manager=StateManager(),
         )
     container.register_factory("audio_application_service", audio_application_service_factory)
 

@@ -25,13 +25,12 @@ class AudioApplicationService:
     audio use cases following DDD principles.
     """
 
-    def __init__(self, audio_domain_container, playlist_application_service, state_manager=None):
+    def __init__(self, audio_domain_container, playlist_application_service):
         """Initialize audio application service.
 
         Args:
             audio_domain_container: Domain audio container (required)
             playlist_application_service: Playlist application service (required)
-            state_manager: State management service
         """
         if audio_domain_container is None:
             raise ValueError("Audio domain container is required for application service")
@@ -39,7 +38,6 @@ class AudioApplicationService:
             raise ValueError("Playlist application service is required for audio service")
         self._audio_container = audio_domain_container
         self._playlist_service = playlist_application_service
-        self._state_manager = state_manager
 
     async def play_playlist_use_case(self, playlist_id: str) -> dict[str, Any]:
         """Use case: Start playing a playlist.
@@ -90,9 +88,6 @@ class AudioApplicationService:
             success = await audio_engine.set_playlist(playlist)
             if success:
                 logger.info(f"✅ Playing playlist via domain audio engine: {playlist_id}")
-                # Broadcast state change if state manager available
-                if self._state_manager:
-                    await self._state_manager.broadcast_playlist_started(playlist_id)
                 return {
                     "status": "success",
                     "message": "Playlist started successfully",
@@ -141,9 +136,6 @@ class AudioApplicationService:
                 }
             if success:
                 logger.info(f"✅ Playback control via domain engine: {action}")
-                # Broadcast state change if state manager available
-                if self._state_manager:
-                    await self._state_manager.broadcast_playback_changed(action)
                 return {
                     "status": "success",
                     "message": f"Playback {action} executed successfully",
@@ -206,11 +198,6 @@ class AudioApplicationService:
 
                 if success:
                     logger.info(f"✅ Volume set via domain engine: {volume}")
-
-                    # Broadcast state change if state manager available
-                    if self._state_manager:
-                        await self._state_manager.broadcast_volume_changed(volume)
-
                     return {
                         "status": "success",
                         "message": f"Volume set to {volume}",
