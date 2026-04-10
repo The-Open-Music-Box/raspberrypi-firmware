@@ -207,12 +207,22 @@ class TestDomainLayerPurity:
             "json",  # For serialization
             "re",    # For validation
             "time",  # For timing
-            "os",    # Basic OS operations
             "sys",   # System info
             "app.src.domain",  # Own domain modules
             "app.src.monitoring",  # Logging is acceptable
             "pygame",  # Audio library for domain audio backends
             "mutagen"  # Audio metadata library for domain audio backends
+        ]
+
+        # Explicitly forbidden standard library modules in domain layer.
+        # These are caught by the stdlib fallback check, so we must deny them explicitly.
+        # Domain code should not perform filesystem or OS-level operations directly.
+        forbidden_stdlib = [
+            "os",      # Filesystem/OS operations belong in infrastructure
+            "shutil",  # File copy/move operations belong in infrastructure
+            "subprocess",  # Process management belongs in infrastructure
+            "socket",  # Network operations belong in infrastructure
+            "glob",    # Filesystem globbing belongs in infrastructure
         ]
 
         for file_path in domain_files:
@@ -225,6 +235,17 @@ class TestDomainLayerPurity:
 
                 # Skip imports that are None (relative imports without module)
                 if import_line is None:
+                    continue
+
+                # Check if import is explicitly forbidden (even if stdlib)
+                is_forbidden = False
+                for forbidden in forbidden_stdlib:
+                    if import_line == forbidden or import_line.startswith(forbidden + "."):
+                        is_forbidden = True
+                        break
+
+                if is_forbidden:
+                    violations.append(f"🚨 Domain → Forbidden stdlib: {file_path} imports {import_line}")
                     continue
 
                 # Check if import is allowed
@@ -272,10 +293,19 @@ class TestDomainLayerPurity:
                 if not is_allowed:
                     violations.append(f"🚨 Domain → External Library: {file_path} imports {import_line}")
 
-        # Only fail if there are significant violations (more than reasonable internal domain imports)
-        # Most violations we're seeing are internal domain module references that the parser
-        # is treating as external. This allows for reasonable internal domain structure.
-        if len(violations) > 80:
+        # Threshold for maximum tolerated violations.
+        # Known violations (as of 2026-04-10): 63 total
+        #   - 56 are false positives from internal domain relative imports
+        #     (e.g., __init__.py re-exports like 'audio_events', 'entities.nfc_tag')
+        #     that the AST parser treats as external modules.
+        #   - 7 are real forbidden stdlib imports pending infrastructure leak refactoring:
+        #     * factory.py imports os
+        #     * wm8960_audio_backend.py imports os, subprocess
+        #     * macos_audio_backend.py imports os
+        #     * track_service.py imports os
+        #     * playlist_service.py imports shutil (x2)
+        # Threshold set to current known count (63) + 5 margin for minor churn.
+        if len(violations) > 68:
             pytest.fail(f"""
             ❌ DOMAIN LAYER EXTERNAL DEPENDENCIES!
 
