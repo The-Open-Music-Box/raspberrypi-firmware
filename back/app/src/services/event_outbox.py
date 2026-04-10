@@ -106,14 +106,28 @@ class EventOutbox:
 
         # Process each event
         for event in events_to_process:
-            await self._emit_event(event)
-            logger.debug(f"Successfully emitted event {event.event_id}")
+            try:
+                await self._emit_event(event)
+                logger.debug(f"Successfully emitted event {event.event_id}")
+            except Exception as e:
+                event.retry_count += 1
+                if event.retry_count < self._max_retry_count:
+                    retry_events.append(event)
+                    logger.warning(
+                        f"Failed to emit event {event.event_id} "
+                        f"(attempt {event.retry_count}/{self._max_retry_count}): {e}"
+                    )
+                else:
+                    logger.error(
+                        f"Permanently failed to emit event {event.event_id} "
+                        f"after {self._max_retry_count} attempts: {e}"
+                    )
+
         # Re-add retry events
         if retry_events:
             async with self._outbox_lock:
                 self._outbox = retry_events + self._outbox
 
-    @handle_service_errors("event_outbox")
     async def _emit_event(self, event: OutboxEvent) -> None:
         """Emit a single event via Socket.IO."""
         if not self.socketio:
