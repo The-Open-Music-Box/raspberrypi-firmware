@@ -16,6 +16,8 @@
     "test:unit:coverage": "vitest run --coverage",
     "test:integration": "vitest run src/tests/integration",
     "test:contracts": "vitest run src/tests/contracts",
+    "test:contracts:validate": "node test_validator.js",
+    "validate:config": "node validate-config.js",
     "fix:unit-tests": "node scripts/repair-unit-tests.js"
   },
   "dependencies": {
