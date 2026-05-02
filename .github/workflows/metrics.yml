@@ -172,29 +172,65 @@ jobs:
             && echo "Metrics exported successfully" \
             || echo "Warning: Pushgateway unavailable"
           # === Build Metrics ===
+          # HELP ci_build_success Build success status (1=success, 0=failure)
+          # TYPE ci_build_success gauge
           ci_build_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${BUILD_SUCCESS}
+          # HELP ci_build_duration_seconds Build duration in seconds
+          # TYPE ci_build_duration_seconds gauge
           ci_build_duration_seconds{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.build.outputs.duration || 0 }}
+          # HELP ci_build_timestamp Unix timestamp of the build
+          # TYPE ci_build_timestamp gauge
           ci_build_timestamp{repo="raspberrypi-firmware",branch="${BRANCH}"} ${TIMESTAMP}
 
           # === Test Metrics ===
+          # HELP ci_tests_total Total number of tests
+          # TYPE ci_tests_total gauge
           ci_tests_total{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_total || 0 }}
+          # HELP ci_tests_passed Number of tests passed
+          # TYPE ci_tests_passed gauge
           ci_tests_passed{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_passed || 0 }}
+          # HELP ci_tests_failed Number of tests failed
+          # TYPE ci_tests_failed gauge
           ci_tests_failed{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_failed || 0 }}
+          # HELP ci_tests_success Test success status (1=success, 0=failure)
+          # TYPE ci_tests_success gauge
           ci_tests_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${BACKEND_SUCCESS}
+          # HELP ci_frontend_tests_success Frontend test success status (1=success, 0=failure)
+          # TYPE ci_frontend_tests_success gauge
           ci_frontend_tests_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${FRONTEND_SUCCESS}
+          # HELP ci_coverage_percent Test coverage percentage
+          # TYPE ci_coverage_percent gauge
           ci_coverage_percent{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.coverage || 0 }}
 
           # === Code Quality Metrics ===
+          # HELP ci_mypy_errors Number of mypy type errors
+          # TYPE ci_mypy_errors gauge
           ci_mypy_errors{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.mypy_errors || 0 }}
+          # HELP ci_bandit_issues Number of bandit security issues
+          # TYPE ci_bandit_issues gauge
           ci_bandit_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.bandit_issues || 0 }}
+          # HELP ci_ruff_issues Number of ruff lint issues
+          # TYPE ci_ruff_issues gauge
           ci_ruff_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.ruff_issues || 0 }}
 
           # === Code Size Metrics ===
+          # HELP ci_backend_files Number of backend source files
+          # TYPE ci_backend_files gauge
           ci_backend_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.backend_files || 0 }}
+          # HELP ci_backend_lines Number of backend source lines
+          # TYPE ci_backend_lines gauge
           ci_backend_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.backend_lines || 0 }}
+          # HELP ci_frontend_files Number of frontend source files
+          # TYPE ci_frontend_files gauge
           ci_frontend_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.frontend_files || 0 }}
+          # HELP ci_frontend_lines Number of frontend source lines
+          # TYPE ci_frontend_lines gauge
           ci_frontend_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.frontend_lines || 0 }}
+          # HELP ci_test_files Number of test files
+          # TYPE ci_test_files gauge
           ci_test_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.test_files || 0 }}
+          # HELP ci_test_lines Number of test source lines
+          # TYPE ci_test_lines gauge
           ci_test_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.test_lines || 0 }}
           EOF
 
