@@ -237,6 +237,10 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           DEPLOY_SUCCESS=${{ job.status == 'success' && 1 || 0 }}
           cat <<EOF | curl --data-binary @- http://host.docker.internal:9091/metrics/job/deploy/instance/raspberrypi-firmware || true
+          # HELP deploy_success Whether the latest deployment succeeded (1=success, 0=failure)
+          # TYPE deploy_success gauge
           deploy_success{repo="raspberrypi-firmware",version="v${VERSION}"} ${DEPLOY_SUCCESS}
+          # HELP deploy_timestamp Unix timestamp of the latest deployment
+          # TYPE deploy_timestamp gauge
           deploy_timestamp{repo="raspberrypi-firmware",version="v${VERSION}"} $(date +%s)
           EOF

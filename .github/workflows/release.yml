@@ -255,6 +255,10 @@ jobs:
         run: |
           RELEASE_SUCCESS=${{ job.status == 'success' && 1 || 0 }}
           cat <<EOF | curl --data-binary @- http://host.docker.internal:9091/metrics/job/release/instance/raspberrypi-firmware || true
+          # HELP release_success Whether the latest release succeeded (1=success, 0=failure)
+          # TYPE release_success gauge
           release_success{repo="raspberrypi-firmware",version="v${{ inputs.version }}"} ${RELEASE_SUCCESS}
+          # HELP release_timestamp Unix timestamp of the latest release
+          # TYPE release_timestamp gauge
           release_timestamp{repo="raspberrypi-firmware",version="v${{ inputs.version }}"} $(date +%s)
           EOF
