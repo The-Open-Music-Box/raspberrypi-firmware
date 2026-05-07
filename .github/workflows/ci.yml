@@ -21,7 +21,6 @@ permissions:
   contents: read
 
 env:
-  PUSHGATEWAY_URL: http://host.docker.internal:9091
   USE_MOCK_HARDWARE: "true"
   ENVIRONMENT: test
 
