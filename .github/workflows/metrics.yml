@@ -27,8 +27,54 @@ jobs:
       - name: Checkout code
         # actions/checkout@v4.2.2
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
 
-      # === Backend Tests and Metrics ===
+      - name: Install gitleaks / tokei / jscpd / lizard (rootless, idempotent)
+        run: |
+          set +e
+          mkdir -p "$HOME/.local/bin"
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+          # gitleaks — single-binary release tarball (linux arm64)
+          if ! command -v gitleaks >/dev/null 2>&1; then
+            GITLEAKS_VERSION="8.21.2"
+            ARCH="arm64"
+            URL="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz"
+            curl -sSL "$URL" | tar -xz -C "$HOME/.local/bin" gitleaks 2>&1 | tail -3
+            chmod +x "$HOME/.local/bin/gitleaks" 2>/dev/null
+          fi
+
+          # tokei — prefer prebuilt arm64 binary; cargo install requires Rust toolchain
+          if ! command -v tokei >/dev/null 2>&1; then
+            TOKEI_VERSION="12.1.2"
+            URL="https://github.com/XAMPPRocky/tokei/releases/download/v${TOKEI_VERSION}/tokei-aarch64-unknown-linux-gnu.tar.gz"
+            curl -sSL "$URL" | tar -xz -C "$HOME/.local/bin" tokei 2>&1 | tail -3
+            chmod +x "$HOME/.local/bin/tokei" 2>/dev/null
+          fi
+
+          # jscpd — Node tool, rootless install (cf. feedback_self_hosted_runner_yarn.md)
+          if ! command -v jscpd >/dev/null 2>&1; then
+            npm install --global --prefix="$HOME/.local" jscpd@4 2>&1 | tail -5
+          fi
+
+          # lizard — Python tool, supports many languages incl. Python/JS/TS
+          if ! command -v lizard >/dev/null 2>&1; then
+            python3 -m pip install --user --quiet lizard 2>&1 | tail -5
+          fi
+
+          echo "gitleaks: $(command -v gitleaks || echo 'NOT INSTALLED')"
+          echo "tokei:    $(command -v tokei    || echo 'NOT INSTALLED')"
+          echo "jscpd:    $(command -v jscpd    || echo 'NOT INSTALLED')"
+          echo "lizard:   $(command -v lizard   || echo 'NOT INSTALLED')"
+          exit 0
+
+      # ----------------------------------------------------------------------
+      # Backend (Python) — venv + dependencies for both build-context tests
+      # and the collect-python-metrics composite (pytest --cov --cov-branch).
+      # ----------------------------------------------------------------------
+
       - name: Set up Python virtual environment
         run: |
           cd back
@@ -46,56 +92,37 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-test.txt
 
-      - name: Run backend tests with coverage
+      # ----------------------------------------------------------------------
+      # Build-context metrics (NOT covered by composites): captured locally.
+      #   - ci_build_success / ci_build_duration_seconds / ci_build_timestamp
+      #   - ci_tests_total / ci_tests_passed / ci_tests_failed / ci_tests_success
+      #   - ci_frontend_tests_success
+      #   - ci_backend_files / ci_backend_lines / ci_frontend_files / ci_frontend_lines
+      #     (stack-split LOC — collect-codebase-stats only emits a single repo-wide
+      #     ci_source_lines / ci_source_files)
+      #   - ci_test_files / ci_test_lines
+      # ----------------------------------------------------------------------
+
+      - name: Run backend tests (capture pass/fail + success)
         id: backend-tests
         run: |
           cd back
           source venv/bin/activate
+          mkdir -p /tmp/metrics
           if pytest tests/ -v \
-            --cov=app \
-            --cov-report=json:coverage.json \
-            --cov-report=term-missing \
-            --junitxml=test-results.xml 2>&1 | tee /tmp/test_output.txt; then
+            --junitxml=test-results.xml 2>&1 | tee /tmp/metrics/test_output.txt; then
             echo "success=1" >> $GITHUB_OUTPUT
           else
             echo "success=0" >> $GITHUB_OUTPUT
           fi
 
-          # Parse test results
-          TESTS_TOTAL=$(grep -oE 'collected [0-9]+' /tmp/test_output.txt | grep -oE '[0-9]+' || echo "0")
-          TESTS_PASSED=$(grep -oE '[0-9]+ passed' /tmp/test_output.txt | grep -oE '[0-9]+' || echo "0")
-          TESTS_FAILED=$(grep -oE '[0-9]+ failed' /tmp/test_output.txt | grep -oE '[0-9]+' || echo "0")
-          echo "tests_total=$TESTS_TOTAL" >> $GITHUB_OUTPUT
+          TESTS_TOTAL=$(grep -oE 'collected [0-9]+' /tmp/metrics/test_output.txt | grep -oE '[0-9]+' | head -1 || echo "0")
+          TESTS_PASSED=$(grep -oE '[0-9]+ passed' /tmp/metrics/test_output.txt | grep -oE '[0-9]+' | awk '{s+=$1} END {print s+0}')
+          TESTS_FAILED=$(grep -oE '[0-9]+ failed' /tmp/metrics/test_output.txt | grep -oE '[0-9]+' | awk '{s+=$1} END {print s+0}')
+          echo "tests_total=$TESTS_TOTAL"   >> $GITHUB_OUTPUT
           echo "tests_passed=$TESTS_PASSED" >> $GITHUB_OUTPUT
           echo "tests_failed=$TESTS_FAILED" >> $GITHUB_OUTPUT
 
-          # Parse coverage
-          if [ -f coverage.json ]; then
-            COVERAGE=$(python3 -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])" 2>/dev/null || echo "0")
-            echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
-          else
-            echo "coverage=0" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Collect code quality metrics
-        id: quality
-        run: |
-          cd back
-          source venv/bin/activate
-
-          # Type errors (mypy)
-          MYPY_ERRORS=$(mypy app/src --no-error-summary 2>&1 | grep -c "error:" || echo "0")
-          echo "mypy_errors=$MYPY_ERRORS" >> $GITHUB_OUTPUT
-
-          # Security issues (bandit)
-          BANDIT_ISSUES=$(bandit -r app/src -f json 2>/dev/null | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data.get('results', [])))" || echo "0")
-          echo "bandit_issues=$BANDIT_ISSUES" >> $GITHUB_OUTPUT
-
-          # Lint issues (ruff)
-          RUFF_ISSUES=$(ruff check app/src --output-format=json 2>/dev/null | python3 -c "import sys, json; print(len(json.load(sys.stdin)))" || echo "0")
-          echo "ruff_issues=$RUFF_ISSUES" >> $GITHUB_OUTPUT
-
-      # === Frontend Tests and Metrics ===
       - name: Set up Node.js
         # actions/setup-node@v4.3.0
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -109,7 +136,7 @@ jobs:
           cd front
           npm ci
 
-      - name: Run frontend tests
+      - name: Run frontend tests (capture success)
         id: frontend-tests
         run: |
           cd front
@@ -119,7 +146,7 @@ jobs:
             echo "success=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build frontend
+      - name: Build frontend (capture duration + success)
         id: build
         run: |
           cd front
@@ -132,112 +159,157 @@ jobs:
           END_TIME=$(date +%s)
           echo "duration=$((END_TIME - START_TIME))" >> $GITHUB_OUTPUT
 
-      # === Collect Code Metrics ===
-      - name: Count source files and lines
+      - name: Count stack-split source files and lines
         id: stats
         run: |
-          # Backend
+          # Backend Python LOC
           BACKEND_FILES=$(find back/app -name "*.py" 2>/dev/null | wc -l | tr -d ' ')
           BACKEND_LINES=$(find back/app -name "*.py" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
 
-          # Frontend
-          FRONTEND_FILES=$(find front/src -name "*.vue" -o -name "*.ts" -o -name "*.js" 2>/dev/null | wc -l | tr -d ' ')
-          FRONTEND_LINES=$(find front/src -name "*.vue" -o -name "*.ts" -o -name "*.js" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+          # Frontend Vue/TS/JS LOC
+          FRONTEND_FILES=$(find front/src \( -name "*.vue" -o -name "*.ts" -o -name "*.js" \) 2>/dev/null | wc -l | tr -d ' ')
+          FRONTEND_LINES=$(find front/src \( -name "*.vue" -o -name "*.ts" -o -name "*.js" \) 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
 
           # Tests
-          TEST_FILES=$(find back/tests front/tests -name "*.py" -o -name "*.spec.ts" 2>/dev/null | wc -l | tr -d ' ')
-          TEST_LINES=$(find back/tests front/tests -name "*.py" -o -name "*.spec.ts" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+          TEST_FILES=$(find back/tests front/src/tests -type f \( -name "*.py" -o -name "*.spec.ts" -o -name "*.test.ts" \) 2>/dev/null | wc -l | tr -d ' ')
+          TEST_LINES=$(find back/tests front/src/tests -type f \( -name "*.py" -o -name "*.spec.ts" -o -name "*.test.ts" \) 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
 
-          echo "backend_files=$BACKEND_FILES" >> $GITHUB_OUTPUT
-          echo "backend_lines=$BACKEND_LINES" >> $GITHUB_OUTPUT
+          echo "backend_files=$BACKEND_FILES"   >> $GITHUB_OUTPUT
+          echo "backend_lines=$BACKEND_LINES"   >> $GITHUB_OUTPUT
           echo "frontend_files=$FRONTEND_FILES" >> $GITHUB_OUTPUT
           echo "frontend_lines=$FRONTEND_LINES" >> $GITHUB_OUTPUT
-          echo "test_files=$TEST_FILES" >> $GITHUB_OUTPUT
-          echo "test_lines=$TEST_LINES" >> $GITHUB_OUTPUT
+          echo "test_files=$TEST_FILES"         >> $GITHUB_OUTPUT
+          echo "test_lines=$TEST_LINES"         >> $GITHUB_OUTPUT
 
-      # === Export All Metrics to Pushgateway ===
-      - name: Export comprehensive metrics
+      # ----------------------------------------------------------------------
+      # Phase C composites: python quality, node quality, secrets, codebase stats.
+      # All emit canonical metric names (ci_lint_issues, ci_security_issues,
+      # ci_type_errors, ci_coverage_percent, ci_deps_outdated) with no `tool` label.
+      # ----------------------------------------------------------------------
+
+      - name: Collect Python metrics (lint / security / type / coverage / deps)
+        id: python-metrics
+        if: always()
+        uses: The-Open-Music-Box/infrastructure/.github/actions/collect-python-metrics@develop
+        with:
+          repo: raspberrypi-firmware
+          working_directory: back
+          source_paths: app/src
+          # pytest.ini already configures --cov=app + json report; we add xml + branch
+          # so the composite can pick up line/branch coverage without overriding the
+          # repo's existing configuration.
+          test_command: 'pytest --cov=app --cov-branch --cov-report=xml --cov-report=json:coverage.json --cov-report=term tests/'
+
+      - name: Collect Node metrics (Vue frontend — lint / security / type / coverage / deps)
+        id: node-metrics
+        if: always()
+        uses: The-Open-Music-Box/infrastructure/.github/actions/collect-node-metrics@develop
+        with:
+          repo: raspberrypi-firmware
+          working_directory: front
+          # Frontend uses vue-cli-service lint; keep the composite's eslint default
+          # because the repo declares an .eslintrc.js the local eslint can read.
+          # Frontend uses vitest (not jest); override test_command to emit cobertura
+          # + json-summary into ./coverage/ so the composite parses coverage.
+          test_command: 'npx --no-install vitest run --coverage --coverage.reporter=cobertura --coverage.reporter=json-summary --coverage.reporter=text'
+
+      - name: Collect Secrets metrics (gitleaks)
+        id: secrets-metrics
+        if: always()
+        uses: The-Open-Music-Box/infrastructure/.github/actions/collect-secrets-metrics@develop
+        with:
+          repo: raspberrypi-firmware
+
+      - name: Collect Codebase stats (tokei / jscpd / lizard / todos)
+        id: codebase-stats
+        if: always()
+        uses: The-Open-Music-Box/infrastructure/.github/actions/collect-codebase-stats@develop
+        with:
+          repo: raspberrypi-firmware
+
+      # ----------------------------------------------------------------------
+      # Build-context metrics block (locally produced — composites don't cover
+      # build success/duration/timestamp/test counts/stack-split LOC).
+      # ----------------------------------------------------------------------
+
+      - name: Build build-context metrics block
+        id: build-context
         if: always()
         run: |
-          TIMESTAMP=$(date +%s)
-          BRANCH="${{ github.ref_name }}"
-
           BACKEND_SUCCESS=${{ steps.backend-tests.outputs.success || 0 }}
           FRONTEND_SUCCESS=${{ steps.frontend-tests.outputs.success || 0 }}
           BUILD_SUCCESS=${{ steps.build.outputs.success || 0 }}
+          BUILD_TS=$(date +%s)
+          LABEL='repo="raspberrypi-firmware",branch="${{ github.ref_name }}"'
 
-          cat <<EOF | curl --fail --silent --show-error \
-            --data-binary @- \
-            "${PUSHGATEWAY_URL}/metrics/job/ci_merge/instance/raspberrypi-firmware" \
-            && echo "Metrics exported successfully" \
-            || echo "Warning: Pushgateway unavailable"
-          # === Build Metrics ===
+          {
+            echo "metrics_block<<METRICS_EOF"
+            cat <<EOF
           # HELP ci_build_success Build success status (1=success, 0=failure)
           # TYPE ci_build_success gauge
-          ci_build_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${BUILD_SUCCESS}
-          # HELP ci_build_duration_seconds Build duration in seconds
+          ci_build_success{${LABEL}} ${BUILD_SUCCESS}
+          # HELP ci_build_duration_seconds Build duration in seconds (frontend npm run build)
           # TYPE ci_build_duration_seconds gauge
-          ci_build_duration_seconds{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.build.outputs.duration || 0 }}
-          # HELP ci_build_timestamp Unix timestamp of the build
+          ci_build_duration_seconds{${LABEL}} ${{ steps.build.outputs.duration || 0 }}
+          # HELP ci_build_timestamp Unix timestamp when the build-context block was emitted
           # TYPE ci_build_timestamp gauge
-          ci_build_timestamp{repo="raspberrypi-firmware",branch="${BRANCH}"} ${TIMESTAMP}
-
-          # === Test Metrics ===
-          # HELP ci_tests_total Total number of tests
+          ci_build_timestamp{${LABEL}} ${BUILD_TS}
+          # HELP ci_tests_total Total tests collected (backend pytest)
           # TYPE ci_tests_total gauge
-          ci_tests_total{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_total || 0 }}
-          # HELP ci_tests_passed Number of tests passed
+          ci_tests_total{${LABEL}} ${{ steps.backend-tests.outputs.tests_total || 0 }}
+          # HELP ci_tests_passed Number of backend tests passed
           # TYPE ci_tests_passed gauge
-          ci_tests_passed{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_passed || 0 }}
-          # HELP ci_tests_failed Number of tests failed
+          ci_tests_passed{${LABEL}} ${{ steps.backend-tests.outputs.tests_passed || 0 }}
+          # HELP ci_tests_failed Number of backend tests failed
           # TYPE ci_tests_failed gauge
-          ci_tests_failed{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.tests_failed || 0 }}
-          # HELP ci_tests_success Test success status (1=success, 0=failure)
+          ci_tests_failed{${LABEL}} ${{ steps.backend-tests.outputs.tests_failed || 0 }}
+          # HELP ci_tests_success Backend test success status (1=success, 0=failure)
           # TYPE ci_tests_success gauge
-          ci_tests_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${BACKEND_SUCCESS}
+          ci_tests_success{${LABEL}} ${BACKEND_SUCCESS}
           # HELP ci_frontend_tests_success Frontend test success status (1=success, 0=failure)
           # TYPE ci_frontend_tests_success gauge
-          ci_frontend_tests_success{repo="raspberrypi-firmware",branch="${BRANCH}"} ${FRONTEND_SUCCESS}
-          # HELP ci_coverage_percent Test coverage percentage
-          # TYPE ci_coverage_percent gauge
-          ci_coverage_percent{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.backend-tests.outputs.coverage || 0 }}
-
-          # === Code Quality Metrics ===
-          # HELP ci_mypy_errors Number of mypy type errors
-          # TYPE ci_mypy_errors gauge
-          ci_mypy_errors{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.mypy_errors || 0 }}
-          # HELP ci_bandit_issues Number of bandit security issues
-          # TYPE ci_bandit_issues gauge
-          ci_bandit_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.bandit_issues || 0 }}
-          # HELP ci_ruff_issues Number of ruff lint issues
-          # TYPE ci_ruff_issues gauge
-          ci_ruff_issues{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.quality.outputs.ruff_issues || 0 }}
-
-          # === Code Size Metrics ===
-          # HELP ci_backend_files Number of backend source files
+          ci_frontend_tests_success{${LABEL}} ${FRONTEND_SUCCESS}
+          # HELP ci_backend_files Number of backend Python source files (stack-split)
           # TYPE ci_backend_files gauge
-          ci_backend_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.backend_files || 0 }}
-          # HELP ci_backend_lines Number of backend source lines
+          ci_backend_files{${LABEL}} ${{ steps.stats.outputs.backend_files || 0 }}
+          # HELP ci_backend_lines Number of backend Python source lines (stack-split)
           # TYPE ci_backend_lines gauge
-          ci_backend_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.backend_lines || 0 }}
-          # HELP ci_frontend_files Number of frontend source files
+          ci_backend_lines{${LABEL}} ${{ steps.stats.outputs.backend_lines || 0 }}
+          # HELP ci_frontend_files Number of frontend Vue/TS/JS source files (stack-split)
           # TYPE ci_frontend_files gauge
-          ci_frontend_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.frontend_files || 0 }}
-          # HELP ci_frontend_lines Number of frontend source lines
+          ci_frontend_files{${LABEL}} ${{ steps.stats.outputs.frontend_files || 0 }}
+          # HELP ci_frontend_lines Number of frontend Vue/TS/JS source lines (stack-split)
           # TYPE ci_frontend_lines gauge
-          ci_frontend_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.frontend_lines || 0 }}
+          ci_frontend_lines{${LABEL}} ${{ steps.stats.outputs.frontend_lines || 0 }}
           # HELP ci_test_files Number of test files
           # TYPE ci_test_files gauge
-          ci_test_files{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.test_files || 0 }}
+          ci_test_files{${LABEL}} ${{ steps.stats.outputs.test_files || 0 }}
           # HELP ci_test_lines Number of test source lines
           # TYPE ci_test_lines gauge
-          ci_test_lines{repo="raspberrypi-firmware",branch="${BRANCH}"} ${{ steps.stats.outputs.test_lines || 0 }}
+          ci_test_lines{${LABEL}} ${{ steps.stats.outputs.test_lines || 0 }}
           EOF
+            echo "METRICS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Push all metrics to Pushgateway
+        if: always()
+        uses: The-Open-Music-Box/infrastructure/.github/actions/push-metrics@develop
+        with:
+          job: ci_merge
+          instance: raspberrypi-firmware
+          metrics: |
+            ${{ steps.python-metrics.outputs.metrics_block }}
+            ${{ steps.node-metrics.outputs.metrics_block }}
+            ${{ steps.secrets-metrics.outputs.metrics_block }}
+            ${{ steps.codebase-stats.outputs.metrics_block }}
+            ${{ steps.build-context.outputs.metrics_block }}
 
       - name: Summary
         if: always()
         run: |
           echo "## Metrics Exported" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Phase C composites + canonical metric names (#inf40)." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Category | Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -246,7 +318,5 @@ jobs:
           echo "| Tests | Backend Success | ${{ steps.backend-tests.outputs.success || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | Frontend Success | ${{ steps.frontend-tests.outputs.success || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | Total | ${{ steps.backend-tests.outputs.tests_total || 0 }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | Coverage | ${{ steps.backend-tests.outputs.coverage || 0 }}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality | Type Errors | ${{ steps.quality.outputs.mypy_errors || 0 }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality | Security Issues | ${{ steps.quality.outputs.bandit_issues || 0 }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality | Lint Issues | ${{ steps.quality.outputs.ruff_issues || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| LOC | Backend lines | ${{ steps.stats.outputs.backend_lines || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| LOC | Frontend lines | ${{ steps.stats.outputs.frontend_lines || 0 }} |" >> $GITHUB_STEP_SUMMARY
