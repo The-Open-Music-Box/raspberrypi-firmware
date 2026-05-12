@@ -6,8 +6,7 @@
 name: Deploy
 
 on:
-  push:
-    branches: [develop]
+  # Repo deprecated: auto push trigger disabled (rpi-firmware#189). Manual only.
   workflow_dispatch:
     inputs:
       version_override:
