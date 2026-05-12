@@ -7,9 +7,9 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [develop]
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+  # Repo deprecated: auto-triggers disabled (rpi-firmware#189). ESP32 firmware
+  # is the active product. Re-enable only if RPI development resumes.
 
 # Cancel in-progress runs for the same branch
 concurrency:

@@ -1,13 +1,7 @@
 name: Contract Validation
 
 on:
-  push:
-    branches: [ develop, feat/*, fix/* ]
-  pull_request:
-    branches: [ develop ]
-  schedule:
-    # Run daily at 2 AM UTC to catch any drift
-    - cron: '0 2 * * *'
+  # Repo deprecated: auto-triggers disabled (rpi-firmware#189). Manual only.
   workflow_dispatch:  # Allow manual triggering from GitHub UI
 
 # Minimal permissions for security hardening
