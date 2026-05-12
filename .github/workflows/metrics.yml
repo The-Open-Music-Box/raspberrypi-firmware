@@ -1,8 +1,22 @@
-name: Export Metrics
+# DEPRECATED: This workflow is disabled because raspberrypi-firmware is the only
+# public repo in the org. GitHub Actions blocks public-workflow → private-action
+# resolution for security reasons (anti-fork-exfiltration). The composite actions
+# this workflow depends on live in the private The-Open-Music-Box/infrastructure
+# repo, so the workflow fails immediately with "Unable to resolve action".
+#
+# The RPI firmware is also deprecated (only ESP32 firmware is actively developed),
+# so the simplest fix is to stop pushing metrics for this repo entirely.
+#
+# Refs:
+# - The-Open-Music-Box/raspberrypi-firmware#187 (this change)
+# - The-Open-Music-Box/infrastructure#46 (root cause + options)
+#
+# To re-enable: trigger manually via Actions UI (workflow_dispatch) and ensure
+# either infrastructure is made public OR copy the composites into this repo.
+name: Export Metrics (disabled)
 
 on:
-  push:
-    branches: [develop]
+  workflow_dispatch:
 
 permissions:
   contents: read
