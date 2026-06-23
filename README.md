@@ -14,7 +14,7 @@
 > Cette version Raspberry Pi **reste fonctionnelle** et continuera de bénéficier d'un **support de maintenance**, mais elle ne fait plus l'objet de nouvelles fonctionnalités ou de mises à jour prioritaires.
 > Suivez l'évolution du projet sur notre [page Facebook](https://www.facebook.com/theopenmusicbox).
 
-[![License](https://img.shields.io/badge/License-Custom-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-latest-teal.svg)](https://fastapi.tiangolo.com/)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg)](https://vuejs.org/)
@@ -1045,14 +1045,7 @@ Ouvrez une [issue](https://github.com/yourusername/tomb-rpi/issues) en incluant:
 
 ## 📄 License
 
-Ce projet est open source avec les conditions suivantes:
-
-- ✅ **Usage libre**: Utilisation, copie, modification, distribution pour usage **non commercial**
-- ✅ **Contributions**: Ouvertes à tous via pull requests et issues
-- ⚠️ **Usage commercial réservé**: La monétisation (vente, services payants, intégration dans produits payants) est **réservée exclusivement à l'auteur original (Jonathan Piette)**
-- 💼 **Licence commerciale**: Contactez l'auteur pour options de licence commerciale
-
-Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce projet est distribué sous licence MIT — voir [LICENSE](LICENSE).
 
 ---
 
