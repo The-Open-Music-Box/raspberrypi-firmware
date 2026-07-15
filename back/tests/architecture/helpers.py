@@ -127,21 +127,26 @@ def get_layer_from_module(module_path: str) -> str:
 
     # Extract layer from path structure - check both patterns
     # For paths like "domain.audio.backends" or "/domain/"
-    if '/domain/' in normalized_path or normalized_path.startswith('domain/'):
+    # Each check handles three cases:
+    #   1. Layer appears mid-path: '/domain/' in path
+    #   2. Path starts with layer: path.startswith('domain/')
+    #   3. Path ends with layer (e.g. 'app/src/config' normalized from 'app.src.config'):
+    #      path.endswith('/domain') or path == 'domain'
+    if '/domain/' in normalized_path or normalized_path.startswith('domain/') or normalized_path.endswith('/domain') or normalized_path == 'domain':
         return 'domain'
-    elif '/application/' in normalized_path or normalized_path.startswith('application/'):
+    elif '/application/' in normalized_path or normalized_path.startswith('application/') or normalized_path.endswith('/application') or normalized_path == 'application':
         return 'application'
-    elif '/infrastructure/' in normalized_path or normalized_path.startswith('infrastructure/'):
+    elif '/infrastructure/' in normalized_path or normalized_path.startswith('infrastructure/') or normalized_path.endswith('/infrastructure') or normalized_path == 'infrastructure':
         return 'infrastructure'
-    elif '/routes/' in normalized_path or '/api/' in normalized_path or normalized_path.startswith('routes/') or normalized_path.startswith('api/'):
+    elif '/routes/' in normalized_path or '/api/' in normalized_path or normalized_path.startswith('routes/') or normalized_path.startswith('api/') or normalized_path.endswith('/routes') or normalized_path.endswith('/api') or normalized_path == 'routes' or normalized_path == 'api':
         return 'ui'
-    elif '/controllers/' in normalized_path or normalized_path.startswith('controllers/'):
+    elif '/controllers/' in normalized_path or normalized_path.startswith('controllers/') or normalized_path.endswith('/controllers') or normalized_path == 'controllers':
         return 'controllers'
-    elif '/services/' in normalized_path or normalized_path.startswith('services/'):
+    elif '/services/' in normalized_path or normalized_path.startswith('services/') or normalized_path.endswith('/services') or normalized_path == 'services':
         return 'services'
-    elif '/config/' in normalized_path or normalized_path.startswith('config/'):
+    elif '/config/' in normalized_path or normalized_path.startswith('config/') or normalized_path.endswith('/config') or normalized_path == 'config':
         return 'config'
-    elif '/monitoring/' in normalized_path or normalized_path.startswith('monitoring/'):
+    elif '/monitoring/' in normalized_path or normalized_path.startswith('monitoring/') or normalized_path.endswith('/monitoring') or normalized_path == 'monitoring':
         return 'monitoring'
     else:
         return 'unknown'
