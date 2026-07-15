@@ -39,6 +39,7 @@
 
 **🛠️ Installation**
 - [Matériel requis](#-matériel-requis)
+- [Fabriquer le boîtier](#-fabriquer-le-boîtier)
 - [Déploiement sur Raspberry Pi](#-déploiement-sur-raspberry-pi)
 
 **🔧 Aspects techniques**
@@ -128,23 +129,56 @@ Basé sur Raspberry Pi, ce projet open source combine hardware accessible et sof
 
 ## 🔌 Matériel requis
 
-### Composants essentiels
+### Bill of Materials complète
 
-| Composant | Modèle recommandé | Prix approximatif |
-|-----------|-------------------|-------------------|
-| **Ordinateur** | [Raspberry Pi 4 (1GB RAM)](https://www.raspberrystore.nl/PrestaShop/en/raspberry-pi-v4/226-raspberry-pi-4-model-b-1gb-765756931168.html) | ~40€ |
-| **Ordinateur** Alternative | [Zero W2](https://www.raspberrystore.nl/PrestaShop/en/raspberry-pi-zero-v1-en-v2/588-raspberry-pi-zero-2wh-5056561800011.html) | ~22€ |
-| **Carte audio** | [Waveshare WM8960 Audio HAT](https://www.amazon.fr/IBest-Waveshare-WM8960-Audio-Raspberry/dp/B07R8M3XFQ) | ~22€ |
-| **Lecteur NFC** | [PN532 NFC Module (I2C/SPI)](https://www.amazon.fr/communication-lecteur-Arduino-Raspberry-Smartphone/dp/B07YDG6X2V/) | ~10€ |
-| **Carte SD** | 32GB Class 10 | ~10€ |
-| **Alimentation** | 5V 3A USB-C (Pi 4) ou Micro-USB (Pi 3) | ~10€ |
+Tableau détaillé pour reproduire la version actuelle du prototype (montée sur RPi Zero 2 W). Les prix sont indicatifs (sourcing 05/2026), variables selon les revendeurs.
 
-### Composants optionnels
+#### Cerveau et audio
 
-- **Boutons GPIO**: Pour contrôles physiques (Play/Pause, Next, Prev)
-- **Encodeur rotatif**: Pour contrôle du volume
-- **Boîtier**: Pour protection et design
-- **Tags NFC**: NTAG213/215/216 ou Mifare Classic (basiquement nimporte quel tag NFC peut etre utilisé)
+| Composant | Quantité | Référence | Prix |
+|-----------|----------|-----------|------|
+| **Raspberry Pi Zero 2 W** | 1 | [Pi Zero 2 W](https://www.raspberrystore.nl/PrestaShop/en/raspberry-pi-zero-v1-en-v2/588-raspberry-pi-zero-2wh-5056561800011.html) (ou Pi 4 1GB pour plus de marge) | 22 € |
+| Carte microSD | 1 | 32 GB Class 10 / A1 | 8 € |
+| **Carte audio** | 1 | [Waveshare WM8960 Audio HAT](https://www.amazon.fr/IBest-Waveshare-WM8960-Audio-Raspberry/dp/B07R8M3XFQ) | 24 € |
+| Haut-parleurs | 2 | 4 Ω 3 W, full range | 6 € |
+
+#### NFC et contrôles
+
+| Composant | Quantité | Référence | Prix |
+|-----------|----------|-----------|------|
+| **Lecteur NFC** | 1 | [PN532 V3 module (SPI)](https://www.amazon.fr/communication-lecteur-Arduino-Raspberry-Smartphone/dp/B07YDG6X2V/) | 7 € |
+| Cartes NFC NTAG215 | 10+ | NTAG215 504-byte (Aliexpress par lot) | 8 € |
+| Boutons momentanés 12 mm | 4 | Avec LED interne (4 couleurs au choix) | 8 € |
+| Encodeur rotatif KY-040 | 1 | Avec poussoir intégré | 2 € |
+
+#### Alimentation
+
+| Composant | Quantité | Référence | Prix |
+|-----------|----------|-----------|------|
+| Adafruit PowerBoost 1000C | 1 | [Adafruit 2465](https://www.adafruit.com/product/2465) (charge LiPo + boost 5 V) | 22 € |
+| Batterie LiPo 3.7 V 2500 mAh | 1 | JST PH 2.0, [Adafruit 328](https://www.adafruit.com/product/328) ou Kubii | 14 € |
+| Interrupteur slider on/off | 1 | SS-12D00 ou équivalent | 1 € |
+
+#### Signalisation, câblage, fixations
+
+| Composant | Quantité | Référence | Prix |
+|-----------|----------|-----------|------|
+| LED RGB cathode commune | 1 | LED 5 mm RGB + 3× résistances 220 Ω | < 1 € |
+| Fils Dupont F/F et F/M | ~30 cm assortis | Kit standard | 3 € |
+| Vis M3 6/10 mm | 20 | Tête bombée | 2 € |
+| Inserts à chaud M3 | 12 | Pour fixation dans les pièces imprimées | 3 € |
+| Aimants néodyme 5×2 mm | 4 | Trappe arrière magnétique | 2 € |
+
+#### Fabrication
+
+| Élément | Source |
+|---------|--------|
+| Fichiers STL des pièces imprimées | [`hardware/3d-prints/`](hardware/3d-prints/) |
+| Plans découpe laser des panneaux | [`hardware/laser-cut/`](hardware/laser-cut/) |
+| Filament PLA | ~150 g par boîtier |
+| Panneau MDF 3 mm | A4 suffit pour les 4 faces |
+
+**Total composants : ~100 €** (hors imprimante 3D et découpeuse laser).
 
 ### Configuration GPIO détaillée
 
@@ -180,6 +214,30 @@ Le projet utilise les broches GPIO suivantes (numérotation BCM) :
 | Audio HAT | Tous les GPIO | WM8960 monte sur header GPIO |
 
 > **Note**: Les boutons BT0, BT2 et BT3 sont configurables et peuvent être assignés à différentes actions via le fichier de configuration `button_actions_config.py`. Par défaut, ils affichent des messages de debug.
+
+---
+
+## 🛠️ Fabriquer le boîtier
+
+Tous les fichiers nécessaires pour reproduire le boîtier sont dans le dossier [`hardware/`](hardware/) :
+
+- **[`hardware/3d-prints/`](hardware/3d-prints/)** : 10 fichiers STL (corps, façade, dessus, côtés, fond, etc.) avec README expliquant l'ordre d'assemblage et les paramètres d'impression recommandés (Prusa MK4, PLA, 0.2 mm).
+- **[`hardware/laser-cut/`](hardware/laser-cut/)** : plans des panneaux MDF 3 mm pour les 4 faces visibles (export DXF/SVG en cours, disponibles sur demande via une issue en attendant).
+
+**Récit complet de la genèse du boîtier**, des premiers échecs aux choix design actuels, dans le blog du projet :
+- 🎵 [Une musique de Chrono Trigger à une boîte à musique](https://theopenmusicbox.com/fr/blog/une-musique-de-chrono-trigger/)
+- 🎚️ [Faire évoluer le prototype](https://theopenmusicbox.com/fr/blog/faire-evoluer-le-prototype/)
+- 📦 [Rendre la boîte partageable](https://theopenmusicbox.com/fr/blog/rendre-la-boite-partageable/)
+
+### Ce qui n'est pas encore documenté
+
+Soyons honnête : ce n'est pas plug-and-play.
+
+- Le câblage interne est fait main, sans PCB dédié. Un fer à souder et l'aisance avec un pinout sont requis.
+- Le PN532 reste sensible à l'orientation des cartes NFC selon les conditions, prévoir quelques essais pour trouver l'angle qui fonctionne le mieux.
+- La documentation d'assemblage pas-à-pas n'est pas illustrée (à venir).
+
+Pour toute question ou aide à la fabrication, [ouvrez une issue](https://github.com/The-Open-Music-Box/raspberrypi-firmware/issues/new) — je réponds.
 
 ---
 
