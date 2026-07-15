@@ -67,7 +67,6 @@ class NfcApplicationService:
         # Prevents multiple playback triggers from the same tag
         self._current_active_tag: str | None = None
         self._tag_triggered_playback: bool = False
-        self._last_trigger_time: float | None = None
 
         # Setup hardware callbacks
         self._nfc_hardware.set_tag_detected_callback(self._on_tag_detected)
@@ -362,7 +361,6 @@ class NfcApplicationService:
             logger.info(f"🔓 Tag {self._current_active_tag} removed, resetting state for potential re-trigger")
             self._current_active_tag = None
             self._tag_triggered_playback = False
-            self._last_trigger_time = None
         else:
             logger.debug("📱 NFC tag removed (no active tag was tracked)")
 
@@ -460,10 +458,8 @@ class NfcApplicationService:
 
         # CRITICAL FIX: New tag or tag re-inserted after removal
         logger.info(f"✨ New tag detected or tag re-inserted: {tag_uid}")
-        import time
         self._current_active_tag = tag_uid
         self._tag_triggered_playback = True
-        self._last_trigger_time = time.time()
 
         # Process through association service (for tag_detected action)
         result = await self._association_service.process_tag_detection(tag_identifier)

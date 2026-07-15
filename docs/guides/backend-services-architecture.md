@@ -101,20 +101,12 @@ AudioController.get_playback_status() -> position_ms, duration_ms, is_playing
 -> WebSocket state:track_position event
 ```
 
-### 4. NotificationService - Transitional Service (PARTIALLY ACTIVE)
+### 4. NotificationService - REMOVED
 
-**File**: `app/src/services/notification_service.py`
+**File**: `app/src/services/notification_service.py` (deleted)
 
-**Components**:
-
-#### PlaybackSubject (Deprecated)
-- **Status**: Removed in DDD architecture
-- **Replacement**: StateManager handles all emissions
-- **Migration**: Completely migrated to StateManager
-
-#### DownloadNotifier (Active)
-- **Usage**: YouTube download events
-- **Emissions**: `youtube:progress`, `youtube:complete`, `youtube:error`
+**PlaybackSubject** was fully deprecated and removed. StateManager handles all real-time emissions.
+**DownloadNotifier** for YouTube events is handled separately.
 
 ### 5-8. StateManager Internal Components (ALL ACTIVE)
 

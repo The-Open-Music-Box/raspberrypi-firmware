@@ -4,11 +4,8 @@
 
 """Services module initialization for TheOpenMusicBox backend.
 
-Exposes core service classes for notification handling.
 Provides a centralized import point for external service functionality
 throughout the application.
 """
 
-from .notification_service import PlaybackSubject
-
-__all__ = ["PlaybackSubject"]
+__all__: list[str] = []

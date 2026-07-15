@@ -89,7 +89,6 @@ class TestNfcActiveTagStateManagement:
         """Test that initial state has no active tag."""
         assert nfc_app_service._current_active_tag is None
         assert nfc_app_service._tag_triggered_playback is False
-        assert nfc_app_service._last_trigger_time is None
 
     async def test_first_tag_detection_sets_state(self, nfc_app_service, nfc_hardware):
         """Test that first tag detection sets active tag state."""
@@ -110,7 +109,6 @@ class TestNfcActiveTagStateManagement:
         # Assert
         assert nfc_app_service._current_active_tag == tag_uid
         assert nfc_app_service._tag_triggered_playback is True
-        assert nfc_app_service._last_trigger_time is not None
         assert playback_triggered is True
 
     async def test_duplicate_tag_detection_ignored(self, nfc_app_service, nfc_hardware):
@@ -162,7 +160,6 @@ class TestNfcActiveTagStateManagement:
         # Assert - State should be reset
         assert nfc_app_service._current_active_tag is None
         assert nfc_app_service._tag_triggered_playback is False
-        assert nfc_app_service._last_trigger_time is None
 
     async def test_tag_redetection_after_removal(self, nfc_app_service, nfc_hardware):
         """Test that same tag can trigger playback again after removal."""
