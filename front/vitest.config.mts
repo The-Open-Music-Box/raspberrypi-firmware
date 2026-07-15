@@ -12,8 +12,6 @@ export default defineConfig({
       // Keep to safe, maintained unit tests first
       'src/services/__tests__/**/*.test.ts',
       'src/services/socket/__tests__/**/*.test.ts',
-      'src/unit/**/*.test.ts',
-      // Re-enabling src/tests/unit to fix legacy field names
       'src/tests/unit/**/*.test.ts',
       // Include contract tests
       'src/tests/contracts/**/*.contract.test.ts'
