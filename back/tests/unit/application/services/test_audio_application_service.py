@@ -35,25 +35,11 @@ class TestAudioApplicationService:
         return AsyncMock()
 
     @pytest.fixture
-    def mock_state_manager(self):
-        """Mock state manager."""
-        return AsyncMock()
-
-    @pytest.fixture
     def audio_service(self, mock_audio_container, mock_playlist_service):
         """Create AudioApplicationService instance."""
         return AudioApplicationService(
             mock_audio_container,
             mock_playlist_service
-        )
-
-    @pytest.fixture
-    def audio_service_with_state_manager(self, mock_audio_container, mock_playlist_service, mock_state_manager):
-        """Create AudioApplicationService instance with state manager."""
-        return AudioApplicationService(
-            mock_audio_container,
-            mock_playlist_service,
-            mock_state_manager
         )
 
     # ================================================================================
@@ -68,19 +54,6 @@ class TestAudioApplicationService:
         # Assert
         assert service._audio_container == mock_audio_container
         assert service._playlist_service == mock_playlist_service
-        assert service._state_manager is None
-
-    def test_init_with_state_manager(self, mock_audio_container, mock_playlist_service, mock_state_manager):
-        """Test initialization with optional state manager."""
-        # Act
-        service = AudioApplicationService(
-            mock_audio_container,
-            mock_playlist_service,
-            mock_state_manager
-        )
-
-        # Assert
-        assert service._state_manager == mock_state_manager
 
     def test_init_requires_audio_container(self, mock_playlist_service):
         """Test initialization fails without audio container."""
@@ -131,28 +104,6 @@ class TestAudioApplicationService:
         assert result["playlist_id"] == playlist_id
         assert result["track_count"] == 1
         mock_audio_container.audio_engine.set_playlist.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_play_playlist_broadcasts_state(self, audio_service_with_state_manager, mock_playlist_service, mock_audio_container, mock_state_manager):
-        """Test playlist playback broadcasts state change."""
-        # Arrange
-        playlist_id = "playlist-123"
-        mock_playlist_service.get_playlist_use_case.return_value = {
-            "status": "success",
-            "playlist": {
-                "id": playlist_id,
-                "title": "Test Playlist",
-                "tracks": [{"track_number": 1, "title": "Song 1", "filename": "song1.mp3"}]
-            }
-        }
-        mock_audio_container.audio_engine.set_playlist.return_value = True
-
-        # Act
-        result = await audio_service_with_state_manager.play_playlist_use_case(playlist_id)
-
-        # Assert
-        assert result["status"] == "success"
-        mock_state_manager.broadcast_playlist_started.assert_called_once_with(playlist_id)
 
     @pytest.mark.asyncio
     async def test_play_playlist_not_found(self, audio_service, mock_playlist_service):
@@ -338,19 +289,6 @@ class TestAudioApplicationService:
         assert result["error_type"] == "validation_error"
 
     @pytest.mark.asyncio
-    async def test_control_playback_broadcasts_state(self, audio_service_with_state_manager, mock_audio_container, mock_state_manager):
-        """Test playback control broadcasts state change."""
-        # Arrange
-        mock_audio_container.audio_engine.pause.return_value = True
-
-        # Act
-        result = await audio_service_with_state_manager.control_playback_use_case("pause")
-
-        # Assert
-        assert result["status"] == "success"
-        mock_state_manager.broadcast_playback_changed.assert_called_once_with("pause")
-
-    @pytest.mark.asyncio
     async def test_control_playback_engine_failure(self, audio_service, mock_audio_container):
         """Test playback control when engine fails."""
         # Arrange
@@ -435,20 +373,6 @@ class TestAudioApplicationService:
         assert result["status"] == "success"
         assert result["volume"] == volume
         mock_audio_container.audio_engine.set_volume.assert_called_once_with(volume)
-
-    @pytest.mark.asyncio
-    async def test_set_volume_broadcasts_state(self, audio_service_with_state_manager, mock_audio_container, mock_state_manager):
-        """Test volume setting broadcasts state change."""
-        # Arrange
-        volume = 50
-        mock_audio_container.audio_engine.set_volume.return_value = True
-
-        # Act
-        result = await audio_service_with_state_manager.set_volume_use_case(volume)
-
-        # Assert
-        assert result["status"] == "success"
-        mock_state_manager.broadcast_volume_changed.assert_called_once_with(volume)
 
     @pytest.mark.asyncio
     async def test_set_volume_min_value(self, audio_service, mock_audio_container):
