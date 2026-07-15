@@ -27,9 +27,9 @@ describe('serverStateStore', () => {
     expect(typeof store).toBe('object')
   })
 
-  it('should have playlists property', () => {
+  it('should have playerState property', () => {
     const store = useServerStateStore()
-    expect(store).toHaveProperty('playlists')
-    expect(Array.isArray(store.playlists)).toBe(true)
+    expect(store).toHaveProperty('playerState')
+    expect(store.playerState.is_playing).toBe(false)
   })
 })

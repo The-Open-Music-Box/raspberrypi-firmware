@@ -3,19 +3,6 @@ import { ref, reactive, readonly, computed } from 'vue'
 import { socketService } from '@/services/SocketServiceFactory'
 import { SOCKET_EVENTS } from '@/constants/apiRoutes'
 import { logger } from '@/utils/logger'
-import type { Track } from '@/types'
-import { getTrackNumber, filterTracksByNumbers } from '@/utils/trackFieldAccessor'
-
-interface Playlist {
-  id: string
-  title: string
-  description: string
-  nfc_tag_id?: string
-  tracks: Track[]
-  track_count: number
-  created_at?: string
-  updated_at?: string
-}
 
 interface StateEvent {
   event_type: string
@@ -56,27 +43,8 @@ interface OperationAck {
   error?: string
 }
 
-interface PlaylistIndexUpdate {
-  type: 'create' | 'update' | 'delete'
-  id?: string
-  playlist?: Playlist
-}
-
-type StateEventDetail = StateEvent | PlayerState | Playlist | Track | {
-  playlists?: Playlist[]
-  playlist?: Playlist
-  track?: Track
-  playlist_id?: string
-  track_numbers?: number[]
-  volume?: number
-  updates?: PlaylistIndexUpdate[]
-  [key: string]: unknown
-}
-
 export const useServerStateStore = defineStore('serverState', () => {
   // Reactive state
-  const playlists = ref<Playlist[]>([])
-  const currentPlaylist = ref<Playlist | null>(null)
   const playerState = ref<PlayerState>({
     is_playing: false,
     state: undefined,
@@ -109,10 +77,6 @@ export const useServerStateStore = defineStore('serverState', () => {
   const PLAYER_STATE_CHECK_INTERVAL = 5000 // 5 seconds
 
   // Computed getters
-  const getPlaylistById = computed(() => (id: string) =>
-    playlists.value.find(p => p.id === id)
-  )
-
   const getPlaylistSequence = computed(() => (id: string) =>
     playlistSequences[id] || 0
   )
@@ -175,12 +139,6 @@ export const useServerStateStore = defineStore('serverState', () => {
     // These events are dispatched from setupStateListeners in socketService
     logger.info('🔊 Setting up DOM event listeners for server state...', {}, 'ServerState')
 
-    window.addEventListener('state:playlists', (e: Event) => {
-      logger.info('🔊 DOM event state:playlists received', {}, 'ServerState')
-      handlePlaylistsSnapshot((e as CustomEvent<StateEventDetail>).detail)
-    })
-    window.addEventListener('state:playlist', (e: Event) => handlePlaylistSnapshot((e as CustomEvent<StateEvent>).detail))
-    window.addEventListener('state:track', (e: Event) => handleTrackSnapshot((e as CustomEvent<StateEvent>).detail))
     window.addEventListener('state:player', (e: Event) => handlePlayerState((e as CustomEvent<StateEvent | PlayerState>).detail))
     window.addEventListener('state:track_progress', (e: Event) => handleTrackProgress((e as CustomEvent<StateEvent>).detail))
     let trackPositionLogged = false
@@ -191,14 +149,6 @@ export const useServerStateStore = defineStore('serverState', () => {
       }
       handleTrackPosition((e as CustomEvent<StateEvent>).detail)
     })
-
-    // Specific action events for enhanced UX - also via DOM events
-    window.addEventListener('state:playlist_deleted', (e: Event) => handlePlaylistDeleted((e as CustomEvent<StateEvent>).detail))
-    window.addEventListener('state:playlist_created', (e: Event) => handlePlaylistCreated((e as CustomEvent<StateEvent>).detail))
-    window.addEventListener('state:playlist_updated', (e: Event) => handlePlaylistUpdated((e as CustomEvent<StateEvent>).detail))
-    window.addEventListener('state:tracks_deleted', (e: Event) => handleTrackDeleted((e as CustomEvent<StateEvent>).detail))
-    window.addEventListener('state:track_added', (e: Event) => handleTrackAdded((e as CustomEvent<StateEvent>).detail))
-    window.addEventListener('state:playlists_index_update', (e: Event) => handlePlaylistsIndexUpdate((e as CustomEvent<StateEvent>).detail))
 
     // System state events
     window.addEventListener('state:volume_changed', (e: Event) => handleVolumeChanged((e as CustomEvent<StateEvent>).detail))
@@ -249,58 +199,7 @@ export const useServerStateStore = defineStore('serverState', () => {
     }
   }
 
-  // Clean architecture - paginated index handlers removed
-
   // State event handlers
-  function handlePlaylistsSnapshot(event: StateEventDetail) {
-    logger.debug('[ServerState] Received playlists snapshot', event)
-    // Handle both wrapped and direct data formats
-    let playlistsData: Playlist[] = []
-    if ('data' in event && event.data && typeof event.data === 'object' && 'playlists' in event.data) {
-      // Standard format: event.data.playlists
-      playlistsData = (event.data as { playlists: Playlist[] }).playlists
-    } else if ('playlists' in event && Array.isArray(event.playlists)) {
-      // Direct format: event.playlists (from fallback)
-      playlistsData = event.playlists
-    }
-    playlists.value = playlistsData || []
-    globalSequence.value = ('server_seq' in event && typeof (event as { server_seq?: number }).server_seq === 'number')
-      ? (event as { server_seq: number }).server_seq
-      : 0
-  }
-
-  function handlePlaylistSnapshot(event: StateEvent) {
-    logger.debug('[ServerState] Received playlist snapshot', event)
-    const playlist = event.data as Playlist
-    if (playlist) {
-      updatePlaylistInList(playlist)
-      if (currentPlaylist.value?.id === playlist.id) {
-        currentPlaylist.value = playlist
-      }
-    }
-    globalSequence.value = event.server_seq
-    if (event.playlist_id) {
-      const data = event.data as { playlist_seq?: number }
-      playlistSequences[event.playlist_id] = data.playlist_seq || 0
-    }
-  }
-
-  function handleTrackSnapshot(event: StateEvent) {
-    logger.debug('[ServerState] Received track snapshot', event)
-    // Track changes are embedded in playlist updates
-    // This handler ensures we process any track-specific state changes
-    const data = event.data as { playlist?: Playlist; playlist_seq?: number }
-    if (event.playlist_id && data.playlist) {
-      const playlist = data.playlist
-      updatePlaylistInList(playlist)
-      if (currentPlaylist.value?.id === playlist.id) {
-        currentPlaylist.value = playlist
-      }
-      playlistSequences[event.playlist_id] = data.playlist_seq || 0
-    }
-    globalSequence.value = event.server_seq
-  }
-
   function handlePlayerState(event: StateEvent | PlayerState) {
     logger.info('🔊🎵 [ServerState] PLAYER STATE EVENT RECEIVED', event)
     logger.info('🔊🎵 [ServerState] Current playerState before update:', JSON.parse(JSON.stringify(playerState.value)))
@@ -546,162 +445,6 @@ export const useServerStateStore = defineStore('serverState', () => {
     pendingOperations.delete(ack.client_op_id)
   }
 
-  // Specific action event handlers
-  function handlePlaylistDeleted(event: StateEvent) {
-    logger.debug('[ServerState] Playlist deleted', event)
-    // Handle both event.data.playlist_id and event.playlist_id structures
-    const data = event.data as { playlist_id?: string }
-    const playlistId = data?.playlist_id || event.playlist_id
-    if (playlistId) {
-      // Remove from playlists array
-      const index = playlists.value.findIndex(p => p.id === playlistId)
-      if (index >= 0) {
-        playlists.value.splice(index, 1)
-        logger.debug(`[ServerState] Removed playlist ${playlistId} from local state`)
-      }
-
-      // Simplified architecture - paginated index removal logic removed
-
-      // Clear current playlist if it was the deleted one
-      if (currentPlaylist.value?.id === playlistId) {
-        currentPlaylist.value = null
-      }
-
-      // Clean up playlist sequences
-      delete playlistSequences[playlistId]
-    }
-    globalSequence.value = event.server_seq
-  }
-
-  function handlePlaylistCreated(event: StateEvent) {
-    logger.info('🔊 [ServerState] Playlist created event received', event)
-    const data = event.data as { playlist?: Playlist }
-    const playlist = data?.playlist
-    if (playlist) {
-      // Add to playlists array if not already present
-      const existingIndex = playlists.value.findIndex(p => p.id === playlist.id)
-      if (existingIndex === -1) {
-        playlists.value.push(playlist)
-        logger.info(`🔊 [ServerState] Added playlist ${playlist.id} to local state (${playlists.value.length} total)`)
-      } else {
-        logger.info(`🔊 [ServerState] Playlist ${playlist.id} already exists in local state`)
-      }
-    } else {
-      logger.warn(`🔊 [ServerState] No playlist data in creation event`, event)
-    }
-    globalSequence.value = event.server_seq
-  }
-
-  function handlePlaylistUpdated(event: StateEvent) {
-    logger.debug('[ServerState] Playlist updated', event)
-    const data = event.data as { playlist?: Playlist; playlist_seq?: number }
-    const playlist = data?.playlist
-    if (playlist) {
-      updatePlaylistInList(playlist)
-      if (currentPlaylist.value?.id === playlist.id) {
-        currentPlaylist.value = playlist
-      }
-    }
-    globalSequence.value = event.server_seq
-    if (event.playlist_id) {
-      playlistSequences[event.playlist_id] = data?.playlist_seq || 0
-    }
-  }
-
-  function handleTrackDeleted(event: StateEvent) {
-    logger.debug('[ServerState] Track deleted', event)
-    const data = event.data as { playlist_id?: string; track_numbers?: number[]; playlist_seq?: number }
-    const playlistId = data?.playlist_id
-    const trackNumbers = data?.track_numbers
-
-    if (playlistId && trackNumbers && Array.isArray(trackNumbers)) {
-      const playlist = playlists.value.find(p => p.id === playlistId)
-      if (playlist && playlist.tracks) {
-        // Use trackFieldAccessor helper for unified field access
-        playlist.tracks = filterTracksByNumbers(playlist.tracks, trackNumbers)
-        logger.debug(`[ServerState] Removed ${trackNumbers.length} tracks from playlist ${playlistId}`)
-      }
-
-      if (currentPlaylist.value?.id === playlistId && currentPlaylist.value?.tracks) {
-        currentPlaylist.value.tracks = filterTracksByNumbers(currentPlaylist.value.tracks, trackNumbers)
-      }
-    }
-
-    globalSequence.value = event.server_seq
-    if (playlistId) {
-      playlistSequences[playlistId] = data?.playlist_seq || 0
-    }
-  }
-
-  function handleTrackAdded(event: StateEvent) {
-    logger.debug('[ServerState] Track added', event)
-    const data = event.data as { playlist_id?: string; track?: Track; playlist_seq?: number }
-    const playlistId = data?.playlist_id
-    const track = data?.track
-
-    if (playlistId && track) {
-      const playlist = playlists.value.find(p => p.id === playlistId)
-      if (playlist) {
-        if (!playlist.tracks) {
-          playlist.tracks = []
-        }
-        // Add track if not already present
-        const trackNumber = getTrackNumber(track)
-        if (!playlist.tracks.find(t => getTrackNumber(t) === trackNumber)) {
-          playlist.tracks.push(track)
-          // Sort tracks by number to maintain order
-          playlist.tracks.sort((a, b) => getTrackNumber(a) - getTrackNumber(b))
-          logger.debug(`[ServerState] Added track ${trackNumber} to playlist ${playlistId}`)
-        }
-      }
-
-      if (currentPlaylist.value && currentPlaylist.value.id === playlistId) {
-        if (!currentPlaylist.value.tracks) {
-          currentPlaylist.value.tracks = []
-        }
-        const trackNumber = getTrackNumber(track)
-        if (currentPlaylist.value.tracks && !currentPlaylist.value.tracks.find(t => getTrackNumber(t) === trackNumber)) {
-          currentPlaylist.value.tracks.push(track)
-          currentPlaylist.value.tracks.sort((a, b) => getTrackNumber(a) - getTrackNumber(b))
-        }
-      }
-    }
-
-    globalSequence.value = event.server_seq
-    if (playlistId) {
-      playlistSequences[playlistId] = data?.playlist_seq || 0
-    }
-  }
-
-  function handlePlaylistsIndexUpdate(event: StateEvent) {
-    logger.debug('[ServerState] Playlists index update', event)
-    // Handle paginated playlist updates
-    const updates = (event.data as { updates?: PlaylistIndexUpdate[] })?.updates
-    if (updates && Array.isArray(updates)) {
-      updates.forEach((update: PlaylistIndexUpdate) => {
-        if (update.type === 'delete' && update.id) {
-          const index = playlists.value.findIndex(p => p.id === update.id)
-          if (index >= 0) {
-            playlists.value.splice(index, 1)
-            logger.debug(`[ServerState] Removed playlist ${update.id} from index update`)
-          }
-        } else if (update.type === 'create' && update.playlist) {
-          const playlist = update.playlist
-          const existingIndex = playlists.value.findIndex(p => p.id === playlist.id)
-          if (existingIndex === -1) {
-            playlists.value.push(playlist)
-            logger.debug(`[ServerState] Added playlist ${playlist.id} from index update`)
-          }
-        } else if (update.type === 'update' && update.playlist) {
-          updatePlaylistInList(update.playlist)
-          logger.debug(`[ServerState] Updated playlist ${update.playlist.id} from index update`)
-        }
-      })
-    }
-
-    globalSequence.value = event.server_seq
-  }
-
   function handleVolumeChanged(event: StateEvent) {
     logger.debug('[ServerState] Volume changed', event)
     const data = event.data as { volume?: number }
@@ -720,20 +463,6 @@ export const useServerStateStore = defineStore('serverState', () => {
     globalSequence.value = event.server_seq
   }
 
-  // Helper functions
-  function updatePlaylistInList(playlist: Playlist) {
-    const index = playlists.value.findIndex(p => p.id === playlist.id)
-    if (index >= 0) {
-      playlists.value[index] = playlist
-      logger.debug(`[ServerState] Updated playlist ${playlist.id} in local state (${playlist.tracks?.length || 0} tracks)`)
-    } else {
-      // Playlist not found, add it to the beginning
-      playlists.value.unshift(playlist)
-      logger.debug(`[ServerState] Added new playlist ${playlist.id} to local state (${playlist.tracks?.length || 0} tracks)`)
-    }
-  }
-
-
   function requestStateSync() {
     if (socketService.isConnected()) {
       logger.debug('[ServerState] 🔄 Requesting state sync - current state:', {
@@ -751,12 +480,6 @@ export const useServerStateStore = defineStore('serverState', () => {
     } else {
       logger.warn('[ServerState] Cannot request state sync - socket not connected')
     }
-  }
-
-  // Manual sync method for when WebSocket events are not working
-  function manualSync(playlistsData: Playlist[]) {
-    logger.debug('[ServerState] Manual sync - updating playlists', playlistsData.length)
-    playlists.value = playlistsData
   }
 
   // ADDITION: Request initial player state from server
@@ -848,8 +571,6 @@ export const useServerStateStore = defineStore('serverState', () => {
 
   const store = {
     // State (read-only, server-authoritative)
-    playlists: readonly(playlists),
-    currentPlaylist: readonly(currentPlaylist),
     playerState: readonly(playerState),
     globalSequence: readonly(globalSequence),
     playlistSequences: readonly(playlistSequences),
@@ -858,7 +579,6 @@ export const useServerStateStore = defineStore('serverState', () => {
     pendingOperations: readonly(pendingOperations),
 
     // Getters
-    getPlaylistById,
     getPlaylistSequence,
 
     // Socket management actions via RealSocketService
@@ -866,7 +586,6 @@ export const useServerStateStore = defineStore('serverState', () => {
     subscribeToPlaylist,
     unsubscribeFromPlaylist,
     requestStateSync,
-    manualSync,
     requestInitialPlayerState,
 
     // Player state management - exposed for optimistic updates
