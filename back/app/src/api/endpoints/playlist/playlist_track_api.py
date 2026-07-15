@@ -170,6 +170,14 @@ class PlaylistTrackAPI(BaseAPIRoutes):
                 )
 
                 if result.get("status") == "success":
+                    # Broadcast state change for both affected playlists
+                    await self._broadcasting_service.broadcast_playlist_updated(
+                        source_playlist_id, {"operation": "move_track", "role": "source"}
+                    )
+                    await self._broadcasting_service.broadcast_playlist_updated(
+                        target_playlist_id, {"operation": "move_track", "role": "target"}
+                    )
+
                     return UnifiedResponseService.success(
                         message=result.get("message", "Track moved successfully"),
                         data={"client_op_id": client_op_id or ""}
