@@ -13,6 +13,7 @@ import logging
 from fastapi import APIRouter, Body
 from fastapi.responses import Response
 
+from app.src.api.base_api_routes import BaseAPIRoutes
 from app.src.services.error.unified_error_decorator import handle_http_errors
 from app.src.services.response.unified_response_service import UnifiedResponseService
 from app.src.services.validation.unified_validation_service import (
@@ -22,11 +23,12 @@ from app.src.services.validation.unified_validation_service import (
 logger = logging.getLogger(__name__)
 
 
-class PlaylistWriteAPI:
+class PlaylistWriteAPI(BaseAPIRoutes):
     """
     Handles write operations for playlists.
 
     Single Responsibility: HTTP POST/PUT/DELETE operations for playlists.
+    Inherits common API functionality from BaseAPIRoutes.
     """
 
     def __init__(self, playlist_service, broadcasting_service, router: APIRouter, validation_service=None):
@@ -38,6 +40,11 @@ class PlaylistWriteAPI:
             router: Parent FastAPI router to register routes on
             validation_service: Service for request validation
         """
+        super().__init__(
+            router=router,
+            playlist_service=playlist_service,
+            broadcasting_service=broadcasting_service
+        )
         self._playlist_service = playlist_service
         self._broadcasting_service = broadcasting_service
         self._validation_service = validation_service or UnifiedValidationService
@@ -109,22 +116,12 @@ class PlaylistWriteAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in create_playlist: {e!s}",
-                    extra={
-                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
-                        "operation": "create_playlist",
-                        "title": body.get("title") if isinstance(body, dict) else None,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to create playlist",
+                return self.handle_endpoint_error(
+                    e,
                     operation="create_playlist",
+                    message="Failed to create playlist",
                     client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
+                    title=body.get("title") if isinstance(body, dict) else None
                 )
 
         @router.put("/{playlist_id}")
@@ -161,21 +158,12 @@ class PlaylistWriteAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in update_playlist: {e!s}",
-                    extra={
-                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
-                        "operation": "update_playlist",
-                        "playlist_id": playlist_id,
-                        "updates": updates if 'updates' in locals() else None,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to update playlist", operation="update_playlist"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="update_playlist",
+                    message="Failed to update playlist",
+                    client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
+                    playlist_id=playlist_id
                 )
 
         @router.delete("/{playlist_id}", status_code=204)
@@ -199,18 +187,10 @@ class PlaylistWriteAPI:
                 )
 
             except Exception as e:
-                # Re-raise system exceptions
-                if isinstance(e, (SystemExit, KeyboardInterrupt, GeneratorExit)):
-                    raise
-                logger.error(
-                    f"Error in delete_playlist: {e!s}",
-                    extra={
-                        "client_op_id": body.get("client_op_id") if isinstance(body, dict) else None,
-                        "operation": "delete_playlist",
-                        "playlist_id": playlist_id,
-                    },
-                    exc_info=True
-                )
-                return UnifiedResponseService.internal_error(
-                    message="Failed to delete playlist", operation="delete_playlist"
+                return self.handle_endpoint_error(
+                    e,
+                    operation="delete_playlist",
+                    message="Failed to delete playlist",
+                    client_op_id=body.get("client_op_id") if isinstance(body, dict) else None,
+                    playlist_id=playlist_id
                 )
