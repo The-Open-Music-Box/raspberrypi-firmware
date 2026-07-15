@@ -5,24 +5,9 @@
 import { vi } from 'vitest'
 import { config } from '@vue/test-utils'
 
-// Mock socketService to prevent WebSocket connection attempts during tests
-vi.mock('@/services/socketService', () => ({
+// Mock SocketServiceFactory to prevent WebSocket connection attempts during tests
+vi.mock('@/services/SocketServiceFactory', () => ({
   socketService: {
-    on: vi.fn(),
-    off: vi.fn(),
-    once: vi.fn(),
-    emit: vi.fn(),
-    joinRoom: vi.fn().mockResolvedValue(undefined),
-    leaveRoom: vi.fn().mockResolvedValue(undefined),
-    sendOperation: vi.fn().mockResolvedValue({ success: true }),
-    requestSync: vi.fn(),
-    isConnected: vi.fn().mockReturnValue(false),
-    isReady: vi.fn().mockReturnValue(false),
-    getLastServerSeq: vi.fn().mockReturnValue(0),
-    getSubscribedRooms: vi.fn().mockReturnValue([]),
-    destroy: vi.fn()
-  },
-  default: {
     on: vi.fn(),
     off: vi.fn(),
     once: vi.fn(),

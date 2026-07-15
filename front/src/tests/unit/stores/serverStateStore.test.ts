@@ -7,8 +7,8 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useServerStateStore } from '@/stores/serverStateStore'
 
 // Mock socket service
-vi.mock('@/services/socketService', () => ({
-  default: {
+vi.mock('@/services/SocketServiceFactory', () => ({
+  socketService: {
     on: vi.fn(),
     off: vi.fn(),
     emit: vi.fn()
