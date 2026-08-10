@@ -118,6 +118,7 @@ def register_application_services(container: ApplicationContainer) -> None:
         audio_domain_container = infra_container.get("audio_domain_container")
 
         # Initialize audio domain container if needed
+        # Note: domain_bootstrap handles jack detection injection on Linux
         if not audio_domain_container.is_initialized:
             domain_bootstrap = infra_container.get("domain_bootstrap")
             if not domain_bootstrap.is_initialized:
@@ -163,6 +164,7 @@ def register_application_services(container: ApplicationContainer) -> None:
         audio_domain_container = infra_container.get("audio_domain_container")
 
         # Initialize domain if not already done
+        # Note: domain_bootstrap handles jack detection injection on Linux
         if not domain_bootstrap.is_initialized:
             domain_bootstrap.initialize()
 

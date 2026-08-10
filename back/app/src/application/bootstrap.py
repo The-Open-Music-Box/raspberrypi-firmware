@@ -8,10 +8,12 @@ This module extends the domain bootstrap with application-specific concerns:
 - LED management and visual feedback
 - Physical controls (buttons and encoder)
 - Hardware initialization with retry logic for Raspberry Pi boot reliability
+- Audio backend factory injection for jack detection (via DI)
 """
 
 import logging
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from app.src.application.utils.hardware_retry import retry_hardware_init
 from app.src.domain.audio.container import audio_domain_container
@@ -50,7 +52,9 @@ class ApplicationBootstrap(DomainBootstrap):
         self,
         led_manager: 'LEDStateManager | None' = None,
         led_event_handler: 'LEDEventHandler | None' = None,
-        physical_controls_manager: 'PhysicalControlsManager | None' = None
+        physical_controls_manager: 'PhysicalControlsManager | None' = None,
+        audio_backend_factory: Callable[[], Any] | None = None,
+        jack_detection_cleanup: Callable[[], Any] | None = None,
     ):
         """Initialize the application bootstrap with hardware components.
 
@@ -58,6 +62,11 @@ class ApplicationBootstrap(DomainBootstrap):
             led_manager: Optional LED state manager (injected via DI)
             led_event_handler: Optional LED event handler (injected via DI)
             physical_controls_manager: Optional physical controls manager (injected via DI)
+            audio_backend_factory: Optional factory function to create audio backend
+                with platform-specific features (e.g., jack detection on Linux).
+                Injected by infrastructure layer.
+            jack_detection_cleanup: Optional async cleanup function for jack detection
+                GPIO resources. Injected by infrastructure layer.
         """
         # Initialize domain bootstrap (audio, lifecycle)
         super().__init__()
@@ -68,6 +77,12 @@ class ApplicationBootstrap(DomainBootstrap):
 
         # Application-specific: Physical controls
         self._physical_controls_manager = physical_controls_manager
+
+        # Infrastructure-injected audio backend factory
+        self._audio_backend_factory = audio_backend_factory
+
+        # Infrastructure-injected jack detection cleanup (async callable)
+        self._jack_detection_cleanup = jack_detection_cleanup
 
         # Log component injection status
         if led_manager and led_event_handler:
@@ -89,6 +104,43 @@ class ApplicationBootstrap(DomainBootstrap):
             )
         else:
             logger.warning("⚠️ ApplicationBootstrap created WITHOUT PhysicalControlsManager")
+
+    # MARK: - Initialization (Override)
+
+    def initialize(self, existing_backend: Any | None = None) -> None:
+        """Initialize the application bootstrap with injected audio backend factory.
+
+        Overrides domain initialize() to use the injected audio backend factory
+        (if provided) for platform-specific backend creation (e.g., with jack detection).
+
+        Args:
+            existing_backend: Existing audio backend to use (optional)
+        """
+        # Early exit checks BEFORE creating backend to prevent "device busy" errors
+        # These mirror the checks in DomainBootstrap.initialize()
+        if self._is_initialized:
+            logger.warning("ApplicationBootstrap already initialized")
+            return
+
+        if audio_domain_container.is_initialized:
+            logger.info("🔄 Audio domain container already initialized, reusing existing backend")
+            self._is_initialized = True
+            return
+
+        # If backend not provided and we have an injected factory, use it
+        if existing_backend is None and self._audio_backend_factory is not None:
+            try:
+                logger.info("🔊 Creating audio backend via injected factory...")
+                existing_backend = self._audio_backend_factory()
+                if existing_backend is not None:
+                    logger.info(f"✅ Created {type(existing_backend).__name__} via injected factory")
+            except Exception as e:
+                logger.warning(f"⚠️ Injected audio backend factory failed: {e}")
+                logger.warning("⚠️ Domain factory will create backend")
+                existing_backend = None
+
+        # Call parent initialize with the (possibly created) backend
+        super().initialize(existing_backend=existing_backend)
 
     # MARK: - Lifecycle Management (Override)
 
@@ -170,9 +222,9 @@ class ApplicationBootstrap(DomainBootstrap):
         logger.info("🚀 Application services started")
 
     async def stop(self) -> None:
-        """Stop all services including LED cleanup.
+        """Stop all services including LED and jack detection cleanup.
 
-        Extends domain stop() to add LED system cleanup.
+        Extends domain stop() to add LED system and jack detection cleanup.
         """
         if not self._is_initialized or self._is_stopping:
             return
@@ -187,6 +239,14 @@ class ApplicationBootstrap(DomainBootstrap):
                 logger.info("💡 LED system cleaned up")
             except Exception as e:
                 logger.warning(f"⚠️ LED cleanup failed: {e}")
+
+        # Application-specific: Cleanup jack detection (releases GPIO resources)
+        if self._jack_detection_cleanup is not None:
+            try:
+                await self._jack_detection_cleanup()
+                logger.info("🎧 Jack detection cleaned up")
+            except Exception as e:
+                logger.warning(f"⚠️ Jack detection cleanup failed: {e}")
 
     # MARK: - Hardware Initialization Helpers
 

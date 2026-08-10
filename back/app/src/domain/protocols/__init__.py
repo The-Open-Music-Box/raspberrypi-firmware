@@ -13,6 +13,7 @@ from .audio_backend_protocol import AudioBackendProtocol
 from .audio_engine_protocol import AudioEngineProtocol
 from .audio_service_protocol import AudioServiceProtocol
 from .event_bus_protocol import EventBusProtocol
+from .jack_detection_protocol import JackDetectionProtocol, JackState
 from .nfc_protocol import NFCHardwareProtocol, NFCServiceProtocol
 from .state_manager_protocol import StateManagerProtocol
 
@@ -21,6 +22,8 @@ __all__ = [
     "AudioEngineProtocol",
     "AudioServiceProtocol",
     "EventBusProtocol",
+    "JackDetectionProtocol",
+    "JackState",
     "NFCHardwareProtocol",
     "NFCServiceProtocol",
     "StateManagerProtocol",

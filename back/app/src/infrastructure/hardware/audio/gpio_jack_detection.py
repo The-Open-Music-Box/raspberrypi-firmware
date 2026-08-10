@@ -1,0 +1,223 @@
+# Copyright (c) 2025 Jonathan Piette
+# This file is part of TheOpenMusicBox and is licensed for non-commercial use only.
+# See the LICENSE file for details.
+
+"""
+GPIO Jack Detection Implementation.
+
+Real hardware implementation using gpiozero for headphone jack detection.
+Monitors the HP_DET GPIO pin from the WM8960 codec to detect
+headphone plug/unplug events.
+"""
+
+import os
+from typing import Any
+
+from app.src.config.hardware_config import HardwareConfig
+from app.src.domain.protocols.jack_detection_protocol import JackState
+from app.src.monitoring import get_logger
+
+from .base_jack_detection import BaseJackDetection
+
+logger = get_logger(__name__)
+
+# Check if GPIO is available
+USE_MOCK_HARDWARE = os.getenv("USE_MOCK_HARDWARE", "false").lower() == "true"
+GPIO_AVAILABLE = False
+GPIO_FALLBACK_REASON: str | None = None
+
+if not USE_MOCK_HARDWARE:
+    gpio_backend_initialized = False
+
+    # Try lgpio first (modern backend)
+    try:
+        from gpiozero import Button, Device
+        from gpiozero.pins.lgpio import LGPIOFactory
+
+        Device.pin_factory = LGPIOFactory()
+        GPIO_AVAILABLE = True
+        gpio_backend_initialized = True
+        logger.debug("GPIO jack detection using lgpio backend")
+    except ImportError:
+        pass
+    except Exception:
+        pass
+
+    # Try RPi.GPIO (legacy backend)
+    if not gpio_backend_initialized:
+        try:
+            from gpiozero import Button, Device
+            from gpiozero.pins.rpigpio import RPiGPIOFactory
+
+            Device.pin_factory = RPiGPIOFactory()
+            GPIO_AVAILABLE = True
+            gpio_backend_initialized = True
+            logger.debug("GPIO jack detection using RPi.GPIO backend")
+        except ImportError:
+            pass
+        except Exception:
+            pass
+
+    # Try pigpio (requires pigpiod daemon)
+    if not gpio_backend_initialized:
+        try:
+            from gpiozero import Button, Device
+            from gpiozero.pins.pigpio import PiGPIOFactory
+
+            Device.pin_factory = PiGPIOFactory()
+            GPIO_AVAILABLE = True
+            gpio_backend_initialized = True
+            logger.debug("GPIO jack detection using pigpio backend")
+        except ImportError:
+            pass
+        except Exception:
+            pass
+
+    if not gpio_backend_initialized:
+        GPIO_FALLBACK_REASON = "No GPIO backend available for jack detection"
+        logger.debug(f"GPIO not available for jack detection: {GPIO_FALLBACK_REASON}")
+else:
+    GPIO_FALLBACK_REASON = "USE_MOCK_HARDWARE=true"
+    logger.debug("Mock hardware mode - GPIO jack detection disabled")
+
+
+class GPIOJackDetection(BaseJackDetection):
+    """GPIO-based headphone jack detection using WM8960 HP_DET signal.
+
+    Monitors a GPIO pin connected to the HP_DET output of the WM8960 codec
+    to detect when headphones are plugged or unplugged.
+    """
+
+    def __init__(self, hardware_config: HardwareConfig) -> None:
+        """Initialize GPIO jack detection.
+
+        Args:
+            hardware_config: Hardware configuration containing GPIO settings.
+        """
+        super().__init__(enabled=hardware_config.headphone_detect_enabled)
+
+        self._config = hardware_config
+        self._gpio_pin = hardware_config.gpio_headphone_detect
+        self._debounce_ms = hardware_config.headphone_detect_debounce_ms
+        self._active_low = hardware_config.headphone_detect_active_low
+        self._button: Any = None  # gpiozero Button instance
+
+    async def initialize(self) -> bool:
+        """Initialize GPIO jack detection hardware.
+
+        Returns:
+            True if initialization was successful.
+        """
+        if not self._enabled:
+            logger.info("Jack detection disabled in configuration")
+            self._initialized = True
+            self._state = JackState.UNKNOWN
+            return True
+
+        if not GPIO_AVAILABLE:
+            logger.warning(
+                f"GPIO not available for jack detection: {GPIO_FALLBACK_REASON}. "
+                "Jack detection will be disabled."
+            )
+            self._enabled = False
+            self._initialized = True
+            self._state = JackState.UNKNOWN
+            return True  # Graceful degradation
+
+        try:
+            from gpiozero import Button
+
+            # Configure GPIO pin as input with appropriate pull resistor
+            # For active_low: pull_up keeps pin HIGH when disconnected, detects LOW on connect
+            # For active_high: pull_down keeps pin LOW when disconnected, detects HIGH on connect
+            # bounce_time is in seconds, convert from ms
+            bounce_time = self._debounce_ms / 1000.0
+
+            self._button = Button(
+                self._gpio_pin,
+                pull_up=self._active_low,  # pull_up for active_low, pull_down for active_high
+                bounce_time=bounce_time,
+            )
+
+            # Set up event handlers
+            # With pull_up=active_low:
+            # - when_pressed fires when signal goes to "active" state (headphone connected)
+            # - when_released fires when signal goes to "inactive" state (headphone disconnected)
+            self._button.when_pressed = self._on_headphone_connected
+            self._button.when_released = self._on_headphone_disconnected
+
+            # Read initial state
+            self._read_initial_state()
+
+            self._initialized = True
+            logger.info(
+                f"GPIO jack detection initialized on GPIO {self._gpio_pin} "
+                f"(active_low={self._active_low}, debounce={self._debounce_ms}ms)"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to initialize GPIO jack detection: {e}")
+            self._enabled = False
+            self._initialized = True
+            self._state = JackState.UNKNOWN
+            return True  # Graceful degradation
+
+    def _read_initial_state(self) -> None:
+        """Read and set the initial jack state from GPIO.
+
+        Uses _update_state() instead of direct assignment to ensure the
+        state change handler is notified if one is registered.
+
+        With pull_up=active_low configuration, is_pressed always means
+        "headphone connected" regardless of whether active_low is True or False.
+        """
+        if self._button is None:
+            return
+
+        # With pull_up=active_low, is_pressed means "headphone connected"
+        is_connected = self._button.is_pressed
+        new_state = JackState.CONNECTED if is_connected else JackState.DISCONNECTED
+
+        logger.info(f"Initial jack state read from GPIO: {new_state.value}")
+        self._update_state(new_state)
+
+    def _on_headphone_connected(self) -> None:
+        """Handle headphone connection event (GPIO signal went to active state)."""
+        logger.debug("GPIO event: headphone connected")
+        self._update_state(JackState.CONNECTED)
+
+    def _on_headphone_disconnected(self) -> None:
+        """Handle headphone disconnection event (GPIO signal went to inactive state)."""
+        logger.debug("GPIO event: headphone disconnected")
+        self._update_state(JackState.DISCONNECTED)
+
+    async def cleanup(self) -> None:
+        """Clean up GPIO resources."""
+        if self._button is not None:
+            try:
+                self._button.close()
+                logger.debug("GPIO jack detection cleaned up")
+            except Exception as e:
+                logger.warning(f"Error cleaning up GPIO jack detection: {e}")
+            finally:
+                self._button = None
+
+        self._initialized = False
+        self._state = JackState.UNKNOWN
+
+    def get_status(self) -> dict:
+        """Get current status of GPIO jack detection.
+
+        Returns:
+            Dictionary containing status information.
+        """
+        status = super().get_status()
+        status.update({
+            "gpio_pin": self._gpio_pin,
+            "debounce_ms": self._debounce_ms,
+            "active_low": self._active_low,
+            "gpio_available": GPIO_AVAILABLE,
+            "gpio_fallback_reason": GPIO_FALLBACK_REASON,
+        })
+        return status
