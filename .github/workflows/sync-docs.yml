@@ -1,0 +1,32 @@
+name: Sync Documentation
+
+on:
+  push:
+    branches: [develop, release]
+    paths: ['docs/**']
+
+permissions:
+  contents: read
+
+jobs:
+  sync-docs:
+    name: Trigger Docs Sync
+    runs-on: [self-hosted, Linux, ARM64, web]
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger docs sync
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.SUBMODULE_TOKEN }}" \
+            https://api.github.com/repos/The-Open-Music-Box/doc/dispatches \
+            -d '{
+              "event_type": "docs-sync",
+              "client_payload": {
+                "source_repo": "rpi-firmware",
+                "source_branch": "${{ github.ref_name }}",
+                "commit_sha": "${{ github.sha }}"
+              }
+            }'
+          echo "Docs sync triggered for rpi-firmware (${{ github.ref_name }})"
