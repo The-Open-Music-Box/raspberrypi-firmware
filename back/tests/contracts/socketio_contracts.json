@@ -190,13 +190,13 @@
             "type": "object",
             "properties": {
               "position_ms": {"type": "integer"},
-              "track_id": {"type": ["string", "null"]},
+              "track_filename": {"type": ["string", "null"], "description": "Filename of current track (per v6.0.1)"},
               "is_playing": {"type": "boolean"},
               "duration_ms": {"type": ["integer", "null"]}
             },
             "required": ["position_ms", "is_playing"]
           },
-          "description": "Lightweight position updates for smooth UI",
+          "description": "Lightweight position updates for smooth UI (v6.0.1: track_filename replaces track_id)",
           "frequency": "500ms_intervals"
         },
         "state:playlists": {

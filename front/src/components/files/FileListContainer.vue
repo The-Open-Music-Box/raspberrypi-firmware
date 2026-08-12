@@ -102,15 +102,30 @@ const deleteTrack = async (playlistId: string, trackNumber: number) => {
 
 // Current playing info from server state
 const playingPlaylistId = computed(() => serverStateStore.playerState.active_playlist_id)
+// Per contracts v6.0.1: use active_track_filename for track identification
+const playingTrackFilename = computed(() => serverStateStore.playerState.active_track_filename)
+// Fallback to active_track_id for backward compat with state:player events
 const playingTrackId = computed(() => serverStateStore.playerState.active_track_id)
 
 // Find the track number for the currently playing track using unified accessor
 const playingTrackNumber = computed(() => {
-  if (!playingPlaylistId.value || !playingTrackId.value) return null
-  
+  if (!playingPlaylistId.value) return null
+
   const playlistTracks = unifiedStore.getTracksForPlaylist(playingPlaylistId.value)
-  const track = playlistTracks.find(t => t.id === playingTrackId.value)
-  return track ? getTrackNumber(track) : null
+
+  // Per contracts v6.0.1: prefer matching by filename (from track_position events)
+  if (playingTrackFilename.value) {
+    const track = playlistTracks.find(t => t.filename === playingTrackFilename.value)
+    if (track) return getTrackNumber(track)
+  }
+
+  // Fallback to ID matching (from state:player events)
+  if (playingTrackId.value) {
+    const track = playlistTracks.find(t => t.id === playingTrackId.value)
+    if (track) return getTrackNumber(track)
+  }
+
+  return null
 })
 
 /**

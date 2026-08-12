@@ -18,7 +18,8 @@ export interface ApiResponse<T = any> {
 export interface ApiError {
   status: 'error';
   message: string;
-  error_type: 'validation_error' | 'not_found' | 'permission_denied' | 'rate_limit_exceeded' | 'service_unavailable' | 'internal_error' | 'conflict' | 'bad_request';
+  /** Error types per contracts v6.0.1 - includes timeout for Socket.IO */
+  error_type: 'validation_error' | 'not_found' | 'permission_denied' | 'rate_limit_exceeded' | 'service_unavailable' | 'internal_error' | 'conflict' | 'bad_request' | 'timeout';
   details?: Record<string, any>;
   timestamp: number;
   request_id: string;

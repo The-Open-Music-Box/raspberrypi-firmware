@@ -36,16 +36,17 @@ describe('Socket.IO State Events Contract Tests', () => {
 
   it('should validate state:track_position event payload structure', () => {
     /**
-     * Contract:
+     * Contract v6.0.1:
      * - Event: 'state:track_position'
-     * - Lightweight position updates (200ms interval)
-     * - Data: {position_ms: number, track_id?: string, is_playing: boolean, duration_ms?: number}
+     * - Lightweight position updates (500ms interval)
+     * - Data: {position_ms: number, track_filename?: string, is_playing: boolean, duration_ms?: number}
+     * - Note: track_filename renamed from track_id in v6.0.0
      */
     const trackPositionPayload = {
       event_type: 'state:track_position',
       data: {
         position_ms: 45200,
-        track_id: 'track-123',
+        track_filename: 'song.mp3',  // Renamed from track_id in v6.0.0
         is_playing: true,
         duration_ms: 180000
       },

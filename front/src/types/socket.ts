@@ -59,10 +59,13 @@ export interface PlaylistStateData {
   id: string;
   title: string;
   tracks?: Array<{
-    track_number: number;  // OpenAPI v4.1.0
+    track_number: number;  // 1-based position per OpenAPI v6.0.1
     title: string;
     filename: string;
+    /** @deprecated Use duration_ms instead */
     duration?: number;
+    /** Duration in milliseconds (preferred over duration) */
+    duration_ms?: number;
   }>;
   nfc_tag_id?: string;
   server_seq?: number;
@@ -71,8 +74,13 @@ export interface PlaylistStateData {
 export interface PlayerStateData {
   is_playing: boolean;
   active_playlist_id?: string;
+  /** @deprecated Will be renamed to active_track_filename in v7.0.0 */
   active_track_id?: string;
+  /** Track number (1-based) in current playlist */
+  active_track_number?: number;
   position_ms: number;
+  /** Duration in milliseconds */
+  duration_ms?: number;
   can_prev: boolean;
   can_next: boolean;
   server_seq: number;
@@ -81,6 +89,8 @@ export interface PlayerStateData {
 export interface TrackProgressData {
   position_ms: number;
   duration_ms: number;
+  /** Track filename (renamed from track_id in v6.0.0) */
+  track_filename?: string;
   track_number?: number;
   playlist_id?: string;
 }

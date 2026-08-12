@@ -30,7 +30,8 @@ interface PlayerState {
   is_playing: boolean
   active_playlist_id: string | null
   active_playlist_title: string | null
-  active_track_id: string | null
+  active_track_id: string | null  // Track ID (from state:player)
+  active_track_filename: string | null  // Track filename (from state:track_position per v6.0.1)
   active_track: {
     id?: string
     title: string
@@ -83,6 +84,7 @@ export const useServerStateStore = defineStore('serverState', () => {
     active_playlist_id: null,
     active_playlist_title: null,
     active_track_id: null,
+    active_track_filename: null,  // Per contracts v6.0.1
     active_track: null,
     position_ms: 0,
     duration_ms: 0,
@@ -365,6 +367,8 @@ export const useServerStateStore = defineStore('serverState', () => {
         active_playlist_id: newPlaylistId ?? null,
         active_playlist_title: stateData.active_playlist_title ?? null,
         active_track_id: stateData.active_track_id ?? null,
+        // Initialize active_track_filename from active_track.filename for consistency
+        active_track_filename: stateData.active_track?.filename ?? null,
         active_track: stateData.active_track ?? null,
         position_ms: stateData.position_ms || 0,
         duration_ms: stateData.duration_ms || 0,
@@ -461,7 +465,8 @@ export const useServerStateStore = defineStore('serverState', () => {
 
   function handleTrackPosition(event: StateEvent) {
     // Lightweight position-only updates with strategic logging
-    const data = event.data as { position_ms?: number; duration_ms?: number; is_playing?: boolean; track_id?: string }
+    // Note: track_filename renamed from track_id in contracts v6.0.0
+    const data = event.data as { position_ms?: number; duration_ms?: number; is_playing?: boolean; track_filename?: string | null }
 
     // Log first event for debugging and every subsequent event for a few seconds
     if (!firstPositionLogged) {
@@ -492,9 +497,10 @@ export const useServerStateStore = defineStore('serverState', () => {
         playerState.value.duration_ms = data.duration_ms
       }
 
-      // Update active track ID if provided (for consistency)
-      if (data?.track_id && data.track_id !== playerState.value.active_track_id) {
-        playerState.value.active_track_id = data.track_id
+      // Update active track filename if provided (per contracts v6.0.1)
+      // track_filename contains the actual filename (e.g., "song.mp3"), not the track ID
+      if (data?.track_filename && data.track_filename !== playerState.value.active_track_filename) {
+        playerState.value.active_track_filename = data.track_filename
       }
     }
 
@@ -521,6 +527,8 @@ export const useServerStateStore = defineStore('serverState', () => {
         active_playlist_id: stateData.active_playlist_id ?? null,
         active_playlist_title: stateData.active_playlist_title ?? null,
         active_track_id: stateData.active_track_id ?? null,
+        // Initialize active_track_filename from active_track.filename for consistency
+        active_track_filename: stateData.active_track?.filename ?? null,
         active_track: stateData.active_track ?? null,
         position_ms: stateData.position_ms || 0,
         duration_ms: stateData.duration_ms || 0,

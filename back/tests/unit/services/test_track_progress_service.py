@@ -385,7 +385,8 @@ class TestTrackProgressServiceEmission:
             "position_ms": 10000,
             "duration_ms": 100000,
             "is_playing": True,
-            "active_track_id": "track-123"
+            "active_track_id": "track-123",
+            "active_track_filename": "song.mp3"  # Per contracts v6.0.1
         })
 
         service = TrackProgressService(state_manager, audio_controller)
@@ -393,7 +394,7 @@ class TestTrackProgressServiceEmission:
 
         await service.emit_immediate_position()
 
-        # Should have called broadcast_position_update
+        # Should have called broadcast_position_update with track_filename
         state_manager.broadcast_position_update.assert_called_once()
 
     @pytest.mark.asyncio
@@ -416,7 +417,8 @@ class TestTrackProgressServiceEmission:
             "position_ms": 10000,
             "duration_ms": 100000,
             "is_playing": True,
-            "active_track_id": "track-123"
+            "active_track_id": "track-123",
+            "active_track_filename": "song.mp3"
         })
 
         service = TrackProgressService(None, audio_controller)
@@ -435,7 +437,8 @@ class TestTrackProgressServiceEmission:
             "position_ms": 15000,
             "duration_ms": 120000,
             "is_playing": True,
-            "active_track_id": "track-456"
+            "active_track_id": "track-456",
+            "active_track_filename": "another_song.mp3"
         })
 
         service = TrackProgressService(state_manager, audio_controller)

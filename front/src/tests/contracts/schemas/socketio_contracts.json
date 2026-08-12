@@ -2,7 +2,26 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TheOpenMusicBox Socket.IO Contracts",
   "description": "Complete contract definitions for all Socket.IO events based on DDD implementation analysis",
-  "version": "4.0.0",
+  "version": "6.0.1",
+  "deprecations": {
+    "description": "Fields and events marked for removal in future versions",
+    "fields": {
+      "duration": {
+        "deprecated_in": "6.0.0",
+        "removed_in": "7.0.0",
+        "replacement": "duration_ms",
+        "reason": "Use milliseconds for precision. duration (seconds) will be removed."
+      }
+    },
+    "events": {
+      "nfc_status": {
+        "deprecated_in": "6.0.0",
+        "removed_in": "7.0.0",
+        "replacement": "nfc_association_state",
+        "reason": "nfc_association_state has more complete state enum and additional fields"
+      }
+    }
+  },
   "event_envelope_format": {
     "description": "All state events use standardized envelope format via StateEventCoordinator",
     "schema": {
@@ -14,7 +33,10 @@
         "timestamp": {"type": "number"},
         "event_id": {"type": "string"},
         "playlist_id": {"type": ["string", "null"]},
-        "track_id": {"type": ["string", "null"]}
+        "track_filename": {
+          "type": ["string", "null"],
+          "description": "Filename of the associated track (same as Track.filename)"
+        }
       },
       "required": ["event_type", "server_seq", "data", "timestamp", "event_id"]
     }
@@ -124,6 +146,17 @@
           },
           "description": "Unsubscribe from specific playlist updates"
         },
+        "leave:nfc": {
+          "direction": "client_to_server",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "assoc_id": {"type": "string"}
+            },
+            "required": ["assoc_id"]
+          },
+          "description": "Unsubscribe from NFC association session"
+        },
         "ack:join": {
           "direction": "server_to_client",
           "payload": {
@@ -131,12 +164,12 @@
             "properties": {
               "room": {"type": "string"},
               "success": {"type": "boolean"},
-              "server_seq": {"type": "number"},
+              "server_seq": {"type": "number", "description": "Current server sequence for state synchronization"},
               "playlist_seq": {"type": "number"},
               "playlist_id": {"type": "string"},
               "message": {"type": "string"}
             },
-            "required": ["room", "success"]
+            "required": ["room", "success", "server_seq"]
           },
           "description": "Room join acknowledgment"
         },
@@ -190,7 +223,10 @@
             "type": "object",
             "properties": {
               "position_ms": {"type": "integer"},
-              "track_id": {"type": ["string", "null"]},
+              "track_filename": {
+                "type": ["string", "null"],
+                "description": "Filename of the current track (same as Track.filename)"
+              },
               "is_playing": {"type": "boolean"},
               "duration_ms": {"type": ["integer", "null"]}
             },
@@ -336,7 +372,7 @@
           "description": "Playlist update notification",
           "frequency": "on_demand"
         },
-        "state:track_deleted": {
+        "state:tracks_deleted": {
           "direction": "server_to_client",
           "envelope": true,
           "data_schema": {
@@ -345,12 +381,15 @@
               "playlist_id": {"type": "string"},
               "track_numbers": {
                 "type": "array",
-                "items": {"type": "integer"}
-              }
+                "items": {"type": "integer"},
+                "description": "List of 1-based track numbers that were deleted"
+              },
+              "operation": {"type": "string"}
             },
-            "required": ["playlist_id", "track_numbers"]
+            "required": ["playlist_id", "track_numbers"],
+            "additionalNote": "server_seq is in the envelope, not in data (envelope: true)"
           },
-          "description": "Track deletion notification",
+          "description": "Track deletion notification. track_numbers contains 1-based positions. server_seq is in the envelope.",
           "frequency": "on_demand"
         },
         "state:track_added": {
@@ -417,7 +456,11 @@
               "client_op_id": {"type": "string"},
               "success": {"type": "boolean", "const": false},
               "message": {"type": "string"},
-              "error_type": {"type": "string"},
+              "error_type": {
+                "type": "string",
+                "enum": ["validation_error", "not_found", "permission_denied", "conflict", "timeout", "internal_error"],
+                "description": "Categorized error type for client handling"
+              },
               "server_seq": {"type": "number"}
             },
             "required": ["client_op_id", "success", "message", "server_seq"]
@@ -499,6 +542,10 @@
       "events": {
         "nfc_status": {
           "direction": "server_to_client",
+          "deprecated": true,
+          "deprecation_note": "Use nfc_association_state instead. Will be removed in v7.0.0",
+          "x-platform": "rpi",
+          "x-note": "RPI broadcasts to room nfc:{assoc_id}. ESP32 uses nfc_association_state instead.",
           "payload": {
             "type": "object",
             "properties": {
@@ -510,10 +557,12 @@
             },
             "required": ["assoc_id", "state"]
           },
-          "description": "NFC session status updates"
+          "description": "DEPRECATED: NFC session status updates. Use nfc_association_state instead."
         },
         "nfc_association_state": {
           "direction": "server_to_client",
+          "x-platform": ["esp32", "rpi"],
+          "x-note": "ESP32 broadcasts globally to all clients. RPI also supports this for compatibility.",
           "payload": {
             "type": "object",
             "properties": {
