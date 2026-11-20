@@ -11,12 +11,12 @@
 > [!WARNING]
 > **Dépôt archivé : ceci est l'ancien prototype Raspberry Pi, pas la MusicBox.**
 > Ce dépôt contient la première version du projet, sur Raspberry Pi, publiée sous licence MIT. Il n'est plus maintenu.
-> La MusicBox, le lecteur ESP32 conçu par The Open Music Box, est un produit distinct : son firmware et son application **ne sont pas open source**. Seul son boîtier imprimable en 3D est du matériel ouvert (CERN-OHL-S), dans le dépôt [enclosure](https://github.com/The-Open-Music-Box/enclosure).
+> La MusicBox, le lecteur ESP32 conçu par The Open Music Box, est un produit distinct : son firmware et son application **ne sont pas open source à ce jour**.
 > Site du projet : [theopenmusicbox.com](https://theopenmusicbox.com)
 >
 > **Archived repository: this is the old Raspberry Pi prototype, not the MusicBox.**
 > This repository holds the first version of the project, on Raspberry Pi, released under the MIT licence. It is no longer maintained.
-> The MusicBox, the ESP32 player built by The Open Music Box, is a separate product: its firmware and app **are not open source**. Only its 3D-printable enclosure is open hardware (CERN-OHL-S), in the [enclosure](https://github.com/The-Open-Music-Box/enclosure) repository.
+> The MusicBox, the ESP32 player built by The Open Music Box, is a separate product: its firmware and app **are not open source at this time**.
 > Project site: [theopenmusicbox.com](https://theopenmusicbox.com)
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
