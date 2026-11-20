@@ -8,11 +8,16 @@
   <code>REPARABLE</code>&nbsp;&nbsp;<code>EVOLUTIF</code>
 </p>
 
-> [!IMPORTANT]
-> **Ce projet (version Raspberry Pi) n'est plus activement développé.**
-> Une nouvelle version basée sur **ESP32** est en cours de préparation et constitue désormais la priorité du projet.
-> Cette version Raspberry Pi **reste fonctionnelle** et continuera de bénéficier d'un **support de maintenance**, mais elle ne fait plus l'objet de nouvelles fonctionnalités ou de mises à jour prioritaires.
-> Suivez l'évolution du projet sur notre [page Facebook](https://www.facebook.com/theopenmusicbox).
+> [!WARNING]
+> **Dépôt archivé : ceci est l'ancien prototype Raspberry Pi, pas la MusicBox.**
+> Ce dépôt contient la première version du projet, sur Raspberry Pi, publiée sous licence MIT. Il n'est plus maintenu.
+> La MusicBox, le lecteur ESP32 conçu par The Open Music Box, est un produit distinct : son firmware et son application **ne sont pas open source**. Seul son boîtier imprimable en 3D est du matériel ouvert (CERN-OHL-S), dans le dépôt [enclosure](https://github.com/The-Open-Music-Box/enclosure).
+> Site du projet : [theopenmusicbox.com](https://theopenmusicbox.com)
+>
+> **Archived repository: this is the old Raspberry Pi prototype, not the MusicBox.**
+> This repository holds the first version of the project, on Raspberry Pi, released under the MIT licence. It is no longer maintained.
+> The MusicBox, the ESP32 player built by The Open Music Box, is a separate product: its firmware and app **are not open source**. Only its 3D-printable enclosure is open hardware (CERN-OHL-S), in the [enclosure](https://github.com/The-Open-Music-Box/enclosure) repository.
+> Project site: [theopenmusicbox.com](https://theopenmusicbox.com)
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
@@ -1045,7 +1050,7 @@ Ouvrez une [issue](https://github.com/yourusername/tomb-rpi/issues) en incluant:
 
 ## 📄 License
 
-Ce projet est distribué sous licence MIT — voir [LICENSE](LICENSE).
+Ce projet est distribué sous licence MIT : voir [LICENSE](LICENSE).
 
 ---
 
